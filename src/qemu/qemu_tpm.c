@@ -28,7 +28,7 @@
 #include "qemu_domain.h"
 #include "qemu_security.h"
 
-#include "conf/domain_conf.h"
+#include "virdomaintypes.h"
 #include "vircommand.h"
 #include "viralloc.h"
 #include "virkmod.h"

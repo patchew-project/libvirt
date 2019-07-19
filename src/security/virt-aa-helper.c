@@ -38,7 +38,7 @@
 
 #include "security_driver.h"
 #include "security_apparmor.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virxml.h"
 #include "viruuid.h"
 #include "virusb.h"

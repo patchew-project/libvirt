@@ -23,7 +23,7 @@
 
 #include <sys/stat.h>
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virstorageobj.h"
 
 virStoragePoolObjPtr virStoragePoolObjFindPoolByUUID(const unsigned char *uuid)

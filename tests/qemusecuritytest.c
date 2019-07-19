@@ -22,7 +22,7 @@
 #include "testutils.h"
 #include "testutilsqemu.h"
 #include "security/security_manager.h"
-#include "conf/domain_conf.h"
+#include "virdomaintypes.h"
 #include "qemu/qemu_domain.h"
 #include "qemu/qemu_security.h"
 

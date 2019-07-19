@@ -40,7 +40,7 @@
 #include "virerror.h"
 #include "virutil.h"
 #include "domain_event.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 #include "vbox_get_driver.h"
 

@@ -22,7 +22,7 @@
 
 #include <libxl.h>
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "libxl_conf.h"
 #include "virchrdev.h"
 #include "virenum.h"

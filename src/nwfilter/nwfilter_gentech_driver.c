@@ -26,7 +26,7 @@
 
 #include "viralloc.h"
 #include "virlog.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virerror.h"
 #include "nwfilter_gentech_driver.h"
 #include "nwfilter_ebiptables_driver.h"

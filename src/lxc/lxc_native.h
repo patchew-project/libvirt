@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virenum.h"
 
 #define LXC_CONFIG_FORMAT "lxc-tools"

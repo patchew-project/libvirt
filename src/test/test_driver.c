@@ -39,7 +39,7 @@
 #include "viralloc.h"
 #include "virnetworkobj.h"
 #include "interface_conf.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "domain_event.h"
 #include "network_event.h"
 #include "snapshot_conf.h"

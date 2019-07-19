@@ -22,7 +22,7 @@
 #pragma once
 
 #include "qemu_conf.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 bool qemuHostdevHostSupportsPassthroughLegacy(void);
 bool qemuHostdevHostSupportsPassthroughVFIO(void);

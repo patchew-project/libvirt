@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "vircommand.h"
 #include "virstoragefile.h"
 

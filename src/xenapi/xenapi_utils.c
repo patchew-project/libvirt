@@ -22,7 +22,7 @@
 
 #include <xen/api/xen_all.h>
 #include "internal.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virerror.h"
 #include "datatypes.h"
 #include "viruuid.h"

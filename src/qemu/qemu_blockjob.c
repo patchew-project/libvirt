@@ -27,7 +27,7 @@
 #include "qemu_block.h"
 #include "qemu_domain.h"
 
-#include "conf/domain_conf.h"
+#include "virdomaintypes.h"
 #include "conf/domain_event.h"
 
 #include "virlog.h"

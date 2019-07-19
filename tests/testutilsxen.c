@@ -4,7 +4,7 @@
 
 #include "testutilsxen.h"
 #include "testutilshostcpus.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 virCapsPtr
 testXLInitCaps(void)

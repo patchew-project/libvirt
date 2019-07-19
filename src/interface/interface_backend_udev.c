@@ -27,7 +27,7 @@
 #include "virfile.h"
 #include "c-ctype.h"
 #include "datatypes.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "interface_driver.h"
 #include "interface_conf.h"
 #include "viralloc.h"

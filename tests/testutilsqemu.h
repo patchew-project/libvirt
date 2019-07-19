@@ -20,7 +20,7 @@
 
 # include "capabilities.h"
 # include "virfilecache.h"
-# include "domain_conf.h"
+# include "virdomaintypes.h"
 # include "qemu/qemu_capabilities.h"
 # include "qemu/qemu_conf.h"
 

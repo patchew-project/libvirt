@@ -23,7 +23,7 @@
 #include <xen/api/xen_all.h>
 #include "internal.h"
 #include "viruri.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 #define NETWORK_DEVID_SIZE  (12)
 

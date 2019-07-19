@@ -22,7 +22,7 @@
 
 #include "internal.h"
 #include "virconf.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 #define XEN_CONFIG_FORMAT_XL    "xen-xl"
 #define XEN_CONFIG_FORMAT_XM    "xen-xm"

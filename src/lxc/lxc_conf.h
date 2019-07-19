@@ -23,7 +23,7 @@
 
 #include "internal.h"
 #include "libvirt_internal.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "domain_event.h"
 #include "capabilities.h"
 #include "virthread.h"

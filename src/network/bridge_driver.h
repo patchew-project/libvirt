@@ -22,7 +22,7 @@
 #pragma once
 
 #include "internal.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "vircommand.h"
 #include "virdnsmasq.h"
 #include "virnetworkobj.h"

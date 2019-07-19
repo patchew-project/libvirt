@@ -25,7 +25,7 @@
 #include "vircgroup.h"
 #include "virperf.h"
 #include "domain_addr.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "snapshot_conf.h"
 #include "qemu_monitor.h"
 #include "qemu_agent.h"

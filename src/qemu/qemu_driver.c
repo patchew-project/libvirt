@@ -65,7 +65,7 @@
 #include "viralloc.h"
 #include "virarptable.h"
 #include "viruuid.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "domain_audit.h"
 #include "node_device_conf.h"
 #include "virpci.h"

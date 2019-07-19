@@ -4,7 +4,7 @@
 # include "testutilslxc.h"
 # include "testutils.h"
 # include "viralloc.h"
-# include "domain_conf.h"
+# include "virdomaintypes.h"
 
 
 virCapsPtr testLXCCapsInit(void)

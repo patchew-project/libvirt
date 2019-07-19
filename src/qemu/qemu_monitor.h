@@ -23,7 +23,7 @@
 
 #include "internal.h"
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "virbitmap.h"
 #include "virhash.h"
 #include "virjson.h"

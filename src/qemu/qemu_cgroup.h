@@ -23,7 +23,7 @@
 
 #include "virusb.h"
 #include "vircgroup.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "qemu_conf.h"
 
 int qemuSetupImageCgroup(virDomainObjPtr vm,

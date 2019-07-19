@@ -44,7 +44,7 @@
 #include "domain_nwfilter.h"
 #include "domain_addr.h"
 #include "domain_audit.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "netdev_bandwidth_conf.h"
 #include "snapshot_conf.h"
 #include "storage_conf.h"

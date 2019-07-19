@@ -32,7 +32,7 @@
 #include "virerror.h"
 #include "datatypes.h"
 #include "viralloc.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "domain_nwfilter.h"
 #include "nwfilter_driver.h"
 #include "nwfilter_gentech_driver.h"

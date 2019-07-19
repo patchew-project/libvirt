@@ -24,7 +24,7 @@
 
 #include "internal.h"
 #include "virconf.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 virConfPtr xenFormatXM(virConnectPtr conn, virDomainDefPtr def);
 

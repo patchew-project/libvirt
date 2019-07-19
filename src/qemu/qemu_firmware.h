@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "qemu_conf.h"
 #include "virautoclean.h"
 #include "virarch.h"

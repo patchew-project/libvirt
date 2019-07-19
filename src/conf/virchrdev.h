@@ -22,7 +22,7 @@
 #pragma once
 
 #include "internal.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 typedef struct _virChrdevs virChrdevs;
 typedef virChrdevs *virChrdevsPtr;

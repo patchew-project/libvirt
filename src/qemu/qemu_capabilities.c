@@ -32,7 +32,7 @@
 #include "virprocess.h"
 #include "cpu/cpu.h"
 #include "cpu/cpu_x86.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "vircommand.h"
 #include "virbitmap.h"
 #include "virnodesuspend.h"

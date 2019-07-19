@@ -22,7 +22,7 @@
 #pragma once
 
 #include "lxc_conf.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 int virLXCUpdateActiveUSBHostdevs(virLXCDriverPtr driver,
                                   virDomainDefPtr def);

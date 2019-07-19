@@ -22,7 +22,7 @@
 #pragma once
 
 #include "internal.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "lock_manager.h"
 
 int virDomainLockProcessStart(virLockManagerPluginPtr plugin,

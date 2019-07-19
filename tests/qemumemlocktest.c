@@ -12,7 +12,7 @@
 # include "datatypes.h"
 # include "internal.h"
 # include "virstring.h"
-# include "conf/domain_conf.h"
+# include "virdomaintypes.h"
 # include "qemu/qemu_domain.h"
 
 # include "testutilsqemu.h"

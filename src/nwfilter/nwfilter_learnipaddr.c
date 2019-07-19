@@ -48,7 +48,7 @@
 #include "virerror.h"
 #include "virthread.h"
 #include "conf/nwfilter_params.h"
-#include "conf/domain_conf.h"
+#include "virdomaintypes.h"
 #include "nwfilter_gentech_driver.h"
 #include "nwfilter_ebiptables_driver.h"
 #include "nwfilter_ipaddrmap.h"

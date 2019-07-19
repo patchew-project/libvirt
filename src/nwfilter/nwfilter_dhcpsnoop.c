@@ -52,7 +52,7 @@
 #include "virlog.h"
 #include "datatypes.h"
 #include "virerror.h"
-#include "conf/domain_conf.h"
+#include "virdomaintypes.h"
 #include "nwfilter_gentech_driver.h"
 #include "nwfilter_dhcpsnoop.h"
 #include "nwfilter_ipaddrmap.h"

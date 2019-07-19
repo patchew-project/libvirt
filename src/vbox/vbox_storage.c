@@ -22,7 +22,7 @@
 
 #include "internal.h"
 #include "datatypes.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 #include "domain_event.h"
 #include "virlog.h"
 #include "virstring.h"

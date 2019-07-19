@@ -36,7 +36,7 @@
 #include "virbitmap.h"
 #include "virbuffer.h"
 #include "c-ctype.h"
-#include "conf/domain_conf.h"
+#include "conf/virdomaintypes.h"
 #include "viralloc.h"
 #include "vircommand.h"
 #include "virfile.h"

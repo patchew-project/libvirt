@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 #include "qemu_capabilities.h"
 #include "qemu_domain.h"

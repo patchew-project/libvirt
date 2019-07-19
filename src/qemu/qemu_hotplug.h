@@ -23,7 +23,7 @@
 
 #include "qemu_conf.h"
 #include "qemu_domain.h"
-#include "domain_conf.h"
+#include "virdomaintypes.h"
 
 int qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
                                    virDomainObjPtr vm,
