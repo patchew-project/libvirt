@@ -2696,6 +2696,56 @@ testDomainSetVcpusFlags(virDomainPtr domain, unsigned int nrCpus,
 
 
 static int
+testDomainAddIOThread(virDomainPtr dom,
+                      unsigned int iothread_id,
+                      unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+    virDomainIOThreadIDDefPtr iothrid = NULL;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG, -1);
+
+    if (iothread_id == 0) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("invalid value of 0 for iothread_id"));
+        return -1;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (virDomainIOThreadIDFind(def, iothread_id)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("an IOThread is already using iothread_id '%u'"),
+                       iothread_id);
+        goto cleanup;
+    }
+
+    if (VIR_ALLOC(iothrid) < 0)
+        goto cleanup;
+
+    iothrid->iothread_id = iothread_id;
+
+    if (VIR_APPEND_ELEMENT_COPY(def->iothreadids, def->niothreadids, iothrid) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    if (ret < 0)
+        virDomainIOThreadIDDefFree(iothrid);
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
+static int
 testDomainSetUserPassword(virDomainPtr dom,
                           const char *user ATTRIBUTE_UNUSED,
                           const char *password ATTRIBUTE_UNUSED,
@@ -8044,6 +8094,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSaveImageGetXMLDesc = testDomainSaveImageGetXMLDesc, /* 5.5.0 */
     .domainCoreDump = testDomainCoreDump, /* 0.3.2 */
     .domainCoreDumpWithFormat = testDomainCoreDumpWithFormat, /* 1.2.3 */
+    .domainAddIOThread = testDomainAddIOThread, /* 5.6.0 */
     .domainSetUserPassword = testDomainSetUserPassword, /* 5.6.0 */
     .domainSetVcpus = testDomainSetVcpus, /* 0.1.4 */
     .domainSetVcpusFlags = testDomainSetVcpusFlags, /* 0.8.5 */
