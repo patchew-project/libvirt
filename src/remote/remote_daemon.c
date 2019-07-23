@@ -64,7 +64,11 @@
 
 #include "virdbus.h"
 
-VIR_LOG_INIT("daemon.libvirtd");
+VIR_LOG_INIT("daemon." DAEMON_NAME);
+
+#ifndef SOCK_PREFIX
+# define SOCK_PREFIX DAEMON_NAME
+#endif
 
 #if WITH_SASL
 virNetSASLContextPtr saslCtxt = NULL;
@@ -375,11 +379,11 @@ daemonSetupNetworking(virNetServerPtr srv,
     int ret = -1;
     VIR_AUTOPTR(virSystemdActivation) act = NULL;
     virSystemdActivationMap actmap[] = {
-        { .name = "libvirtd.socket", .family = AF_UNIX, .path = sock_path },
-        { .name = "libvirtd-ro.socket", .family = AF_UNIX, .path = sock_path_ro },
-        { .name = "libvirtd-admin.socket", .family = AF_UNIX, .path = sock_path_adm },
-        { .name = "libvirtd-tcp.socket", .family = AF_INET },
-        { .name = "libvirtd-tls.socket", .family = AF_INET },
+        { .name = DAEMON_NAME ".socket", .family = AF_UNIX, .path = sock_path },
+        { .name = DAEMON_NAME "-ro.socket", .family = AF_UNIX, .path = sock_path_ro },
+        { .name = DAEMON_NAME "-admin.socket", .family = AF_UNIX, .path = sock_path_adm },
+        { .name = DAEMON_NAME "-tcp.socket", .family = AF_INET },
+        { .name = DAEMON_NAME "-tls.socket", .family = AF_INET },
     };
 
     if ((actmap[3].port = virSocketAddrResolveService(config->tcp_port)) < 0)
@@ -413,7 +417,7 @@ daemonSetupNetworking(virNetServerPtr srv,
 
     if (virNetServerAddServiceUNIX(srv,
                                    act,
-                                   "libvirtd.socket",
+                                   DAEMON_NAME ".socket",
                                    sock_path,
                                    unix_sock_rw_mask,
                                    unix_sock_gid,
@@ -426,7 +430,7 @@ daemonSetupNetworking(virNetServerPtr srv,
     if (sock_path_ro &&
         virNetServerAddServiceUNIX(srv,
                                    act,
-                                   "libvirtd-ro.socket",
+                                   DAEMON_NAME "-ro.socket",
                                    sock_path_ro,
                                    unix_sock_ro_mask,
                                    unix_sock_gid,
@@ -440,7 +444,7 @@ daemonSetupNetworking(virNetServerPtr srv,
     if (sock_path_adm &&
         virNetServerAddServiceUNIX(srvAdm,
                                    act,
-                                   "libvirtd-admin.socket",
+                                   DAEMON_NAME "-admin.socket",
                                    sock_path_adm,
                                    unix_sock_adm_mask,
                                    unix_sock_gid,
@@ -454,7 +458,7 @@ daemonSetupNetworking(virNetServerPtr srv,
     if (((ipsock && config->listen_tcp) || act) &&
         virNetServerAddServiceTCP(srv,
                                   act,
-                                  "libvirtd-tcp.socket",
+                                  DAEMON_NAME "-tcp.socket",
                                   config->listen_addr,
                                   config->tcp_port,
                                   AF_UNSPEC,
@@ -511,7 +515,7 @@ daemonSetupNetworking(virNetServerPtr srv,
                   config->listen_addr, config->tls_port);
         if (virNetServerAddServiceTCP(srv,
                                       act,
-                                      "libvirtd-tls.socket",
+                                      DAEMON_NAME "-tls.socket",
                                       config->listen_addr,
                                       config->tls_port,
                                       AF_UNSPEC,
@@ -556,7 +560,7 @@ daemonSetupNetDevOpenvswitch(struct daemonConfig *config)
 
 /*
  * Set up the logging environment
- * By default if daemonized all errors go to the logfile libvirtd.log,
+ * By default if daemonized all errors go to journald/a logfile
  * but if verbose or error debugging is asked for then also output
  * informational and debug messages. Default size if 64 kB.
  */
@@ -569,7 +573,7 @@ daemonSetupLogging(struct daemonConfig *config,
     virLogReset();
 
     /*
-     * Libvirtd's order of precedence is:
+     * Logging setup order of precedence is:
      * cmdline > environment > config
      *
      * Given the precedence, we must process the variables in the opposite
@@ -597,7 +601,7 @@ daemonSetupLogging(struct daemonConfig *config,
     /* Define the default output. This is only applied if there was no setting
      * from either the config or the environment.
      */
-    if (virLogSetDefaultOutput("libvirtd", godaemon, privileged) < 0)
+    if (virLogSetDefaultOutput(DAEMON_NAME, godaemon, privileged) < 0)
         return -1;
 
     if (virLogGetNbOutputs() == 0)
@@ -709,7 +713,7 @@ static void daemonStopWorker(void *opaque)
 
     VIR_DEBUG("Completed stop dmn=%p", dmn);
 
-    /* Exit libvirtd cleanly */
+    /* Exit daemon cleanly */
     virNetDaemonQuit(dmn);
 }
 
@@ -788,7 +792,7 @@ static void daemonRunStateInit(void *opaque)
     driversInitialized = true;
 
 #ifdef WITH_DBUS
-    /* Tie the non-privileged libvirtd to the session/shutdown lifecycle */
+    /* Tie the non-privileged daemons to the session/shutdown lifecycle */
     if (!virNetDaemonIsPrivileged(dmn)) {
 
         sessionBus = virDBusGetSessionBus();
@@ -895,7 +899,7 @@ daemonUsage(const char *argv0, bool privileged)
     fprintf(stderr, "\n");
 
     fprintf(stderr, "    %s:\n", _("Configuration file (unless overridden by -f)"));
-    fprintf(stderr, "      %s/libvirt/libvirtd.conf\n",
+    fprintf(stderr, "      %s/libvirt/" DAEMON_NAME ".conf\n",
             privileged ? SYSCONFDIR : "$XDG_CONFIG_HOME");
     fprintf(stderr, "\n");
 
@@ -922,9 +926,9 @@ daemonUsage(const char *argv0, bool privileged)
 
     fprintf(stderr, "    %s:\n",
             _("PID file (unless overridden by -p)"));
-    fprintf(stderr, "      %s\n",
-            privileged ? LOCALSTATEDIR "/run/libvirtd.pid":
-            "$XDG_RUNTIME_DIR/libvirt/libvirtd.pid");
+    fprintf(stderr, "      %s/\n",
+            privileged ? LOCALSTATEDIR "/run/" DAEMON_NAME ".pid":
+            "$XDG_RUNTIME_DIR/libvirt/" DAEMON_NAME ".pid");
     fprintf(stderr, "\n");
 }
 
@@ -1088,7 +1092,7 @@ int main(int argc, char **argv) {
     if (!pid_file &&
         virPidFileConstructPath(privileged,
                                 LOCALSTATEDIR,
-                                "libvirtd",
+                                DAEMON_NAME,
                                 &pid_file) < 0) {
         VIR_ERROR(_("Can't determine pid file path."));
         exit(EXIT_FAILURE);
@@ -1168,7 +1172,7 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!(srv = virNetServerNew("libvirtd", 1,
+    if (!(srv = virNetServerNew(DAEMON_NAME, 1,
                                 config->min_workers,
                                 config->max_workers,
                                 config->prio_workers,
