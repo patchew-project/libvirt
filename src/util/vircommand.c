@@ -487,7 +487,7 @@ virCommandMassClose(virCommandPtr cmd,
      * Therefore we can safely allocate memory here (and transitively call
      * opendir/readdir) without a deadlock. */
 
-    if (!(fds = virBitmapNew(openmax)))
+    if (openmax < 0 || !(fds = virBitmapNew(openmax)))
         return -1;
 
 # ifdef __linux__
