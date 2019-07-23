@@ -221,19 +221,19 @@ daemonUnixSocketPaths(struct daemonConfig *config,
     char *rundir = NULL;
 
     if (config->unix_sock_dir) {
-        if (virAsprintf(sockfile, "%s/libvirt-sock", config->unix_sock_dir) < 0)
+        if (virAsprintf(sockfile, "%s/" SOCK_PREFIX "-sock", config->unix_sock_dir) < 0)
             goto cleanup;
 
         if (privileged) {
-            if (virAsprintf(rosockfile, "%s/libvirt-sock-ro", config->unix_sock_dir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", config->unix_sock_dir) < 0)
+            if (virAsprintf(rosockfile, "%s/" SOCK_PREFIX "-sock-ro", config->unix_sock_dir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_PREFIX "-admin-sock", config->unix_sock_dir) < 0)
                 goto cleanup;
         }
     } else {
         if (privileged) {
-            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock") < 0 ||
-                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro") < 0 ||
-                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/libvirt-admin-sock") < 0)
+            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_PREFIX "-sock") < 0 ||
+                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_PREFIX "-sock-ro") < 0 ||
+                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_PREFIX "-admin-sock") < 0)
                 goto cleanup;
         } else {
             mode_t old_umask;
@@ -248,8 +248,8 @@ daemonUnixSocketPaths(struct daemonConfig *config,
             }
             umask(old_umask);
 
-            if (virAsprintf(sockfile, "%s/libvirt-sock", rundir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", rundir) < 0)
+            if (virAsprintf(sockfile, "%s/" SOCK_PREFIX "-sock", rundir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_PREFIX "-admin-sock", rundir) < 0)
                 goto cleanup;
         }
     }
@@ -900,12 +900,12 @@ daemonUsage(const char *argv0, bool privileged)
     fprintf(stderr, "\n");
 
     fprintf(stderr, "    %s:\n", _("Sockets"));
-    fprintf(stderr, "      %s\n",
-            privileged ? LOCALSTATEDIR "/run/libvirt/libvirt-sock" :
-            "$XDG_RUNTIME_DIR/libvirt/libvirt-sock");
+    fprintf(stderr, "      %s/libvirt/" SOCK_PREFIX "-sock\n",
+            privileged ? LOCALSTATEDIR "/run" :
+            "$XDG_RUNTIME_DIR");
     if (privileged)
         fprintf(stderr, "      %s\n",
-                LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro");
+                LOCALSTATEDIR "/run/libvirt/" SOCK_PREFIX "-sock-ro");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "    %s:\n", _("TLS"));
