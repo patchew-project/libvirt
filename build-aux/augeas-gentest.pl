@@ -30,7 +30,7 @@ open TEMPLATE, "<", $template or die "cannot read $template: $!";
 
 my $group = 0;
 while (<TEMPLATE>) {
-    if (/::CONFIG::/) {
+    if (/::\s*CONFIG\s*::/) {
         my $group = 0;
         print "  let conf = \"";
         while (<CONFIG>) {
