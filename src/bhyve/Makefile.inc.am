@@ -50,7 +50,6 @@ libvirt_driver_bhyve_impl_la_SOURCES = $(BHYVE_DRIVER_SOURCES)
 conf_DATA += bhyve/bhyve.conf
 augeas_DATA += bhyve/libvirtd_bhyve.aug
 augeastest_DATA += bhyve/test_libvirtd_bhyve.aug
-CLEANFILES += bhyve/test_libvirtd_bhyve.aug
 
 AUGEAS_DIRS += bhyve
 
