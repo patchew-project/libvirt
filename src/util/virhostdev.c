@@ -639,6 +639,36 @@ virHostdevResetAllPCIDevices(virHostdevManagerPtr mgr,
     return ret;
 }
 
+static void
+virHostdevReattachAllPCIDevices(virHostdevManagerPtr mgr,
+                                virPCIDeviceListPtr pcidevs)
+{
+    size_t i;
+
+    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
+        virPCIDevicePtr pci = virPCIDeviceListGet(pcidevs, i);
+        virPCIDevicePtr actual;
+
+        /* We need to look up the actual device because that's what
+         * virPCIDeviceReattach() expects as its argument */
+        if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
+            continue;
+
+        if (virPCIDeviceGetManaged(actual)) {
+            if (virPCIDeviceReattach(actual,
+                                     mgr->activePCIHostdevs,
+                                     mgr->inactivePCIHostdevs) < 0) {
+                VIR_ERROR(_("Failed to re-attach PCI device: %s"),
+                          virGetLastErrorMessage());
+                virResetLastError();
+            }
+        }
+        else
+            VIR_DEBUG("Not reattaching unmanaged PCI device %s",
+                      virPCIDeviceGetName(actual));
+    }
+}
+
 int
 virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
                             const char *drv_name,
@@ -899,26 +929,7 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
     }
 
  reattachdevs:
-    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
-        virPCIDevicePtr pci = virPCIDeviceListGet(pcidevs, i);
-        virPCIDevicePtr actual;
-
-        /* We need to look up the actual device because that's what
-         * virPCIDeviceReattach() expects as its argument */
-        if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
-            continue;
-
-        if (virPCIDeviceGetManaged(actual)) {
-            VIR_DEBUG("Reattaching managed PCI device %s",
-                      virPCIDeviceGetName(pci));
-            ignore_value(virPCIDeviceReattach(actual,
-                                              mgr->activePCIHostdevs,
-                                              mgr->inactivePCIHostdevs));
-        } else {
-            VIR_DEBUG("Not reattaching unmanaged PCI device %s",
-                      virPCIDeviceGetName(pci));
-        }
-    }
+    virHostdevReattachAllPCIDevices(mgr, pcidevs);
 
  cleanup:
     virObjectUnlock(mgr->activePCIHostdevs);
@@ -1040,28 +1051,7 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
 
     /* Step 5: Reattach managed devices to their host drivers; unmanaged
      *         devices don't need to be processed further */
-    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
-        virPCIDevicePtr pci = virPCIDeviceListGet(pcidevs, i);
-        virPCIDevicePtr actual;
-
-        /* We need to look up the actual device because that's what
-         * virPCIDeviceReattach() expects as its argument */
-        if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
-            continue;
-
-        if (virPCIDeviceGetManaged(actual)) {
-            if (virPCIDeviceReattach(actual,
-                                     mgr->activePCIHostdevs,
-                                     mgr->inactivePCIHostdevs) < 0) {
-                VIR_ERROR(_("Failed to re-attach PCI device: %s"),
-                          virGetLastErrorMessage());
-                virResetLastError();
-            }
-        }
-        else
-            VIR_DEBUG("Not reattaching unmanaged PCI device %s",
-                      virPCIDeviceGetName(actual));
-    }
+    virHostdevReattachAllPCIDevices(mgr, pcidevs);
 
     virObjectUnlock(mgr->activePCIHostdevs);
     virObjectUnlock(mgr->inactivePCIHostdevs);
