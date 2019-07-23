@@ -166,12 +166,16 @@
 /src/remote/virtproxyd.conf
 /src/rpc/virkeepaliveprotocol.[ch]
 /src/rpc/virnetprotocol.[ch]
+/src/secret/test_virtsecretd.aug
+/src/secret/virtsecretd.aug
+/src/secret/virtsecretd.conf
 /src/util/virkeycodetable*.h
 /src/util/virkeynametable*.h
 /src/virt-aa-helper
 /src/virtlockd
 /src/virtlogd
 /src/virtproxyd
+/src/virtsecretd
 /src/virt-guest-shutdown.target
 /tests/*.log
 /tests/*.pid
