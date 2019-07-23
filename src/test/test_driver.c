@@ -2817,6 +2817,56 @@ testDomainDelIOThread(virDomainPtr dom,
 
 
 static int
+testDomainPinIOThread(virDomainPtr dom,
+                      unsigned int iothread_id,
+                      unsigned char *cpumap,
+                      int maplen,
+                      unsigned int flags)
+{
+    int ret = -1;
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+    virDomainIOThreadIDDefPtr iothrid = NULL;
+    virBitmapPtr cpumask = NULL;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG, -1);
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (!(cpumask = virBitmapNewData(cpumap, maplen)))
+        goto cleanup;
+
+    if (virBitmapIsAllClear(cpumask)) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Empty iothread cpumap list for pinning"));
+        goto cleanup;
+    }
+
+    if (!(iothrid = virDomainIOThreadIDFind(def, iothread_id))) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("iothreadid %d not found"), iothread_id);
+        goto cleanup;
+    }
+
+    virBitmapFree(iothrid->cpumask);
+    iothrid->cpumask = cpumask;
+    iothrid->autofill = false;
+
+    ret = 0;
+ cleanup:
+    if (ret < 0)
+        virBitmapFree(cpumask);
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
+static int
 testDomainSetUserPassword(virDomainPtr dom,
                           const char *user ATTRIBUTE_UNUSED,
                           const char *password ATTRIBUTE_UNUSED,
@@ -8167,6 +8217,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainCoreDumpWithFormat = testDomainCoreDumpWithFormat, /* 1.2.3 */
     .domainAddIOThread = testDomainAddIOThread, /* 5.6.0 */
     .domainDelIOThread = testDomainDelIOThread, /* 5.6.0 */
+    .domainPinIOThread = testDomainPinIOThread, /* 5.6.0 */
     .domainSetUserPassword = testDomainSetUserPassword, /* 5.6.0 */
     .domainSetVcpus = testDomainSetVcpus, /* 0.1.4 */
     .domainSetVcpusFlags = testDomainSetVcpusFlags, /* 0.8.5 */
