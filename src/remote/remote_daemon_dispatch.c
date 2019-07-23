@@ -2004,7 +2004,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchConnectClose(virNetServerPtr server ATTRIBUTE_UNUSED,
-                           virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                           virNetServerClientPtr client,
                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
                            virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED)
 {
@@ -2015,7 +2015,7 @@ remoteDispatchConnectClose(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetSchedulerType(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                     virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                     virNetServerClientPtr client,
                                      virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                      virNetMessageErrorPtr rerr,
                                      remote_domain_get_scheduler_type_args *args,
@@ -2052,7 +2052,7 @@ remoteDispatchDomainGetSchedulerType(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetSchedulerParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                           virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                           virNetServerClientPtr client,
                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                            virNetMessageErrorPtr rerr,
                                            remote_domain_get_scheduler_parameters_args *args,
@@ -2102,7 +2102,7 @@ remoteDispatchDomainGetSchedulerParameters(virNetServerPtr server ATTRIBUTE_UNUS
 
 static int
 remoteDispatchDomainGetSchedulerParametersFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                                virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                                virNetServerClientPtr client,
                                                 virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                                 virNetMessageErrorPtr rerr,
                                                 remote_domain_get_scheduler_parameters_flags_args *args,
@@ -2153,7 +2153,7 @@ remoteDispatchDomainGetSchedulerParametersFlags(virNetServerPtr server ATTRIBUTE
 
 static int
 remoteDispatchDomainMemoryStats(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                virNetServerClientPtr client,
                                 virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                 virNetMessageErrorPtr rerr,
                                 remote_domain_memory_stats_args *args,
@@ -2211,7 +2211,7 @@ remoteDispatchDomainMemoryStats(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainBlockPeek(virNetServerPtr server ATTRIBUTE_UNUSED,
-                              virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                              virNetServerClientPtr client,
                               virNetMessagePtr msg ATTRIBUTE_UNUSED,
                               virNetMessageErrorPtr rerr,
                               remote_domain_block_peek_args *args,
@@ -2265,7 +2265,7 @@ remoteDispatchDomainBlockPeek(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainBlockStatsFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_block_stats_flags_args *args,
@@ -2328,7 +2328,7 @@ remoteDispatchDomainBlockStatsFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMemoryPeek(virNetServerPtr server ATTRIBUTE_UNUSED,
-                               virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                               virNetServerClientPtr client,
                                virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                virNetMessageErrorPtr rerr,
                                remote_domain_memory_peek_args *args,
@@ -2380,7 +2380,7 @@ remoteDispatchDomainMemoryPeek(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetSecurityLabel(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                     virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                     virNetServerClientPtr client,
                                      virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                      virNetMessageErrorPtr rerr,
                                      remote_domain_get_security_label_args *args,
@@ -2424,7 +2424,7 @@ remoteDispatchDomainGetSecurityLabel(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetSecurityLabelList(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                         virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                         virNetServerClientPtr client,
                                          virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                          virNetMessageErrorPtr rerr,
                                          remote_domain_get_security_label_list_args *args,
@@ -2481,7 +2481,7 @@ remoteDispatchDomainGetSecurityLabelList(virNetServerPtr server ATTRIBUTE_UNUSED
 
 static int
 remoteDispatchNodeGetSecurityModel(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_node_get_security_model_ret *ret)
@@ -2520,7 +2520,7 @@ remoteDispatchNodeGetSecurityModel(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetVcpuPinInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_get_vcpu_pin_info_args *args,
@@ -2621,7 +2621,7 @@ remoteDispatchDomainPinEmulator(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetEmulatorPinInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                       virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                       virNetServerClientPtr client,
                                        virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                        virNetMessageErrorPtr rerr,
                                        remote_domain_get_emulator_pin_info_args *args,
@@ -2670,7 +2670,7 @@ remoteDispatchDomainGetEmulatorPinInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetVcpus(virNetServerPtr server ATTRIBUTE_UNUSED,
-                             virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                             virNetServerClientPtr client,
                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
                              virNetMessageErrorPtr rerr,
                              remote_domain_get_vcpus_args *args,
@@ -2823,7 +2823,7 @@ remoteDispatchDomainGetIOThreadInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigratePrepare(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_migrate_prepare_args *args,
@@ -2878,7 +2878,7 @@ remoteDispatchDomainMigratePrepare(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigratePrepare2(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_migrate_prepare2_args *args,
@@ -2930,7 +2930,7 @@ remoteDispatchDomainMigratePrepare2(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                        virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                        virNetServerClientPtr client,
                                         virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                         virNetMessageErrorPtr rerr,
                                         remote_domain_get_memory_parameters_args *args,
@@ -2992,7 +2992,7 @@ remoteDispatchDomainGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetNumaParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                      virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                      virNetServerClientPtr client,
                                       virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                       virNetMessageErrorPtr rerr,
                                       remote_domain_get_numa_parameters_args *args,
@@ -3054,7 +3054,7 @@ remoteDispatchDomainGetNumaParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetBlkioParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                       virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                       virNetServerClientPtr client,
                                        virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                        virNetMessageErrorPtr rerr,
                                        remote_domain_get_blkio_parameters_args *args,
@@ -3116,7 +3116,7 @@ remoteDispatchDomainGetBlkioParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNodeGetCPUStats(virNetServerPtr server ATTRIBUTE_UNUSED,
-                              virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                              virNetServerClientPtr client,
                               virNetMessagePtr msg ATTRIBUTE_UNUSED,
                               virNetMessageErrorPtr rerr,
                               remote_node_get_cpu_stats_args *args,
@@ -3188,7 +3188,7 @@ remoteDispatchNodeGetCPUStats(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNodeGetMemoryStats(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                 virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                 virNetServerClientPtr client,
                                  virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                  virNetMessageErrorPtr rerr,
                                  remote_node_get_memory_stats_args *args,
@@ -3260,7 +3260,7 @@ remoteDispatchNodeGetMemoryStats(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetLaunchSecurityInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                          virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                          virNetServerClientPtr client,
                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                           virNetMessageErrorPtr rerr,
                                           remote_domain_get_launch_security_info_args *args,
@@ -3307,7 +3307,7 @@ remoteDispatchDomainGetLaunchSecurityInfo(virNetServerPtr server ATTRIBUTE_UNUSE
 
 static int
 remoteDispatchDomainGetPerfEvents(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                  virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                  virNetServerClientPtr client,
                                   virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                   virNetMessageErrorPtr rerr,
                                   remote_domain_get_perf_events_args *args,
@@ -3354,7 +3354,7 @@ remoteDispatchDomainGetPerfEvents(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetBlockJobInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_get_block_job_info_args *args,
@@ -3394,7 +3394,7 @@ remoteDispatchDomainGetBlockJobInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetBlockIoTune(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr hdr ATTRIBUTE_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_get_block_io_tune_args *args,
@@ -3972,7 +3972,7 @@ remoteDispatchAuthPolkit(virNetServerPtr server,
 
 static int
 remoteDispatchNodeDeviceGetParent(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                  virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                  virNetServerClientPtr client,
                                   virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                   virNetMessageErrorPtr rerr,
                                   remote_node_device_get_parent_args *args,
@@ -4228,7 +4228,7 @@ remoteDispatchObjectEventSend(virNetServerClientPtr client,
 
 static int
 remoteDispatchSecretGetValue(virNetServerPtr server ATTRIBUTE_UNUSED,
-                             virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                             virNetServerClientPtr client,
                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
                              virNetMessageErrorPtr rerr,
                              remote_secret_get_value_args *args,
@@ -4266,7 +4266,7 @@ remoteDispatchSecretGetValue(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetState(virNetServerPtr server ATTRIBUTE_UNUSED,
-                             virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                             virNetServerClientPtr client,
                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
                              virNetMessageErrorPtr rerr,
                              remote_domain_get_state_args *args,
@@ -4560,7 +4560,7 @@ remoteDispatchConnectDomainEventCallbackDeregisterAny(virNetServerPtr server ATT
 
 static int
 qemuDispatchDomainMonitorCommand(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                 virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                 virNetServerClientPtr client,
                                  virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                  virNetMessageErrorPtr rerr,
                                  qemu_domain_monitor_command_args *args,
@@ -4595,7 +4595,7 @@ qemuDispatchDomainMonitorCommand(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigrateBegin3(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                  virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                  virNetServerClientPtr client,
                                   virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                   virNetMessageErrorPtr rerr,
                                   remote_domain_migrate_begin3_args *args,
@@ -4646,7 +4646,7 @@ remoteDispatchDomainMigrateBegin3(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigratePrepare3(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_migrate_prepare3_args *args,
@@ -4702,7 +4702,7 @@ remoteDispatchDomainMigratePrepare3(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigratePerform3(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_migrate_perform3_args *args,
@@ -4757,7 +4757,7 @@ remoteDispatchDomainMigratePerform3(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigrateFinish3(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_migrate_finish3_args *args,
@@ -4811,7 +4811,7 @@ remoteDispatchDomainMigrateFinish3(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigrateConfirm3(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                    virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                    virNetServerClientPtr client,
                                     virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_migrate_confirm3_args *args)
@@ -4911,7 +4911,7 @@ static int remoteDispatchConnectSupportsFeature(virNetServerPtr server ATTRIBUTE
 
 static int
 remoteDispatchDomainOpenGraphics(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                 virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                 virNetServerClientPtr client,
                                  virNetMessagePtr msg,
                                  virNetMessageErrorPtr rerr,
                                  remote_domain_open_graphics_args *args)
@@ -4952,7 +4952,7 @@ remoteDispatchDomainOpenGraphics(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainOpenGraphicsFd(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                   virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
                                    virNetMessagePtr msg,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_open_graphics_fd_args *args)
@@ -4995,7 +4995,7 @@ remoteDispatchDomainOpenGraphicsFd(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainGetInterfaceParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                           virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                           virNetServerClientPtr client,
                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                            virNetMessageErrorPtr rerr,
                                            remote_domain_get_interface_parameters_args *args,
@@ -5058,7 +5058,7 @@ remoteDispatchDomainGetInterfaceParameters(virNetServerPtr server ATTRIBUTE_UNUS
 
 static int
 remoteDispatchDomainGetCPUStats(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                virNetServerClientPtr client,
                                 virNetMessagePtr hdr ATTRIBUTE_UNUSED,
                                 virNetMessageErrorPtr rerr,
                                 remote_domain_get_cpu_stats_args *args,
@@ -5190,7 +5190,7 @@ remoteDispatchDomainGetDiskErrors(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNodeGetSevInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
-                             virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                             virNetServerClientPtr client,
                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
                              virNetMessageErrorPtr rerr,
                              remote_node_get_sev_info_args *args,
@@ -5234,7 +5234,7 @@ remoteDispatchNodeGetSevInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNodeGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                      virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                      virNetServerClientPtr client,
                                       virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                       virNetMessageErrorPtr rerr,
                                       remote_node_get_memory_parameters_args *args,
@@ -5291,7 +5291,7 @@ remoteDispatchNodeGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNodeGetCPUMap(virNetServerPtr server ATTRIBUTE_UNUSED,
-                            virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                            virNetServerClientPtr client,
                             virNetMessagePtr msg ATTRIBUTE_UNUSED,
                             virNetMessageErrorPtr rerr,
                             remote_node_get_cpu_map_args *args,
@@ -5338,7 +5338,7 @@ remoteDispatchNodeGetCPUMap(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 lxcDispatchDomainOpenNamespace(virNetServerPtr server ATTRIBUTE_UNUSED,
-                               virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                               virNetServerClientPtr client,
                                virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                virNetMessageErrorPtr rerr,
                                lxc_domain_open_namespace_args *args)
@@ -5438,7 +5438,7 @@ remoteDispatchDomainGetJobStats(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigrateBegin3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                        virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                        virNetServerClientPtr client,
                                         virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                         virNetMessageErrorPtr rerr,
                                         remote_domain_migrate_begin3_params_args *args,
@@ -5495,7 +5495,7 @@ remoteDispatchDomainMigrateBegin3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchDomainMigratePrepare3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                          virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                          virNetServerClientPtr client,
                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                           virNetMessageErrorPtr rerr,
                                           remote_domain_migrate_prepare3_params_args *args,
@@ -5625,7 +5625,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server ATTRIBUTE
 
 static int
 remoteDispatchDomainMigratePerform3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                          virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                          virNetServerClientPtr client,
                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                           virNetMessageErrorPtr rerr,
                                           remote_domain_migrate_perform3_params_args *args,
@@ -5686,7 +5686,7 @@ remoteDispatchDomainMigratePerform3Params(virNetServerPtr server ATTRIBUTE_UNUSE
 
 static int
 remoteDispatchDomainMigrateFinish3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                         virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                         virNetServerClientPtr client,
                                          virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                          virNetMessageErrorPtr rerr,
                                          remote_domain_migrate_finish3_params_args *args,
@@ -5747,7 +5747,7 @@ remoteDispatchDomainMigrateFinish3Params(virNetServerPtr server ATTRIBUTE_UNUSED
 
 static int
 remoteDispatchDomainMigrateConfirm3Params(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                          virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                          virNetServerClientPtr client,
                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                           virNetMessageErrorPtr rerr,
                                           remote_domain_migrate_confirm3_params_args *args)
@@ -5798,7 +5798,7 @@ remoteDispatchDomainMigrateConfirm3Params(virNetServerPtr server ATTRIBUTE_UNUSE
 
 static int
 remoteDispatchConnectGetCPUModelNames(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                      virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                      virNetServerClientPtr client,
                                       virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                       virNetMessageErrorPtr rerr,
                                       remote_connect_get_cpu_model_names_args *args,
@@ -7179,7 +7179,7 @@ remoteDispatchStorageVolGetInfoFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
 
 static int
 remoteDispatchNetworkPortGetParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                       virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                       virNetServerClientPtr client,
                                        virNetMessagePtr msg ATTRIBUTE_UNUSED,
                                        virNetMessageErrorPtr rerr,
                                        remote_network_port_get_parameters_args *args,
