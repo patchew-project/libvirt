@@ -220,6 +220,14 @@ virXMLFormatElement(virBufferPtr buf,
                     virBufferPtr childBuf)
     ATTRIBUTE_RETURN_CHECK;
 
+xmlXPathContextPtr
+virXPathBuildContext(virBufferPtr root);
+
+char *
+virXPathRenameNode(const char *xpath,
+                   const char *newname,
+                   xmlXPathContextPtr ctxt);
+
 struct _virXPathContextNodeSave {
     xmlXPathContextPtr ctxt;
     xmlNodePtr node;

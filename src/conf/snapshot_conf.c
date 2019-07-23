@@ -243,6 +243,8 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
     char *memoryFile = NULL;
     bool offline = !!(flags & VIR_DOMAIN_SNAPSHOT_PARSE_OFFLINE);
     virSaveCookieCallbacksPtr saveCookie = virDomainXMLOptionGetSaveCookie(xmlopt);
+    int domainflags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                      VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
 
     if (!(def = virDomainSnapshotDefNew()))
         return NULL;
@@ -292,8 +294,6 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
          * clients will have to decide between best effort
          * initialization or outright failure.  */
         if ((tmp = virXPathString("string(./domain/@type)", ctxt))) {
-            int domainflags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
-                              VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
             xmlNodePtr domainNode = virXPathNode("./domain", ctxt);
 
             VIR_FREE(tmp);
@@ -308,6 +308,20 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
                 goto cleanup;
         } else {
             VIR_WARN("parsing older snapshot that lacks domain");
+        }
+
+        /* /inactiveDomain entry saves the config XML present in a running
+         * VM. In case of absent, leave parent.inactiveDom NULL and use
+         * parent.dom for config and live XML. */
+        if (virXPathString("string(./inactiveDomain/@type)", ctxt)) {
+            xmlNodePtr domainNode = virXPathNode("./inactiveDomain", ctxt);
+
+            if (domainNode) {
+                def->parent.inactiveDom = virDomainDefParseNode(ctxt->node->doc, domainNode,
+                                                                caps, xmlopt, NULL, domainflags);
+                if (!def->parent.inactiveDom)
+                    goto cleanup;
+            }
         }
     } else if (virDomainXMLOptionRunMomentPostParse(xmlopt, &def->parent) < 0) {
         goto cleanup;
@@ -845,6 +859,10 @@ virDomainSnapshotDefFormatInternal(virBufferPtr buf,
 {
     size_t i;
     int domainflags = VIR_DOMAIN_DEF_FORMAT_INACTIVE;
+    virBuffer inactivedom_buf = VIR_BUFFER_INITIALIZER;
+    xmlXPathContextPtr inactivedom_ctxt = NULL;
+    char *inactivedom_str = NULL;
+    int ret = -1;
 
     if (flags & VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE)
         domainflags |= VIR_DOMAIN_DEF_FORMAT_SECURE;
@@ -903,6 +921,20 @@ virDomainSnapshotDefFormatInternal(virBufferPtr buf,
         virBufferAddLit(buf, "</domain>\n");
     }
 
+    if (def->parent.inactiveDom) {
+        if (virDomainDefFormatInternal(def->parent.inactiveDom, caps,
+                                       domainflags, &inactivedom_buf, xmlopt) < 0)
+            goto error;
+
+        inactivedom_ctxt = virXPathBuildContext(&inactivedom_buf);
+        if (!(inactivedom_str = virXPathRenameNode("/domain", "inactiveDomain",
+                                                   inactivedom_ctxt)))
+            goto error;
+
+        virBufferAddStr(buf, inactivedom_str);
+        virBufferAddLit(buf, "\n");
+    }
+
     if (virSaveCookieFormatBuf(buf, def->cookie,
                                virDomainXMLOptionGetSaveCookie(xmlopt)) < 0)
         goto error;
@@ -917,11 +949,17 @@ virDomainSnapshotDefFormatInternal(virBufferPtr buf,
     if (virBufferCheckError(buf) < 0)
         goto error;
 
-    return 0;
+    ret = 0;
 
  error:
-    virBufferFreeAndReset(buf);
-    return -1;
+    VIR_FREE(inactivedom_str);
+    xmlXPathFreeContext(inactivedom_ctxt);
+    virBufferFreeAndReset(&inactivedom_buf);
+
+    if (ret < 0)
+        virBufferFreeAndReset(buf);
+
+    return ret;
 }
 
 

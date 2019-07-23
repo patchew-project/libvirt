@@ -1408,3 +1408,48 @@ virXPathContextNodeRestore(virXPathContextNodeSavePtr save)
 
     save->ctxt->node = save->node;
 }
+
+
+/**
+ * virXPathBuildContext: convert an parent buffer to an
+ * XPath context ptr. The caller has to free the ptr.
+ */
+xmlXPathContextPtr
+virXPathBuildContext(virBufferPtr root)
+{
+    xmlDocPtr doc;
+
+    if (!root)
+        return NULL;
+
+    doc = virXMLParseString(virBufferCurrentContent(root), NULL);
+    if (!doc)
+        return NULL;
+
+    return xmlXPathNewContext(doc);
+}
+
+
+/**
+ * virXPathRenameNode: get the XML node using the 'xpath' and
+ * rename it with the 'newname' string.
+ *
+ * Returns the XML string of the node found by 'xpath' or NULL
+ * on error. The caller has to free the string.
+ */
+char *
+virXPathRenameNode(const char *xpath,
+                   const char *newname,
+                   xmlXPathContextPtr ctxt)
+{
+    xmlNodePtr node;
+
+    if (!xpath || !newname || !ctxt)
+        return NULL;
+
+    if (!(node = virXPathNode(xpath, ctxt)))
+        return NULL;
+
+    xmlNodeSetName(node, (xmlChar *) newname);
+    return virXMLNodeToString(node->doc, node);
+}
