@@ -920,7 +920,7 @@ virConnectOpenInternal(const char *name,
                         goto failed;
                     VIR_DEBUG("%s driver URI probe returned '%s'",
                               virConnectDriverTab[i]->hypervisorDriver->name,
-                              NULLSTR_EMPTY(uristr));
+                              NULLSTR(uristr));
                 }
             }
         }
