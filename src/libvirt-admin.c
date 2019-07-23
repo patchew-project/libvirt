@@ -36,10 +36,6 @@
 
 #define VIR_FROM_THIS VIR_FROM_ADMIN
 
-#define LIBVIRTD_ADMIN_SOCK_NAME "libvirt-admin-sock"
-#define VIRTLOGD_ADMIN_SOCK_NAME "virtlogd-admin-sock"
-#define VIRTLOCKD_ADMIN_SOCK_NAME "virtlockd-admin-sock"
-
 
 VIR_LOG_INIT("libvirt-admin");
 
@@ -101,6 +97,7 @@ virAdmInitialize(void)
     return 0;
 }
 
+
 static char *
 getSocketPath(virURIPtr uri)
 {
@@ -127,27 +124,28 @@ getSocketPath(virURIPtr uri)
     }
 
     if (!sock_path) {
-        const char *sockbase = NULL;
-        if (STREQ_NULLABLE(uri->scheme, "libvirtd")) {
-            sockbase = LIBVIRTD_ADMIN_SOCK_NAME;
-        } else if (STREQ_NULLABLE(uri->scheme, "virtlogd")) {
-            sockbase = VIRTLOGD_ADMIN_SOCK_NAME;
-        } else if (STREQ_NULLABLE(uri->scheme, "virtlockd")) {
-            sockbase = VIRTLOCKD_ADMIN_SOCK_NAME;
-        } else {
+        bool legacy = false;
+        if (!uri->scheme) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "%s", _("No URI scheme specified"));
+            goto error;
+        }
+        if (STREQ(uri->scheme, "libvirtd")) {
+            legacy = true;
+        } else if (!STRPREFIX(uri->scheme, "virt")) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported URI scheme '%s'"),
-                           NULLSTR(uri->scheme));
+                           uri->scheme);
             goto error;
         }
 
         if (STREQ_NULLABLE(uri->path, "/system")) {
-            if (virAsprintf(&sock_path, LOCALSTATEDIR "/run/libvirt/%s",
-                            sockbase) < 0)
+            if (virAsprintf(&sock_path, LOCALSTATEDIR "/run/libvirt/%s-admin-sock",
+                            legacy ? "libvirt" : uri->scheme) < 0)
                 goto error;
         } else if (STREQ_NULLABLE(uri->path, "/session")) {
-            if (!rundir || virAsprintf(&sock_path, "%s/%s", rundir,
-                                       sockbase) < 0)
+            if (!rundir || virAsprintf(&sock_path, "%s/%s-admin-sock", rundir,
+                                       legacy ? "libvirt" : uri->scheme) < 0)
                 goto error;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
