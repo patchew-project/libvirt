@@ -808,8 +808,8 @@ qemuBlockJobSyncEnd(virDomainObjPtr vm,
         diskdst = job->disk->dst;
 
     VIR_DEBUG("disk=%s", NULLSTR(diskdst));
-    qemuBlockJobUpdate(vm, job, asyncJob);
     job->synchronous = false;
+    qemuBlockJobUpdate(vm, job, asyncJob);
 }
 
 
