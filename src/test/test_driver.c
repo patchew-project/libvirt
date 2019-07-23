@@ -2746,6 +2746,77 @@ testDomainAddIOThread(virDomainPtr dom,
 
 
 static int
+testDomainDelIOThread(virDomainPtr dom,
+                      unsigned int iothread_id,
+                      unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+    size_t i, j;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG, -1);
+
+    if (iothread_id == 0) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("invalid value of 0 for iothread_id"));
+        return -1;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (!virDomainIOThreadIDFind(def, iothread_id)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("cannot find IOThread '%u' in iothreadids list"),
+                       iothread_id);
+        goto cleanup;
+    }
+
+    for (i = 0; i < def->ndisks; i++) {
+        if (def->disks[i]->iothread == iothread_id) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("cannot remove IOThread %u since it "
+                             "is being used by disk '%s'"),
+                           iothread_id, def->disks[i]->dst);
+            goto cleanup;
+        }
+    }
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        if (def->controllers[i]->iothread == iothread_id) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("cannot remove IOThread '%u' since it "
+                             "is being used by controller"),
+                           iothread_id);
+            goto cleanup;
+        }
+    }
+
+    for (i = 0; i < def->niothreadids; i++) {
+        if (def->iothreadids[i]->iothread_id == iothread_id) {
+            for (j = i + 1; j < def->niothreadids; j++)
+                def->iothreadids[j]->autofill = false;
+
+            virDomainIOThreadIDDefFree(def->iothreadids[i]);
+            VIR_DELETE_ELEMENT(def->iothreadids, i, def->niothreadids);
+
+            break;
+        }
+    }
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
+static int
 testDomainSetUserPassword(virDomainPtr dom,
                           const char *user ATTRIBUTE_UNUSED,
                           const char *password ATTRIBUTE_UNUSED,
@@ -8095,6 +8166,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainCoreDump = testDomainCoreDump, /* 0.3.2 */
     .domainCoreDumpWithFormat = testDomainCoreDumpWithFormat, /* 1.2.3 */
     .domainAddIOThread = testDomainAddIOThread, /* 5.6.0 */
+    .domainDelIOThread = testDomainDelIOThread, /* 5.6.0 */
     .domainSetUserPassword = testDomainSetUserPassword, /* 5.6.0 */
     .domainSetVcpus = testDomainSetVcpus, /* 0.1.4 */
     .domainSetVcpusFlags = testDomainSetVcpusFlags, /* 0.8.5 */
