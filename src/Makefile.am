@@ -74,7 +74,6 @@ GENERATED_SYM_FILES =
 augeas_DATA =
 augeastest_DATA =
 conf_DATA =
-AUGEAS_DIRS =
 if WITH_DTRACE_PROBES
 tapset_DATA =
 endif WITH_DTRACE_PROBES
@@ -396,13 +395,18 @@ GENERATED_SYM_FILES += \
 
 
 
-
-
-
+AUG_TEST_NAMES = $(subst /,-, $(augeastest_DATA))
 
 check-local: check-augeas
 
-check-augeas: $(AUGEAS_DIRS:%=check-augeas-%)
+check-augeas: $(AUG_TEST_NAMES:%=check-augeas-%)
+
+check-augeas-%: $(augeas_DATA) $(augeastest_DATA)
+	$(AM_V_GEN)export FILE=`echo $* | sed -e 's/.*-//'`; \
+	export DIR=`echo $* | sed -e 's/-.*//'`; \
+	if test -x '$(AUGPARSE)'; then \
+	    '$(AUGPARSE)' -I $(srcdir)/$$DIR -I $(builddir)/$$DIR $$DIR/$$FILE; \
+	fi
 
 AUG_GENTEST = $(PERL) $(top_srcdir)/build-aux/augeas-gentest.pl
 
