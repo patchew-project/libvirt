@@ -15749,6 +15749,12 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     if (!(vm = qemuDomObjFromDomain(domain)))
         goto cleanup;
 
+    if (virDomainListCheckpoints(vm->checkpoints, NULL, domain, NULL, 0) > 0) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot create snapshot while checkpoint exists"));
+        goto cleanup;
+    }
+
     cfg = virQEMUDriverGetConfig(driver);
 
     if (virDomainSnapshotCreateXMLEnsureACL(domain->conn, vm->def, flags) < 0)
@@ -22329,6 +22335,12 @@ static int qemuDomainRename(virDomainPtr dom,
     if (virDomainSnapshotObjListNum(vm->snapshots, NULL, 0) > 0) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        "%s", _("cannot rename domain with snapshots"));
+        goto endjob;
+    }
+
+    if (virDomainListCheckpoints(vm->checkpoints, NULL, dom, NULL, flags) > 0) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("cannot rename domain with checkpoints"));
         goto endjob;
     }
 
