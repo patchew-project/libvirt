@@ -9255,48 +9255,97 @@ qemuDomainCheckpointDiscard(virQEMUDriverPtr driver,
                             bool update_parent,
                             bool metadata_only)
 {
-    char *chkFile = NULL;
-    int ret = -1;
-    virDomainMomentObjPtr parentchk = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    virDomainMomentObjPtr parent = NULL;
+    virDomainMomentObjPtr moment;
+    virDomainCheckpointDefPtr parentdef = NULL;
+    size_t i, j;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOFREE(char *) chkFile = NULL;
 
-    if (!metadata_only) {
-        if (!virDomainObjIsActive(vm)) {
-            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                           _("cannot remove checkpoint from inactive domain"));
-            goto cleanup;
-        } else {
-            /* TODO: Implement QMP sequence to merge bitmaps */
-            // qemuDomainObjPrivatePtr priv;
-            // priv = vm->privateData;
-            // qemuDomainObjEnterMonitor(driver, vm);
-            // /* we continue on even in the face of error */
-            // qemuMonitorDeleteCheckpoint(priv->mon, chk->def->name);
-            // ignore_value(qemuDomainObjExitMonitor(driver, vm));
-        }
+    if (!metadata_only && !virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot remove checkpoint from inactive domain"));
+        return -1;
     }
 
     if (virAsprintf(&chkFile, "%s/%s/%s.xml", cfg->checkpointDir,
                     vm->def->name, chk->def->name) < 0)
-        goto cleanup;
+        return -1;
+
+    if (!metadata_only) {
+        qemuDomainObjPrivatePtr priv = vm->privateData;
+        bool success = true;
+        bool search_parents;
+        virDomainCheckpointDefPtr chkdef = virDomainCheckpointObjGetDef(chk);
+
+        qemuDomainObjEnterMonitor(driver, vm);
+        parent = virDomainCheckpointFindByName(vm->checkpoints,
+                                               chk->def->parent_name);
+        for (i = 0; i < chkdef->ndisks; i++) {
+            virDomainCheckpointDiskDef *disk = &chkdef->disks[i];
+            const char *node;
+
+            if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+                continue;
+
+            node = qemuDomainDiskNodeFormatLookup(vm, disk->name);
+            /* If any ancestor checkpoint has a bitmap for the same
+             * disk, then this bitmap must be merged to the
+             * ancestor. */
+            search_parents = true;
+            for (moment = parent;
+                 search_parents && moment;
+                 moment = virDomainCheckpointFindByName(vm->checkpoints,
+                                                        parentdef->parent.parent_name)) {
+                parentdef = virDomainCheckpointObjGetDef(moment);
+                for (j = 0; j < parentdef->ndisks; j++) {
+                    virDomainCheckpointDiskDef *disk2;
+                    VIR_AUTOPTR(virJSONValue) arr = NULL;
+
+                    disk2 = &parentdef->disks[j];
+                    if (STRNEQ(disk->name, disk2->name) ||
+                        disk2->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+                        continue;
+                    search_parents = false;
+
+                    arr = virJSONValueNewArray();
+                    if (!arr ||
+                        virJSONValueArrayAppendString(arr, disk->bitmap) < 0) {
+                        success = false;
+                        break;
+                    }
+                    if (chk == virDomainCheckpointGetCurrent(vm->checkpoints) &&
+                        qemuMonitorEnableBitmap(priv->mon, node,
+                                                disk2->bitmap) < 0) {
+                        success = false;
+                        break;
+                    }
+                    if (qemuMonitorMergeBitmaps(priv->mon, node,
+                                                disk2->bitmap, &arr) < 0) {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+            if (qemuMonitorDeleteBitmap(priv->mon, node, disk->bitmap) < 0) {
+                success = false;
+                break;
+            }
+        }
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || !success)
+            return -1;
+    }
 
     if (chk == virDomainCheckpointGetCurrent(vm->checkpoints)) {
         virDomainCheckpointSetCurrent(vm->checkpoints, NULL);
-        if (update_parent && chk->def->parent_name) {
-            parentchk = virDomainCheckpointFindByName(vm->checkpoints,
-                                                      chk->def->parent_name);
-            if (!parentchk) {
-                VIR_WARN("missing parent checkpoint matching name '%s'",
+        if (update_parent && parent) {
+            virDomainCheckpointSetCurrent(vm->checkpoints, parent);
+            if (qemuDomainCheckpointWriteMetadata(vm, parent, driver->caps,
+                                                  driver->xmlopt,
+                                                  cfg->checkpointDir) < 0) {
+                VIR_WARN("failed to set parent checkpoint '%s' as current",
                          chk->def->parent_name);
-            } else {
-                virDomainCheckpointSetCurrent(vm->checkpoints, parentchk);
-                if (qemuDomainCheckpointWriteMetadata(vm, parentchk, driver->caps,
-                                                      driver->xmlopt,
-                                                      cfg->checkpointDir) < 0) {
-                    VIR_WARN("failed to set parent checkpoint '%s' as current",
-                             chk->def->parent_name);
-                    virDomainCheckpointSetCurrent(vm->checkpoints, NULL);
-                }
+                virDomainCheckpointSetCurrent(vm->checkpoints, NULL);
             }
         }
     }
@@ -9307,12 +9356,7 @@ qemuDomainCheckpointDiscard(virQEMUDriverPtr driver,
         virDomainMomentDropParent(chk);
     virDomainCheckpointObjListRemove(vm->checkpoints, chk);
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(chkFile);
-    virObjectUnref(cfg);
-    return ret;
+    return 0;
 }
 
 int
