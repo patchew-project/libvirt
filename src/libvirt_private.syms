@@ -430,6 +430,8 @@ virDomainHostdevSubsysTypeToString;
 virDomainHPTResizingTypeToString;
 virDomainHubTypeFromString;
 virDomainHubTypeToString;
+virDomainHypervStimerTypeFromString;
+virDomainHypervStimerTypeToString;
 virDomainHypervTypeFromString;
 virDomainHypervTypeToString;
 virDomainInputBusTypeToString;

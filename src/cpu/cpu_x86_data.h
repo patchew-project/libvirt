@@ -72,6 +72,8 @@ struct _virCPUx86MSR {
 #define VIR_CPU_x86_KVM_HV_IPI       "__kvm_hv_ipi"
 #define VIR_CPU_x86_KVM_HV_EVMCS     "__kvm_hv_evmcs"
 
+/* Hyper-V Synthetic Timer (virDomainHypervStimer) features */
+#define VIR_CPU_x86_KVM_HV_STIMER_DIRECT "__kvm_hv_stimer_direct"
 
 #define VIR_CPU_X86_DATA_INIT { 0 }
 

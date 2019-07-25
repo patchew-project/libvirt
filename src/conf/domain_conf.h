@@ -1764,6 +1764,12 @@ typedef enum {
 } virDomainHyperv;
 
 typedef enum {
+    VIR_DOMAIN_HYPERV_STIMER_DIRECT = 0,
+
+    VIR_DOMAIN_HYPERV_STIMER_LAST
+} virDomainHypervStimer;
+
+typedef enum {
     VIR_DOMAIN_KVM_HIDDEN = 0,
 
     VIR_DOMAIN_KVM_LAST
@@ -2400,6 +2406,7 @@ struct _virDomainDef {
     int kvm_features[VIR_DOMAIN_KVM_LAST];
     int msrs_features[VIR_DOMAIN_MSRS_LAST];
     unsigned int hyperv_spinlocks;
+    int hyperv_stimer_features[VIR_DOMAIN_HYPERV_STIMER_LAST];
     virGICVersion gic_version;
     virDomainHPTResizing hpt_resizing;
     unsigned long long hpt_maxpagesize; /* Stored in KiB */
@@ -3422,6 +3429,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceStreamingMode);
 VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode);
 VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy);
 VIR_ENUM_DECL(virDomainHyperv);
+VIR_ENUM_DECL(virDomainHypervStimer);
 VIR_ENUM_DECL(virDomainKVM);
 VIR_ENUM_DECL(virDomainMsrsUnknown);
 VIR_ENUM_DECL(virDomainRNGModel);

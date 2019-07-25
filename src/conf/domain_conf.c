@@ -199,6 +199,11 @@ VIR_ENUM_IMPL(virDomainHyperv,
               "evmcs",
 );
 
+VIR_ENUM_IMPL(virDomainHypervStimer,
+              VIR_DOMAIN_HYPERV_STIMER_LAST,
+              "direct",
+);
+
 VIR_ENUM_IMPL(virDomainKVM,
               VIR_DOMAIN_KVM_LAST,
               "hidden",
@@ -20383,6 +20388,51 @@ virDomainDefParseXML(xmlDocPtr xml,
         ctxt->node = node;
     }
 
+    if (def->features[VIR_DOMAIN_HYPERV_STIMER] == VIR_TRISTATE_SWITCH_ON) {
+        int feature;
+        int value;
+        if ((n = virXPathNodeSet("./features/hyperv/stimer/*", ctxt, &nodes)) < 0)
+            goto error;
+
+        for (i = 0; i < n; i++) {
+            feature = virDomainHypervStimerTypeFromString((const char *)nodes[i]->name);
+            if (feature < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported Hyper-V stimer feature: %s"),
+                               nodes[i]->name);
+                goto error;
+            }
+
+            switch ((virDomainHypervStimer) feature) {
+                case VIR_DOMAIN_HYPERV_STIMER_DIRECT:
+                    if (!(tmp = virXMLPropString(nodes[i], "state"))) {
+                        virReportError(VIR_ERR_XML_ERROR,
+                                       _("missing 'state' attribute for "
+                                         "Hyper-V stimer feature '%s'"),
+                                       nodes[i]->name);
+                        goto error;
+                    }
+
+                    if ((value = virTristateSwitchTypeFromString(tmp)) < 0) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                       _("invalid value of state argument "
+                                         "for Hyper-V stimer feature '%s'"),
+                                       nodes[i]->name);
+                        goto error;
+                    }
+
+                    VIR_FREE(tmp);
+                    def->hyperv_stimer_features[feature] = value;
+                    break;
+
+                /* coverity[dead_error_begin] */
+                case VIR_DOMAIN_HYPERV_STIMER_LAST:
+                    break;
+            }
+        }
+        VIR_FREE(nodes);
+    }
+
     if (def->features[VIR_DOMAIN_FEATURE_KVM] == VIR_TRISTATE_SWITCH_ON) {
         int feature;
         int value;
@@ -22602,6 +22652,29 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
 
             /* coverity[dead_error_begin] */
             case VIR_DOMAIN_HYPERV_LAST:
+                break;
+            }
+        }
+    }
+
+    if (src->hyperv_features[VIR_DOMAIN_HYPERV_STIMER] == VIR_TRISTATE_SWITCH_ON) {
+        for (i = 0; i < VIR_DOMAIN_HYPERV_STIMER_LAST; i++) {
+            switch ((virDomainHypervStimer) i) {
+            case VIR_DOMAIN_HYPERV_STIMER_DIRECT:
+                if (src->hyperv_stimer_features[i] != dst->hyperv_stimer_features[i]) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("State of HyperV stimer feature '%s' differs: "
+                                     "source: '%s', destination: '%s'"),
+                                   virDomainHypervStimerTypeToString(i),
+                                   virTristateSwitchTypeToString(src->hyperv_stimer_features[i]),
+                                   virTristateSwitchTypeToString(dst->hyperv_stimer_features[i]));
+                    return false;
+                }
+
+                break;
+
+                /* coverity[dead_error_begin] */
+            case VIR_DOMAIN_HYPERV_STIMER_LAST:
                 break;
             }
         }
@@ -28052,6 +28125,8 @@ virDomainDefFormatFeatures(virBufferPtr buf,
             virBufferAddLit(&childBuf, "<hyperv>\n");
             virBufferAdjustIndent(&childBuf, 2);
             for (j = 0; j < VIR_DOMAIN_HYPERV_LAST; j++) {
+                size_t k;
+
                 if (def->hyperv_features[j] == VIR_TRISTATE_SWITCH_ABSENT)
                     continue;
 
@@ -28066,35 +28141,76 @@ virDomainDefFormatFeatures(virBufferPtr buf,
                 case VIR_DOMAIN_HYPERV_VPINDEX:
                 case VIR_DOMAIN_HYPERV_RUNTIME:
                 case VIR_DOMAIN_HYPERV_SYNIC:
-                case VIR_DOMAIN_HYPERV_STIMER:
                 case VIR_DOMAIN_HYPERV_RESET:
                 case VIR_DOMAIN_HYPERV_FREQUENCIES:
                 case VIR_DOMAIN_HYPERV_REENLIGHTENMENT:
                 case VIR_DOMAIN_HYPERV_TLBFLUSH:
                 case VIR_DOMAIN_HYPERV_IPI:
                 case VIR_DOMAIN_HYPERV_EVMCS:
+                    virBufferAddLit(&childBuf, "/>\n");
+                    break;
+
+                case VIR_DOMAIN_HYPERV_STIMER:
+                    if (def->hyperv_features[j] != VIR_TRISTATE_SWITCH_ON) {
+                        virBufferAddLit(&childBuf, "/>\n");
+                        break;
+                    }
+
+                    for (k = 0; k < VIR_DOMAIN_HYPERV_STIMER_LAST; k++) {
+                        if (def->hyperv_stimer_features[k])
+                            break;
+                    }
+
+                    /* Omit long <stimer></stimer> form when no features are enabled */
+                    if (k == VIR_DOMAIN_HYPERV_STIMER_LAST) {
+                        virBufferAddLit(&childBuf, "/>\n");
+                        break;
+                    }
+
+                    virBufferAddLit(&childBuf, ">\n");
+                    virBufferAdjustIndent(&childBuf, 2);
+
+                    for (k = 0; k < VIR_DOMAIN_HYPERV_STIMER_LAST; k++) {
+                        switch ((virDomainHypervStimer) k) {
+                        case VIR_DOMAIN_HYPERV_STIMER_DIRECT:
+                            if (def->hyperv_stimer_features[k])
+                                virBufferAsprintf(&childBuf, "<%s state='%s'/>\n",
+                                          virDomainHypervStimerTypeToString(k),
+                                          virTristateSwitchTypeToString(
+                                              def->hyperv_stimer_features[k]));
+                            break;
+
+                            /* coverity[dead_error_begin] */
+                        case VIR_DOMAIN_HYPERV_STIMER_LAST:
+                            break;
+                        }
+                    }
+
+                    virBufferAdjustIndent(&childBuf, -2);
+                    virBufferAddLit(&childBuf, "</stimer>\n");
+
                     break;
 
                 case VIR_DOMAIN_HYPERV_SPINLOCKS:
-                    if (def->hyperv_features[j] != VIR_TRISTATE_SWITCH_ON)
-                        break;
-                    virBufferAsprintf(&childBuf, " retries='%d'",
-                                      def->hyperv_spinlocks);
+                    if (def->hyperv_features[j] == VIR_TRISTATE_SWITCH_ON) {
+                        virBufferAsprintf(&childBuf, " retries='%d'",
+                                          def->hyperv_spinlocks);
+                    }
+                    virBufferAddLit(&childBuf, "/>\n");
                     break;
 
                 case VIR_DOMAIN_HYPERV_VENDOR_ID:
-                    if (def->hyperv_features[j] != VIR_TRISTATE_SWITCH_ON)
-                        break;
-                    virBufferEscapeString(&childBuf, " value='%s'",
-                                          def->hyperv_vendor_id);
+                    if (def->hyperv_features[j] == VIR_TRISTATE_SWITCH_ON) {
+                        virBufferEscapeString(&childBuf, " value='%s'",
+                                              def->hyperv_vendor_id);
+                    }
+                    virBufferAddLit(&childBuf, "/>\n");
                     break;
 
                 /* coverity[dead_error_begin] */
                 case VIR_DOMAIN_HYPERV_LAST:
                     break;
                 }
-
-                virBufferAddLit(&childBuf, "/>\n");
             }
             virBufferAdjustIndent(&childBuf, -2);
             virBufferAddLit(&childBuf, "</hyperv>\n");
