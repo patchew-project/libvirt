@@ -1420,6 +1420,9 @@ static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "max-x86_64-cpu", virQEMUCapsObjectPropsMaxCPU,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsMaxCPU),
       QEMU_CAPS_X86_MAX_CPU },
+    { "max-arm-cpu", virQEMUCapsObjectPropsMaxCPU,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsMaxCPU),
+      QEMU_CAPS_ARM_MAX_CPU },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsMachinePropsPSeries[] = {
