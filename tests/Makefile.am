@@ -210,6 +210,7 @@ test_libraries = libshunload.la \
 	virpcimock.la \
 	virnetdevmock.la \
 	virrandommock.la \
+  virprocessmock.la \
 	virhostcpumock.la \
 	domaincapsmock.la \
 	virfilecachemock.la \
@@ -1181,6 +1182,12 @@ virrandommock_la_SOURCES = \
 	virrandommock.c
 virrandommock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
 virrandommock_la_LIBADD = $(MOCKLIBS_LIBS)
+
+virprocessmock_la_SOURCES = \
+  virprocessmock.c
+virprocessmock_la_CFLAGS = $(AM_CFLAGS)
+virprocessmock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
+virprocessmock_la_LIBADD = $(MOCKLIBS_LIBS)
 
 virhostcpumock_la_SOURCES = \
 	virhostcpumock.c
