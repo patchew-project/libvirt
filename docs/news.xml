@@ -56,6 +56,15 @@
     <section title="New features">
       <change>
         <summary>
+          qemu: Support Direct Mode for Hyper-V Synthetic timers
+        </summary>
+        <description>
+          The QEMU driver now supports Direct Mode for Hyper-V Synthetic timers
+          for Hyper-V guests.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Introduce a new video model of type 'bochs'
         </summary>
         <description>
