@@ -399,7 +399,7 @@ pci_device_new_from_stub(const struct pciDevice *data)
     make_file(devpath, "class", tmp, -1);
 
     if (snprintf(tmp, sizeof(tmp),
-                 "%s/../../../kernel/iommu_groups/%d",
+                 "%s/../../../../kernel/iommu_groups/%d",
                  devpath, dev->iommuGroup) < 0) {
         ABORT("@tmp overflow");
     }
@@ -407,7 +407,7 @@ pci_device_new_from_stub(const struct pciDevice *data)
         ABORT("Unable to create %s", tmp);
 
     if (snprintf(tmp, sizeof(tmp),
-                 "../../../kernel/iommu_groups/%d", dev->iommuGroup) < 0) {
+                 "../../../../kernel/iommu_groups/%d", dev->iommuGroup) < 0) {
         ABORT("@tmp overflow");
     }
     make_symlink(devpath, "iommu_group", tmp);
