@@ -165,6 +165,7 @@
   <flag name='bitmap-merge'/>
   <flag name='nbd-bitmap'/>
   <flag name='bochs-display'/>
+  <flag name='arm-max-cpu'/>
   <version>4000050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>61700759</microcodeVersion>
