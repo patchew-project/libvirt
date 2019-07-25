@@ -2520,6 +2520,13 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
         }
         cmd->infd = infd[0];
         cmd->inpipe = infd[1];
+        if (fcntl(cmd->inpipe, F_SETFL, O_NONBLOCK) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("fcntl failed to set O_NONBLOCK"));
+            cmd->has_error = -1;
+            ret = -1;
+            goto cleanup;
+        }
     } else if ((cmd->inbuf && cmd->infd == -1) ||
                (cmd->outbuf && cmd->outfdptr != &cmd->outfd) ||
                (cmd->errbuf && cmd->errfdptr != &cmd->errfd)) {
