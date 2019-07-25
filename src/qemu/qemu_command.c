@@ -7096,7 +7096,7 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
     int ret = -1;
     virBuffer cpu_buf = VIR_BUFFER_INITIALIZER;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-    size_t i;
+    size_t i, j;
 
     if (def->cpu &&
         (def->cpu->mode != VIR_CPU_MODE_CUSTOM || def->cpu->model)) {
@@ -7158,7 +7158,6 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
             case VIR_DOMAIN_HYPERV_VPINDEX:
             case VIR_DOMAIN_HYPERV_RUNTIME:
             case VIR_DOMAIN_HYPERV_SYNIC:
-            case VIR_DOMAIN_HYPERV_STIMER:
             case VIR_DOMAIN_HYPERV_RESET:
             case VIR_DOMAIN_HYPERV_FREQUENCIES:
             case VIR_DOMAIN_HYPERV_REENLIGHTENMENT:
@@ -7168,6 +7167,25 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
                 if (def->hyperv_features[i] == VIR_TRISTATE_SWITCH_ON)
                     virBufferAsprintf(&buf, ",hv_%s",
                                       virDomainHypervTypeToString(i));
+                break;
+
+            case VIR_DOMAIN_HYPERV_STIMER:
+                if (def->hyperv_features[i] == VIR_TRISTATE_SWITCH_ON)
+                    virBufferAsprintf(&buf, ",hv_%s",
+                                      virDomainHypervTypeToString(i));
+                for (j = 0; j < VIR_DOMAIN_HYPERV_STIMER_LAST; j++) {
+                    switch ((virDomainHypervStimer) j) {
+                    case VIR_DOMAIN_HYPERV_STIMER_DIRECT:
+                        if (def->hyperv_stimer_features[j] == VIR_TRISTATE_SWITCH_ON)
+                            virBufferAsprintf(&buf, ",hv_stimer_%s",
+                                              virDomainHypervStimerTypeToString(j));
+                        break;
+
+                        /* coverity[dead_error_begin] */
+                    case VIR_DOMAIN_HYPERV_STIMER_LAST:
+                        break;
+                    }
+                }
                 break;
 
             case VIR_DOMAIN_HYPERV_SPINLOCKS:

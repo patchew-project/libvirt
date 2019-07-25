@@ -4111,10 +4111,45 @@ qemuProcessVerifyHypervFeatures(virDomainDefPtr def,
         rc = virCPUDataCheckFeature(cpu, cpuFeature);
         VIR_FREE(cpuFeature);
 
-        if (rc < 0)
+        if (rc < 0) {
             return -1;
-        else if (rc == 1)
+        } else if (rc == 1) {
+            if ((i == VIR_DOMAIN_HYPERV_STIMER)) {
+                size_t j;
+
+                for (j = 0; j < VIR_DOMAIN_HYPERV_STIMER_LAST; j++) {
+                    switch ((virDomainHypervStimer) j) {
+                    case VIR_DOMAIN_HYPERV_STIMER_DIRECT:
+                        if (def->hyperv_stimer_features[j] != VIR_TRISTATE_SWITCH_ON)
+                            continue;
+
+                        if (virAsprintf(&cpuFeature, "__kvm_hv_stimer_%s",
+                                        virDomainHypervStimerTypeToString(j)) < 0)
+                            return -1;
+
+                        rc = virCPUDataCheckFeature(cpu, cpuFeature);
+                        VIR_FREE(cpuFeature);
+
+                        if (rc < 0)
+                            return -1;
+                        else if (rc == 1)
+                            continue;
+
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                       _("host doesn't support hyperv stimer '%s' feature"),
+                                       virDomainHypervStimerTypeToString(i));
+                        return -1;
+
+                        /* coverity[dead_error_begin] */
+                    case VIR_DOMAIN_HYPERV_STIMER_LAST:
+                        break;
+                    }
+                }
+
+            }
+
             continue;
+        }
 
         switch ((virDomainHyperv) i) {
         case VIR_DOMAIN_HYPERV_RELAXED:
