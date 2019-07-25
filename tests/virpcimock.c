@@ -978,8 +978,8 @@ init_env(void)
 
     MAKE_PCI_DRIVER("iwlwifi", 0x8086, 0x0044);
     MAKE_PCI_DRIVER("i915", 0x8086, 0x0046, 0x8086, 0x0047);
-    MAKE_PCI_DRIVER("pci-stub", -1, -1);
-    pci_driver_new("vfio-pci", PCI_ACTION_BIND, -1, -1);
+    pci_driver_new("pci-stub", PCI_ACTION_BIND, -1, -1);
+    MAKE_PCI_DRIVER("vfio-pci", -1, -1);
 
 # define MAKE_PCI_DEVICE(Id, Vendor, Device, ...) \
     do { \
