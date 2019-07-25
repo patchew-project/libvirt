@@ -1404,7 +1404,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendMemfd[] 
     { "hugetlb", QEMU_CAPS_OBJECT_MEMORY_MEMFD_HUGETLB },
 };
 
-static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMaxX86CPU[] = {
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMaxCPU[] = {
     { "unavailable-features", QEMU_CAPS_CPU_UNAVAILABLE_FEATURES },
 };
 
@@ -1415,8 +1415,8 @@ static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "memory-backend-memfd", virQEMUCapsObjectPropsMemoryBackendMemfd,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsMemoryBackendMemfd),
       QEMU_CAPS_OBJECT_MEMORY_MEMFD },
-    { "max-x86_64-cpu", virQEMUCapsObjectPropsMaxX86CPU,
-      ARRAY_CARDINALITY(virQEMUCapsObjectPropsMaxX86CPU),
+    { "max-x86_64-cpu", virQEMUCapsObjectPropsMaxCPU,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsMaxCPU),
       QEMU_CAPS_X86_MAX_CPU },
 };
 
