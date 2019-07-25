@@ -23,7 +23,9 @@
 
 #include "viralloc.h"
 #include "cpu.h"
+#include "cpu_map.h"
 #include "virstring.h"
+#include "virxml.h"
 
 #define VIR_FROM_THIS VIR_FROM_CPU
 
@@ -34,6 +36,153 @@ static const virArch archs[] = {
     VIR_ARCH_AARCH64,
 };
 
+typedef struct _virCPUarmFeature virCPUarmFeature;
+typedef virCPUarmFeature *virCPUarmFeaturePtr;
+struct _virCPUarmFeature {
+    char *name;
+};
+
+static virCPUarmFeaturePtr
+virCPUarmFeatureNew(void)
+{
+    virCPUarmFeaturePtr feature;
+
+    if (VIR_ALLOC(feature) < 0)
+        return NULL;
+
+    return feature;
+}
+
+static void
+virCPUarmFeatureFree(virCPUarmFeaturePtr feature)
+{
+    if (!feature)
+        return;
+
+    VIR_FREE(feature->name);
+    VIR_FREE(feature);
+}
+
+typedef struct _virCPUarmMap virCPUarmMap;
+typedef virCPUarmMap *virCPUarmMapPtr;
+struct _virCPUarmMap {
+    size_t nfeatures;
+    virCPUarmFeaturePtr *features;
+};
+
+static virCPUarmMapPtr
+virCPUarmMapNew(void)
+{
+    virCPUarmMapPtr map;
+
+    if (VIR_ALLOC(map) < 0)
+        return NULL;
+
+    return map;
+}
+
+static void
+virCPUarmMapFree(virCPUarmMapPtr map)
+{
+    size_t i;
+
+    if (!map)
+        return;
+
+    for (i = 0; i < map->nfeatures; i++)
+        virCPUarmFeatureFree(map->features[i]);
+    VIR_FREE(map->features);
+
+    VIR_FREE(map);
+}
+
+static virCPUarmFeaturePtr
+virCPUarmMapFeatureFind(virCPUarmMapPtr map,
+                        const char *name)
+{
+    size_t i;
+
+    for (i = 0; i < map->nfeatures; i++) {
+        if (STREQ(map->features[i]->name, name))
+            return map->features[i];
+    }
+
+    return NULL;
+}
+
+static int
+virCPUarmMapFeatureParse(xmlXPathContextPtr ctxt ATTRIBUTE_UNUSED,
+                         const char *name,
+                         void *data)
+{
+    virCPUarmMapPtr map = data;
+    virCPUarmFeaturePtr feature;
+    int ret = -1;
+
+    if (!(feature = virCPUarmFeatureNew()))
+        goto cleanup;
+
+    if (VIR_STRDUP(feature->name, name) < 0)
+        goto cleanup;
+
+    if (virCPUarmMapFeatureFind(map, feature->name)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("CPU feature %s already defined"), feature->name);
+        goto cleanup;
+    }
+
+    if (VIR_APPEND_ELEMENT(map->features, map->nfeatures, feature) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virCPUarmFeatureFree(feature);
+
+    return ret;
+}
+
+static virCPUarmMapPtr
+virCPUarmLoadMap(void)
+{
+    virCPUarmMapPtr map;
+
+    if (!(map = virCPUarmMapNew()))
+        goto error;
+
+    if (cpuMapLoad("arm", NULL, virCPUarmMapFeatureParse, NULL, map) < 0)
+        goto error;
+
+    return map;
+
+ error:
+    virCPUarmMapFree(map);
+
+    return NULL;
+}
+
+static virCPUarmMapPtr cpuMap;
+
+int virCPUarmDriverOnceInit(void);
+VIR_ONCE_GLOBAL_INIT(virCPUarmDriver);
+
+int
+virCPUarmDriverOnceInit(void)
+{
+    if (!(cpuMap = virCPUarmLoadMap()))
+        return -1;
+
+    return 0;
+}
+
+static virCPUarmMapPtr
+virCPUarmGetMap(void)
+{
+    if (virCPUarmDriverInitialize() < 0)
+        return NULL;
+
+    return cpuMap;
+}
 
 static int
 virCPUarmUpdate(virCPUDefPtr guest,
@@ -98,6 +247,27 @@ virCPUarmCompare(virCPUDefPtr host ATTRIBUTE_UNUSED,
     return VIR_CPU_COMPARE_IDENTICAL;
 }
 
+static int
+virCPUarmValidateFeatures(virCPUDefPtr cpu)
+{
+    virCPUarmMapPtr map;
+    size_t i;
+
+    if (!(map = virCPUarmGetMap()))
+        return -1;
+
+    for (i = 0; i < cpu->nfeatures; i++) {
+        if (!virCPUarmMapFeatureFind(map, cpu->features[i].name)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown CPU feature: %s"),
+                           cpu->features[i].name);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 struct cpuArchDriver cpuDriverArm = {
     .name = "arm",
     .arch = archs,
@@ -107,4 +277,5 @@ struct cpuArchDriver cpuDriverArm = {
     .encode = NULL,
     .baseline = virCPUarmBaseline,
     .update = virCPUarmUpdate,
+    .validateFeatures = virCPUarmValidateFeatures,
 };
