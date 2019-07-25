@@ -55,6 +55,46 @@ struct virHostdevIsPCINodeDeviceUsedData {
     const bool usesVFIO;
 };
 
+
+static virPCIDevicePtr
+virHostdevFindActivePCIDevWithAddr(virPCIDeviceAddressPtr devAddr,
+                                   virHostdevManagerPtr mgr)
+{
+    virPCIDevicePtr ret = NULL;
+
+    ret = virPCIDeviceListFindByIDs(mgr->activePCIHostdevs,
+                                    devAddr->domain, devAddr->bus,
+                                    devAddr->slot, devAddr->function);
+
+    return ret;
+}
+
+/* Callback to be used inside virHostdevIsPCINodeDeviceUsed to check
+ * for IOMMU ownership of a domain given by helperData->domainName. */
+static int
+virHostdevDomainHasIOMMUOwnershipCb(virPCIDeviceAddressPtr devAddr, void *opaque)
+{
+    struct virHostdevIsPCINodeDeviceUsedData *helperData = opaque;
+    virPCIDevicePtr actual;
+    int ret = 0;
+
+    actual = virHostdevFindActivePCIDevWithAddr(devAddr, helperData->mgr);
+    if (!actual)
+        return ret;
+
+    if (helperData->usesVFIO) {
+        const char *actual_drvname = NULL;
+        const char *actual_domname = NULL;
+        virPCIDeviceGetUsedBy(actual, &actual_drvname, &actual_domname);
+
+        if ((actual_domname && helperData->domainName) &&
+            (STRNEQ(actual_domname, helperData->domainName)))
+            ret = -1;
+    }
+
+    return ret;
+}
+
 /* This module makes heavy use of bookkeeping lists contained inside a
  * virHostdevManager instance to keep track of the devices' status. To make
  * it easy to spot potential ownership errors when moving devices from one
@@ -82,18 +122,12 @@ static int virHostdevIsPCINodeDeviceUsed(virPCIDeviceAddressPtr devAddr, void *o
     int ret = -1;
     struct virHostdevIsPCINodeDeviceUsedData *helperData = opaque;
 
-    actual = virPCIDeviceListFindByIDs(helperData->mgr->activePCIHostdevs,
-                                       devAddr->domain, devAddr->bus,
-                                       devAddr->slot, devAddr->function);
+    actual = virHostdevFindActivePCIDevWithAddr(devAddr, helperData->mgr);
+
     if (actual) {
         const char *actual_drvname = NULL;
         const char *actual_domname = NULL;
         virPCIDeviceGetUsedBy(actual, &actual_drvname, &actual_domname);
-
-        if (helperData->usesVFIO &&
-            (actual_domname && helperData->domainName) &&
-            (STREQ(actual_domname, helperData->domainName)))
-            goto iommu_owner;
 
         if (actual_drvname && actual_domname)
             virReportError(VIR_ERR_OPERATION_INVALID,
@@ -105,9 +139,20 @@ static int virHostdevIsPCINodeDeviceUsed(virPCIDeviceAddressPtr devAddr, void *o
             virReportError(VIR_ERR_OPERATION_INVALID,
                            _("PCI device %s is in use"),
                            virPCIDeviceGetName(actual));
+
         goto cleanup;
     }
- iommu_owner:
+
+    /* For VFIO devices, the domain helperData->domainName must have ownership
+     * of the IOMMU group that contains devAddr. Otherwise, even if the devAddr
+     * is not in use, another device of that IOMMU group is in use by anotherdomain,
+     * forbidding devAddr to be used in helperData->domainName. */
+    if (helperData->usesVFIO)
+        if (virPCIDeviceAddressIOMMUGroupIterate(devAddr,
+                                                 virHostdevDomainHasIOMMUOwnershipCb,
+                                                 helperData) < 0)
+            goto cleanup;
+
     ret = 0;
  cleanup:
     return ret;
@@ -673,17 +718,12 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
         /* The device is in use by other active domain if
          * the dev is in list activePCIHostdevs. VFIO devices
          * belonging to same iommu group can't be shared
-         * across guests.
+         * across guests. virHostdevIsPCINodeDeviceUsedData handles
+         * both cases.
          */
         devAddr = virPCIDeviceGetAddress(pci);
-        if (usesVFIO) {
-            if (virPCIDeviceAddressIOMMUGroupIterate(devAddr,
-                                                     virHostdevIsPCINodeDeviceUsed,
-                                                     &data) < 0)
-                goto cleanup;
-        } else if (virHostdevIsPCINodeDeviceUsed(devAddr, &data)) {
+        if (virHostdevIsPCINodeDeviceUsed(devAddr, &data))
             goto cleanup;
-        }
     }
 
     /* Step 1.5: For non-802.11Qbh SRIOV network devices, save the
