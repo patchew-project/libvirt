@@ -1499,14 +1499,9 @@ virSecuritySELinuxRestoreFileLabel(virSecurityManagerPtr mgr,
         goto cleanup;
     }
 
-    if ((rc = virSecuritySELinuxTransactionAppend(path, NULL,
-                                                  false, recall, true)) < 0) {
-        goto cleanup;
-    } else if (rc > 0) {
-        ret = 0;
-        goto cleanup;
-    }
-
+    /* Recall the label so the ref count label decreases its counter
+     * even if transaction append below fails.
+     */
     if (recall) {
         rc = virSecuritySELinuxRecallLabel(newpath, &fcon);
         if (rc == -2) {
@@ -1517,6 +1512,14 @@ virSecuritySELinuxRestoreFileLabel(virSecurityManagerPtr mgr,
             ret = 0;
             goto cleanup;
         }
+    }
+
+    if ((rc = virSecuritySELinuxTransactionAppend(path, NULL,
+                                                  false, recall, true)) < 0) {
+        goto cleanup;
+    } else if (rc > 0) {
+        ret = 0;
+        goto cleanup;
     }
 
     if (!recall || rc == -2) {
