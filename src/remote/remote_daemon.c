@@ -859,75 +859,75 @@ daemonSetupHostUUID(const struct daemonConfig *config)
     return 0;
 }
 
+typedef struct {
+    const char *opts;
+    const char *help;
+} virOptionHelp;
+
 /* Print command-line usage. */
 static void
 daemonUsage(const char *argv0, bool privileged)
 {
-    fprintf(stderr,
-            _("\n"
-              "Usage:\n"
-              "  %s [options]\n"
-              "\n"
-              "Options:\n"
-              "  -h | --help            Display program help:\n"
-              "  -v | --verbose         Verbose messages.\n"
-              "  -d | --daemon          Run as a daemon & write PID file.\n"
-              "  -l | --listen          Listen for TCP/IP connections.\n"
-              "  -t | --timeout <secs>  Exit after timeout period.\n"
-              "  -f | --config <file>   Configuration file.\n"
-              "  -V | --version         Display version information.\n"
-              "  -p | --pid-file <file> Change name of PID file.\n"
-              "\n"
-              "libvirt management daemon:\n"),
-            argv0);
+    size_t i;
+    virOptionHelp opthelp[] = {
+        { "-h | --help", N_("Display program help") },
+        { "-v | --verbose", N_("Verbose messages") },
+        { "-d | --daemon", N_("Run as a daemon & write PID file") },
+        { "-l | --listen", N_("Listen for TCP/IP connections") },
+        { "-t | --timeout <secs>", N_("Exit after timeout period") },
+        { "-f | --config <file>", N_("Configuration file") },
+        { "-V | --version", N_("Display version information") },
+        { "-p | --pid-file <file>", N_("Change name of PID file") },
+    };
 
-    if (privileged) {
-        fprintf(stderr,
-                _("\n"
-                  "  Default paths:\n"
-                  "\n"
-                  "    Configuration file (unless overridden by -f):\n"
-                  "      %s\n"
-                  "\n"
-                  "    Sockets:\n"
-                  "      %s\n"
-                  "      %s\n"
-                  "\n"
-                  "    TLS:\n"
-                  "      CA certificate:     %s\n"
-                  "      Server certificate: %s\n"
-                  "      Server private key: %s\n"
-                  "\n"
-                  "    PID file (unless overridden by -p):\n"
-                  "      %s/run/libvirtd.pid\n"
-                  "\n"),
-                LIBVIRTD_CONFIGURATION_FILE,
-                LIBVIRTD_PRIV_UNIX_SOCKET,
-                LIBVIRTD_PRIV_UNIX_SOCKET_RO,
-                LIBVIRT_CACERT,
-                LIBVIRT_SERVERCERT,
-                LIBVIRT_SERVERKEY,
-                LOCALSTATEDIR);
-    } else {
-        fprintf(stderr, "%s",
-                _("\n"
-                  "  Default paths:\n"
-                  "\n"
-                  "    Configuration file (unless overridden by -f):\n"
-                  "      $XDG_CONFIG_HOME/libvirt/libvirtd.conf\n"
-                  "\n"
-                  "    Sockets:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirt-sock\n"
-                  "\n"
-                  "    TLS:\n"
-                  "      CA certificate:     $HOME/.pki/libvirt/cacert.pem\n"
-                  "      Server certificate: $HOME/.pki/libvirt/servercert.pem\n"
-                  "      Server private key: $HOME/.pki/libvirt/serverkey.pem\n"
-                  "\n"
-                  "    PID file:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirtd.pid\n"
-                  "\n"));
-    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "%s:\n", _("Usage"));
+    fprintf(stderr, "  %s [%s]\n", argv0, _("options"));
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "%s:\n", _("Options"));
+    for (i = 0; i < ARRAY_CARDINALITY(opthelp); i++)
+        fprintf(stderr, "  %-22s %s\n", opthelp[i].opts, N_(opthelp[i].help));
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "%s:\n", _("libvirt management daemon"));
+
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  %s:\n", _("Default paths"));
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "    %s:\n", _("Configuration file (unless overridden by -f)"));
+    fprintf(stderr, "      %s/libvirt/libvirtd.conf\n",
+            privileged ? SYSCONFDIR : "$XDG_CONFIG_HOME");
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "    %s:\n", _("Sockets"));
+    fprintf(stderr, "      %s\n",
+            privileged ? LOCALSTATEDIR "/run/libvirt/libvirt-sock" :
+            "$XDG_RUNTIME_DIR/libvirt/libvirt-sock");
+    if (privileged)
+        fprintf(stderr, "      %s\n",
+                LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro");
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "    %s:\n", _("TLS"));
+    fprintf(stderr, "      %s: %s\n",
+            _("CA certificate"),
+            privileged ? LIBVIRT_CACERT : "$HOME/.pki/libvirt/cacert.pem");
+    fprintf(stderr, "      %s: %s\n",
+            _("Server certificate"),
+            privileged ? LIBVIRT_SERVERCERT : "$HOME/.pki/libvirt/servercert.pem");
+    fprintf(stderr, "      %s: %s\n",
+            _("Server private key"),
+            privileged ? LIBVIRT_SERVERKEY : "$HOME/.pki/libvirt/serverkey.pem");
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "    %s:\n",
+            _("PID file (unless overridden by -p)"));
+    fprintf(stderr, "      %s\n",
+            privileged ? LOCALSTATEDIR "/run/libvirtd.pid":
+            "$XDG_RUNTIME_DIR/libvirt/libvirtd.pid");
+    fprintf(stderr, "\n");
 }
 
 int main(int argc, char **argv) {
