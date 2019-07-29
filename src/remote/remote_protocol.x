@@ -53,6 +53,9 @@ typedef string remote_nonnull_string<REMOTE_STRING_MAX>;
 /* A long string, which may be NULL. */
 typedef remote_nonnull_string *remote_string;
 
+/* Upper limit on identity parameters */
+const REMOTE_CONNECT_IDENTITY_PARAMS_MAX = 20;
+
 /* Upper limit on lists of domains. */
 const REMOTE_DOMAIN_LIST_MAX = 16384;
 
@@ -3723,6 +3726,11 @@ struct remote_domain_checkpoint_delete_args {
     unsigned int flags;
 };
 
+struct remote_connect_set_identity_args {
+    remote_typed_param params<REMOTE_DOMAIN_BLOCK_IO_TUNE_PARAMETERS_MAX>;
+    unsigned int flags;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6538,7 +6546,7 @@ enum remote_procedure {
      */
     REMOTE_PROC_NETWORK_PORT_DELETE = 410,
 
-   /**
+    /**
      * @generate: both
      * @acl: domain:checkpoint
      * @acl: domain:fs_freeze:VIR_DOMAIN_CHECKPOINT_CREATE_QUIESCE
@@ -6584,5 +6592,11 @@ enum remote_procedure {
      * @generate: both
      * @acl: domain:checkpoint
      */
-    REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 417
+    REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 417,
+
+    /**
+     * @generate: client
+     * @acl: connect:write
+     */
+    REMOTE_PROC_CONNECT_SET_IDENTITY = 418
 };
