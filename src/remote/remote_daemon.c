@@ -221,19 +221,25 @@ daemonUnixSocketPaths(struct daemonConfig *config,
     char *rundir = NULL;
 
     if (config->unix_sock_dir) {
-        if (virAsprintf(sockfile, "%s/libvirt-sock", config->unix_sock_dir) < 0)
+        if (virAsprintf(sockfile, "%s/%s-sock",
+                        SOCK_PREFIX, config->unix_sock_dir) < 0)
             goto cleanup;
 
         if (privileged) {
-            if (virAsprintf(rosockfile, "%s/libvirt-sock-ro", config->unix_sock_dir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", config->unix_sock_dir) < 0)
+            if (virAsprintf(rosockfile, "%s/%s-sock-ro",
+                            SOCK_PREFIX, config->unix_sock_dir) < 0 ||
+                virAsprintf(admsockfile, "%s/%s-admin-sock",
+                            SOCK_PREFIX, config->unix_sock_dir) < 0)
                 goto cleanup;
         }
     } else {
         if (privileged) {
-            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock") < 0 ||
-                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro") < 0 ||
-                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/libvirt-admin-sock") < 0)
+            if (virAsprintf(sockfile, "%s/run/libvirt/%s-sock",
+                            LOCALSTATEDIR, SOCK_PREFIX) < 0 ||
+                virAsprintf(sockfile, "%s/run/libvirt/%s-sock-ro",
+                            LOCALSTATEDIR, SOCK_PREFIX) < 0 ||
+                virAsprintf(sockfile, "%s/run/libvirt/%s-admin-sock",
+                            LOCALSTATEDIR, SOCK_PREFIX) < 0)
                 goto cleanup;
         } else {
             mode_t old_umask;
@@ -248,8 +254,10 @@ daemonUnixSocketPaths(struct daemonConfig *config,
             }
             umask(old_umask);
 
-            if (virAsprintf(sockfile, "%s/libvirt-sock", rundir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", rundir) < 0)
+            if (virAsprintf(sockfile, "%s/%s-sock",
+                            rundir, SOCK_PREFIX) < 0 ||
+                virAsprintf(admsockfile, "%s/%s-admin-sock",
+                            rundir, SOCK_PREFIX) < 0)
                 goto cleanup;
         }
     }
@@ -902,12 +910,12 @@ daemonUsage(const char *argv0, bool privileged)
     fprintf(stderr, "\n");
 
     fprintf(stderr, "    %s:\n", _("Sockets"));
-    fprintf(stderr, "      %s\n",
-            privileged ? LOCALSTATEDIR "/run/libvirt/libvirt-sock" :
-            "$XDG_RUNTIME_DIR/libvirt/libvirt-sock");
+    fprintf(stderr, "      %s/libvirt/%s-sock\n",
+            privileged ? LOCALSTATEDIR "/run" : "$XDG_RUNTIME_DIR",
+            SOCK_PREFIX);
     if (privileged)
-        fprintf(stderr, "      %s\n",
-                LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro");
+        fprintf(stderr, "      %s/run/libvirt/%s-sock-ro\n",
+                LOCALSTATEDIR, SOCK_PREFIX);
     fprintf(stderr, "\n");
 
     fprintf(stderr, "    %s:\n", _("TLS"));
