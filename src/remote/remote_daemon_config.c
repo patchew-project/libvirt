@@ -108,7 +108,11 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
         return NULL;
 
 #ifdef ENABLE_IP
-    data->listen_tls = 1;
+# ifdef LIBVIRTD
+    data->listen_tls = 1; /* Only honoured it --listen is set */
+# else /* ! LIBVIRTD */
+    data->listen_tls = 0; /* Always honoured, --listen doesn't exist. */
+# endif /* ! LIBVIRTD */
     data->listen_tcp = 0;
 
     if (VIR_STRDUP(data->tls_port, LIBVIRTD_TLS_PORT) < 0 ||

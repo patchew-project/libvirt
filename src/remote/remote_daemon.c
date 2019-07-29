@@ -311,10 +311,16 @@ static int daemonErrorLogFilter(virErrorPtr err, int priority)
 
 static int daemonInitialize(void)
 {
-#ifdef MODULE_NAME
+#ifndef LIBVIRTD
+# ifdef MODULE_NAME
     /* This a dedicated per-driver daemon build */
     if (virDriverLoadModule(MODULE_NAME, MODULE_NAME "Register", true) < 0)
         return -1;
+# else
+    /* This is virtproxyd which merely proxies to the per-driver
+     * daemons for back compat, and also allows IP connectivity.
+     */
+# endif
 #else
     /* This is the legacy monolithic libvirtd built with all drivers
      *
@@ -906,9 +912,9 @@ daemonUsage(const char *argv0, bool privileged)
         { "-h | --help", N_("Display program help") },
         { "-v | --verbose", N_("Verbose messages") },
         { "-d | --daemon", N_("Run as a daemon & write PID file") },
-#ifdef ENABLE_IP
+#if defined(ENABLE_IP) && defined(LIBVIRTD)
         { "-l | --listen", N_("Listen for TCP/IP connections") },
-#endif /* ENABLE_IP */
+#endif /* ENABLE_IP && LIBVIRTD */
         { "-t | --timeout <secs>", N_("Exit after timeout period") },
         { "-f | --config <file>", N_("Configuration file") },
         { "-V | --version", N_("Display version information") },
@@ -985,7 +991,11 @@ int main(int argc, char **argv) {
     int verbose = 0;
     int godaemon = 0;
 #ifdef ENABLE_IP
+# ifdef LIBVIRTD
     int ipsock = 0;
+# else
+    int ipsock = 1; /* listen_tcp/listen_tls default to 0 */
+# endif
 #endif /* ! ENABLE_IP */
     struct daemonConfig *config;
     bool privileged = geteuid() == 0 ? true : false;
@@ -996,9 +1006,9 @@ int main(int argc, char **argv) {
     struct option opts[] = {
         { "verbose", no_argument, &verbose, 'v'},
         { "daemon", no_argument, &godaemon, 'd'},
-#ifdef ENABLE_IP
+#if defined(ENABLE_IP) && defined(LIBVIRTD)
         { "listen", no_argument, &ipsock, 'l'},
-#endif /* ! ENABLE_IP */
+#endif /* ENABLE_IP && LIBVIRTD */
         { "config", required_argument, NULL, 'f'},
         { "timeout", required_argument, NULL, 't'},
         { "pid-file", required_argument, NULL, 'p'},
@@ -1021,11 +1031,11 @@ int main(int argc, char **argv) {
         int optidx = 0;
         int c;
         char *tmp;
-#ifdef ENABLE_IP
+#if defined(ENABLE_IP) && defined(LIBVIRTD)
         const char *optstr = "ldf:p:t:vVh";
-#else /* ! ENABLE_IP */
+#else /* ! ENABLE_IP && ! LIBVIRTD */
         const char *optstr = "df:p:t:vVh";
-#endif /* ! ENABLE_IP */
+#endif /* ! ENABLE_IP && ! LIBVIRTD */
 
         c = getopt_long(argc, argv, optstr, opts, &optidx);
 
@@ -1043,7 +1053,7 @@ int main(int argc, char **argv) {
             godaemon = 1;
             break;
 
-#ifdef ENABLE_IP
+#if defined(ENABLE_IP) && defined(LIBVIRTD)
         case 'l':
             ipsock = 1;
             break;
