@@ -85,63 +85,6 @@ static int testIdentityAttrs(const void *data ATTRIBUTE_UNUSED)
 }
 
 
-static int testIdentityEqual(const void *data ATTRIBUTE_UNUSED)
-{
-    int ret = -1;
-    virIdentityPtr identa = NULL;
-    virIdentityPtr identb = NULL;
-
-    if (!(identa = virIdentityNew()))
-        goto cleanup;
-    if (!(identb = virIdentityNew()))
-        goto cleanup;
-
-    if (!virIdentityIsEqual(identa, identb)) {
-        VIR_DEBUG("Empty identities were not equal");
-        goto cleanup;
-    }
-
-    if (virIdentitySetOSUserName(identa, "fred") < 0)
-        goto cleanup;
-
-    if (virIdentityIsEqual(identa, identb)) {
-        VIR_DEBUG("Mis-matched identities should not be equal");
-        goto cleanup;
-    }
-
-    if (virIdentitySetOSUserName(identb, "fred") < 0)
-        goto cleanup;
-
-    if (!virIdentityIsEqual(identa, identb)) {
-        VIR_DEBUG("Matched identities were not equal");
-        goto cleanup;
-    }
-
-    if (virIdentitySetOSGroupName(identa, "flintstone") < 0)
-        goto cleanup;
-    if (virIdentitySetOSGroupName(identb, "flintstone") < 0)
-        goto cleanup;
-
-    if (!virIdentityIsEqual(identa, identb)) {
-        VIR_DEBUG("Matched identities were not equal");
-        goto cleanup;
-    }
-
-    if (virIdentitySetSASLUserName(identb, "fred@FLINTSTONE.COM") < 0)
-        goto cleanup;
-
-    if (virIdentityIsEqual(identa, identb)) {
-        VIR_DEBUG("Mis-matched identities should not be equal");
-        goto cleanup;
-    }
-
-    ret = 0;
- cleanup:
-    virObjectUnref(identa);
-    virObjectUnref(identb);
-    return ret;
-}
-
 static int testIdentityGetSystem(const void *data)
 {
     const char *context = data;
@@ -166,7 +109,8 @@ static int testIdentityGetSystem(const void *data)
         goto cleanup;
 
     if (STRNEQ_NULLABLE(val, context)) {
-        VIR_DEBUG("Unexpected SELinux context attribute");
+        VIR_DEBUG("Unexpected SELinux context attribute '%s' != '%s'",
+                  val, context);
         goto cleanup;
     }
 
@@ -203,8 +147,6 @@ mymain(void)
     int ret = 0;
 
     if (virTestRun("Identity attributes ", testIdentityAttrs, NULL) < 0)
-        ret = -1;
-    if (virTestRun("Identity equality ", testIdentityEqual, NULL) < 0)
         ret = -1;
     if (virTestRun("Setting fake SELinux context ", testSetFakeSELinuxContext, context) < 0)
         ret = -1;
