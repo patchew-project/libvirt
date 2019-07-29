@@ -257,29 +257,29 @@ adminClientGetInfo(virNetServerClientPtr client,
         pid_t pid;
         uid_t uid;
         gid_t gid;
-        if (virIdentityGetUNIXUserID(identity, &uid) < 0 ||
+        if (virIdentityGetOSUserID(identity, &uid) < 0 ||
             virTypedParamsAddInt(&tmpparams, nparams, &maxparams,
                                  VIR_CLIENT_INFO_UNIX_USER_ID, uid) < 0)
             goto cleanup;
 
-        if (virIdentityGetUNIXUserName(identity, &attr) < 0 ||
+        if (virIdentityGetOSUserName(identity, &attr) < 0 ||
             virTypedParamsAddString(&tmpparams, nparams, &maxparams,
                                     VIR_CLIENT_INFO_UNIX_USER_NAME,
                                     attr) < 0)
             goto cleanup;
 
-        if (virIdentityGetUNIXGroupID(identity, &gid) < 0 ||
+        if (virIdentityGetOSGroupID(identity, &gid) < 0 ||
             virTypedParamsAddInt(&tmpparams, nparams, &maxparams,
                                  VIR_CLIENT_INFO_UNIX_GROUP_ID, gid) < 0)
             goto cleanup;
 
-        if (virIdentityGetUNIXGroupName(identity, &attr) < 0 ||
+        if (virIdentityGetOSGroupName(identity, &attr) < 0 ||
             virTypedParamsAddString(&tmpparams, nparams, &maxparams,
                                     VIR_CLIENT_INFO_UNIX_GROUP_NAME,
                                     attr) < 0)
             goto cleanup;
 
-        if (virIdentityGetUNIXProcessID(identity, &pid) < 0 ||
+        if (virIdentityGetOSProcessID(identity, &pid) < 0 ||
             virTypedParamsAddInt(&tmpparams, nparams, &maxparams,
                                  VIR_CLIENT_INFO_UNIX_PROCESS_ID, pid) < 0)
             goto cleanup;

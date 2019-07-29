@@ -88,19 +88,19 @@ virAccessDriverPolkitGetCaller(const char *actionid,
         return -1;
     }
 
-    if (virIdentityGetUNIXProcessID(identity, pid) < 0) {
+    if (virIdentityGetOSProcessID(identity, pid) < 0) {
         virAccessError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("No UNIX process ID available"));
+                       _("No OS process ID available"));
         goto cleanup;
     }
-    if (virIdentityGetUNIXProcessTime(identity, startTime) < 0) {
+    if (virIdentityGetOSProcessTime(identity, startTime) < 0) {
         virAccessError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("No UNIX process start time available"));
+                       _("No OS process start time available"));
         goto cleanup;
     }
-    if (virIdentityGetUNIXUserID(identity, uid) < 0) {
+    if (virIdentityGetOSUserID(identity, uid) < 0) {
         virAccessError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("No UNIX caller UID available"));
+                       _("No OS caller UID available"));
         goto cleanup;
     }
 

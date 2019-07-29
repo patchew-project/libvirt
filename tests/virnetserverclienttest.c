@@ -86,7 +86,7 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
     }
 
     if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_UNIX_USER_NAME,
+                           VIR_IDENTITY_ATTR_OS_USER_NAME,
                            &gotUsername) < 0) {
         fprintf(stderr, "Missing username in identity\n");
         goto cleanup;
@@ -98,7 +98,7 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
     }
 
     if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_UNIX_USER_ID,
+                           VIR_IDENTITY_ATTR_OS_USER_ID,
                            &gotUserID) < 0) {
         fprintf(stderr, "Missing user ID in identity\n");
         goto cleanup;
@@ -110,7 +110,7 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
     }
 
     if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_UNIX_GROUP_NAME,
+                           VIR_IDENTITY_ATTR_OS_GROUP_NAME,
                            &gotGroupname) < 0) {
         fprintf(stderr, "Missing groupname in identity\n");
         goto cleanup;
@@ -122,7 +122,7 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
     }
 
     if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_UNIX_GROUP_ID,
+                           VIR_IDENTITY_ATTR_OS_GROUP_ID,
                            &gotGroupID) < 0) {
         fprintf(stderr, "Missing group ID in identity\n");
         goto cleanup;
