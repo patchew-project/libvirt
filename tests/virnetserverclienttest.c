@@ -53,9 +53,9 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
     virNetServerClientPtr client = NULL;
     virIdentityPtr ident = NULL;
     const char *gotUsername = NULL;
-    const char *gotUserID = NULL;
+    uid_t gotUserID;
     const char *gotGroupname = NULL;
-    const char *gotGroupID = NULL;
+    gid_t gotGroupID;
     const char *gotSELinuxContext = NULL;
 
     if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) < 0) {
@@ -85,9 +85,8 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-    if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_OS_USER_NAME,
-                           &gotUsername) < 0) {
+    if (virIdentityGetOSUserName(ident,
+                                 &gotUsername) < 0) {
         fprintf(stderr, "Missing username in identity\n");
         goto cleanup;
     }
@@ -97,21 +96,19 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-    if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_OS_USER_ID,
-                           &gotUserID) < 0) {
+    if (virIdentityGetOSUserID(ident,
+                               &gotUserID) < 0) {
         fprintf(stderr, "Missing user ID in identity\n");
         goto cleanup;
     }
-    if (STRNEQ_NULLABLE("666", gotUserID)) {
-        fprintf(stderr, "Want username '666' got '%s'\n",
-                NULLSTR(gotUserID));
+    if (666 != gotUserID) {
+        fprintf(stderr, "Want username '666' got '%llu'\n",
+                (unsigned long long)gotUserID);
         goto cleanup;
     }
 
-    if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_OS_GROUP_NAME,
-                           &gotGroupname) < 0) {
+    if (virIdentityGetOSGroupName(ident,
+                                  &gotGroupname) < 0) {
         fprintf(stderr, "Missing groupname in identity\n");
         goto cleanup;
     }
@@ -121,27 +118,25 @@ static int testIdentity(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-    if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_OS_GROUP_ID,
-                           &gotGroupID) < 0) {
+    if (virIdentityGetOSGroupID(ident,
+                                &gotGroupID) < 0) {
         fprintf(stderr, "Missing group ID in identity\n");
         goto cleanup;
     }
-    if (STRNEQ_NULLABLE("7337", gotGroupID)) {
-        fprintf(stderr, "Want groupname '7337' got '%s'\n",
-                NULLSTR(gotGroupID));
+    if (7337 != gotGroupID) {
+        fprintf(stderr, "Want groupname '7337' got '%llu'\n",
+                (unsigned long long)gotGroupID);
         goto cleanup;
     }
 
-    if (virIdentityGetAttr(ident,
-                           VIR_IDENTITY_ATTR_SELINUX_CONTEXT,
-                           &gotSELinuxContext) < 0) {
+    if (virIdentityGetSELinuxContext(ident,
+                                     &gotSELinuxContext) < 0) {
         fprintf(stderr, "Missing SELinux context in identity\n");
         goto cleanup;
     }
     if (STRNEQ_NULLABLE("foo_u:bar_r:wizz_t:s0-s0:c0.c1023", gotSELinuxContext)) {
-        fprintf(stderr, "Want groupname 'foo_u:bar_r:wizz_t:s0-s0:c0.c1023' got '%s'\n",
-                NULLSTR(gotGroupID));
+        fprintf(stderr, "Want SELinux context 'foo_u:bar_r:wizz_t:s0-s0:c0.c1023' got '%s'\n",
+                NULLSTR(gotSELinuxContext));
         goto cleanup;
     }
 

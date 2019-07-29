@@ -2136,7 +2136,6 @@ virHostMemSetParameters;
 
 
 # util/viridentity.h
-virIdentityGetAttr;
 virIdentityGetCurrent;
 virIdentityGetOSGroupID;
 virIdentityGetOSGroupName;
@@ -2150,7 +2149,6 @@ virIdentityGetSystem;
 virIdentityGetX509DName;
 virIdentityIsEqual;
 virIdentityNew;
-virIdentitySetAttr;
 virIdentitySetCurrent;
 virIdentitySetOSGroupID;
 virIdentitySetOSGroupName;
