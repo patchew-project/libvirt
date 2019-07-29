@@ -49,10 +49,34 @@
 #include "virauth.h"
 #include "virauthconfig.h"
 #include "virstring.h"
+#include "c-ctype.h"
 
 #define VIR_FROM_THIS VIR_FROM_REMOTE
 
 VIR_LOG_INIT("remote.remote_driver");
+
+typedef enum {
+    REMOTE_DRIVER_TRANSPORT_TLS,
+    REMOTE_DRIVER_TRANSPORT_UNIX,
+    REMOTE_DRIVER_TRANSPORT_SSH,
+    REMOTE_DRIVER_TRANSPORT_LIBSSH2,
+    REMOTE_DRIVER_TRANSPORT_EXT,
+    REMOTE_DRIVER_TRANSPORT_TCP,
+    REMOTE_DRIVER_TRANSPORT_LIBSSH,
+
+    REMOTE_DRIVER_TRANSPORT_LAST,
+} remoteDriverTransport;
+
+VIR_ENUM_DECL(remoteDriverTransport);
+VIR_ENUM_IMPL(remoteDriverTransport,
+              REMOTE_DRIVER_TRANSPORT_LAST,
+              "tls",
+              "unix",
+              "ssh",
+              "libssh2",
+              "ext",
+              "tcp",
+              "libssh");
 
 #if SIZEOF_LONG < 8
 # define HYPER_TO_TYPE(_type, _to, _from) \
@@ -176,10 +200,17 @@ static int remoteSplitURIScheme(virURIPtr uri,
     if (VIR_STRNDUP(*driver, uri->scheme, p ? p - uri->scheme : -1) < 0)
         return -1;
 
-    if (p &&
-        VIR_STRDUP(*transport, p + 1) < 0) {
-        VIR_FREE(*driver);
-        return -1;
+    if (p) {
+        if (VIR_STRDUP(*transport, p + 1) < 0) {
+            VIR_FREE(*driver);
+            return -1;
+        }
+
+        p = *transport;
+        while (*p) {
+            *p = c_tolower(*p);
+            p++;
+        }
     }
 
     return 0;
@@ -778,15 +809,7 @@ doRemoteOpen(virConnectPtr conn,
              virConfPtr conf,
              unsigned int flags)
 {
-    enum {
-        trans_tls,
-        trans_unix,
-        trans_ssh,
-        trans_libssh2,
-        trans_ext,
-        trans_tcp,
-        trans_libssh,
-    } transport;
+    int transport;
 #ifndef WIN32
     VIR_AUTOFREE(char *) daemonPath = NULL;
 #endif
@@ -815,42 +838,29 @@ doRemoteOpen(virConnectPtr conn,
     if (conn->uri) {
         if (!transport_str) {
             if (conn->uri->server)
-                transport = trans_tls;
+                transport = REMOTE_DRIVER_TRANSPORT_TLS;
             else
-                transport = trans_unix;
+                transport = REMOTE_DRIVER_TRANSPORT_UNIX;
         } else {
-            if (STRCASEEQ(transport_str, "tls")) {
-                transport = trans_tls;
-            } else if (STRCASEEQ(transport_str, "unix")) {
-                if (conn->uri->server) {
-                    virReportError(VIR_ERR_INVALID_ARG,
-                                   _("using unix socket and remote "
-                                     "server '%s' is not supported."),
-                                   conn->uri->server);
-                    return VIR_DRV_OPEN_ERROR;
-                } else {
-                    transport = trans_unix;
-                }
-            } else if (STRCASEEQ(transport_str, "ssh")) {
-                transport = trans_ssh;
-            } else if (STRCASEEQ(transport_str, "libssh2")) {
-                transport = trans_libssh2;
-            } else if (STRCASEEQ(transport_str, "ext")) {
-                transport = trans_ext;
-            } else if (STRCASEEQ(transport_str, "tcp")) {
-                transport = trans_tcp;
-            } else if (STRCASEEQ(transport_str, "libssh")) {
-                transport = trans_libssh;
-            } else {
+            if ((transport = remoteDriverTransportTypeFromString(transport_str)) < 0) {
                 virReportError(VIR_ERR_INVALID_ARG, "%s",
                                _("remote_open: transport in URL not recognised "
                                  "(should be tls|unix|ssh|ext|tcp|libssh2|libssh)"));
                 return VIR_DRV_OPEN_ERROR;
             }
+
+            if (transport == REMOTE_DRIVER_TRANSPORT_UNIX &&
+                conn->uri->server) {
+                virReportError(VIR_ERR_INVALID_ARG,
+                               _("using unix socket and remote "
+                                 "server '%s' is not supported."),
+                               conn->uri->server);
+                return VIR_DRV_OPEN_ERROR;
+            }
         }
     } else {
         /* No URI, then must be probing so use UNIX socket */
-        transport = trans_unix;
+        transport = REMOTE_DRIVER_TRANSPORT_UNIX;
     }
 
     /*
@@ -861,7 +871,7 @@ doRemoteOpen(virConnectPtr conn,
      * not require any external libraries or command execution
      */
     if (virIsSUID() &&
-        transport != trans_unix) {
+        transport != REMOTE_DRIVER_TRANSPORT_UNIX) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Only Unix socket URI transport is allowed in setuid mode"));
         return VIR_DRV_OPEN_ERROR;
@@ -872,10 +882,10 @@ doRemoteOpen(virConnectPtr conn,
     if (conn->uri && conn->uri->port != 0) {
         if (virAsprintf(&port, "%d", conn->uri->port) < 0)
             goto failed;
-    } else if (transport == trans_tls) {
+    } else if (transport == REMOTE_DRIVER_TRANSPORT_TLS) {
         if (VIR_STRDUP(port, LIBVIRTD_TLS_PORT) < 0)
             goto failed;
-    } else if (transport == trans_tcp) {
+    } else if (transport == REMOTE_DRIVER_TRANSPORT_TCP) {
         if (VIR_STRDUP(port, LIBVIRTD_TCP_PORT) < 0)
             goto failed;
     } /* Port not used for unix, ext., default for ssh */
@@ -959,7 +969,7 @@ doRemoteOpen(virConnectPtr conn,
     VIR_DEBUG("proceeding with name = %s", name);
 
     /* For ext transport, command is required. */
-    if (transport == trans_ext && !command) {
+    if (transport == REMOTE_DRIVER_TRANSPORT_EXT && !command) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("remote_open: for 'ext' transport, command is required"));
         goto failed;
@@ -967,8 +977,8 @@ doRemoteOpen(virConnectPtr conn,
 
     VIR_DEBUG("Connecting with transport %d", transport);
     /* Connect to the remote service. */
-    switch (transport) {
-    case trans_tls:
+    switch ((remoteDriverTransport)transport) {
+    case REMOTE_DRIVER_TRANSPORT_TLS:
         if (conf && !tls_priority &&
             virConfGetValueString(conf, "tls_priority", &tls_priority) < 0)
             goto failed;
@@ -991,7 +1001,7 @@ doRemoteOpen(virConnectPtr conn,
         goto failed;
 #endif
 
-    case trans_tcp:
+    case REMOTE_DRIVER_TRANSPORT_TCP:
         priv->client = virNetClientNewTCP(priv->hostname, port, AF_UNSPEC);
         if (!priv->client)
             goto failed;
@@ -1006,7 +1016,7 @@ doRemoteOpen(virConnectPtr conn,
 
         break;
 
-    case trans_libssh2:
+    case REMOTE_DRIVER_TRANSPORT_LIBSSH2:
         if (!sockname) {
             /* Right now we don't support default session connections */
             if (flags & VIR_DRV_OPEN_REMOTE_USER) {
@@ -1041,7 +1051,7 @@ doRemoteOpen(virConnectPtr conn,
         priv->is_secure = 1;
         break;
 
-    case trans_libssh:
+    case REMOTE_DRIVER_TRANSPORT_LIBSSH:
         if (!sockname) {
             /* Right now we don't support default session connections */
             if (flags & VIR_DRV_OPEN_REMOTE_USER) {
@@ -1077,7 +1087,7 @@ doRemoteOpen(virConnectPtr conn,
         break;
 
 #ifndef WIN32
-    case trans_unix:
+    case REMOTE_DRIVER_TRANSPORT_UNIX:
         if (!sockname) {
             if (flags & VIR_DRV_OPEN_REMOTE_USER)
                 sockname = remoteGetUNIXSocketNonRoot();
@@ -1103,7 +1113,7 @@ doRemoteOpen(virConnectPtr conn,
         priv->is_secure = 1;
         break;
 
-    case trans_ssh:
+    case REMOTE_DRIVER_TRANSPORT_SSH:
         if (!command && VIR_STRDUP(command, "ssh") < 0)
             goto failed;
 
@@ -1135,7 +1145,7 @@ doRemoteOpen(virConnectPtr conn,
         priv->is_secure = 1;
         break;
 
-    case trans_ext: {
+    case REMOTE_DRIVER_TRANSPORT_EXT: {
         char const *cmd_argv[] = { command, NULL };
         if (!(priv->client = virNetClientNewExternal(cmd_argv)))
             goto failed;
@@ -1147,15 +1157,20 @@ doRemoteOpen(virConnectPtr conn,
 
 #else /* WIN32 */
 
-    case trans_unix:
-    case trans_ssh:
-    case trans_ext:
+    case REMOTE_DRIVER_TRANSPORT_UNIX:
+    case REMOTE_DRIVER_TRANSPORT_SSH:
+    case REMOTE_DRIVER_TRANSPORT_EXT:
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("transport methods unix, ssh and ext are not supported "
                          "under Windows"));
         goto failed;
 
 #endif /* WIN32 */
+
+    case REMOTE_DRIVER_TRANSPORT_LAST:
+    default:
+        virReportEnumRangeError(remoteDriverTransport, transport);
+        goto failed;
     } /* switch (transport) */
 
 
