@@ -37,6 +37,12 @@ typedef int
 (*virDrvConnectClose)(virConnectPtr conn);
 
 typedef int
+(*virDrvConnectSetIdentity)(virConnectPtr conn,
+                            virTypedParameterPtr params,
+                            int nparams,
+                            unsigned int flags);
+
+typedef int
 (*virDrvConnectSupportsFeature)(virConnectPtr conn,
                                 int feature);
 
@@ -1378,6 +1384,7 @@ struct _virHypervisorDriver {
     virDrvConnectURIProbe connectURIProbe;
     virDrvConnectOpen connectOpen;
     virDrvConnectClose connectClose;
+    virDrvConnectSetIdentity connectSetIdentity;
     virDrvConnectSupportsFeature connectSupportsFeature;
     virDrvConnectGetType connectGetType;
     virDrvConnectGetVersion connectGetVersion;

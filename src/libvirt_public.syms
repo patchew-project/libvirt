@@ -838,6 +838,7 @@ LIBVIRT_5.5.0 {
 
 LIBVIRT_5.6.0 {
     global:
+        virConnectSetIdentity;
         virDomainCheckpointCreateXML;
         virDomainCheckpointDelete;
         virDomainCheckpointFree;
