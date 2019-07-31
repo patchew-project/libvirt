@@ -86,6 +86,16 @@
           snapshot-create --validate</code>.
         </description>
       </change>
+      <change>
+        <summary>
+          Support encrypted soft tpm
+        </summary>
+        <description>
+          A soft tpm backend could be encrypted with passphrase. Now libvirt
+          supports to use <code>secret</code> object to hold the passphrase,
+          and refers it via <code>encryption</code> element in tpm device.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
