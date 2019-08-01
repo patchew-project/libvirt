@@ -7485,3 +7485,44 @@ remoteSerializeDomainDiskErrors(virDomainDiskErrorPtr errors,
     }
     return -1;
 }
+
+static int
+remoteDispatchDomainGetGuestInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                 virNetServerClientPtr client,
+                                 virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                 virNetMessageErrorPtr rerr,
+                                 remote_domain_get_guest_info_args *args,
+                                 remote_domain_get_guest_info_ret *ret)
+{
+    int rv = -1;
+    struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
+    virDomainPtr dom = NULL;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+
+    if (!priv->conn) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(dom = get_nonnull_domain(priv->conn, args->dom)))
+        goto cleanup;
+
+    if (virDomainGetGuestInfo(dom, args->types, &params, &nparams, args->flags) < 0)
+        goto cleanup;
+
+    if (virTypedParamsSerialize(params, nparams,
+                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                &ret->params.params_len,
+                                VIR_TYPED_PARAM_STRING_OKAY) < 0)
+        goto cleanup;
+
+    rv = 0;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    virObjectUnref(dom);
+
+    return rv;
+}
