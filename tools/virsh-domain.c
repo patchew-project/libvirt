@@ -14038,6 +14038,53 @@ cmdDomFSInfo(vshControl *ctl, const vshCmd *cmd)
     return ret;
 }
 
+/*
+ * "guestinfo" command
+ */
+static const vshCmdInfo info_guestinfo[] = {
+    {.name = "help",
+     .data = N_("query information about the guest (via agent)")
+    },
+    {.name = "desc",
+     .data = N_("Use the guest agent to query various information from guest's "
+                "point of view")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_guestinfo[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
+    {.name = NULL}
+};
+
+static bool
+cmdGuestInfo(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom;
+    bool ret = false;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    int i;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if (virDomainGetGuestInfo(dom, 0, &params, &nparams, 0) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nparams; i++) {
+        char *str = vshGetTypedParamValue(ctl, &params[i]);
+        vshPrint(ctl, "%-20s: %s\n", params[i].field, str);
+        VIR_FREE(str);
+    }
+
+    ret = true;
+
+cleanup:
+    virshDomainFree(dom);
+    return ret;
+}
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -14651,6 +14698,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdDomblkthreshold,
      .opts = opts_domblkthreshold,
      .info = info_domblkthreshold,
+     .flags = 0
+    },
+    {.name = "guestinfo",
+     .handler = cmdGuestInfo,
+     .opts = opts_guestinfo,
+     .info = info_guestinfo,
      .flags = 0
     },
     {.name = NULL}
