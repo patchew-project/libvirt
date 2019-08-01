@@ -4487,6 +4487,13 @@ testDomainDetachDeviceFlags(virDomainPtr dom,
                                               xml, NULL, flags);
 }
 
+static int
+testDomainDetachDevice(virDomainPtr dom,
+                       const char *xml)
+{
+    return testDomainDetachDeviceFlags(dom, xml, VIR_DOMAIN_AFFECT_LIVE);
+}
+
 
 static int testDomainGetAutostart(virDomainPtr domain,
                                   int *autostart)
@@ -9136,6 +9143,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainUndefineFlags = testDomainUndefineFlags, /* 0.9.4 */
     .domainAttachDevice = testDomainAttachDevice, /* 5.7.0 */
     .domainAttachDeviceFlags = testDomainAttachDeviceFlags, /* 5.7.0 */
+    .domainDetachDevice = testDomainDetachDevice, /* 5.7.0 */
     .domainDetachDeviceFlags = testDomainDetachDeviceFlags, /* 5.7.0 */
     .domainGetAutostart = testDomainGetAutostart, /* 0.3.2 */
     .domainSetAutostart = testDomainSetAutostart, /* 0.3.2 */
