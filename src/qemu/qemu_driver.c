@@ -23061,6 +23061,82 @@ qemuDomainGetLaunchSecurityInfo(virDomainPtr domain,
     return ret;
 }
 
+static unsigned int supportedGuestInfoTypes =
+    VIR_DOMAIN_GUEST_INFO_USERS |
+    VIR_DOMAIN_GUEST_INFO_OS |
+    VIR_DOMAIN_GUEST_INFO_TIMEZONE |
+    VIR_DOMAIN_GUEST_INFO_HOSTNAME;
+
+static void
+qemuDomainGetGuestInfoCheckSupport(unsigned int *types)
+{
+    if (*types == 0)
+        *types = supportedGuestInfoTypes;
+
+    *types = *types & supportedGuestInfoTypes;
+}
+
+static int
+qemuDomainGetGuestInfo(virDomainPtr dom,
+                       unsigned int types,
+                       virTypedParameterPtr *params,
+                       int *nparams,
+                       unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    qemuAgentPtr agent;
+    int ret = -1;
+    int rv = -1;
+    int maxparams = 0;
+    char *hostname = NULL;
+
+    virCheckFlags(0, ret);
+    qemuDomainGetGuestInfoCheckSupport(&types);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainGetGuestInfoEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_QUERY) < 0)
+        goto cleanup;
+
+    if (!qemuDomainAgentAvailable(vm, true))
+        goto endjob;
+
+    agent = qemuDomainObjEnterAgent(vm);
+    if ((types & VIR_DOMAIN_GUEST_INFO_USERS) &&
+        qemuAgentGetUsers(agent, params, nparams, &maxparams) < 0)
+        goto exitagent;
+    if ((types & VIR_DOMAIN_GUEST_INFO_OS) &&
+        qemuAgentGetOSInfo(agent, params, nparams, &maxparams) < 0)
+        goto exitagent;
+    if ((types & VIR_DOMAIN_GUEST_INFO_TIMEZONE) &&
+        qemuAgentGetTimezone(agent, params, nparams, &maxparams) < 0)
+        goto exitagent;
+    if ((types & VIR_DOMAIN_GUEST_INFO_HOSTNAME) &&
+        qemuAgentGetHostname(agent, &hostname) < 0)
+        goto exitagent;
+    if (virTypedParamsAddString(params, nparams, &maxparams, "hostname",
+                                hostname) < 0)
+        goto exitagent;
+
+    rv = 0;
+
+exitagent:
+    qemuDomainObjExitAgent(vm, agent);
+
+ endjob:
+    qemuDomainObjEndAgentJob(vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    VIR_FREE(hostname);
+    return rv;
+}
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -23296,6 +23372,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainCheckpointLookupByName = qemuDomainCheckpointLookupByName, /* 5.6.0 */
     .domainCheckpointGetParent = qemuDomainCheckpointGetParent, /* 5.6.0 */
     .domainCheckpointDelete = qemuDomainCheckpointDelete, /* 5.6.0 */
+    .domainGetGuestInfo = qemuDomainGetGuestInfo, /* 5.6.0 */
 };
 
 
