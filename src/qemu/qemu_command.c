@@ -5613,6 +5613,9 @@ qemuBuildHostdevMediatedDevStr(const virDomainDef *def,
     if (qemuBuildDeviceAddressStr(&buf, def, dev->info, qemuCaps) < 0)
         goto cleanup;
 
+    if (dev->info->bootIndex)
+        virBufferAsprintf(&buf, ",bootindex=%u", dev->info->bootIndex);
+
     if (virBufferCheckError(&buf) < 0)
         goto cleanup;
 
@@ -5622,6 +5625,22 @@ qemuBuildHostdevMediatedDevStr(const virDomainDef *def,
     VIR_FREE(mdevPath);
     virBufferFreeAndReset(&buf);
     return ret;
+}
+
+static bool
+qemuHostdevSupportsBoot(virDomainHostdevDefPtr hostdev)
+{
+    if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+        virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
+        if (subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI ||
+            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB ||
+            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI ||
+            (subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV &&
+            subsys->u.mdev.model == VIR_MDEV_MODEL_TYPE_VFIO_CCW)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static int
@@ -5638,13 +5657,11 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
         char *devstr;
 
         if (hostdev->info->bootIndex) {
-            if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS ||
-                (subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
-                 subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB &&
-                 subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI)) {
+            if (!qemuHostdevSupportsBoot(hostdev)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("booting from assigned devices is only "
-                                 "supported for PCI, USB and SCSI devices"));
+                                 "supported for PCI, USB, SCSI and MDEV "
+                                 "of model vfio-ccw devices"));
                 return -1;
             }
         }
