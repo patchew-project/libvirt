@@ -4713,6 +4713,10 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
             if (video->heads)
                 virBufferAsprintf(&buf, ",max_outputs=%u", video->heads);
         }
+
+        if (video->xres && video->yres)
+            virBufferAsprintf(&buf, ",xres=%u,yres=%u", video->xres, video->yres);
+
     } else if (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_GPU_MAX_OUTPUTS)) {
             if (video->heads)
