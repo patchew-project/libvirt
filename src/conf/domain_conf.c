@@ -15360,6 +15360,8 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) ram = NULL;
     VIR_AUTOFREE(char *) vgamem = NULL;
     VIR_AUTOFREE(char *) primary = NULL;
+    VIR_AUTOFREE(char *) xres = NULL;
+    VIR_AUTOFREE(char *) yres = NULL;
 
     if (!(def = virDomainVideoDefNew()))
         return NULL;
@@ -15377,6 +15379,8 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
                 vram64 = virXMLPropString(cur, "vram64");
                 vgamem = virXMLPropString(cur, "vgamem");
                 heads = virXMLPropString(cur, "heads");
+                xres = virXMLPropString(cur, "xres");
+                yres = virXMLPropString(cur, "yres");
 
                 if ((primary = virXMLPropString(cur, "primary")) != NULL) {
                     if (STREQ(primary, "yes"))
@@ -15455,6 +15459,24 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
         if (virStrToLong_uip(heads, NULL, 10, &def->heads) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot parse video heads '%s'"), heads);
+            goto error;
+        }
+    }
+
+    if (xres && yres) {
+        if (def->type != VIR_DOMAIN_VIDEO_TYPE_QXL) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("xres and yres attribute only supported for type of qxl"));
+            goto error;
+        }
+        if (virStrToLong_uip(xres, NULL, 10, &def->xres) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("cannot parse video xres '%s'"), xres);
+            goto error;
+        }
+        if (virStrToLong_uip(yres, NULL, 10, &def->yres) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("cannot parse video yres '%s'"), yres);
             goto error;
         }
     }
@@ -26427,6 +26449,10 @@ virDomainVideoDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, " vgamem='%u'", def->vgamem);
     if (def->heads)
         virBufferAsprintf(buf, " heads='%u'", def->heads);
+    if (def->xres)
+        virBufferAsprintf(buf, " xres='%u'", def->xres);
+    if (def->yres)
+        virBufferAsprintf(buf, " yres='%u'", def->yres);
     if (def->primary)
         virBufferAddLit(buf, " primary='yes'");
     if (def->accel) {

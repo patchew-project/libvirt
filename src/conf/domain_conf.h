@@ -1419,6 +1419,8 @@ struct _virDomainVideoDef {
     unsigned int vram64; /* kibibytes (multiples of 1024) */
     unsigned int vgamem; /* kibibytes (multiples of 1024) */
     unsigned int heads;
+    unsigned int xres;
+    unsigned int yres;
     bool primary;
     virDomainVideoAccelDefPtr accel;
     virDomainVideoDriverDefPtr driver;
