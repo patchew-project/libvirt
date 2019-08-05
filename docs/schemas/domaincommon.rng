@@ -3606,6 +3606,16 @@
                   <ref name="unsignedInt"/>
                 </attribute>
               </optional>
+              <optional>
+                <attribute name="xres">
+                  <ref name="unsignedInt"/>
+                </attribute>
+              </optional>
+              <optional>
+                <attribute name="yres">
+                  <ref name="unsignedInt"/>
+                </attribute>
+              </optional>
             </group>
           </choice>
           <optional>
