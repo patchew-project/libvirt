@@ -392,6 +392,11 @@ struct _testDomainObjPrivate {
     testDriverPtr driver;
 
     bool frozen[2]; /* used by file system related calls */
+
+
+    /* used by get/set time APIs */
+    long long seconds;
+    unsigned int nseconds;
 };
 
 
@@ -405,6 +410,9 @@ testDomainObjPrivateAlloc(void *opaque)
 
     priv->driver = opaque;
     priv->frozen[0] = priv->frozen[1] = false;
+
+    priv->seconds = 627319920;
+    priv->nseconds = 0;
 
     return priv;
 }
@@ -2082,6 +2090,7 @@ testDomainGetTime(virDomainPtr dom,
                   unsigned int flags)
 {
     virDomainObjPtr vm = NULL;
+    testDomainObjPrivatePtr priv;
     int ret = -1;
 
     virCheckFlags(0, -1);
@@ -2095,8 +2104,39 @@ testDomainGetTime(virDomainPtr dom,
         goto cleanup;
     }
 
-    *seconds = 627319920;
-    *nseconds = 0;
+    priv = vm->privateData;
+
+    *seconds = priv->seconds;
+    *nseconds = priv->nseconds;
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
+static int
+testDomainSetTime(virDomainPtr dom,
+                  long long seconds,
+                  unsigned int nseconds,
+                  unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    testDomainObjPrivatePtr priv;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_TIME_SYNC, ret);
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto cleanup;
+
+    priv = vm->privateData;
+    priv->seconds = seconds;
+    priv->nseconds = nseconds;
 
     ret = 0;
  cleanup:
@@ -8891,6 +8931,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainGetInfo = testDomainGetInfo, /* 0.1.1 */
     .domainGetState = testDomainGetState, /* 0.9.2 */
     .domainGetTime = testDomainGetTime, /* 5.4.0 */
+    .domainSetTime = testDomainSetTime, /* 5.7.0 */
     .domainSave = testDomainSave, /* 0.3.2 */
     .domainSaveFlags = testDomainSaveFlags, /* 0.9.4 */
     .domainRestore = testDomainRestore, /* 0.3.2 */
