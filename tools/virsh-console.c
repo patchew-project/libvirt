@@ -172,10 +172,6 @@ virConsoleEventOnStream(virStreamPtr st,
         if (got == -2)
             goto cleanup; /* blocking */
         if (got <= 0) {
-            if (got == 0)
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("console stream EOF"));
-
             virConsoleShutdown(con);
             goto cleanup;
         }
