@@ -834,7 +834,7 @@ qemuExtTPMCleanupHost(virDomainDefPtr def)
 static int
 qemuExtTPMStartEmulator(virQEMUDriverPtr driver,
                         virDomainObjPtr vm,
-                        qemuDomainLogContextPtr logCtxt,
+                        qemuDomainLogContextPtr logCtxt ATTRIBUTE_UNUSED,
                         bool incomingMigration)
 {
     int ret = -1;
@@ -863,7 +863,7 @@ qemuExtTPMStartEmulator(virQEMUDriverPtr driver,
                                             incomingMigration)))
         goto cleanup;
 
-    if (qemuExtDeviceLogCommand(logCtxt, cmd, "TPM Emulator") < 0)
+    if (qemuExtDeviceLogCommand(driver, vm, cmd, "TPM Emulator") < 0)
         goto cleanup;
 
     virCommandSetErrorBuffer(cmd, &errbuf);
