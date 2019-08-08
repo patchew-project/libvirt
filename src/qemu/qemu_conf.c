@@ -216,6 +216,9 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         if (virAsprintf(&cfg->swtpmStateDir, "%s/swtpm", cfg->stateDir) < 0)
             goto error;
 
+        if (virAsprintf(&cfg->slirpStateDir, "%s/slirp", cfg->stateDir) < 0)
+            goto error;
+
         if (!(cfg->configBaseDir = virGetUserConfigDirectory()))
             goto error;
 
@@ -335,6 +338,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->swtpmLogDir);
     VIR_FREE(cfg->stateDir);
     VIR_FREE(cfg->swtpmStateDir);
+    VIR_FREE(cfg->slirpStateDir);
 
     VIR_FREE(cfg->libDir);
     VIR_FREE(cfg->cacheDir);
