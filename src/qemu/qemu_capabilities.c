@@ -536,6 +536,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 335 */
               "bochs-display",
+              "net-socket-dgram",
     );
 
 
@@ -4388,6 +4389,11 @@ virQEMUCapsInitQMPVersionCaps(virQEMUCapsPtr qemuCaps)
     if (qemuCaps->version >= 2010000 &&
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT);
+    }
+
+    /* -net socket,fd= with dgram socket (for ex, with slirp helper) */
+    if (qemuCaps->version >= 3001092) {
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_NET_SOCKET_DGRAM);
     }
 }
 
