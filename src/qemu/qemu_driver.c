@@ -6971,6 +6971,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
                            bool start_paused,
                            qemuDomainAsyncJob asyncJob)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     int ret = -1;
     bool restored = false;
     virObjectEventPtr event;
@@ -7010,6 +7011,9 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     if (cookie &&
         qemuDomainFixupCPUs(vm, &cookie->cpu) < 0)
         goto cleanup;
+
+    if (!cookie->slirpHelper)
+        priv->disableSlirp = true;
 
     if (qemuProcessStart(conn, driver, vm, cookie ? cookie->cpu : NULL,
                          asyncJob, "stdio", *fd, path, NULL,
@@ -16654,6 +16658,10 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                 virCPUDefFree(priv->origCPU);
                 VIR_STEAL_PTR(priv->origCPU, origCPU);
             }
+
+            if (cookie && !cookie->slirpHelper)
+                priv->disableSlirp = true;
+
         } else {
             /* Transitions 2, 3 */
         load:

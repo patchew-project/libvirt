@@ -2652,6 +2652,24 @@ qemuDomainHasSlirp(virDomainObjPtr vm)
 }
 
 
+static bool
+qemuDomainGetSlirpHelperOk(virDomainObjPtr vm)
+{
+    size_t i;
+
+    for (i = 0; i < vm->def->nnets; i++) {
+        virDomainNetDefPtr net = vm->def->nets[i];
+
+        /* if there is a builtin slirp, prevent slirp-helper */
+        if (net->type == VIR_DOMAIN_NET_TYPE_USER &&
+            !QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp)
+            return false;
+    }
+
+    return true;
+}
+
+
 static int
 qemuDomainObjPrivateXMLFormatSlirp(virBufferPtr buf,
                                    virDomainObjPtr vm)
@@ -14546,7 +14564,7 @@ qemuDomainSaveCookieDispose(void *obj)
 
 
 qemuDomainSaveCookiePtr
-qemuDomainSaveCookieNew(virDomainObjPtr vm ATTRIBUTE_UNUSED)
+qemuDomainSaveCookieNew(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuDomainSaveCookiePtr cookie = NULL;
@@ -14560,7 +14578,10 @@ qemuDomainSaveCookieNew(virDomainObjPtr vm ATTRIBUTE_UNUSED)
     if (priv->origCPU && !(cookie->cpu = virCPUDefCopy(vm->def->cpu)))
         goto error;
 
-    VIR_DEBUG("Save cookie %p, cpu=%p", cookie, cookie->cpu);
+    cookie->slirpHelper = qemuDomainGetSlirpHelperOk(vm);
+
+    VIR_DEBUG("Save cookie %p, cpu=%p, slirpHelper=%d",
+              cookie, cookie->cpu, cookie->slirpHelper);
 
     return cookie;
 
@@ -14586,6 +14607,8 @@ qemuDomainSaveCookieParse(xmlXPathContextPtr ctxt ATTRIBUTE_UNUSED,
                           &cookie->cpu) < 0)
         goto error;
 
+    cookie->slirpHelper = virXPathBoolean("boolean(./slirpHelper)", ctxt) > 0;
+
     *obj = (virObjectPtr) cookie;
     return 0;
 
@@ -14604,6 +14627,9 @@ qemuDomainSaveCookieFormat(virBufferPtr buf,
     if (cookie->cpu &&
         virCPUDefFormatBufFull(buf, cookie->cpu, NULL) < 0)
         return -1;
+
+    if (cookie->slirpHelper)
+        virBufferAddLit(buf, "<slirpHelper/>\n");
 
     return 0;
 }
