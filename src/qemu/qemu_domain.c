@@ -26,6 +26,7 @@
 #include "qemu_block.h"
 #include "qemu_cgroup.h"
 #include "qemu_command.h"
+#include "qemu_dbus.h"
 #include "qemu_process.h"
 #include "qemu_capabilities.h"
 #include "qemu_migration.h"
@@ -1961,6 +1962,14 @@ qemuDomainSetPrivatePaths(virQEMUDriverPtr driver,
 }
 
 
+static void
+dbusVMStateHashFree(void *opaque,
+                    const void *name ATTRIBUTE_UNUSED)
+{
+    qemuDBusVMStateFree(opaque);
+}
+
+
 static void *
 qemuDomainObjPrivateAlloc(void *opaque)
 {
@@ -1979,6 +1988,9 @@ qemuDomainObjPrivateAlloc(void *opaque)
         goto error;
 
     if (!(priv->blockjobs = virHashCreate(5, virObjectFreeHashData)))
+        goto error;
+
+    if (!(priv->dbusVMStates = virHashCreate(5, dbusVMStateHashFree)))
         goto error;
 
     priv->migMaxBandwidth = QEMU_DOMAIN_MIG_BANDWIDTH_MAX;
@@ -2052,6 +2064,7 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
     qemuDomainObjResetAsyncJob(priv);
 
     virHashRemoveAll(priv->blockjobs);
+    virHashRemoveAll(priv->dbusVMStates);
 }
 
 
@@ -2084,6 +2097,7 @@ qemuDomainObjPrivateFree(void *data)
     qemuDomainMasterKeyFree(priv);
 
     virHashFree(priv->blockjobs);
+    virHashFree(priv->dbusVMStates);
 
     VIR_FREE(priv);
 }
