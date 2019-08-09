@@ -7212,6 +7212,19 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
                     virBufferAddLit(&buf, ",kvm=off");
                 break;
 
+            case VIR_DOMAIN_KVM_DEDICATED:
+                if (def->kvm_features[i] == VIR_TRISTATE_SWITCH_ON) {
+                    if (def->cpu && def->cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH) {
+                        virBufferAddLit(&buf, ",kvm-hint-dedicated=on");
+                    } else {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                _("kvm-hint-dedicated=on is only applicable when "
+                                  "<cpu mode=\"host-passthrough\" .../> is in effect"));
+                        goto cleanup;
+                    }
+                }
+                break;
+
             /* coverity[dead_error_begin] */
             case VIR_DOMAIN_KVM_LAST:
                 break;
