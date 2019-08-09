@@ -1236,7 +1236,7 @@ virAdmConnectSetLoggingFilters(virAdmConnectPtr conn,
 {
     int ret = -1;
 
-    VIR_DEBUG("conn=%p, flags=0x%x", conn, flags);
+    VIR_DEBUG("conn=%p, filters=%s, flags=0x%x", conn, filters, flags);
 
     virResetLastError();
     virCheckAdmConnectReturn(conn, -1);
