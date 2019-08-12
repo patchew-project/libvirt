@@ -97,8 +97,10 @@ unsigned int virTestGetRegenerate(void);
 
 #define VIR_TEST_VERBOSE(...) \
     do { \
-        if (virTestGetVerbose()) \
+        if (virTestGetVerbose()) { \
             fprintf(stderr, __VA_ARGS__); \
+            fprintf(stderr, "\n"); \
+        } \
     } while (0)
 
 char *virTestLogContentAndReset(void);
