@@ -38,9 +38,8 @@ VIR_LOG_INIT("tests.hostdevtest");
     do { \
         size_t actualCount; \
         if ((actualCount = cb(list)) != cnt) { \
-            virReportError(VIR_ERR_INTERNAL_ERROR, \
-                           "Unexpected count of items in " #list ": %zu, " \
-                           "expecting %zu", actualCount, (size_t) cnt); \
+            fprintf(stderr, "Unexpected count of items in " #list ": %zu, " \
+                    "expecting %zu", actualCount, (size_t) cnt); \
             return -1; \
         } \
     } while (0)
