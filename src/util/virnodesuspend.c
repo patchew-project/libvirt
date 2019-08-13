@@ -238,9 +238,8 @@ int virNodeSuspend(unsigned int target,
 static int
 virNodeSuspendSupportsTargetPMUtils(unsigned int target, bool *supported)
 {
-    virCommandPtr cmd;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int status;
-    int ret = -1;
 
     *supported = false;
 
@@ -259,18 +258,14 @@ virNodeSuspendSupportsTargetPMUtils(unsigned int target, bool *supported)
     }
 
     if (virCommandRun(cmd, &status) < 0)
-        goto cleanup;
+        return -1;
 
    /*
     * Check return code of command == 0 for success
     * (i.e., the PM capability is supported)
     */
     *supported = (status == 0);
-    ret = 0;
-
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 #else /* ! WITH_PM_UTILS */
 static int
