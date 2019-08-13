@@ -25,6 +25,7 @@
 #include "virfile.h"
 #include "virstring.h"
 #include "viralloc.h"
+#include "vircommand.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -148,9 +149,24 @@ virMediatedDeviceNew(const char *uuidstr, virMediatedDeviceModelType model)
         return NULL;
 
     if (!virFileExists(sysfspath)) {
-        virReportError(VIR_ERR_DEVICE_MISSING,
-                       _("mediated device '%s' not found"), uuidstr);
-        return NULL;
+        bool activated = false;
+        /* if the mdev device path doesn't exist, we may still be able to start
+         * the device using mdevctl
+         */
+        char *mdevctl = virFindFileInPath("mdevctl");
+        if (mdevctl) {
+            const char *runargs[] = { mdevctl, "start", "-u", uuidstr, NULL };
+            if (virRun(runargs, NULL) == 0) {
+                /* check to see if it the device exists now */
+                activated = virFileExists(sysfspath);
+            }
+        }
+
+        if (!activated) {
+            virReportError(VIR_ERR_DEVICE_MISSING,
+                           _("mediated device '%s' not found"), uuidstr);
+            return NULL;
+        }
     }
 
     if (VIR_ALLOC(dev) < 0)
