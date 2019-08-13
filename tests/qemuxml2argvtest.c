@@ -1621,6 +1621,10 @@ mymain(void)
             QEMU_CAPS_CCW,
             QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
             QEMU_CAPS_DEVICE_VFIO_CCW);
+    DO_TEST("hostdev-subsys-mdev-vfio-ccw-boot",
+            QEMU_CAPS_CCW,
+            QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
+            QEMU_CAPS_DEVICE_VFIO_CCW);
     DO_TEST_FAILURE("hostdev-subsys-mdev-vfio-ccw",
             QEMU_CAPS_CCW,
             QEMU_CAPS_CCW_CSSID_UNRESTRICTED);
