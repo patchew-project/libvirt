@@ -1637,7 +1637,7 @@ mymain(void)
             QEMU_CAPS_CCW,
             QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
             QEMU_CAPS_DEVICE_VFIO_AP);
-    DO_TEST_FAILURE("hostdev-subsys-mdev-vfio-ap-boot-fail",
+    DO_TEST_PARSE_ERROR("hostdev-subsys-mdev-vfio-ap-boot-fail",
             QEMU_CAPS_CCW,
             QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
             QEMU_CAPS_DEVICE_VFIO_AP);
@@ -2444,7 +2444,7 @@ mymain(void)
     DO_TEST("hostdev-scsi-vhost-scsi-pci",
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VHOST_SCSI);
-    DO_TEST_FAILURE("hostdev-scsi-vhost-scsi-pci-boot-fail",
+    DO_TEST_PARSE_ERROR("hostdev-scsi-vhost-scsi-pci-boot-fail",
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VHOST_SCSI);
     DO_TEST("hostdev-scsi-vhost-scsi-pcie",
