@@ -1633,6 +1633,15 @@ mymain(void)
             QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
             QEMU_CAPS_DEVICE_VFIO_CCW);
 
+    DO_TEST("hostdev-subsys-mdev-vfio-ap",
+            QEMU_CAPS_CCW,
+            QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
+            QEMU_CAPS_DEVICE_VFIO_AP);
+    DO_TEST_FAILURE("hostdev-subsys-mdev-vfio-ap-boot-fail",
+            QEMU_CAPS_CCW,
+            QEMU_CAPS_CCW_CSSID_UNRESTRICTED,
+            QEMU_CAPS_DEVICE_VFIO_AP);
+
     DO_TEST_FULL("restore-v2",
                  ARG_MIGRATE_FROM, "exec:cat",
                  ARG_MIGRATE_FD, 7,
