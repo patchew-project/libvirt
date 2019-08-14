@@ -120,7 +120,7 @@ struct pciDriver {
 };
 
 struct pciDevice {
-    char *id;
+    const char *id;
     int vendor;
     int device;
     int klass;
@@ -878,7 +878,7 @@ init_env(void)
 
 # define MAKE_PCI_DEVICE(Id, Vendor, Device, ...) \
     do { \
-        struct pciDevice dev = {.id = (char *)Id, .vendor = Vendor, \
+        struct pciDevice dev = {.id = Id, .vendor = Vendor, \
                                 .device = Device, __VA_ARGS__}; \
         pci_device_new_from_stub(&dev); \
     } while (0)
