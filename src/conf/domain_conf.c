@@ -28292,6 +28292,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     unsigned char *uuid;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     const char *type = NULL;
+    const char *rootname = NULL;
     int n;
     size_t i;
     char *netprefix = NULL;
@@ -28300,7 +28301,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                   VIR_DOMAIN_DEF_FORMAT_STATUS |
                   VIR_DOMAIN_DEF_FORMAT_ACTUAL_NET |
                   VIR_DOMAIN_DEF_FORMAT_PCI_ORIG_STATES |
-                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST,
+                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST |
+                  VIR_DOMAIN_DEF_FORMAT_INACTIVE_NODE,
                   -1);
 
     if (!(type = virDomainVirtTypeToString(def->virtType))) {
@@ -28312,7 +28314,12 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     if (def->id == -1)
         flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;
 
-    virBufferAsprintf(buf, "<domain type='%s'", type);
+    if (flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE_NODE)
+        rootname = "inactiveDomain";
+    else
+        rootname = "domain";
+
+    virBufferAsprintf(buf, "<%s type='%s'", rootname, type);
     if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
         virBufferAsprintf(buf, " id='%d'", def->id);
     if (def->namespaceData && def->ns.href)
@@ -28794,7 +28801,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     virDomainSEVDefFormat(buf, def->sev);
 
     virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</domain>\n");
+    virBufferAsprintf(buf, "</%s>\n", rootname);
 
     if (virBufferCheckError(buf) < 0)
         goto error;
