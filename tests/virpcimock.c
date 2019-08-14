@@ -172,7 +172,7 @@ make_file(const char *path,
           ssize_t len)
 {
     int fd = -1;
-    char *filepath = NULL;
+    VIR_AUTOFREE(char *) filepath = NULL;
     if (value && len == -1)
         len = strlen(value);
 
@@ -186,7 +186,6 @@ make_file(const char *path,
         ABORT("Unable to write: %s", filepath);
 
     VIR_FORCE_CLOSE(fd);
-    VIR_FREE(filepath);
 }
 
 static void
@@ -194,15 +193,13 @@ make_symlink(const char *path,
           const char *name,
           const char *target)
 {
-    char *filepath = NULL;
+    VIR_AUTOFREE(char *) filepath = NULL;
 
     if (virAsprintfQuiet(&filepath, "%s/%s", path, name) < 0)
         ABORT_OOM();
 
     if (symlink(target, filepath) < 0)
         ABORT("Unable to create symlink filepath -> target");
-
-    VIR_FREE(filepath);
 }
 
 static int
@@ -213,7 +210,7 @@ pci_read_file(const char *path,
 {
     int ret = -1;
     int fd = -1;
-    char *newpath;
+    VIR_AUTOFREE(char *) newpath = NULL;
 
     if (virAsprintfQuiet(&newpath, "%s/%s",
                          fakesysfspcidir,
@@ -237,7 +234,6 @@ pci_read_file(const char *path,
 
     ret = 0;
  cleanup:
-    VIR_FREE(newpath);
     real_close(fd);
     return ret;
 }
@@ -335,10 +331,10 @@ static void
 pci_device_new_from_stub(const struct pciDevice *data)
 {
     struct pciDevice *dev;
-    char *devpath;
-    char *id;
+    VIR_AUTOFREE(char *) devpath = NULL;
+    VIR_AUTOFREE(char *) id = NULL;
     char *c;
-    char *configSrc;
+    VIR_AUTOFREE(char *) configSrc = NULL;
     char tmp[256];
     struct stat sb;
     bool configSrcExists = false;
@@ -363,7 +359,6 @@ pci_device_new_from_stub(const struct pciDevice *data)
         virAsprintfQuiet(&devpath, "%s/devices/%s", fakesysfspcidir, data->id) < 0)
         ABORT_OOM();
 
-    VIR_FREE(id);
     memcpy(dev, data, sizeof(*dev));
 
     if (virFileMakePath(devpath) < 0)
@@ -380,14 +375,13 @@ pci_device_new_from_stub(const struct pciDevice *data)
          * file, and parallel VPATH builds must not stomp on the
          * original; besides, 'make distcheck' requires the original
          * to be read-only */
-        char *buf;
+        VIR_AUTOFREE(char *) buf = NULL;
         ssize_t len;
 
         if ((len = virFileReadAll(configSrc, 4096, &buf)) < 0)
             ABORT("Unable to read config file '%s'", configSrc);
 
         make_file(devpath, "config", buf, len);
-        VIR_FREE(buf);
     } else {
         /* If there's no config data in the virpcitestdata dir, create a dummy
          * config file */
@@ -427,9 +421,6 @@ pci_device_new_from_stub(const struct pciDevice *data)
 
     if (VIR_APPEND_ELEMENT_QUIET(pciDevices, nPCIDevices, dev) < 0)
         ABORT_OOM();
-
-    VIR_FREE(devpath);
-    VIR_FREE(configSrc);
 }
 
 static struct pciDevice *
@@ -483,7 +474,7 @@ pci_driver_new(const char *name, int fail, ...)
     struct pciDriver *driver;
     va_list args;
     int vendor, device;
-    char *driverpath;
+    VIR_AUTOFREE(char *) driverpath = NULL;
 
     if (VIR_ALLOC_QUIET(driver) < 0 ||
         VIR_STRDUP_QUIET(driver->name, name) < 0 ||
@@ -519,8 +510,6 @@ pci_driver_new(const char *name, int fail, ...)
 
     if (VIR_APPEND_ELEMENT_QUIET(pciDrivers, nPCIDrivers, driver) < 0)
         ABORT_OOM();
-
-    VIR_FREE(driverpath);
 }
 
 static struct pciDriver *
@@ -586,13 +575,13 @@ static int
 pci_driver_bind(struct pciDriver *driver,
                 struct pciDevice *dev)
 {
-    int ret = -1;
-    char *devpath = NULL, *driverpath = NULL;
+    VIR_AUTOFREE(char *) devpath = NULL;
+    VIR_AUTOFREE(char *) driverpath = NULL;
 
     if (dev->driver) {
         /* Device already bound */
         errno = ENODEV;
-        return ret;
+        return -1;
     }
 
     /* Make symlink under device tree */
@@ -601,11 +590,11 @@ pci_driver_bind(struct pciDriver *driver,
         virAsprintfQuiet(&driverpath, "%s/drivers/%s",
                          fakesysfspcidir, driver->name) < 0) {
         errno = ENOMEM;
-        goto cleanup;
+        return -1;
     }
 
     if (symlink(driverpath, devpath) < 0)
-        goto cleanup;
+        return -1;
 
     /* Make symlink under driver tree */
     VIR_FREE(devpath);
@@ -615,31 +604,27 @@ pci_driver_bind(struct pciDriver *driver,
         virAsprintfQuiet(&driverpath, "%s/drivers/%s/%s",
                          fakesysfspcidir, driver->name, dev->id) < 0) {
         errno = ENOMEM;
-        goto cleanup;
+        return -1;
     }
 
     if (symlink(devpath, driverpath) < 0)
-        goto cleanup;
+        return -1;
 
     dev->driver = driver;
-    ret = 0;
- cleanup:
-    VIR_FREE(devpath);
-    VIR_FREE(driverpath);
-    return ret;
+    return 0;
 }
 
 static int
 pci_driver_unbind(struct pciDriver *driver,
                   struct pciDevice *dev)
 {
-    int ret = -1;
-    char *devpath = NULL, *driverpath = NULL;
+    VIR_AUTOFREE(char *) devpath = NULL;
+    VIR_AUTOFREE(char *) driverpath = NULL;
 
     if (dev->driver != driver) {
         /* Device not bound to the @driver */
         errno = ENODEV;
-        return ret;
+        return -1;
     }
 
     /* Make symlink under device tree */
@@ -648,19 +633,15 @@ pci_driver_unbind(struct pciDriver *driver,
         virAsprintfQuiet(&driverpath, "%s/drivers/%s/%s",
                          fakesysfspcidir, driver->name, dev->id) < 0) {
         errno = ENOMEM;
-        goto cleanup;
+        return -1;
     }
 
     if (unlink(devpath) < 0 ||
         unlink(driverpath) < 0)
-        goto cleanup;
+        return -1;
 
     dev->driver = NULL;
-    ret = 0;
- cleanup:
-    VIR_FREE(devpath);
-    VIR_FREE(driverpath);
-    return ret;
+    return 0;
 }
 
 static int
@@ -909,20 +890,15 @@ init_env(void)
 int
 access(const char *path, int mode)
 {
-    int ret;
+    VIR_AUTOFREE(char *) newpath = NULL;
 
     init_syms();
 
-    if (STRPREFIX(path, SYSFS_PCI_PREFIX)) {
-        char *newpath;
-        if (getrealpath(&newpath, path) < 0)
-            return -1;
-        ret = real_access(newpath, mode);
-        VIR_FREE(newpath);
-    } else {
-        ret = real_access(path, mode);
-    }
-    return ret;
+    if (STRPREFIX(path, SYSFS_PCI_PREFIX) &&
+        getrealpath(&newpath, path) < 0)
+        return -1;
+
+    return real_access(newpath ? newpath : path, mode);
 }
 
 
@@ -941,7 +917,7 @@ int
 open(const char *path, int flags, ...)
 {
     int ret;
-    char *newpath = NULL;
+    VIR_AUTOFREE(char *) newpath = NULL;
 
     init_syms();
 
@@ -968,15 +944,13 @@ open(const char *path, int flags, ...)
         ret = -1;
     }
 
-    VIR_FREE(newpath);
     return ret;
 }
 
 DIR *
 opendir(const char *path)
 {
-    DIR *ret;
-    char *newpath = NULL;
+    VIR_AUTOFREE(char *) newpath = NULL;
 
     init_syms();
 
@@ -984,10 +958,7 @@ opendir(const char *path)
         getrealpath(&newpath, path) < 0)
         return NULL;
 
-    ret = real_opendir(newpath ? newpath : path);
-
-    VIR_FREE(newpath);
-    return ret;
+    return real_opendir(newpath ? newpath : path);
 }
 
 int
@@ -1001,23 +972,15 @@ close(int fd)
 char *
 virFileCanonicalizePath(const char *path)
 {
-    char *ret;
+    VIR_AUTOFREE(char *) newpath = NULL;
 
     init_syms();
 
-    if (STRPREFIX(path, SYSFS_PCI_PREFIX)) {
-        char *newpath;
+    if (STRPREFIX(path, SYSFS_PCI_PREFIX) &&
+        getrealpath(&newpath, path) < 0)
+        return NULL;
 
-        if (getrealpath(&newpath, path) < 0)
-            return NULL;
-
-        ret = real_virFileCanonicalizePath(newpath);
-        VIR_FREE(newpath);
-    } else {
-        ret = real_virFileCanonicalizePath(path);
-    }
-
-    return ret;
+    return real_virFileCanonicalizePath(newpath ? newpath : path);
 }
 
 # include "virmockstathelpers.c"
