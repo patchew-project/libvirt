@@ -4448,8 +4448,8 @@ virStorageFileGetBackendForSupportCheck(const virStorageSource *src,
 }
 
 
-static int
-virStorageFileSupportsBackingChainTraversal(virStorageSourcePtr src)
+int
+virStorageFileSupportsBackingChainTraversal(const virStorageSource *src)
 {
     virStorageFileBackendPtr backend;
     int rv;
