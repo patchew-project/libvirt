@@ -308,7 +308,7 @@
 
   <xsl:template match="typedef[@type = 'enum']">
     <xsl:variable name="name" select="string(@name)"/>
-    <h3><a name="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
+    <h3><a id="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
     <div class="api">
       <pre>
         <span class="keyword">enum</span><xsl:text> </xsl:text>
@@ -357,7 +357,7 @@
   </xsl:template>
 
   <xsl:template match="struct">
-    <h3><a name="{@name}"><code><xsl:value-of select="@name"/></code></a></h3>
+    <h3><a id="{@name}"><code><xsl:value-of select="@name"/></code></a></h3>
     <div class="api">
       <pre>
         <span class="keyword">struct </span>
@@ -447,7 +447,7 @@
 
   <xsl:template match="macro">
     <xsl:variable name="name" select="string(@name)"/>
-    <h3><a name="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
+    <h3><a id="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
     <pre class="api"><span class="directive">#define</span><xsl:text> </xsl:text><xsl:value-of select="$name"/></pre>
     <div class="description">
     <xsl:call-template name="formattext">
@@ -558,7 +558,7 @@
     <xsl:variable name="nlen" select="string-length($name)"/>
     <xsl:variable name="tlen" select="string-length(return/@type)"/>
     <xsl:variable name="blen" select="(($nlen + 8) - (($nlen + 8) mod 8)) + (($tlen + 8) - (($tlen + 8) mod 8))"/>
-    <h3><a name="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
+    <h3><a id="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
     <pre class="api">
     <span class="keyword">typedef</span><xsl:text> </xsl:text>
     <span class="type">
@@ -636,7 +636,7 @@
     <xsl:variable name="nlen" select="string-length($name)"/>
     <xsl:variable name="tlen" select="string-length(return/@type)"/>
     <xsl:variable name="blen" select="(($nlen + 8) - (($nlen + 8) mod 8)) + (($tlen + 8) - (($tlen + 8) mod 8))"/>
-    <h3><a name="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
+    <h3><a id="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
     <pre class="api">
     <span class="type">
       <xsl:call-template name="dumptext">
