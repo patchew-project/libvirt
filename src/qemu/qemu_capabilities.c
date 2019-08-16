@@ -537,6 +537,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               /* 335 */
               "bochs-display",
               "migration-file-drop-cache",
+              "blockdev-file-dynamic-auto-read-only",
     );
 
 
@@ -1281,6 +1282,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "query-display-options/ret-type/+egl-headless/rendernode", QEMU_CAPS_EGL_HEADLESS_RENDERNODE },
     { "nbd-server-add/arg-type/bitmap", QEMU_CAPS_NBD_BITMAP },
     { "blockdev-add/arg-type/+file/drop-cache", QEMU_CAPS_MIGRATION_FILE_DROP_CACHE },
+    { "blockdev-add/arg-type/+file/$dynamic-auto-read-only", QEMU_CAPS_BLOCK_FILE_AUTO_READONLY_DYNAMIC },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
