@@ -109,3 +109,4 @@ module Test_libvirtd_qemu =
 { "capability_filters"
     { "1" = "capname" }
 }
+unplug_timeout = 5

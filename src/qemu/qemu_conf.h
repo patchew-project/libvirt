@@ -214,6 +214,8 @@ struct _virQEMUDriverConfig {
     gid_t swtpm_group;
 
     char **capabilityfilters;
+
+    unsigned int unplugTimeout;
 };
 
 /* Main driver state */
@@ -294,6 +296,9 @@ struct _virQEMUDriver {
 
     /* Immutable pointer, self-locking APIs */
     virHashAtomicPtr migrationErrors;
+
+    /* Immutable value */
+    unsigned int unplugTimeout;
 };
 
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged);

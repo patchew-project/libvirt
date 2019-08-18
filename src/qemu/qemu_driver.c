@@ -1078,6 +1078,8 @@ qemuStateInitialize(bool privileged,
     if (!qemu_driver->workerPool)
         goto error;
 
+    qemu_driver->unplugTimeout = cfg->unplugTimeout * 1000ul;
+
     qemuProcessReconnectAll(qemu_driver);
 
     qemuAutostartDomains(qemu_driver);

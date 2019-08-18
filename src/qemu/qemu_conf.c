@@ -69,6 +69,8 @@ VIR_LOG_INIT("qemu.qemu_conf");
 #define QEMU_MIGRATION_PORT_MIN 49152
 #define QEMU_MIGRATION_PORT_MAX 49215
 
+#define QEMU_UNPLUG_TIMEOUT 5
+
 static virClassPtr virQEMUDriverConfigClass;
 static void virQEMUDriverConfigDispose(void *obj);
 
@@ -297,6 +299,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->logTimestamp = true;
     cfg->glusterDebugLevel = 4;
     cfg->stdioLogD = true;
+
+    cfg->unplugTimeout = QEMU_UNPLUG_TIMEOUT;
 
     if (!(cfg->namespaces = virBitmapNew(QEMU_DOMAIN_NS_LAST)))
         goto error;
@@ -1009,6 +1013,24 @@ virQEMUDriverConfigLoadCapsFiltersEntry(virQEMUDriverConfigPtr cfg,
 }
 
 
+static int
+virQEMUDriverConfigLoadUnplugTimeoutEntry(virQEMUDriverConfigPtr cfg,
+                                          virConfPtr conf)
+{
+    if (virConfGetValueUInt(conf, "unplug_timeout", &cfg->unplugTimeout) < 0)
+        return -1;
+
+    if (cfg->unplugTimeout < QEMU_UNPLUG_TIMEOUT) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unplug_timeout: value must be greater "
+                         "than or equal to %d"), QEMU_UNPLUG_TIMEOUT);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                                 const char *filename,
                                 bool privileged)
@@ -1080,6 +1102,10 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
 
     if (virQEMUDriverConfigLoadCapsFiltersEntry(cfg, conf) < 0)
         goto cleanup;
+
+    if (virQEMUDriverConfigLoadUnplugTimeoutEntry(cfg, conf) < 0)
+        goto cleanup;
+
 
     ret = 0;
 

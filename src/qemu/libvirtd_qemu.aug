@@ -130,6 +130,8 @@ module Libvirtd_qemu =
 
    let capability_filters_entry = str_array_entry "capability_filters"
 
+   let unplug_timeout_entry = int_entry "unplug_timeout"
+
    (* Each entry in the config is one of the following ... *)
    let entry = default_tls_entry
              | vnc_entry
@@ -152,6 +154,7 @@ module Libvirtd_qemu =
              | nbd_entry
              | swtpm_entry
              | capability_filters_entry
+             | unplug_timeout_entry
 
    let comment = [ label "#comment" . del /#[ \t]*/ "# " .  store /([^ \t\n][^\n]*)?/ . del /\n/ "\n" ]
    let empty = [ label "#empty" . eol ]
