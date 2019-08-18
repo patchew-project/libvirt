@@ -23,7 +23,6 @@
 #include "qemu/qemu_conf.h"
 #include "qemu/qemu_hotplug.h"
 #define LIBVIRT_QEMU_HOTPLUGPRIV_H_ALLOW
-#include "qemu/qemu_hotplugpriv.h"
 #include "qemumonitortestutils.h"
 #include "testutils.h"
 #include "testutilsqemu.h"
