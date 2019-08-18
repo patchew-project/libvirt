@@ -622,7 +622,7 @@ mymain(void)
         return EXIT_FAILURE;
 
     /* wait only 100ms for DEVICE_DELETED event */
-    qemuDomainRemoveDeviceWaitTime = 100;
+    driver.unplugTimeout = 100;
 
 #define DO_TEST(file, ACTION, dev, fial, kep, ...) \
     do { \
