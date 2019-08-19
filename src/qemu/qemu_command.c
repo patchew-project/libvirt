@@ -7217,6 +7217,8 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
                     virBufferAddLit(&buf, ",kvm-hint-dedicated=on");
                 break;
 
+            /* Not a -cpu option */
+            case VIR_DOMAIN_KVM_CPU_PM:
             /* coverity[dead_error_begin] */
             case VIR_DOMAIN_KVM_LAST:
                 break;
@@ -7852,8 +7854,20 @@ qemuBuildOvercommitCommandLine(virCommandPtr cmd,
                                virQEMUCapsPtr qemuCaps)
 {
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OVERCOMMIT)) {
+        virBuffer buf = VIR_BUFFER_INITIALIZER;
+        char *overcommit;
+
+        virBufferAsprintf(&buf, "mem-lock=%s", def->mem.locked ? "on" : "off");
+
+        if (def->features[VIR_DOMAIN_FEATURE_KVM] == VIR_TRISTATE_SWITCH_ON)
+            virBufferAsprintf(&buf, ",cpu-pm=%s",
+                              def->kvm_features[VIR_DOMAIN_KVM_CPU_PM] == VIR_TRISTATE_SWITCH_ON ? "on" : "off");
+
+        overcommit = virBufferContentAndReset(&buf);
         virCommandAddArg(cmd, "-overcommit");
-        virCommandAddArgFormat(cmd, "mem-lock=%s", def->mem.locked ? "on" : "off");
+        virCommandAddArgFormat(cmd, "%s", overcommit);
+
+        VIR_FREE(overcommit);
     }
     return 0;
 }

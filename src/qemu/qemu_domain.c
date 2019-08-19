@@ -4442,7 +4442,7 @@ static int
 qemuDomainDefValidateFeatures(const virDomainDef *def,
                               virQEMUCapsPtr qemuCaps)
 {
-    size_t i;
+    size_t i, j;
 
     for (i = 0; i < VIR_DOMAIN_FEATURE_LAST; i++) {
         const char *featureName = virDomainFeatureTypeToString(i);
@@ -4499,12 +4499,23 @@ qemuDomainDefValidateFeatures(const virDomainDef *def,
             break;
 
         case VIR_DOMAIN_FEATURE_KVM:
-            if (def->kvm_features[VIR_DOMAIN_KVM_DEDICATED] == VIR_TRISTATE_SWITCH_ON &&
-                (!def->cpu || def->cpu->mode != VIR_CPU_MODE_HOST_PASSTHROUGH)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("kvm-hint-dedicated=on is only applicable "
-                                 "for cpu host-passthrough"));
-                return -1;
+            for (j = 0; j < VIR_DOMAIN_KVM_LAST; j++) {
+                switch ((virDomainKVM) j) {
+                case VIR_DOMAIN_KVM_DEDICATED:
+                case VIR_DOMAIN_KVM_CPU_PM:
+                    if (def->kvm_features[j] == VIR_TRISTATE_SWITCH_ON &&
+                        (!def->cpu || def->cpu->mode != VIR_CPU_MODE_HOST_PASSTHROUGH)) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                       _("%s=on is only applicable for cpu host-passthrough"),
+                                       virDomainKVMTypeToString(j));
+                        return -1;
+                    }
+                    break;
+
+                case VIR_DOMAIN_KVM_HIDDEN:
+                case VIR_DOMAIN_KVM_LAST:
+                    break;
+                }
             }
             break;
 

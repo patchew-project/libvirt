@@ -2045,6 +2045,7 @@
   &lt;kvm&gt;
     &lt;hidden state='on'/&gt;
     &lt;hint-dedicated state='on'/&gt;
+    &lt;cpu-pm state='on'/&gt;
   &lt;/kvm&gt;
   &lt;pvspinlock state='on'/&gt;
   &lt;gic version='2'/&gt;
@@ -2221,6 +2222,12 @@
         <tr>
           <td>hint-dedicated</td>
           <td>Allows a guest to enable optimizations when running on dedicated vCPUs</td>
+          <td>on, off</td>
+          <td><span class="since">5.7.0 (QEMU 2.12.1)</span></td>
+        </tr>
+        <tr>
+          <td>cpu-pm</td>
+          <td>Enable guest management of the host CPU's power state.  Note that enabling this will increase latency for other processes running on the same host CPU.</td>
           <td>on, off</td>
           <td><span class="since">5.7.0 (QEMU 2.12.1)</span></td>
         </tr>

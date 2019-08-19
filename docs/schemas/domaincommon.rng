@@ -5970,6 +5970,11 @@
             <ref name="featurestate"/>
           </element>
         </optional>
+        <optional>
+          <element name="cpu-pm">
+            <ref name="featurestate"/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>

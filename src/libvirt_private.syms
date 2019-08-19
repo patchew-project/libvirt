@@ -446,6 +446,7 @@ virDomainIOThreadIDDel;
 virDomainIOThreadIDFind;
 virDomainKeyWrapCipherNameTypeFromString;
 virDomainKeyWrapCipherNameTypeToString;
+virDomainKVMTypeToString;
 virDomainLeaseDefFree;
 virDomainLeaseIndex;
 virDomainLeaseInsert;
