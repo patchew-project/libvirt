@@ -149,7 +149,9 @@ virMediatedDeviceNew(const char *uuidstr, virMediatedDeviceModelType model)
 
     if (!virFileExists(sysfspath)) {
         virReportError(VIR_ERR_DEVICE_MISSING,
-                       _("mediated device '%s' not found"), uuidstr);
+                       _("mediated device '%s' not found. "
+                         "Persistent devices can be managed with 'mdevctl'."),
+                       uuidstr);
         return NULL;
     }
 
