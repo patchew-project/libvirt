@@ -13,6 +13,7 @@
     <kvm>
       <hidden state='off'/>
       <hint-dedicated state='off'/>
+      <cpu-pm state='off'/>
     </kvm>
   </features>
   <clock offset='utc'/>
