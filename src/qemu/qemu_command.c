@@ -7832,15 +7832,29 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
         qemuBuildMemPathStr(cfg, def, cmd, priv) < 0)
         return -1;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OVERCOMMIT)) {
-        virCommandAddArg(cmd, "-overcommit");
-        virCommandAddArgFormat(cmd, "mem-lock=%s", def->mem.locked ? "on" : "off");
-    } else {
+    /*
+     * '-overcommit mem-lock=on|off' is handled with other
+     *  overcommit options later on.
+     */
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_OVERCOMMIT)) {
         virCommandAddArg(cmd, "-realtime");
         virCommandAddArgFormat(cmd, "mlock=%s",
                                def->mem.locked ? "on" : "off");
     }
 
+    return 0;
+}
+
+
+static int
+qemuBuildOvercommitCommandLine(virCommandPtr cmd,
+                               const virDomainDef *def,
+                               virQEMUCapsPtr qemuCaps)
+{
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OVERCOMMIT)) {
+        virCommandAddArg(cmd, "-overcommit");
+        virCommandAddArgFormat(cmd, "mem-lock=%s", def->mem.locked ? "on" : "off");
+    }
     return 0;
 }
 
@@ -10655,6 +10669,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         goto error;
 
     if (qemuBuildMemCommandLine(cmd, cfg, def, qemuCaps, priv) < 0)
+        goto error;
+
+    if (qemuBuildOvercommitCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildSmpCommandLine(cmd, def) < 0)
