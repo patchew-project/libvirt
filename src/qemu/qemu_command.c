@@ -7606,7 +7606,6 @@ static int
 qemuBuildSmpCommandLine(virCommandPtr cmd,
                         virDomainDefPtr def)
 {
-    char *smp = NULL;
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     unsigned int maxvcpus = virDomainDefGetVcpusMax(def);
     unsigned int nvcpus = 0;
@@ -7642,10 +7641,7 @@ qemuBuildSmpCommandLine(virCommandPtr cmd,
     if (virBufferCheckError(&buf) < 0)
         return -1;
 
-    smp = virBufferContentAndReset(&buf);
-    virCommandAddArg(cmd, smp);
-    VIR_FREE(smp);
-
+    virCommandAddArgBuffer(cmd, &buf);
     return 0;
 }
 
