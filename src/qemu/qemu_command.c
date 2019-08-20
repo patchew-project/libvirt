@@ -10245,7 +10245,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
               qemuCaps, migrateURI, snapshot, vmop);
 
     if (qemuBuildCommandLineValidate(driver, def) < 0)
-        goto error;
+        return NULL;
 
     cmd = virCommandNew(def->emulator);
 
@@ -10269,57 +10269,57 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     }
 
     if (qemuBuildNameCommandLine(cmd, cfg, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (!standalone)
         virCommandAddArg(cmd, "-S"); /* freeze CPU */
 
     if (qemuBuildMasterKeyCommandLine(cmd, priv) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildManagedPRCommandLine(cmd, def, priv) < 0)
-        goto error;
+        return NULL;
 
     if (enableFips)
         virCommandAddArg(cmd, "-enable-fips");
 
     if (qemuBuildMachineCommandLine(cmd, cfg, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     qemuBuildTSEGCommandLine(cmd, def);
 
     if (qemuBuildCpuCommandLine(cmd, driver, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     qemuBuildDomainLoaderCommandLine(cmd, def);
 
     if (!migrateURI && !snapshot && qemuDomainAlignMemorySizes(def) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildMemCommandLine(cmd, cfg, def, qemuCaps, priv) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildSmpCommandLine(cmd, def) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildIOThreadCommandLine(cmd, def) < 0)
-        goto error;
+        return NULL;
 
     if (virDomainNumaGetNodeCount(def->numa) &&
         qemuBuildNumaArgStr(cfg, def, cmd, priv) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildMemoryDeviceCommandLine(cmd, cfg, def, priv) < 0)
-        goto error;
+        return NULL;
 
     virUUIDFormat(def->uuid, uuid);
     virCommandAddArgList(cmd, "-uuid", uuid, NULL);
 
     if (qemuBuildSmbiosCommandLine(cmd, driver, def) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildVMGenIDCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     /*
      * NB, -nographic *MUST* come before any serial, or monitor
@@ -10343,110 +10343,110 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     virCommandAddArg(cmd, "-nodefaults");
 
     if (qemuBuildSgaCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildMonitorCommandLine(logManager, secManager, cmd, cfg, def, priv) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildClockCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildPMCommandLine(cmd, def, priv) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildBootCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildIOMMUCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildGlobalControllerCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildControllersCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildHubCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildControllersByTypeCommandLine(cmd, def, qemuCaps,
                                               VIR_DOMAIN_CONTROLLER_TYPE_CCID) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildDisksCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildFilesystemCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildNetCommandLine(driver, logManager, secManager, cmd, def,
                                 qemuCaps, vmop, standalone,
                                 nnicindexes, nicindexes, &bootHostdevNet) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildSmartcardCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                       chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildSerialCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                    chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildParallelsCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                       chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildChannelsCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                      chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildConsoleCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                     chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildTPMCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildInputCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildGraphicsCommandLine(cfg, cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildVideoCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildSoundCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildWatchdogCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildRedirdevCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                      chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildHostdevCommandLine(cmd, def, qemuCaps, &bootHostdevNet) < 0)
-        goto error;
+        return NULL;
 
     if (migrateURI)
         virCommandAddArgList(cmd, "-incoming", migrateURI, NULL);
 
     if (qemuBuildMemballoonCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildRNGCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
                                 chardevStdioLogd) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildNVRAMCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildVMCoreInfoCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildSEVCommandLine(vm, cmd, def->sev) < 0)
-        goto error;
+        return NULL;
 
     if (snapshot)
         virCommandAddArgList(cmd, "-loadvm", snapshot->def->name, NULL);
@@ -10463,21 +10463,21 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     }
 
     if (qemuBuildSeccompSandboxCommandLine(cmd, cfg, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     if (qemuBuildPanicCommandLine(cmd, def, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     for (i = 0; i < def->nshmems; i++) {
         if (qemuBuildShmemCommandLine(logManager, secManager, cmd, cfg,
                                       def, def->shmems[i], qemuCaps,
                                       chardevStdioLogd))
-            goto error;
+            return NULL;
     }
 
     if (def->vsock &&
         qemuBuildVsockCommandLine(cmd, def, def->vsock, qemuCaps) < 0)
-        goto error;
+        return NULL;
 
     /* In some situations, eg. VFIO passthrough, QEMU might need to lock a
      * significant amount of memory, so we need to set the limit accordingly */
@@ -10488,9 +10488,6 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         virCommandAddArgList(cmd, "-msg", "timestamp=on", NULL);
 
     VIR_RETURN_PTR(cmd);
-
- error:
-    return NULL;
 }
 
 
