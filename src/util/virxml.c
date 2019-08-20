@@ -24,6 +24,8 @@
 #include <math.h>               /* for isnan() */
 #include <sys/stat.h>
 
+#include <libxml/xpathInternals.h>
+
 #include "virerror.h"
 #include "virxml.h"
 #include "virbuffer.h"
@@ -1409,9 +1411,27 @@ virXPathContextNodeRestore(virXPathContextNodeSavePtr save)
     save->ctxt->node = save->node;
 }
 
+
 void
 virXMLNamespaceFormatNS(virBufferPtr buf,
                         virXMLNamespace const *ns)
 {
     virBufferAsprintf(buf, " xmlns:%s='%s'", ns->prefix, ns->href());
+}
+
+
+int
+virXMLNamespaceRegister(xmlXPathContextPtr ctxt,
+                        virXMLNamespace const *ns)
+{
+    if (xmlXPathRegisterNs(ctxt,
+                           BAD_CAST ns->prefix,
+                           BAD_CAST ns->href()) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to register xml namespace '%s'"),
+                       ns->href());
+        return -1;
+    }
+
+    return 0;
 }
