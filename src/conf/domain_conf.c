@@ -28314,7 +28314,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
         virBufferAsprintf(buf, " id='%d'", def->id);
     if (def->namespaceData && def->ns.format)
-        virBufferAsprintf(buf, " %s", (def->ns.href)());
+        virXMLNamespaceFormatNS(buf, &def->ns);
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
 
