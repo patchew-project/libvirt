@@ -1172,7 +1172,7 @@ virStoragePoolDefFormatBuf(virBufferPtr buf,
     }
     virBufferAsprintf(buf, "<pool type='%s'", type);
     if (def->namespaceData && def->ns.href)
-        virBufferAsprintf(buf, " %s", (def->ns.href)());
+        virXMLNamespaceFormatNS(buf, &def->ns);
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<name>%s</name>\n", def->name);
