@@ -6900,7 +6900,7 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
 {
     int ret = -1;
     size_t i;
-    virCapsPtr caps = NULL;
+    VIR_AUTOUNREF(virCapsPtr) caps = NULL;
     virCPUDefPtr cpu = def->cpu;
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
@@ -6978,7 +6978,6 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
 
     ret = 0;
  cleanup:
-    virObjectUnref(caps);
     return ret;
 }
 
@@ -8486,7 +8485,7 @@ qemuInterfaceVhostuserConnect(virQEMUDriverPtr driver,
                               virQEMUCapsPtr qemuCaps,
                               char **chardev)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     int ret = -1;
 
     switch ((virDomainChrType)net->data.vhostuser->type) {
@@ -8519,7 +8518,6 @@ qemuInterfaceVhostuserConnect(virQEMUDriverPtr driver,
 
     ret = 0;
  cleanup:
-    virObjectUnref(cfg);
     return ret;
 }
 
