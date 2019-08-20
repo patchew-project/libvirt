@@ -738,7 +738,7 @@ qemuBuildObjectSecretCommandLine(virCommandPtr cmd,
 {
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     int ret = -1;
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
 
     if (qemuBuildSecretInfoProps(secinfo, &props) < 0)
         return -1;
@@ -752,7 +752,6 @@ qemuBuildObjectSecretCommandLine(virCommandPtr cmd,
     ret  = 0;
 
  cleanup:
-    virJSONValueFree(props);
     return ret;
 }
 
@@ -935,7 +934,7 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
 {
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     int ret = -1;
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
 
     if (qemuBuildTLSx509BackendProps(tlspath, isListen, verifypeer, alias,
                                      certEncSecretAlias, qemuCaps, &props) < 0)
@@ -950,7 +949,6 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
     ret = 0;
 
  cleanup:
-    virJSONValueFree(props);
     return ret;
 }
 
@@ -1641,7 +1639,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
     qemuDomainStorageSourcePrivatePtr srcpriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
     qemuDomainSecretInfoPtr secinfo = NULL;
     qemuDomainSecretInfoPtr encinfo = NULL;
-    virJSONValuePtr srcprops = NULL;
+    VIR_AUTOPTR(virJSONValue) srcprops = NULL;
     char *source = NULL;
     bool rawluks = false;
     int ret = -1;
@@ -1729,7 +1727,6 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
  cleanup:
     VIR_FREE(source);
-    virJSONValueFree(srcprops);
     return ret;
 }
 
@@ -3407,7 +3404,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     bool prealloc = false;
     virBitmapPtr nodemask = NULL;
     int ret = -1;
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
     bool nodeSpecified = virDomainNumatuneNodeSpecified(def->numa, mem->targetNode);
     unsigned long long pagesize = mem->pagesize;
     bool needHugepage = !!pagesize;
@@ -3651,7 +3648,6 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         ret = -1;
 
  cleanup:
-    virJSONValueFree(props);
     VIR_FREE(memPath);
     return ret;
 }
@@ -3664,7 +3660,7 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
                               qemuDomainObjPrivatePtr priv,
                               virBufferPtr buf)
 {
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
     char *alias = NULL;
     int ret = -1;
     int rc;
@@ -3690,7 +3686,6 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
 
  cleanup:
     VIR_FREE(alias);
-    virJSONValueFree(props);
 
     return ret;
 }
@@ -3703,7 +3698,7 @@ qemuBuildMemoryDimmBackendStr(virBufferPtr buf,
                               virQEMUDriverConfigPtr cfg,
                               qemuDomainObjPrivatePtr priv)
 {
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
     char *alias = NULL;
     int ret = -1;
 
@@ -3727,7 +3722,6 @@ qemuBuildMemoryDimmBackendStr(virBufferPtr buf,
 
  cleanup:
     VIR_FREE(alias);
-    virJSONValueFree(props);
 
     return ret;
 }
@@ -5050,7 +5044,7 @@ qemuBuildSCSIiSCSIHostdevDrvStr(virDomainHostdevDefPtr dev,
     char *ret = NULL;
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     char *netsource = NULL;
-    virJSONValuePtr srcprops = NULL;
+    VIR_AUTOPTR(virJSONValue) srcprops = NULL;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
     qemuDomainStorageSourcePrivatePtr srcPriv =
@@ -5079,7 +5073,6 @@ qemuBuildSCSIiSCSIHostdevDrvStr(virDomainHostdevDefPtr dev,
 
  cleanup:
     VIR_FREE(netsource);
-    virJSONValueFree(srcprops);
     return ret;
 }
 
@@ -6080,7 +6073,7 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
     size_t i;
 
     for (i = 0; i < def->nrngs; i++) {
-        virJSONValuePtr props;
+        VIR_AUTOPTR(virJSONValue) props = NULL;
         virBuffer buf = VIR_BUFFER_INITIALIZER;
         virDomainRNGDefPtr rng = def->rngs[i];
         char *tmp;
@@ -6107,7 +6100,6 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
             return -1;
 
         rc = virQEMUBuildObjectCommandlineFromJSON(&buf, props);
-        virJSONValueFree(props);
 
         if (rc < 0)
             return -1;
@@ -9272,7 +9264,7 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
                           virQEMUCapsPtr qemuCaps,
                           bool chardevStdioLogd)
 {
-    virJSONValuePtr memProps = NULL;
+    VIR_AUTOPTR(virJSONValue) memProps = NULL;
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     char *devstr = NULL;
     int rc;
@@ -9317,7 +9309,6 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
             return -1;
 
         rc = virQEMUBuildObjectCommandlineFromJSON(&buf, memProps);
-        virJSONValueFree(memProps);
 
         if (rc < 0)
             return -1;
@@ -10294,7 +10285,7 @@ qemuBuildManagedPRCommandLine(virCommandPtr cmd,
                               qemuDomainObjPrivatePtr priv)
 {
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
-    virJSONValuePtr props = NULL;
+    VIR_AUTOPTR(virJSONValue) props = NULL;
     int ret = -1;
 
     if (!virDomainDefHasManagedPR(def))
@@ -10311,7 +10302,6 @@ qemuBuildManagedPRCommandLine(virCommandPtr cmd,
 
     ret = 0;
  cleanup:
-    virJSONValueFree(props);
     return ret;
 }
 
