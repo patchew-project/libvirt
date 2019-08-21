@@ -2384,3 +2384,49 @@ qemuAgentGetOSInfo(qemuAgentPtr mon,
     virJSONValueFree(reply);
     return ret;
 }
+
+int
+qemuAgentGetTimezone(qemuAgentPtr mon,
+                     virTypedParameterPtr *params,
+                     int *nparams,
+                     int *maxparams)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data = NULL;
+    const char *name;
+    int offset;
+
+    if (!(cmd = qemuAgentMakeCommand("guest-get-timezone", NULL)))
+        return -1;
+
+    if (qemuAgentCommand(mon, cmd, &reply, true,
+                         VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK) < 0)
+        goto cleanup;
+
+    if (!(data = virJSONValueObjectGetObject(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("guest-get-timezone reply was missing return data"));
+        goto cleanup;
+    }
+
+    if ((name = virJSONValueObjectGetString(data, "zone")) == NULL)
+        goto cleanup;
+    if (virTypedParamsAddString(params, nparams, maxparams,
+                                "timezone.name", name) < 0)
+        goto cleanup;
+
+    if ((virJSONValueObjectGetNumberInt(data, "offset", &offset)) < 0)
+        goto cleanup;
+    if (virTypedParamsAddInt(params, nparams, maxparams,
+                             "timezone.offset", offset) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
