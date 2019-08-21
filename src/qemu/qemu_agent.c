@@ -1827,19 +1827,144 @@ qemuAgentSetTime(qemuAgentPtr mon,
     return ret;
 }
 
+typedef struct _qemuAgentDiskInfo qemuAgentDiskInfo;
+typedef qemuAgentDiskInfo *qemuAgentDiskInfoPtr;
+struct _qemuAgentDiskInfo {
+    char *alias;
+    char *serial;
+    char *devnode;
+};
 
+typedef struct _qemuAgentFSInfo qemuAgentFSInfo;
+typedef qemuAgentFSInfo *qemuAgentFSInfoPtr;
+struct _qemuAgentFSInfo {
+    char *mountpoint; /* path to mount point */
+    char *name;       /* device name in the guest (e.g. "sda1") */
+    char *fstype;     /* filesystem type */
+    long long total_bytes;
+    long long used_bytes;
+    size_t ndisks;
+    qemuAgentDiskInfoPtr *disks;
+};
+
+static void
+qemuAgentDiskInfoFree(qemuAgentDiskInfoPtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info->serial);
+    VIR_FREE(info->alias);
+    VIR_FREE(info->devnode);
+    VIR_FREE(info);
+}
+
+static void
+qemuAgentFSInfoFree(qemuAgentFSInfoPtr info)
+{
+    size_t i;
+
+    if (!info)
+        return;
+
+    VIR_FREE(info->mountpoint);
+    VIR_FREE(info->name);
+    VIR_FREE(info->fstype);
+
+    for (i = 0; i < info->ndisks; i++)
+        qemuAgentDiskInfoFree(info->disks[i]);
+    VIR_FREE(info->disks);
+
+    VIR_FREE(info);
+}
+
+static virDomainFSInfoPtr
+qemuAgentFSInfoToPublic(qemuAgentFSInfoPtr agent)
+{
+    virDomainFSInfoPtr ret = NULL;
+    size_t n;
+
+    if (VIR_ALLOC(ret) < 0)
+        return NULL;
+
+    if (VIR_STRDUP(ret->name, agent->name) < 0)
+        goto error;
+    if (VIR_STRDUP(ret->mountpoint, agent->mountpoint) < 0)
+        goto error;
+    if (VIR_STRDUP(ret->fstype, agent->fstype) < 0)
+        goto error;
+
+    ret->ndevAlias = agent->ndisks;
+
+    if (ret->ndevAlias == 0)
+        return ret;
+
+    if (VIR_ALLOC_N(ret->devAlias, ret->ndevAlias) < 0)
+        goto error;
+
+    for (n = 0; n < ret->ndevAlias; n++) {
+        if (VIR_STRDUP(ret->devAlias[n], agent->disks[n]->alias) < 0)
+            goto error;
+    }
+
+    return ret;
+
+ error:
+    virDomainFSInfoFree(ret);
+    return NULL;
+}
+
+static int
+qemuAgentGetFSInfoInternal(qemuAgentPtr mon, qemuAgentFSInfoPtr **info,
+                           virDomainDefPtr vmdef);
 int
 qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
                    virDomainDefPtr vmdef)
 {
+    int ret = -1;
+    qemuAgentFSInfoPtr *agentinfo = NULL;
+    virDomainFSInfoPtr *info_ret = NULL;
+    size_t i;
+    int nfs;
+
+    nfs = qemuAgentGetFSInfoInternal(mon, &agentinfo, vmdef);
+    if (nfs < 0)
+        return ret;
+    if (VIR_ALLOC_N(info_ret, nfs) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nfs; i++) {
+        if (!(info_ret[i] = qemuAgentFSInfoToPublic(agentinfo[i])))
+            goto cleanup;
+    }
+
+    *info = info_ret;
+    info_ret = NULL;
+    ret = nfs;
+
+ cleanup:
+    for (i = 0; i < nfs; i++) {
+        qemuAgentFSInfoFree(agentinfo[i]);
+        /* if there was an error, free any memory we've allocated for the
+         * return value */
+        if (info_ret)
+            virDomainFSInfoFree(info_ret[i]);
+    }
+    return ret;
+}
+
+
+static int
+qemuAgentGetFSInfoInternal(qemuAgentPtr mon, qemuAgentFSInfoPtr **info,
+                           virDomainDefPtr vmdef)
+{
     size_t i, j, k;
     int ret = -1;
-    size_t ndata = 0, ndisk;
-    char **alias;
+    size_t ndata = 0;
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
-    virDomainFSInfoPtr *info_ret = NULL;
+    qemuAgentFSInfoPtr *info_ret = NULL;
     virPCIDeviceAddress pci_address;
     const char *result = NULL;
 
@@ -1915,6 +2040,33 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
         if (VIR_STRDUP(info_ret[i]->fstype, result) < 0)
             goto cleanup;
 
+
+        /* 'used-bytes' and 'total-bytes' were added in qemu-ga 3.0 */
+        unsigned long long bytes_val;
+        if (virJSONValueObjectHasKey(entry, "used-bytes")) {
+            if (virJSONValueObjectGetNumberUlong(entry, "used-bytes",
+                                                 &bytes_val) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Error getting 'used-bytes' in reply of guest-get-fsinfo"));
+                goto cleanup;
+            }
+            info_ret[i]->used_bytes = bytes_val;
+        } else {
+            info_ret[i]->used_bytes = -1;
+        }
+
+        if (virJSONValueObjectHasKey(entry, "total-bytes")) {
+            if (virJSONValueObjectGetNumberUlong(entry, "total-bytes",
+                                                 &bytes_val) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Error getting 'total-bytes' in reply of guest-get-fsinfo"));
+                goto cleanup;
+            }
+            info_ret[i]->total_bytes = bytes_val;
+        } else {
+            info_ret[i]->total_bytes = -1;
+        }
+
         if (!(entry = virJSONValueObjectGet(entry, "disk"))) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("'disk' missing in reply of guest-get-fsinfo"));
@@ -1927,31 +2079,45 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
             goto cleanup;
         }
 
-        ndisk = virJSONValueArraySize(entry);
-        if (ndisk == 0)
+        info_ret[i]->ndisks = virJSONValueArraySize(entry);
+        if (info_ret[i]->ndisks == 0)
             continue;
-        if (VIR_ALLOC_N(info_ret[i]->devAlias, ndisk) < 0)
+        if (VIR_ALLOC_N(info_ret[i]->disks, info_ret[i]->ndisks) < 0)
             goto cleanup;
 
-        alias = info_ret[i]->devAlias;
-        info_ret[i]->ndevAlias = 0;
-        for (j = 0; j < ndisk; j++) {
-            virJSONValuePtr disk = virJSONValueArrayGet(entry, j);
+        for (j = 0; j < info_ret[i]->ndisks; j++) {
+            virJSONValuePtr jsondisk = virJSONValueArrayGet(entry, j);
             virJSONValuePtr pci;
             int diskaddr[3], pciaddr[4];
             const char *diskaddr_comp[] = {"bus", "target", "unit"};
             const char *pciaddr_comp[] = {"domain", "bus", "slot", "function"};
+            const char *val;
             virDomainDiskDefPtr diskDef;
 
-            if (!disk) {
+            if (VIR_ALLOC(info_ret[i]->disks[j]) < 0)
+                goto cleanup;
+
+            qemuAgentDiskInfoPtr disk = info_ret[i]->disks[j];
+
+            if (!jsondisk) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("array element '%zd' of '%zd' missing in "
                                  "guest-get-fsinfo 'disk' data"),
-                               j, ndisk);
+                               j, info_ret[i]->ndisks);
                 goto cleanup;
             }
 
-            if (!(pci = virJSONValueObjectGet(disk, "pci-controller"))) {
+            if ((val = virJSONValueObjectGetString(jsondisk, "serial"))) {
+                if (VIR_STRDUP(disk->serial, val) < 0)
+                    goto cleanup;
+            }
+
+            if ((val = virJSONValueObjectGetString(jsondisk, "dev"))) {
+                if (VIR_STRDUP(disk->devnode, val) < 0)
+                    goto cleanup;
+            }
+
+            if (!(pci = virJSONValueObjectGet(jsondisk, "pci-controller"))) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("'pci-controller' missing in guest-get-fsinfo "
                                  "'disk' data"));
@@ -1960,7 +2126,7 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
 
             for (k = 0; k < 3; k++) {
                 if (virJSONValueObjectGetNumberInt(
-                        disk, diskaddr_comp[k], &diskaddr[k]) < 0) {
+                        jsondisk, diskaddr_comp[k], &diskaddr[k]) < 0) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("'%s' missing in guest-get-fsinfo "
                                      "'disk' data"), diskaddr_comp[k]);
@@ -1986,13 +2152,8 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
                      diskaddr[0], diskaddr[1], diskaddr[2])))
                 continue;
 
-            if (VIR_STRDUP(*alias, diskDef->dst) < 0)
+            if (VIR_STRDUP(disk->alias, diskDef->dst) < 0)
                 goto cleanup;
-
-            if (*alias) {
-                alias++;
-                info_ret[i]->ndevAlias++;
-            }
         }
     }
 
@@ -2003,7 +2164,7 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
  cleanup:
     if (info_ret) {
         for (i = 0; i < ndata; i++)
-            virDomainFSInfoFree(info_ret[i]);
+            qemuAgentFSInfoFree(info_ret[i]);
         VIR_FREE(info_ret);
     }
     virJSONValueFree(cmd);
