@@ -754,6 +754,8 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
     struct stat sb;
     int refcount;
     int rc;
+    bool rollback = false;
+    int ret = -1;
 
     if (!path && src && src->path &&
         virStorageSourceIsLocalStorage(src))
@@ -780,16 +782,18 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
         } else if (refcount < 0) {
             return -1;
         } else if (refcount > 1) {
+            rollback = true;
             /* Refcount is greater than 1 which means that there
              * is @refcount domains using the @path. Do not
              * change the label (as it would almost certainly
              * cause the other domains to lose access to the
-             * @path). */
+             * @path). However, the refcounter was incremented in
+             * XATTRs so decrease it. */
             if (sb.st_uid != uid || sb.st_gid != gid) {
                 virReportError(VIR_ERR_OPERATION_INVALID,
                                _("Setting different DAC user or group on %s "
                                  "which is already in use"), path);
-                return -1;
+                goto cleanup;
             }
         }
     }
@@ -797,7 +801,13 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
     VIR_INFO("Setting DAC user and group on '%s' to '%ld:%ld'",
              NULLSTR(src ? src->path : path), (long)uid, (long)gid);
 
-    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0) {
+    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    if (ret < 0 && rollback) {
         virErrorPtr origerr;
 
         virErrorPreserveLast(&origerr);
@@ -812,10 +822,9 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
                      NULLSTR(src ? src->path : path));
 
         virErrorRestore(&origerr);
-        return -1;
     }
 
-    return 0;
+    return ret;
 }
 
 
