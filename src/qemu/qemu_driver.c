@@ -17420,11 +17420,14 @@ qemuDomainCheckpointGetXMLDesc(virDomainCheckpointPtr checkpoint,
     virDomainObjPtr vm = NULL;
     char *xml = NULL;
     virDomainMomentObjPtr chk = NULL;
+    qemuDomainObjPrivatePtr priv;
+    int rc;
     virDomainCheckpointDefPtr chkdef;
     unsigned int format_flags;
 
     virCheckFlags(VIR_DOMAIN_CHECKPOINT_XML_SECURE |
-                  VIR_DOMAIN_CHECKPOINT_XML_NO_DOMAIN, NULL);
+                  VIR_DOMAIN_CHECKPOINT_XML_NO_DOMAIN |
+                  VIR_DOMAIN_CHECKPOINT_XML_SIZE, NULL);
 
     if (!(vm = qemuDomObjFromCheckpoint(checkpoint)))
         return NULL;
@@ -17436,10 +17439,43 @@ qemuDomainCheckpointGetXMLDesc(virDomainCheckpointPtr checkpoint,
         goto cleanup;
     chkdef = virDomainCheckpointObjGetDef(chk);
 
+    if (flags & VIR_DOMAIN_CHECKPOINT_XML_SIZE) {
+        /* TODO: for non-current checkpoint, this requires a QMP sequence per
+           disk, since the stat of one bitmap in isolation is too low,
+           and merely adding bitmap sizes may be too high:
+             block-dirty-bitmap-create tmp
+             for each bitmap from checkpoint to current:
+               add bitmap to src_list
+             block-dirty-bitmap-merge dst=tmp src_list
+             query-block and read tmp size
+             block-dirty-bitmap-remove tmp
+           So for now, go with simpler query-blocks only for current.
+        */
+        if (virDomainCheckpointGetCurrent(vm->checkpoints) != chk) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("cannot compute size for non-current checkpoint '%s'"),
+                           checkpoint->name);
+            goto cleanup;
+        }
+
+        if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
+            goto cleanup;
+
+        if (virDomainObjCheckActive(vm) < 0)
+            goto endjob;
+
+        priv = vm->privateData;
+        qemuDomainObjEnterMonitor(driver, vm);
+        rc = qemuMonitorUpdateCheckpointSize(priv->mon, chkdef);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+            goto endjob;
+    }
+
     format_flags = virDomainCheckpointFormatConvertXMLFlags(flags);
     xml = virDomainCheckpointDefFormat(chkdef, driver->caps, driver->xmlopt,
                                        format_flags);
 
+ endjob:
     if (flags & VIR_DOMAIN_CHECKPOINT_XML_SIZE)
         qemuDomainObjEndJob(driver, vm);
 

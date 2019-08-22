@@ -24,6 +24,7 @@
 #include "internal.h"
 
 #include "domain_conf.h"
+#include "checkpoint_conf.h"
 #include "virbitmap.h"
 #include "virhash.h"
 #include "virjson.h"
@@ -677,6 +678,9 @@ int qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 
 int qemuMonitorBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
                                                 virHashTablePtr stats)
+    ATTRIBUTE_NONNULL(2);
+int qemuMonitorUpdateCheckpointSize(qemuMonitorPtr mon,
+                                    virDomainCheckpointDefPtr chk)
     ATTRIBUTE_NONNULL(2);
 
 int qemuMonitorBlockResize(qemuMonitorPtr mon,
