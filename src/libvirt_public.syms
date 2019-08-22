@@ -852,4 +852,11 @@ LIBVIRT_5.6.0 {
         virDomainListAllCheckpoints;
 } LIBVIRT_5.5.0;
 
+LIBVIRT_5.7.0 {
+    global:
+        virDomainBackupBegin;
+        virDomainBackupEnd;
+        virDomainBackupGetXMLDesc;
+} LIBVIRT_5.6.0;
+
 # .... define new API here using predicted next version number ....

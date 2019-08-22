@@ -65,6 +65,7 @@ VIR_ENUM_IMPL(qemuBlockjob,
               "copy",
               "commit",
               "active-commit",
+              "backup",
               "",
               "create");
 
@@ -1195,6 +1196,7 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
                 qemuBlockJobProcessEventConcludedCopyAbort(driver, vm, job, asyncJob);
             break;
 
+        case QEMU_BLOCKJOB_TYPE_BACKUP:
         case QEMU_BLOCKJOB_TYPE_NONE:
         case QEMU_BLOCKJOB_TYPE_INTERNAL:
         case QEMU_BLOCKJOB_TYPE_LAST:
@@ -1225,6 +1227,7 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
             qemuBlockJobProcessEventConcludedCopyAbort(driver, vm, job, asyncJob);
             break;
 
+        case QEMU_BLOCKJOB_TYPE_BACKUP:
         case QEMU_BLOCKJOB_TYPE_NONE:
         case QEMU_BLOCKJOB_TYPE_INTERNAL:
         case QEMU_BLOCKJOB_TYPE_LAST:
