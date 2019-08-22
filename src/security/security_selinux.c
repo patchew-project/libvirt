@@ -1257,9 +1257,20 @@ virSecuritySELinuxGetProcessLabel(virSecurityManagerPtr mgr ATTRIBUTE_UNUSED,
     return 0;
 }
 
-/* Attempt to change the label of PATH to TCON.  If OPTIONAL is true,
- * return 1 if labelling was not possible.  Otherwise, require a label
- * change, and return 0 for success, -1 for failure.  */
+/**
+ * virSecuritySELinuxSetFileconImpl:
+ * @path: path to the file to set context on
+ * @tcon: target context to set
+ * @optional: whether to treat errors as fatal
+ * @privileged: whether running as privileged user
+ *
+ * Set @tcon SELinux context on @path. If unable to do so, check SELinux
+ * configuration and produce sensible error message suggesting solution.
+ *
+ * Returns: -1 if failed to set context and SELinux is in enforcing mode
+ *           1 if failed to set context and @optional is true
+ *           0 otherwise.
+ */
 static int
 virSecuritySELinuxSetFileconImpl(const char *path, const char *tcon,
                                  bool optional, bool privileged)
