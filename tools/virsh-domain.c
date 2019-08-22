@@ -14042,6 +14042,233 @@ cmdDomFSInfo(vshControl *ctl, const vshCmd *cmd)
     return ret;
 }
 
+
+/*
+ * "backup-begin" command
+ */
+static const vshCmdInfo info_backup_begin[] = {
+    {.name = "help",
+     .data = N_("Start a disk backup of a live domain")
+    },
+    {.name = "desc",
+     .data = N_("Use XML to start a full or incremental disk backup of a live "
+                "domain, optionally creating a checkpoint")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_backup_begin[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "xmlfile",
+     .type = VSH_OT_STRING,
+     .help = N_("domain backup XML"),
+    },
+    {.name = "checkpointxml",
+     .type = VSH_OT_STRING,
+     .help = N_("domain checkpoint XML"),
+    },
+    {.name = "no-metadata",
+     .type = VSH_OT_BOOL,
+     .help = N_("create checkpoint but don't track metadata"),
+    },
+    {.name = "quiesce",
+     .type = VSH_OT_BOOL,
+     .help = N_("quiesce guest's file systems"),
+    },
+    /* TODO: --wait/--verbose/--timeout flags for push model backups? */
+    {.name = NULL}
+};
+
+static bool
+cmdBackupBegin(vshControl *ctl,
+               const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    bool ret = false;
+    const char *backup_from = NULL;
+    char *backup_buffer = NULL;
+    const char *check_from = NULL;
+    char *check_buffer = NULL;
+    unsigned int flags = 0;
+    int id;
+
+    if (vshCommandOptBool(cmd, "no-metadata"))
+        flags |= VIR_DOMAIN_BACKUP_BEGIN_NO_METADATA;
+    if (vshCommandOptBool(cmd, "quiesce"))
+        flags |= VIR_DOMAIN_BACKUP_BEGIN_QUIESCE;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        goto cleanup;
+
+    if (vshCommandOptStringReq(ctl, cmd, "xmlfile", &backup_from) < 0)
+        goto cleanup;
+    if (!backup_from) {
+        backup_buffer = vshStrdup(ctl, "<domainbackup/>");
+    } else {
+        if (virFileReadAll(backup_from, VSH_MAX_XML_FILE, &backup_buffer) < 0) {
+            vshSaveLibvirtError();
+            goto cleanup;
+        }
+    }
+
+    if (vshCommandOptStringReq(ctl, cmd, "checkpointxml", &check_from) < 0)
+        goto cleanup;
+    if (check_from) {
+        if (virFileReadAll(check_from, VSH_MAX_XML_FILE, &check_buffer) < 0) {
+            vshSaveLibvirtError();
+            goto cleanup;
+        }
+    }
+
+    id = virDomainBackupBegin(dom, backup_buffer, check_buffer, flags);
+
+    if (id < 0)
+        goto cleanup;
+
+    vshPrint(ctl, _("Backup id %d started\n"), id);
+    if (backup_from)
+        vshPrintExtra(ctl, _("backup used description from '%s'\n"),
+                      backup_from);
+    if (check_buffer)
+        vshPrintExtra(ctl, _("checkpoint created from '%s'\n"), check_from);
+
+    ret = true;
+
+ cleanup:
+    VIR_FREE(backup_buffer);
+    VIR_FREE(check_buffer);
+    virshDomainFree(dom);
+
+    return ret;
+}
+
+/* TODO: backup-begin-as? */
+
+/*
+ * "backup-dumpxml" command
+ */
+static const vshCmdInfo info_backup_dumpxml[] = {
+    {.name = "help",
+     .data = N_("Dump XML for an ongoing domain block backup job")
+    },
+    {.name = "desc",
+     .data = N_("Backup Dump XML")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_backup_dumpxml[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "id",
+     .type = VSH_OT_INT,
+     .help = N_("backup job id"),
+     /* TODO: Add API for listing active jobs, then adding a completer? */
+    },
+    /* TODO - worth adding this flag?
+    {.name = "checkpoint",
+     .type = VSH_OT_BOOL,
+     .help = N_("if the backup created a checkpoint, also dump that XML")
+    },
+    */
+    {.name = NULL}
+};
+
+static bool
+cmdBackupDumpXML(vshControl *ctl,
+                 const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    bool ret = false;
+    char *xml = NULL;
+    unsigned int flags = 0;
+    int id = 0;
+
+    if (vshCommandOptBool(cmd, "security-info"))
+        flags |= VIR_DOMAIN_XML_SECURE;
+
+    if (vshCommandOptInt(ctl, cmd, "id", &id) < 0)
+        return false;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if (!(xml = virDomainBackupGetXMLDesc(dom, id, flags)))
+        goto cleanup;
+
+    vshPrint(ctl, "%s", xml);
+    ret = true;
+
+ cleanup:
+    VIR_FREE(xml);
+    virshDomainFree(dom);
+
+    return ret;
+}
+
+
+/*
+ * "backup-end" command
+ */
+static const vshCmdInfo info_backup_end[] = {
+    {.name = "help",
+     .data = N_("Conclude a disk backup of a live domain")
+    },
+    {.name = "desc",
+     .data = N_("End a domain block backup job")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_backup_end[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "id",
+     .type = VSH_OT_INT,
+     .help = N_("backup job id"),
+     /* TODO: Add API for listing active jobs, then adding a completer? */
+    },
+    {.name = "abort",
+     .type = VSH_OT_BOOL,
+     .help = N_("abandon a push model backup that has not yet completed")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdBackupEnd(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    bool ret = false;
+    unsigned int flags = 0;
+    int id = 0;
+    int rc;
+
+    if (vshCommandOptBool(cmd, "abort"))
+        flags |= VIR_DOMAIN_BACKUP_END_ABORT;
+
+    if (vshCommandOptInt(ctl, cmd, "id", &id) < 0)
+        return false;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        goto cleanup;
+
+    rc = virDomainBackupEnd(dom, id, flags);
+
+    if (rc < 0)
+        goto cleanup;
+    if (rc == 0)
+        vshPrint(ctl, _("Backup id %d aborted"), id);
+    else
+        vshPrint(ctl, _("Backup id %d completed"), id);
+
+    ret = true;
+
+ cleanup:
+    virshDomainFree(dom);
+
+    return ret;
+}
+
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -14065,6 +14292,24 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdAutostart,
      .opts = opts_autostart,
      .info = info_autostart,
+     .flags = 0
+    },
+    {.name = "backup-begin",
+     .handler = cmdBackupBegin,
+     .opts = opts_backup_begin,
+     .info = info_backup_begin,
+     .flags = 0
+    },
+    {.name = "backup-dumpxml",
+     .handler = cmdBackupDumpXML,
+     .opts = opts_backup_dumpxml,
+     .info = info_backup_dumpxml,
+     .flags = 0
+    },
+    {.name = "backup-end",
+     .handler = cmdBackupEnd,
+     .opts = opts_backup_end,
+     .info = info_backup_end,
      .flags = 0
     },
     {.name = "blkdeviotune",
