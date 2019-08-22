@@ -3723,6 +3723,37 @@ struct remote_domain_checkpoint_delete_args {
     unsigned int flags;
 };
 
+struct remote_domain_backup_begin_args {
+    remote_nonnull_domain dom;
+    remote_string disk_xml;
+    remote_string checkpoint_xml;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_begin_ret {
+    int id;
+};
+
+struct remote_domain_backup_get_xml_desc_args {
+    remote_nonnull_domain dom;
+    int id;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_domain_backup_end_args {
+    remote_nonnull_domain dom;
+    int id;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_end_ret {
+    int retcode;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6584,5 +6615,26 @@ enum remote_procedure {
      * @generate: both
      * @acl: domain:checkpoint
      */
-    REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 417
+    REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 417,
+
+    /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     * @acl: domain:block_write
+     * @acl: domain:fs_freeze:VIR_DOMAIN_BACKUP_BEGIN_QUIESCE
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_BEGIN = 418,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 419,
+
+    /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_END = 420
 };

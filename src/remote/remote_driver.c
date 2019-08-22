@@ -8733,6 +8733,9 @@ static virHypervisorDriver hypervisor_driver = {
     .domainCheckpointLookupByName = remoteDomainCheckpointLookupByName, /* 5.6.0 */
     .domainCheckpointGetParent = remoteDomainCheckpointGetParent, /* 5.6.0 */
     .domainCheckpointDelete = remoteDomainCheckpointDelete, /* 5.6.0 */
+    .domainBackupBegin = remoteDomainBackupBegin, /* 5.7.0 */
+    .domainBackupGetXMLDesc = remoteDomainBackupGetXMLDesc, /* 5.7.0 */
+    .domainBackupEnd = remoteDomainBackupEnd, /* 5.7.0 */
 };
 
 static virNetworkDriver network_driver = {
