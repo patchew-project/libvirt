@@ -17628,14 +17628,13 @@ qemuDomainBackupPrepare(virQEMUDriverPtr driver, virDomainObjPtr vm,
 /* Called while monitor lock is held. Best-effort cleanup. */
 static int
 qemuDomainBackupDiskCleanup(virQEMUDriverPtr driver, virDomainObjPtr vm,
-                            virDomainBackupDiskDef *disk, bool incremental)
+                            virDomainBackupDiskDef *disk, bool push,
+                            bool incremental, bool completed)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     const char *node = vm->def->disks[disk->idx]->src->nodeformat;
     int ret = 0;
 
-    if (!disk->store)
-        return 0;
     if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT) {
         /* No real need to use nbd-server-remove, since we will
          * shortly be calling nbd-server-stop. */
@@ -17648,16 +17647,17 @@ qemuDomainBackupDiskCleanup(virQEMUDriverPtr driver, virDomainObjPtr vm,
     }
     if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_READY &&
         qemuMonitorBlockdevDel(priv->mon, disk->store->nodeformat) < 0) {
-        VIR_WARN("Unable to remove temp disk %s after backup",
-                 disk->name);
+        VIR_WARN("Unable to remove %s disk %s after backup",
+                 push ? "target" : "scratch", disk->name);
         ret = -1;
     }
     if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_LABEL)
         qemuDomainStorageSourceAccessRevoke(driver, vm, disk->store);
-    if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_CREATED &&
+    if ((!push || !completed) &&
+        disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_CREATED &&
         disk->store->detected && unlink(disk->store->path) < 0) {
-        VIR_WARN("Unable to unlink temp disk %s after backup",
-                 disk->store->path);
+        VIR_WARN("Unable to unlink %s disk %s after backup",
+                 push ? "failed target" : "scratch", disk->store->path);
         ret = -1;
     }
     return ret;
@@ -17677,6 +17677,7 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     virJSONValuePtr json = NULL;
     bool job_started = false;
     bool nbd_running = false;
+    bool push;
     size_t i;
     struct timeval tv;
     char *suffix = NULL;
@@ -17725,7 +17726,8 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     if (!(def = virDomainBackupDefParseString(diskXml, driver->xmlopt, 0)))
         goto cleanup;
 
-    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL) {
+    push = def->type == VIR_DOMAIN_BACKUP_TYPE_PUSH;
+    if (!push) {
         if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NBD_BITMAP)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("qemu binary lacks pull-mode backup support"));
@@ -17760,10 +17762,6 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
                            _("unexpected transport in <domainbackup>"));
             goto cleanup;
         }
-    } else {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("push mode backups not supported yet"));
-        goto cleanup;
     }
     if (def->incremental) {
         if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BITMAP_MERGE)) {
@@ -17844,6 +17842,7 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
             cmd = NULL;
         }
 
+        /* FIXME: allow non-local files for push destinations */
         if (virJSONValueObjectCreate(&file,
                                      "s:driver", "file",
                                      "s:filename", disk->store->path,
@@ -17884,7 +17883,7 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
                                           "blockdev-backup",
                                           "s:device", src->nodeformat,
                                           "s:target", disk->store->nodeformat,
-                                          "s:sync", "none",
+                                          "s:sync", push ? "full" : "none",
                                           "s:job-id", disk->name,
                                           NULL) < 0)
             goto endmon;
@@ -17897,7 +17896,7 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
        - pull: nbd-server-start with <server> from user (or autogenerate server)
        - pull: nbd-server-add per <disk>, including bitmap for incr
     */
-    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL) {
+    if (!push) {
         if (qemuMonitorNBDServerStart(priv->mon, def->server, NULL) < 0)
             goto endmon;
         nbd_running = true;
@@ -17928,11 +17927,14 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
         for (i = 0; i < def->ndisks; i++) {
             virDomainBackupDiskDef *disk = &def->disks[i];
 
+            if (!disk->store)
+                continue;
             if (job_started &&
                 qemuMonitorBlockJobCancel(priv->mon, disk->name) < 0)
                 VIR_WARN("Unable to stop backup job %s on vm %s after failure",
                          disk->store->nodeformat, vm->def->name);
-            qemuDomainBackupDiskCleanup(driver, vm, disk, !!def->incremental);
+            qemuDomainBackupDiskCleanup(driver, vm, disk, push,
+                                        !!def->incremental, false);
         }
         virSetError(save_err);
         virFreeError(save_err);
@@ -18007,6 +18009,8 @@ static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
     bool want_abort = flags & VIR_DOMAIN_BACKUP_END_ABORT;
     virDomainBackupDefPtr def;
     size_t i;
+    bool push = true;
+    bool completed = true;
 
     virCheckFlags(VIR_DOMAIN_BACKUP_END_ABORT, -1);
 
@@ -18025,23 +18029,50 @@ static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
         goto cleanup;
     }
 
-    if (priv->backup->type != VIR_DOMAIN_BACKUP_TYPE_PUSH)
-        want_abort = false;
     def = priv->backup;
+    if (def->type != VIR_DOMAIN_BACKUP_TYPE_PUSH) {
+        want_abort = false;
+        push = false;
+    }
 
     /* We are going to modify the domain below. */
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL)
+    if (push) {
+        for (i = 0; i < def->ndisks; i++) {
+            virDomainBackupDiskDef *disk = &def->disks[i];
+
+            if (!disk->store)
+                continue;
+            if (disk->state != VIR_DOMAIN_BACKUP_DISK_STATE_COMPLETE)
+                completed = false;
+        }
+    } else {
         ret = qemuMonitorNBDServerStop(priv->mon);
-    for (i = 0; i < def->ndisks; i++) {
-        if (qemuMonitorBlockJobCancel(priv->mon,
-                                      def->disks[i].name) < 0 ||
-            qemuDomainBackupDiskCleanup(driver, vm, &def->disks[i],
-                                        !!def->incremental) < 0)
-            ret = -1;
+    }
+    if (!completed && !want_abort) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("backup job id '%d' not complete yet"), id);
+    } else {
+        for (i = 0; i < def->ndisks; i++) {
+            virDomainBackupDiskDef *disk = &def->disks[i];
+
+            if (!disk->store)
+                continue;
+            if (!push || disk->state < VIR_DOMAIN_BACKUP_DISK_STATE_COMPLETE) {
+                if (qemuMonitorBlockJobCancel(priv->mon,
+                                              disk->name) < 0 &&
+                    !want_abort) {
+                    ret = -1;
+                    continue;
+                }
+            }
+            if (qemuDomainBackupDiskCleanup(driver, vm, disk, push,
+                                            !!def->incremental, completed) < 0)
+                ret = -1;
+        }
     }
     if (qemuDomainObjExitMonitor(driver, vm) < 0 || ret < 0) {
         ret = -1;
