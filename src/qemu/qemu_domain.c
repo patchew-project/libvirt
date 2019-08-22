@@ -3071,11 +3071,18 @@ qemuDomainObjPrivateXMLParseBlockjobs(virQEMUDriverPtr driver,
         }
     }
 
-    if ((node = virXPathNode("./domainbackup", ctxt)) &&
-        !(priv->backup = virDomainBackupDefParseNode(ctxt->doc, node,
-                                                     driver->xmlopt,
-                                                     VIR_DOMAIN_BACKUP_PARSE_INTERNAL)))
-        return -1;
+    if ((node = virXPathNode("./domainbackup", ctxt))) {
+        if (!(priv->backup = virDomainBackupDefParseNode(ctxt->doc, node,
+                                                         driver->xmlopt,
+                                                         VIR_DOMAIN_BACKUP_PARSE_INTERNAL)))
+            return -1;
+        /* The backup job is only stored in XML if backupBegin
+         * succeeded at exporting the disk, so no need to store disk
+         * state when we can just force-reset it to a known-good
+         * value. */
+        for (i = 0; i < priv->backup->ndisks; i++)
+            priv->backup->disks[i].state = VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT;
+    }
 
     return 0;
 }
