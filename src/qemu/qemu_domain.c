@@ -58,6 +58,7 @@
 #include "locking/domain_lock.h"
 #include "virdomainsnapshotobjlist.h"
 #include "virdomaincheckpointobjlist.h"
+#include "backup_conf.h"
 
 #ifdef MAJOR_IN_MKDEV
 # include <sys/mkdev.h>
@@ -2448,6 +2449,7 @@ qemuDomainObjPrivateXMLFormatBlockjobs(virBufferPtr buf,
     bool bj = qemuDomainHasBlockjob(vm, false);
     struct qemuDomainPrivateBlockJobFormatData iterdata = { priv->driver->xmlopt,
                                                             &childBuf };
+    int ret = -1;
 
     virBufferAsprintf(&attrBuf, " active='%s'",
                       virTristateBoolTypeToString(virTristateBoolFromBool(bj)));
@@ -2460,7 +2462,17 @@ qemuDomainObjPrivateXMLFormatBlockjobs(virBufferPtr buf,
                        &iterdata) < 0)
         return -1;
 
-    return virXMLFormatElement(buf, "blockjobs", &attrBuf, &childBuf);
+    if (virXMLFormatElement(buf, "blockjobs", &attrBuf, &childBuf) < 0)
+        goto cleanup;
+
+    /* TODO: merge other blockjobs and backups into uniform space? */
+    if (priv->backup && virDomainBackupDefFormat(buf, priv->backup, true) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virBufferFreeAndReset(&attrBuf);
+    return ret;
 }
 
 
@@ -3032,11 +3044,13 @@ qemuDomainObjPrivateXMLParseBlockjobData(virDomainObjPtr vm,
 
 
 static int
-qemuDomainObjPrivateXMLParseBlockjobs(virDomainObjPtr vm,
+qemuDomainObjPrivateXMLParseBlockjobs(virQEMUDriverPtr driver,
+                                      virDomainObjPtr vm,
                                       qemuDomainObjPrivatePtr priv,
                                       xmlXPathContextPtr ctxt)
 {
     VIR_AUTOFREE(xmlNodePtr *) nodes = NULL;
+    xmlNodePtr node;
     ssize_t nnodes = 0;
     VIR_AUTOFREE(char *) active = NULL;
     int tmp;
@@ -3056,6 +3070,12 @@ qemuDomainObjPrivateXMLParseBlockjobs(virDomainObjPtr vm,
                 return -1;
         }
     }
+
+    if ((node = virXPathNode("./domainbackup", ctxt)) &&
+        !(priv->backup = virDomainBackupDefParseNode(ctxt->doc, node,
+                                                     driver->xmlopt,
+                                                     VIR_DOMAIN_BACKUP_PARSE_INTERNAL)))
+        return -1;
 
     return 0;
 }
@@ -3414,7 +3434,7 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     qemuDomainObjPrivateXMLParsePR(ctxt, &priv->prDaemonRunning);
 
-    if (qemuDomainObjPrivateXMLParseBlockjobs(vm, priv, ctxt) < 0)
+    if (qemuDomainObjPrivateXMLParseBlockjobs(driver, vm, priv, ctxt) < 0)
         goto error;
 
     qemuDomainStorageIdReset(priv);

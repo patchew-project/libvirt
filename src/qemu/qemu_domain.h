@@ -392,6 +392,10 @@ struct _qemuDomainObjPrivate {
 
     /* running block jobs */
     virHashTablePtr blockjobs;
+
+    /* Any currently running backup job.
+     * FIXME: allow jobs in parallel. For now, at most one job, always id 1. */
+    virDomainBackupDefPtr backup;
 };
 
 #define QEMU_DOMAIN_PRIVATE(vm) \

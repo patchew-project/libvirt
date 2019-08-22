@@ -105,6 +105,7 @@
 #include "virdomainsnapshotobjlist.h"
 #include "virenum.h"
 #include "virdomaincheckpointobjlist.h"
+#include "backup_conf.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -17591,6 +17592,187 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
     return ret;
 }
 
+static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
+                                 const char *checkpointXml, unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    virDomainBackupDefPtr def = NULL;
+    virQEMUDriverConfigPtr cfg = NULL;
+    virCapsPtr caps = NULL;
+    qemuDomainObjPrivatePtr priv;
+    int ret = -1;
+    struct timeval tv;
+    char *suffix = NULL;
+
+    virCheckFlags(VIR_DOMAIN_BACKUP_BEGIN_NO_METADATA, -1);
+    /* TODO: VIR_DOMAIN_BACKUP_BEGIN_QUIESCE */
+
+    // FIXME: Support non-null checkpointXML for incremental - what
+    // code can be shared with CheckpointCreateXML, then add to transaction
+    // to create new checkpoint at same time as starting blockdev-backup
+    if (checkpointXml) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot create incremental backups yet"));
+        return -1;
+    }
+    // if (chk) VIR_STRDUP(suffix, chk->name);
+    gettimeofday(&tv, NULL);
+    if (virAsprintf(&suffix, "%lld", (long long)tv.tv_sec) < 0)
+        goto cleanup;
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        goto cleanup;
+
+    cfg = virQEMUDriverGetConfig(driver);
+
+    if (virDomainBackupBeginEnsureACL(domain->conn, vm->def, flags) < 0)
+        goto cleanup;
+
+    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
+        goto cleanup;
+
+    if (qemuProcessAutoDestroyActive(driver, vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is marked for auto destroy"));
+        goto cleanup;
+    }
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot perform disk backup for inactive domain"));
+        goto cleanup;
+    }
+    if (!(def = virDomainBackupDefParseString(diskXml, driver->xmlopt, 0)))
+        goto cleanup;
+
+    /* We are going to modify the domain below. */
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    priv = vm->privateData;
+    if (priv->backup) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("another backup job is already running"));
+        goto endjob;
+    }
+
+    if (virDomainBackupAlignDisks(def, vm->def, suffix) < 0)
+        goto endjob;
+
+    /* actually start the checkpoint. 2x2 array of push/pull, full/incr,
+       plus additional tweak if checkpoint requested */
+    /* TODO: issue QMP commands:
+       - pull: nbd-server-start with <server> from user (or autogenerate server)
+       - push/pull: blockdev-add per <disk>
+       - incr: bitmap-add of tmp, bitmap-merge per <disk>
+       - transaction, containing:
+         - push+full: blockdev-backup sync:full
+         - push+incr: blockdev-backup sync:incremental bitmap:tmp
+         - pull+full: blockdev-backup sync:none
+         - pull+incr: blockdev-backup sync:none, bitmap-disable of tmp
+         - if checkpoint: bitmap-disable of old, bitmap-add of new
+       - pull: nbd-server-add per <disk>, including bitmap for incr
+    */
+
+    VIR_STEAL_PTR(priv->backup, def);
+    ret = priv->backup->id = 1; /* Hard-coded job id for now */
+    if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm,
+                            driver->caps) < 0)
+        VIR_WARN("Unable to save status on vm %s after backup job",
+                 vm->def->name);
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+ cleanup:
+    VIR_FREE(suffix);
+    virDomainObjEndAPI(&vm);
+    virDomainBackupDefFree(def);
+    virObjectUnref(caps);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+static char *qemuDomainBackupGetXMLDesc(virDomainPtr domain, int id,
+                                        unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    char *xml = NULL;
+    qemuDomainObjPrivatePtr priv;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virCheckFlags(0, NULL);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        return NULL;
+
+    if (virDomainBackupGetXMLDescEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    /* TODO: Allow more than one hard-coded job id */
+    priv = vm->privateData;
+    if ((id != 0 && id != 1) || !priv->backup) {
+        virReportError(VIR_ERR_NO_DOMAIN_BACKUP,
+                       _("no domain backup job with id '%d'"), id);
+        goto cleanup;
+    }
+
+    if (virDomainBackupDefFormat(&buf, priv->backup, false) < 0)
+        goto cleanup;
+    xml = virBufferContentAndReset(&buf);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return xml;
+}
+
+static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virQEMUDriverConfigPtr cfg = NULL;
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+    virDomainBackupDefPtr backup = NULL;
+    qemuDomainObjPrivatePtr priv;
+    bool want_abort = flags & VIR_DOMAIN_BACKUP_END_ABORT;
+
+    virCheckFlags(VIR_DOMAIN_BACKUP_END_ABORT, -1);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        return -1;
+
+    cfg = virQEMUDriverGetConfig(driver);
+    if (virDomainBackupEndEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    /* TODO: Allow more than one hard-coded job id */
+    priv = vm->privateData;
+    if ((id != 0 && id != 1) || !priv->backup) {
+        virReportError(VIR_ERR_NO_DOMAIN_BACKUP,
+                       _("no domain backup job with id '%d'"), id);
+        goto cleanup;
+    }
+
+    if (priv->backup->type != VIR_DOMAIN_BACKUP_TYPE_PUSH)
+        want_abort = false;
+
+    /* TODO: QMP commands to actually cancel the pending job, and on
+     * pull, also tear down the NBD server */
+    VIR_STEAL_PTR(backup, priv->backup);
+    if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm,
+                            driver->caps) < 0)
+        VIR_WARN("Unable to save status on vm %s after backup job",
+                 vm->def->name);
+
+    ret = want_abort ? 0 : 1;
+
+ cleanup:
+    virDomainBackupDefFree(backup);
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
 static int qemuDomainQemuMonitorCommand(virDomainPtr domain, const char *cmd,
                                         char **result, unsigned int flags)
 {
@@ -23476,6 +23658,9 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainCheckpointLookupByName = qemuDomainCheckpointLookupByName, /* 5.6.0 */
     .domainCheckpointGetParent = qemuDomainCheckpointGetParent, /* 5.6.0 */
     .domainCheckpointDelete = qemuDomainCheckpointDelete, /* 5.6.0 */
+    .domainBackupBegin = qemuDomainBackupBegin, /* 5.7.0 */
+    .domainBackupGetXMLDesc = qemuDomainBackupGetXMLDesc, /* 5.7.0 */
+    .domainBackupEnd = qemuDomainBackupEnd, /* 5.7.0 */
 };
 
 
