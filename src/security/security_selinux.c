@@ -1384,12 +1384,22 @@ virSecuritySELinuxSetFilecon(virSecurityManagerPtr mgr,
         }
     }
 
-    if (virSecuritySELinuxSetFileconImpl(path, tcon, privileged) < 0)
+    if ((rc = virSecuritySELinuxSetFileconImpl(path, tcon, privileged)) < 0)
         goto cleanup;
+
+    /* At this point, we can claim success. However,
+     * virSecuritySELinuxSetFileconImpl() could returned 0
+     * (SELinux label changed) or 1 (SELinux label NOT changed in
+     * a non-critical fashion). If the label was NOT changed, we
+     * must remove remembered label then - there's nothing to
+     * remember, is there? But of the label was changed, don't
+     * remove the remembered label. It's valid. */
+    if (rc == 0)
+        rollback = false;
 
     ret = 0;
  cleanup:
-    if (ret < 0 && rollback) {
+    if (rollback) {
         virErrorPtr origerr;
 
         virErrorPreserveLast(&origerr);
