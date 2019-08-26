@@ -60,7 +60,6 @@ VIR_ENUM_DECL(virStorage);
 
 
 typedef enum {
-    VIR_STORAGE_FILE_AUTO_SAFE = -2,
     VIR_STORAGE_FILE_AUTO = -1,
     VIR_STORAGE_FILE_NONE = 0,
     VIR_STORAGE_FILE_RAW,

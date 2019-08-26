@@ -692,7 +692,7 @@ qedGetBackingStore(char **res,
     if (flags & QED_F_BACKING_FORMAT_NO_PROBE)
         *format = VIR_STORAGE_FILE_RAW;
     else
-        *format = VIR_STORAGE_FILE_AUTO_SAFE;
+        *format = VIR_STORAGE_FILE_AUTO;
 
     return BACKING_STORE_OK;
 }
@@ -4916,8 +4916,6 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
             goto cleanup;
 
         if (backingFormat == VIR_STORAGE_FILE_AUTO)
-            backingStore->format = VIR_STORAGE_FILE_RAW;
-        else if (backingFormat == VIR_STORAGE_FILE_AUTO_SAFE)
             backingStore->format = VIR_STORAGE_FILE_AUTO;
         else
             backingStore->format = backingFormat;

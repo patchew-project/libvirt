@@ -1367,7 +1367,6 @@ qemuBlockStorageSourceGetBlockdevFormatProps(virStorageSourcePtr src)
         driver = virStorageFileFormatTypeToString(src->format);
         break;
 
-    case VIR_STORAGE_FILE_AUTO_SAFE:
     case VIR_STORAGE_FILE_AUTO:
     case VIR_STORAGE_FILE_NONE:
     case VIR_STORAGE_FILE_COW:
@@ -2275,7 +2274,6 @@ qemuBlockStorageSourceCreateGetFormatProps(virStorageSourcePtr src,
     case VIR_STORAGE_FILE_DIR:
         return 0;
 
-    case VIR_STORAGE_FILE_AUTO_SAFE:
     case VIR_STORAGE_FILE_AUTO:
     case VIR_STORAGE_FILE_NONE:
         virReportError(VIR_ERR_INTERNAL_ERROR,
