@@ -4471,9 +4471,9 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
             virCommandAddArg(cmd, str);
             if (sound->model == VIR_DOMAIN_SOUND_MODEL_ICH6 ||
                 sound->model == VIR_DOMAIN_SOUND_MODEL_ICH9) {
-                char *codecstr = NULL;
 
                 for (j = 0; j < sound->ncodecs; j++) {
+                    VIR_AUTOFREE(char *) codecstr = NULL;
                     virCommandAddArg(cmd, "-device");
                     if (!(codecstr =
                           qemuBuildSoundCodecStr(sound, sound->codecs[j],
@@ -4482,9 +4482,9 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
 
                     }
                     virCommandAddArg(cmd, codecstr);
-                    VIR_FREE(codecstr);
                 }
                 if (j == 0) {
+                    VIR_AUTOFREE(char *) codecstr = NULL;
                     virDomainSoundCodecDef codec = {
                         VIR_DOMAIN_SOUND_CODEC_TYPE_DUPLEX,
                         0
@@ -4497,7 +4497,6 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
 
                     }
                     virCommandAddArg(cmd, codecstr);
-                    VIR_FREE(codecstr);
                 }
             }
         }
