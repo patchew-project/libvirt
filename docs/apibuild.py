@@ -2010,6 +2010,8 @@ class docBuilder:
             self.includes = includes + list(lxc_included_files.keys())
         elif name == "libvirt-admin":
             self.includes = includes + list(admin_included_files.keys())
+        else:
+            self.includes = includes
         self.modules = {}
         self.headers = {}
         self.idx = index()

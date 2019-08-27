@@ -58,6 +58,7 @@
 /configure.lineno
 /conftest.*
 /docs/aclperms.htmlinc
+/docs/storagebackendstatus.htmlinc
 /docs/apibuild.py.stamp
 /docs/devhelp/libvirt.devhelp
 /docs/hvsupport.html.in
