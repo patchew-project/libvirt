@@ -4813,12 +4813,6 @@ bool
 virDomainSCSIDriveAddressIsUsed(const virDomainDef *def,
                                 const virDomainDeviceDriveAddress *addr)
 {
-    /* In current implementation, the maximum unit number of a controller
-     * is either 16 or 7 (narrow SCSI bus), and if the maximum unit number
-     * is 16, the controller itself is on unit 7 */
-    if (addr->unit == 7)
-        return true;
-
     if (virDomainDriveAddressIsUsedByDisk(def, VIR_DOMAIN_DISK_BUS_SCSI,
                                           addr) ||
         virDomainDriveAddressIsUsedByHostdev(def,
