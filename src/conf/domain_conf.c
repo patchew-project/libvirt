@@ -25316,6 +25316,7 @@ virDomainNetDefFormat(virBufferPtr buf,
     const char *typeStr;
     virDomainHostdevDefPtr hostdef = NULL;
     char macstr[VIR_MAC_STRING_BUFLEN];
+    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
 
     /* publicActual is true if we should report the current state in
      * def->data.network.actual *instead of* the config (*not* in
@@ -25530,9 +25531,12 @@ virDomainNetDefFormat(virBufferPtr buf,
           (STRPREFIX(def->ifname, VIR_NET_GENERATED_TAP_PREFIX) ||
            (prefix && STRPREFIX(def->ifname, prefix))))) {
         /* Skip auto-generated target names for inactive config. */
-        virBufferEscapeString(buf, "<target dev='%s'/>\n", def->ifname);
+        virBufferEscapeString(&attrBuf, " dev='%s'", def->ifname);
     }
 
+    if (virXMLFormatElement(buf, "target", &attrBuf, NULL) < 0)
+        return -1;
+    
     if (def->ifname_guest || def->ifname_guest_actual) {
         virBufferAddLit(buf, "<guest");
         /* Skip auto-generated target names for inactive config. */
