@@ -50,6 +50,19 @@
           for Hyper-V guests.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support use of precreated tap/macvtap devices by unprivileged libvirtd
+        </summary>
+        <description>
+          It is now possible for an unprivileged libvirtd to make use
+          of tap and macvtap devices that were previously created by
+          some other entity. Since is done by setting
+          <code>managed='no'</code> along with the device name in the
+          <code>target</code> subelement of <code>&lt;interface
+          type='ethernet'&gt;</code>
+        </description>
+      </change>
     </section>
     <section title="Removed features">
       <change>
