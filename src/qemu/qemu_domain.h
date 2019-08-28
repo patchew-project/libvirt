@@ -923,6 +923,7 @@ bool qemuDomainHasBuiltinIDE(const virDomainDef *def);
 bool qemuDomainNeedsFDC(const virDomainDef *def);
 bool qemuDomainSupportsPCI(virDomainDefPtr def,
                            virQEMUCapsPtr qemuCaps);
+bool qemuDomainIsUEFI(const virDomainDef *def);
 
 void qemuDomainUpdateCurrentMemorySize(virDomainObjPtr vm);
 

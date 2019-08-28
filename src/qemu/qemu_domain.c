@@ -4584,6 +4584,14 @@ qemuDomainValidateCpuCount(const virDomainDef *def,
 }
 
 
+static bool
+qemuDomainDefIsUEFI(const virDomainDef *def)
+{
+    return ((def->os.firmware == VIR_DOMAIN_OS_DEF_FIRMWARE_EFI ||
+             (def->os.loader && def->os.loader->type ==
+              VIR_DOMAIN_LOADER_TYPE_PFLASH)));
+}
+
 static int
 qemuDomainDefValidate(const virDomainDef *def,
                       virCapsPtr caps ATTRIBUTE_UNUSED,
@@ -4606,10 +4614,7 @@ qemuDomainDefValidate(const virDomainDef *def,
     }
 
     /* On x86, UEFI requires ACPI */
-    if ((def->os.firmware == VIR_DOMAIN_OS_DEF_FIRMWARE_EFI ||
-         (def->os.loader &&
-          def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH)) &&
-        ARCH_IS_X86(def->os.arch) &&
+    if (qemuDomainDefIsUEFI(def) && ARCH_IS_X86(def->os.arch) &&
         def->features[VIR_DOMAIN_FEATURE_ACPI] != VIR_TRISTATE_SWITCH_ON) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("UEFI requires ACPI on this architecture"));
@@ -4619,9 +4624,7 @@ qemuDomainDefValidate(const virDomainDef *def,
     /* On aarch64, ACPI requires UEFI */
     if (def->features[VIR_DOMAIN_FEATURE_ACPI] == VIR_TRISTATE_SWITCH_ON &&
         def->os.arch == VIR_ARCH_AARCH64 &&
-        (def->os.firmware != VIR_DOMAIN_OS_DEF_FIRMWARE_EFI &&
-         (!def->os.loader ||
-          def->os.loader->type != VIR_DOMAIN_LOADER_TYPE_PFLASH))) {
+        !qemuDomainDefIsUEFI(def)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("ACPI requires UEFI on this architecture"));
         goto cleanup;
@@ -7452,6 +7455,8 @@ qemuDomainDeviceVideoDefPostParse(virDomainVideoDefPtr video,
                  qemuDomainIsRISCVVirt(def) ||
                  ARCH_IS_S390(def->os.arch))
             video->type = VIR_DOMAIN_VIDEO_TYPE_VIRTIO;
+        else if (qemuDomainDefIsUEFI(def))
+            video->type = VIR_DOMAIN_VIDEO_TYPE_BOCHS;
         else
             video->type = VIR_DOMAIN_VIDEO_TYPE_CIRRUS;
     }
