@@ -60,6 +60,9 @@ else
 fi
 export PKG_CONFIG_PATH
 
+LIBVIRT_DIR_OVERRIDE=1
+export LIBVIRT_DIR_OVERRIDE
+
 # This is a cheap way to find some use-after-free and uninitialized
 # read problems when using glibc.
 random_val="$(awk 'BEGIN{srand(); print 1+int(255*rand())}' < /dev/null)"

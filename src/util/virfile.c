@@ -1776,14 +1776,19 @@ virFileFindResource(const char *filename,
 void
 virFileActivateDirOverride(const char *argv0)
 {
-    char *file = strrchr(argv0, '/');
-    if (!file || file[1] == '\0')
-        return;
-    file++;
-    if (STRPREFIX(file, "lt-") ||
-        strstr(argv0, "/.libs/")) {
-        useDirOverride = true;
-        VIR_DEBUG("Activating build dir override for %s", argv0);
+    if (argv0 == NULL) {
+        if (getenv("LIBVIRT_DIR_OVERRIDE") != NULL)
+            useDirOverride = true;
+    } else {
+        char *file = strrchr(argv0, '/');
+        if (!file || file[1] == '\0')
+            return;
+        file++;
+        if (STRPREFIX(file, "lt-") ||
+            strstr(argv0, "/.libs/")) {
+            useDirOverride = true;
+            VIR_DEBUG("Activating build dir override for %s", argv0);
+        }
     }
 }
 
