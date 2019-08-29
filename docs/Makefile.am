@@ -195,6 +195,8 @@ EXTRA_DIST= \
   $(kbase_html_in) $(kbase_html) \
   aclperms.htmlinc \
   hvsupport.pl \
+  storagebackendstatus.py \
+  storagebackendstatus.htmlinc \
   $(schema_DATA)
 
 acl_generated = aclperms.htmlinc
@@ -209,7 +211,8 @@ MAINTAINERCLEANFILES = \
   $(addprefix $(srcdir)/,$(devhelphtml)) \
   $(addprefix $(srcdir)/,$(internals_html)) \
   $(addprefix $(srcdir)/,$(kbase_html)) \
-  $(srcdir)/hvsupport.html.in $(srcdir)/aclperms.htmlinc
+  $(srcdir)/hvsupport.html.in $(srcdir)/aclperms.htmlinc \
+  $(srcdir)/storagebackendstatus.htmlinc
 
 timestamp="$(shell if test -n "$$SOURCE_DATE_EPOCH"; \
 		   then \
@@ -228,7 +231,10 @@ admin_api: $(srcdir)/libvirt-admin-api.xml $(srcdir)/libvirt-admin-refs.xml
 web: $(dot_html) $(internals_html) $(kbase_html) \
 	html/index.html devhelp/index.html
 
-hvsupport.html: $(srcdir)/hvsupport.html.in
+hvsupport.html: $(srcdir)/hvsupport.html.in $(srcdir)/storagebackendstatus.htmlinc
+
+$(srcdir)/storagebackendstatus.htmlinc: $(srcdir)/storagebackendstatus.py
+	$(PYTHON) $< $(top_srcdir)/src >$@
 
 $(srcdir)/hvsupport.html.in: $(srcdir)/hvsupport.pl $(api_DATA) \
 		$(top_srcdir)/src/libvirt_public.syms \
@@ -256,7 +262,7 @@ MAINTAINERCLEANFILES += \
 	convert -rotate 90 $< $@
 
 %.html.tmp: %.html.in site.xsl subsite.xsl page.xsl \
-		$(acl_generated)
+		$(acl_generated) storagebackendstatus.htmlinc
 	$(AM_V_GEN)name=`echo $@ | sed -e 's/.tmp//'`; \
 	  dir=`dirname $@` ; \
 	  if test "$$dir" = "."; \

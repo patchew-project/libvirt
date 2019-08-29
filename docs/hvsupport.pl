@@ -453,6 +453,8 @@ EOF
 }
 
 print <<EOF;
+<h2><a id="storageBackend">Storage Backends</a></h2>
+<div id="include" filename="storagebackendstatus.htmlinc"/>
 </body>
 </html>
 EOF

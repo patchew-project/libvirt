@@ -826,5 +826,18 @@
 
     <h3>Valid volume format types</h3>
     <p>The valid volume types are the same as for the directory pool.</p>
+
+    <h2>Storage Pool Types implementation status</h2>
+
+    <p>
+      The storage backends have different level of support of the various pool and volume actions.
+      See the <a href="hvsupport.html">hypervisor support</a> page to find a support matrix.
+    </p>
+
+    <p>
+      <strong>Note:</strong> some functions like Start and Stop will not trigger an exception when
+      called on a backend that doesn't implement them.
+    </p>
+
   </body>
 </html>
