@@ -1200,6 +1200,7 @@ mymain(void)
 
     DO_TEST("acpi-table", NONE);
 
+    DO_TEST_CAPS_LATEST("video-vga-resolution");
     DO_TEST("video-device-pciaddr-default",
             QEMU_CAPS_KVM,
             QEMU_CAPS_VNC,

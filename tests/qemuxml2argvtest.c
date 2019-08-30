@@ -1987,6 +1987,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
     DO_TEST("video-vga-device-vgamem", QEMU_CAPS_DEVICE_VGA,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY, QEMU_CAPS_VGA_VGAMEM);
+    DO_TEST_CAPS_LATEST("video-vga-resolution");
     DO_TEST("video-qxl-nodevice", QEMU_CAPS_DEVICE_QXL);
     DO_TEST("video-qxl-device",
             QEMU_CAPS_DEVICE_QXL,
