@@ -2437,8 +2437,10 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     bool teardownlabel = false;
     bool teardowndevice = false;
     int ret = -1;
+    bool reattaching = hostdev->deleteCause == VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING;
 
-    if (virDomainUSBAddressEnsure(priv->usbaddrs, hostdev->info) < 0)
+    if (!reattaching &&
+        virDomainUSBAddressEnsure(priv->usbaddrs, hostdev->info) < 0)
         return -1;
 
     if (qemuHostdevPrepareUSBDevices(driver, vm->def->name, &hostdev, 1, 0) < 0)
@@ -2463,7 +2465,7 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     if (!(devstr = qemuBuildUSBHostdevDevStr(vm->def, hostdev, priv->qemuCaps)))
         goto cleanup;
 
-    if (VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs+1) < 0)
+    if (!reattaching && VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs+1) < 0)
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
@@ -2476,7 +2478,8 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     if (ret < 0)
         goto cleanup;
 
-    vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
+    if (!reattaching)
+        vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
 
     ret = 0;
  cleanup:
@@ -2491,7 +2494,8 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
             VIR_WARN("Unable to remove host device from /dev");
         if (added)
             qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
-        virDomainUSBAddressRelease(priv->usbaddrs, hostdev->info);
+        if (!reattaching)
+            virDomainUSBAddressRelease(priv->usbaddrs, hostdev->info);
     }
     VIR_FREE(devstr);
     return ret;
@@ -4366,7 +4370,8 @@ qemuDomainRemoveUSBHostDevice(virQEMUDriverPtr driver,
                               virDomainHostdevDefPtr hostdev)
 {
     qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
-    qemuDomainReleaseDeviceAddress(vm, hostdev->info);
+    if (hostdev->deleteCause != VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING)
+        qemuDomainReleaseDeviceAddress(vm, hostdev->info);
 }
 
 static void
@@ -4408,6 +4413,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     char *drivealias = NULL;
     char *objAlias = NULL;
     bool is_vfio = false;
+    bool reattaching = hostdev->deleteCause == VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING;
 
     VIR_DEBUG("Removing host device %s from domain %p %s",
               hostdev->info->alias, vm, vm->def->name);
@@ -4454,16 +4460,25 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         }
     }
 
-    for (i = 0; i < vm->def->nhostdevs; i++) {
-        if (vm->def->hostdevs[i] == hostdev) {
-            virDomainHostdevRemove(vm->def, i);
-            break;
+    if (!reattaching) {
+        for (i = 0; i < vm->def->nhostdevs; i++) {
+            if (vm->def->hostdevs[i] == hostdev) {
+                virDomainHostdevRemove(vm->def, i);
+                break;
+            }
         }
     }
 
     virDomainAuditHostdev(vm, hostdev, "detach", true);
 
-    if (!is_vfio &&
+    /*
+     * In case of reattaching (when usb is detached from host) the attempt to
+     * restore label will fail. But we don't need to restore the label! In case
+     * of separate mount namespace for the domain we remove device file later
+     * in this function. In case of global mount namespace the device file is
+     * deleted or being deleted by systemd.
+     */
+    if (!is_vfio && !reattaching &&
         qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
         VIR_WARN("Failed to restore host device labelling");
 
@@ -4497,7 +4512,13 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         break;
     }
 
-    virDomainHostdevDefFree(hostdev);
+    if (reattaching) {
+        virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+        usbsrc->bus = 0;
+        usbsrc->device = 0;
+    } else {
+        virDomainHostdevDefFree(hostdev);
+    }
 
     if (net) {
         if (net->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -6564,4 +6585,34 @@ qemuDomainSetVcpuInternal(virQEMUDriverPtr driver,
  cleanup:
     virBitmapFree(livevcpus);
     return ret;
+}
+
+
+int
+qemuDomainRemoveDeviceAlias(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            const char *devAlias)
+{
+    virDomainDeviceDef dev;
+
+    if (virDomainDefFindDevice(vm->def, devAlias, &dev, true) < 0)
+        return -1;
+
+    if (dev.type == VIR_DOMAIN_DEVICE_HOSTDEV &&
+        dev.data.hostdev->deleteCause == VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING) {
+        virDomainHostdevDefPtr hostdev = dev.data.hostdev;
+
+        if (qemuDomainRemoveHostDevice(driver, vm, hostdev) < 0)
+            return -1;
+
+        if (qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
+            return -1;
+
+        hostdev->deleteCause = 0;
+    } else {
+        if (qemuDomainRemoveDevice(driver, vm, &dev) < 0)
+            return -1;
+    }
+
+    return 0;
 }

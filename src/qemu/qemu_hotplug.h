@@ -151,3 +151,7 @@ int qemuDomainSetVcpuInternal(virQEMUDriverPtr driver,
                               virDomainDefPtr persistentDef,
                               virBitmapPtr vcpus,
                               bool state);
+
+int qemuDomainRemoveDeviceAlias(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                const char *devAlias);

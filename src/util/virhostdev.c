@@ -1429,8 +1429,7 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
     }
 
  out:
-    if (!*usb)
-        hostdev->missing = true;
+    hostdev->missing = !*usb;
     return 0;
 }
 
@@ -1472,7 +1471,8 @@ virHostdevPrepareUSBDevices(virHostdevManagerPtr mgr,
 
         if (hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL ||
             (hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_REQUISITE &&
-             !coldBoot))
+             !coldBoot) ||
+            hostdev->deleteCause == VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING)
             required = false;
 
         if (virHostdevFindUSBDevice(hostdev, required, &usb) < 0)

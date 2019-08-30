@@ -4677,7 +4677,6 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
                           const char *devAlias)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
-    virDomainDeviceDef dev;
 
     VIR_DEBUG("Removing device %s from domain %p %s",
               devAlias, vm, vm->def->name);
@@ -4690,15 +4689,10 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
         goto endjob;
     }
 
-    if (STRPREFIX(devAlias, "vcpu")) {
+    if (STRPREFIX(devAlias, "vcpu"))
         qemuDomainRemoveVcpuAlias(driver, vm, devAlias);
-    } else {
-        if (virDomainDefFindDevice(vm->def, devAlias, &dev, true) < 0)
-            goto endjob;
-
-        if (qemuDomainRemoveDevice(driver, vm, &dev) < 0)
-            goto endjob;
-    }
+    else if (qemuDomainRemoveDeviceAlias(driver, vm, devAlias) < 0)
+        goto endjob;
 
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
         VIR_WARN("unable to save domain status after removing device %s",
