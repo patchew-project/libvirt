@@ -195,6 +195,8 @@
   <flag name='iothread.poll-max-ns'/>
   <flag name='memory-backend-file.align'/>
   <flag name='x86-max-cpu'/>
+  <flag name='xres'/>
+  <flag name='yres'/>
   <version>2011090</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100807</microcodeVersion>

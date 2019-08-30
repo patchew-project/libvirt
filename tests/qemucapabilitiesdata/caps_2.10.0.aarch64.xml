@@ -139,6 +139,8 @@
   <flag name='vhost-vsock'/>
   <flag name='egl-headless'/>
   <flag name='iothread.poll-max-ns'/>
+  <flag name='xres'/>
+  <flag name='yres'/>
   <version>2010000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>61700805</microcodeVersion>

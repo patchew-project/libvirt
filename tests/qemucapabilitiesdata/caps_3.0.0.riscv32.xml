@@ -92,6 +92,8 @@
   <flag name='memory-backend-memfd.hugetlb'/>
   <flag name='iothread.poll-max-ns'/>
   <flag name='memory-backend-file.align'/>
+  <flag name='xres'/>
+  <flag name='yres'/>
   <version>3000000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>0</microcodeVersion>
