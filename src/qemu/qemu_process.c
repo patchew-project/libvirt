@@ -3720,7 +3720,6 @@ qemuProcessUpdateDevices(virQEMUDriverPtr driver,
                          virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virDomainDeviceDef dev;
     const char **qemuDevices;
     char **old;
     char **tmp;
@@ -3735,10 +3734,9 @@ qemuProcessUpdateDevices(virQEMUDriverPtr driver,
     if ((tmp = old)) {
         while (*tmp) {
             if (!virStringListHasString(qemuDevices, *tmp) &&
-                virDomainDefFindDevice(vm->def, *tmp, &dev, false) == 0 &&
-                qemuDomainRemoveDevice(driver, vm, &dev) < 0) {
+                qemuDomainRemoveDeviceAlias(driver, vm, *tmp) < 0)
                 goto cleanup;
-            }
+
             tmp++;
         }
     }

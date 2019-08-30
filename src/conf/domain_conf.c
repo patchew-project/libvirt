@@ -1236,6 +1236,13 @@ VIR_ENUM_IMPL(virDomainShmemModel,
               "ivshmem-doorbell",
 );
 
+VIR_ENUM_IMPL(virDomainHostdevDeleteCause,
+              VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_LAST,
+              "none",
+              "client",
+              "reattaching"
+);
+
 VIR_ENUM_IMPL(virDomainLaunchSecurity,
               VIR_DOMAIN_LAUNCH_SECURITY_LAST,
               "",
@@ -7534,6 +7541,7 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
     VIR_AUTOFREE(char *) startupPolicy = NULL;
     VIR_AUTOFREE(char *) autoAddress = NULL;
     VIR_AUTOFREE(char *) missing = NULL;
+    VIR_AUTOFREE(char *) deleteCause = NULL;
 
     if ((startupPolicy = virXMLPropString(node, "startupPolicy"))) {
         def->startupPolicy =
@@ -7554,6 +7562,18 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
     if ((missing = virXMLPropString(node, "missing"))) {
         if (STREQ(missing, "yes"))
             def->missing = true;
+    }
+
+    if ((deleteCause = virXMLPropString(node, "deleteCause"))) {
+        def->deleteCause =
+            virDomainHostdevDeleteCauseTypeFromString(deleteCause);
+
+        if (def->deleteCause <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unknown deleteCause '%s'"),
+                           deleteCause);
+            goto out;
+        }
     }
 
     /* Product can validly be 0, so we need some extra help to determine
@@ -24911,6 +24931,12 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
 
         if (def->missing && !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
             virBufferAddLit(buf, " missing='yes'");
+
+        if (def->deleteCause && (flags & VIR_DOMAIN_DEF_FORMAT_STATUS)) {
+            const char *deleteCause;
+            deleteCause = virDomainHostdevDeleteCauseTypeToString(def->deleteCause);
+            virBufferAsprintf(buf, " deleteCause='%s'", deleteCause);
+        }
     }
 
     if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&

@@ -333,6 +333,7 @@ typedef enum {
 
     VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_LAST
 } virDomainHostdevDeleteCauseType;
+VIR_ENUM_DECL(virDomainHostdevDeleteCause);
 
 
 /* basic device for direct passthrough */
