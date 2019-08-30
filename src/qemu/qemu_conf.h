@@ -294,6 +294,9 @@ struct _virQEMUDriver {
 
     /* Immutable pointer, self-locking APIs */
     virHashAtomicPtr migrationErrors;
+
+    struct udev_monitor *udev_monitor;
+    int udev_watch;
 };
 
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged);
