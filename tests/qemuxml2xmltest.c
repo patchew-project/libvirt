@@ -1224,6 +1224,8 @@ mymain(void)
             QEMU_CAPS_VNC,
             QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW);
     DO_TEST_CAPS_LATEST("video-virtio-gpu-resolution");
+
+    DO_TEST_CAPS_LATEST("video-bochs-display-resolution");
     DO_TEST("video-none-device", NONE);
 
     DO_TEST_CAPS_LATEST("intel-iommu");
