@@ -656,6 +656,13 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
     } else {
         if (disk->mirror) {
             virDomainLockImageDetach(driver->lockManager, vm, disk->mirror);
+
+            /* QEMU no longer uses the image, so we can restore its label. */
+            if (qemuSecurityRestoreImageLabel(driver, vm, disk->mirror, true) < 0) {
+                VIR_WARN("Unable to restore security labels on vm %s disk %s",
+                         vm->def->name, NULLSTR(disk->mirror->path));
+            }
+
             virObjectUnref(disk->mirror);
         }
     }
@@ -725,6 +732,13 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
         if (disk->mirror) {
             virDomainLockImageDetach(driver->lockManager, vm, disk->mirror);
+
+            /* QEMU no longer uses the image, so we can restore its label. */
+            if (qemuSecurityRestoreImageLabel(driver, vm, disk->mirror, true) < 0) {
+                VIR_WARN("Unable to restore security labels on vm %s disk %s",
+                         vm->def->name, NULLSTR(disk->mirror->path));
+            }
+
             virObjectUnref(disk->mirror);
             disk->mirror = NULL;
         }
@@ -1124,13 +1138,20 @@ qemuBlockJobProcessEventConcludedCopyAbort(virQEMUDriverPtr driver,
 
 
 static void
-qemuBlockJobProcessEventFailedActiveCommit(virDomainObjPtr vm,
+qemuBlockJobProcessEventFailedActiveCommit(virQEMUDriverPtr driver,
+                                           virDomainObjPtr vm,
                                            qemuBlockJobDataPtr job)
 {
     VIR_DEBUG("active commit job '%s' on VM '%s' failed", job->name, vm->def->name);
 
     if (!job->disk)
         return;
+
+    /* QEMU no longer uses the image, so we can restore its label. */
+    if (qemuSecurityRestoreImageLabel(driver, vm, job->disk->mirror, true) < 0) {
+        VIR_WARN("Unable to restore security labels on vm %s disk %s",
+                 vm->def->name, NULLSTR(job->disk->mirror->path));
+    }
 
     virObjectUnref(job->disk->mirror);
     job->disk->mirror = NULL;
@@ -1227,7 +1248,7 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
             break;
 
         case QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT:
-            qemuBlockJobProcessEventFailedActiveCommit(vm, job);
+            qemuBlockJobProcessEventFailedActiveCommit(driver, vm, job);
             break;
 
         case QEMU_BLOCKJOB_TYPE_CREATE:
