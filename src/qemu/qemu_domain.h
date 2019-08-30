@@ -497,7 +497,19 @@ struct _qemuDomainVsockPrivate {
 };
 
 
-#define QEMU_DOMAIN_GRAPHICS_PRIVATE(dev) \
+#define QEMU_DOMAIN_VIDEO_PRIVATE(dev)               \
+    ((qemuDomainVideoPrivatePtr) (dev)->privateData)
+
+typedef struct _qemuDomainVideoPrivate qemuDomainVideoPrivate;
+typedef qemuDomainVideoPrivate *qemuDomainVideoPrivatePtr;
+struct _qemuDomainVideoPrivate {
+    virObject parent;
+
+    bool tmp_to_remove;
+};
+
+
+#define QEMU_DOMAIN_GRAPHICS_PRIVATE(dev)               \
     ((qemuDomainGraphicsPrivatePtr) (dev)->privateData)
 
 typedef struct _qemuDomainGraphicsPrivate qemuDomainGraphicsPrivate;
