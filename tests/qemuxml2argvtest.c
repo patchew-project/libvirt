@@ -2014,6 +2014,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL,
             QEMU_CAPS_QXL_MAX_OUTPUTS);
+    DO_TEST_CAPS_LATEST("video-qxl-resolution");
     DO_TEST("video-virtio-gpu-device",
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
