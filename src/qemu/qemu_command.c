@@ -4548,9 +4548,12 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
 
     virBufferAsprintf(&buf, ",id=%s", video->info.alias);
 
-    if (video->accel && video->accel->accel3d == VIR_TRISTATE_SWITCH_ON) {
-        virBufferAsprintf(&buf, ",virgl=%s",
-                          virTristateSwitchTypeToString(video->accel->accel3d));
+    if (video->backend != VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER &&
+        video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO) {
+        if (video->accel && video->accel->accel3d == VIR_TRISTATE_SWITCH_ON) {
+            virBufferAsprintf(&buf, ",virgl=%s",
+                              virTristateSwitchTypeToString(video->accel->accel3d));
+        }
     }
 
     if (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL) {
