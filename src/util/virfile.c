@@ -2833,7 +2833,8 @@ virFileRemove(const char *path,
 #endif /* WIN32 */
 
 static int
-virDirOpenInternal(DIR **dirp, const char *name, bool ignoreENOENT, bool quiet)
+virDirOpenInternal(DIR **dirp, const char *name,
+                   bool ignoreENOENT, bool ignoreEACCESS, bool quiet)
 {
     *dirp = opendir(name); /* exempt from syntax-check */
     if (!*dirp) {
@@ -2841,6 +2842,8 @@ virDirOpenInternal(DIR **dirp, const char *name, bool ignoreENOENT, bool quiet)
             return -1;
 
         if (ignoreENOENT && errno == ENOENT)
+            return 0;
+        if (ignoreEACCESS && errno == EACCES)
             return 0;
         virReportSystemError(errno, _("cannot open directory '%s'"), name);
         return -1;
@@ -2859,7 +2862,7 @@ virDirOpenInternal(DIR **dirp, const char *name, bool ignoreENOENT, bool quiet)
 int
 virDirOpen(DIR **dirp, const char *name)
 {
-    return virDirOpenInternal(dirp, name, false, false);
+    return virDirOpenInternal(dirp, name, false, false, false);
 }
 
 /**
@@ -2868,13 +2871,13 @@ virDirOpen(DIR **dirp, const char *name)
  * @name: path of the directory
  *
  * Returns 1 on success.
- * If opendir returns ENOENT, 0 is returned without reporting an error.
+ * If opendir returns ENOENT or EACCES, 0 is returned without reporting an error.
  * On other errors, -1 is returned and an error is reported.
  */
 int
 virDirOpenIfExists(DIR **dirp, const char *name)
 {
-    return virDirOpenInternal(dirp, name, true, false);
+    return virDirOpenInternal(dirp, name, true, true, false);
 }
 
 /**
@@ -2890,7 +2893,7 @@ virDirOpenIfExists(DIR **dirp, const char *name)
 int
 virDirOpenQuiet(DIR **dirp, const char *name)
 {
-    return virDirOpenInternal(dirp, name, false, true);
+    return virDirOpenInternal(dirp, name, false, false, true);
 }
 
 /**
