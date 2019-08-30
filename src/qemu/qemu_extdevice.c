@@ -161,9 +161,20 @@ qemuExtDevicesStart(virQEMUDriverPtr driver,
                     bool incomingMigration)
 {
     int ret = 0;
+    size_t i;
 
     if (qemuExtDevicesInitPaths(driver, vm->def) < 0)
         return -1;
+
+    for (i = 0; i < vm->def->nvideos; i++) {
+        virDomainVideoDefPtr video = vm->def->videos[i];
+
+        if (video->backend == VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER) {
+            ret = qemuExtVhostUserGPUStart(driver, vm, video, logCtxt);
+            if (ret < 0)
+                return ret;
+        }
+    }
 
     if (vm->def->tpm)
         ret = qemuExtTPMStart(driver, vm, logCtxt, incomingMigration);
@@ -176,8 +187,17 @@ void
 qemuExtDevicesStop(virQEMUDriverPtr driver,
                    virDomainObjPtr vm)
 {
+    size_t i;
+
     if (qemuExtDevicesInitPaths(driver, vm->def) < 0)
         return;
+
+    for (i = 0; i < vm->def->nvideos; i++) {
+        virDomainVideoDefPtr video = vm->def->videos[i];
+
+        if (video->backend == VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER)
+            qemuExtVhostUserGPUStop(driver, vm, video);
+    }
 
     if (vm->def->tpm)
         qemuExtTPMStop(driver, vm);
@@ -187,6 +207,13 @@ qemuExtDevicesStop(virQEMUDriverPtr driver,
 bool
 qemuExtDevicesHasDevice(virDomainDefPtr def)
 {
+    size_t i;
+
+    for (i = 0; i < def->nvideos; i++) {
+        if (def->videos[i]->backend == VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER)
+            return true;
+    }
+
     if (def->tpm && def->tpm->type == VIR_DOMAIN_TPM_TYPE_EMULATOR)
         return true;
 
@@ -199,10 +226,19 @@ qemuExtDevicesSetupCgroup(virQEMUDriverPtr driver,
                           virDomainDefPtr def,
                           virCgroupPtr cgroup)
 {
-    int ret = 0;
+    size_t i;
 
-    if (def->tpm)
-        ret = qemuExtTPMSetupCgroup(driver, def, cgroup);
+    for (i = 0; i < def->nvideos; i++) {
+        virDomainVideoDefPtr video = def->videos[i];
 
-    return ret;
+        if (video->backend == VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER &&
+            qemuExtVhostUserGPUSetupCgroup(driver, def, video, cgroup) < 0)
+            return -1;
+    }
+
+    if (def->tpm &&
+        qemuExtTPMSetupCgroup(driver, def, cgroup) < 0)
+        return -1;
+
+    return 0;
 }
