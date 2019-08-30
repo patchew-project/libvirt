@@ -4564,6 +4564,11 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
             virBufferAsprintf(&buf, ",vram_size=%u", video->vram * 1024);
         }
 
+        if (video->res && video->res->x && video->res->y) {
+            /* QEMU accepts resolution xres and yres. */
+            virBufferAsprintf(&buf, ",xres=%u,yres=%u", video->res->x, video->res->y);
+        }
+
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QXL_VRAM64)) {
             /* QEMU accepts mebibytes for vram64_size_mb. */
             virBufferAsprintf(&buf, ",vram64_size_mb=%u", video->vram64 / 1024);
@@ -4583,15 +4588,30 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
             if (video->heads)
                 virBufferAsprintf(&buf, ",max_outputs=%u", video->heads);
         }
+
+        if (video->res && video->res->x && video->res->y) {
+            /* QEMU accepts resolution xres and yres. */
+            virBufferAsprintf(&buf, ",xres=%u,yres=%u", video->res->x, video->res->y);
+        }
     } else if ((video->type == VIR_DOMAIN_VIDEO_TYPE_VGA &&
                 virQEMUCapsGet(qemuCaps, QEMU_CAPS_VGA_VGAMEM)) ||
                (video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA &&
                 virQEMUCapsGet(qemuCaps, QEMU_CAPS_VMWARE_SVGA_VGAMEM))) {
         if (video->vram)
             virBufferAsprintf(&buf, ",vgamem_mb=%u", video->vram / 1024);
+
+        if (video->res && video->res->x && video->res->y) {
+            /* QEMU accepts resolution xres and yres. */
+            virBufferAsprintf(&buf, ",xres=%u,yres=%u", video->res->x, video->res->y);
+        }
     } else if (video->type == VIR_DOMAIN_VIDEO_TYPE_BOCHS) {
         if (video->vram)
             virBufferAsprintf(&buf, ",vgamem=%uk", video->vram);
+
+        if (video->res && video->res->x && video->res->y) {
+            /* QEMU accepts resolution xres and yres. */
+            virBufferAsprintf(&buf, ",xres=%u,yres=%u", video->res->x, video->res->y);
+        }
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &video->info, qemuCaps) < 0)
