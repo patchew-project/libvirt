@@ -326,6 +326,14 @@ struct _virDomainHostdevCaps {
     } u;
 };
 
+typedef enum {
+    VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_NONE = 0,
+    VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_CLIENT,
+    VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING,
+
+    VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_LAST
+} virDomainHostdevDeleteCauseType;
+
 
 /* basic device for direct passthrough */
 struct _virDomainHostdevDef {
@@ -343,6 +351,7 @@ struct _virDomainHostdevDef {
     bool missing;
     bool readonly;
     bool shareable;
+    virDomainHostdevDeleteCauseType deleteCause;
     union {
         virDomainHostdevSubsys subsys;
         virDomainHostdevCaps caps;

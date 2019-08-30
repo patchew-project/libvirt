@@ -5721,7 +5721,8 @@ int
 qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                            virDomainDeviceDefPtr match,
                            virQEMUDriverPtr driver,
-                           bool async)
+                           bool async,
+                           bool reattaching)
 {
     virDomainDeviceDef detach = { .type = match->type };
     virDomainDeviceInfoPtr info = NULL;
@@ -5878,6 +5879,24 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
         if (virDomainObjIsActive(vm))
             qemuDomainRemoveAuditDevice(vm, &detach, false);
         goto cleanup;
+    }
+
+    if (detach.type == VIR_DOMAIN_DEVICE_HOSTDEV) {
+        virDomainHostdevDefPtr hostdev = detach.data.hostdev;
+
+        /*
+         * Why having additional check in second branch? Suppose client
+         * asks for device detaching and we pass the intention to qemu
+         * but don't get DEVICE_DELETED event yet. Next USB is detached
+         * on node and we have this function called again. If we reset
+         * delete cause to 'reattaching' then device will be left in
+         * libvirt config after handling DEVICE_DELETED event while
+         * it should not as client asked to detach the device before.
+         */
+        if (!reattaching)
+            hostdev->deleteCause = VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_CLIENT;
+        else if (hostdev->deleteCause != VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_CLIENT)
+            hostdev->deleteCause = VIR_DOMAIN_HOSTDEV_DELETE_CAUSE_REATTACHING;
     }
 
     if (async) {
