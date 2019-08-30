@@ -1421,6 +1421,7 @@ struct _virDomainVideoAccelDef {
 
 struct _virDomainVideoDriverDef {
    virDomainVideoVGAConf vgaconf;
+    char *vhost_user_binary;
 };
 
 struct _virDomainVideoDef {
