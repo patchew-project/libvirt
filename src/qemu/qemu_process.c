@@ -3747,6 +3747,52 @@ qemuProcessUpdateDevices(virQEMUDriverPtr driver,
     return ret;
 }
 
+
+static int
+qemuProcessReattachUSBDevices(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm)
+{
+    size_t i;
+
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        virDomainDeviceDef dev = { .type = VIR_DOMAIN_DEVICE_HOSTDEV };
+        virDomainHostdevDefPtr hostdev = vm->def->hostdevs[i];
+        virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+        bool found;
+
+
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+            continue;
+
+        if (hostdev->missing) {
+            int num;
+
+            if ((num = virUSBDeviceFindByVendor(usbsrc->vendor, usbsrc->product,
+                                                NULL, false, NULL)) < 0)
+                return -1;
+
+            found = num != 0;
+        } else {
+            virUSBDevicePtr usb;
+
+            if (virUSBDeviceFindByBus(usbsrc->bus, usbsrc->device,
+                                      NULL, false, &usb) < 0)
+                return -1;
+
+            found = usb != NULL;
+            virUSBDeviceFree(usb);
+        }
+
+        dev.data.hostdev = hostdev;
+        if ((hostdev->missing ^ !found) &&
+            qemuDomainDetachDeviceLive(vm, &dev, driver, true, true) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
 static int
 qemuDomainPerfRestart(virDomainObjPtr vm)
 {
@@ -8202,6 +8248,9 @@ qemuProcessReconnect(void *opaque)
         goto error;
 
     if (qemuProcessUpdateDevices(driver, obj) < 0)
+        goto error;
+
+    if (qemuProcessReattachUSBDevices(driver, obj) < 0)
         goto error;
 
     if (qemuRefreshPRManagerState(driver, obj) < 0)
