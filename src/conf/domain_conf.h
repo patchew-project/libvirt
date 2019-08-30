@@ -1407,6 +1407,10 @@ struct _virDomainVideoAccelDef {
     int accel3d; /* enum virTristateBool */
 };
 
+struct _virDomainVideoResolutionDef {
+    unsigned int x;
+    unsigned int y;
+};
 
 struct _virDomainVideoDriverDef {
    virDomainVideoVGAConf vgaconf;
@@ -1422,6 +1426,7 @@ struct _virDomainVideoDef {
     bool primary;
     virDomainVideoAccelDefPtr accel;
     virDomainVideoDriverDefPtr driver;
+    virDomainVideoResolutionDefPtr res;
     virDomainDeviceInfo info;
     virDomainVirtioOptionsPtr virtio;
 };
