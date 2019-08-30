@@ -537,6 +537,8 @@ VIR_ENUM_IMPL(virQEMUCaps,
               /* 335 */
               "bochs-display",
               "migration-file-drop-cache",
+              "xres",
+              "yres",
     );
 
 
@@ -1219,6 +1221,8 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsKVMPit[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVGA[] = {
     { "vgamem_mb", QEMU_CAPS_VGA_VGAMEM },
+    { "xres", QEMU_CAPS_XRES },
+    { "yres", QEMU_CAPS_YRES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVmwareSvga[] = {
@@ -1229,6 +1233,8 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsQxl[] = {
     { "vgamem_mb", QEMU_CAPS_QXL_VGAMEM },
     { "vram64_size_mb", QEMU_CAPS_QXL_VRAM64 },
     { "max_outputs", QEMU_CAPS_QXL_MAX_OUTPUTS },
+    { "xres", QEMU_CAPS_XRES },
+    { "yres", QEMU_CAPS_YRES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioGpu[] = {
@@ -1237,6 +1243,13 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioGpu[] = {
     { "disable-legacy", QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY },
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
+    { "xres", QEMU_CAPS_XRES },
+    { "yres", QEMU_CAPS_YRES },
+};
+
+static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsBochs[] = {
+    { "xres", QEMU_CAPS_XRES },
+    { "yres", QEMU_CAPS_YRES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsICH9[] = {
@@ -1362,6 +1375,9 @@ static virQEMUCapsObjectTypeProps virQEMUCapsDeviceProps[] = {
     { "virtio-gpu-device", virQEMUCapsDevicePropsVirtioGpu,
       ARRAY_CARDINALITY(virQEMUCapsDevicePropsVirtioGpu),
       QEMU_CAPS_DEVICE_VIRTIO_GPU },
+    { "bochs-display", virQEMUCapsDevicePropsBochs,
+      ARRAY_CARDINALITY(virQEMUCapsDevicePropsBochs),
+      QEMU_CAPS_DEVICE_BOCHS_DISPLAY },
     { "ICH9-LPC", virQEMUCapsDevicePropsICH9,
       ARRAY_CARDINALITY(virQEMUCapsDevicePropsICH9),
       -1 },

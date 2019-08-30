@@ -518,6 +518,8 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     /* 335 */
     QEMU_CAPS_DEVICE_BOCHS_DISPLAY, /* -device bochs-display */
     QEMU_CAPS_MIGRATION_FILE_DROP_CACHE, /* migration with disk cache on is safe for type='file' disks */
+    QEMU_CAPS_XRES, /* -device *,xres= */
+    QEMU_CAPS_YRES, /* -device *,yres= */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
