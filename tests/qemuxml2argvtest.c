@@ -2037,6 +2037,7 @@ mymain(void)
     DO_TEST("video-virtio-gpu-secondary",
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
+    DO_TEST_CAPS_LATEST("video-virtio-gpu-resolution");
     DO_TEST("video-virtio-vga",
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_DEVICE_VIRTIO_VGA,
