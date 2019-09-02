@@ -402,6 +402,10 @@ BuildRequires: libtirpc-devel
 BuildRequires: firewalld-filesystem
 %endif
 
+BuildRequires: golang >= 1.12
+BuildRequires: golang-ipath(github.com/spf13/pflag)
+BuildRequires: golang-ipath(golang.org/x/sys)
+
 Provides: bundled(gnulib)
 
 %description
@@ -1155,6 +1159,15 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
  autoreconf -if
 %endif
 
+# We're building without go modules enabled, so
+# must make a local Go root with the old style
+# dir naming scheme/hierarchy
+mkdir -p gocode/src/libvirt.org
+ln -s `pwd`/tools/host-validate `pwd`/gocode/src/libvirt.org/host-validate
+
+export GO111MODULE=off
+export GOPATH=/usr/share/gocode:`pwd`/gocode
+
 rm -f po/stamp-po
 %configure --with-runstatedir=%{_rundir} \
            %{?arg_qemu} \
@@ -1886,6 +1899,16 @@ exit 0
 %if %{with_qemu}
 %{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
 %endif
+%dir %{_datadir}/libvirt/host-validate
+%{_datadir}/libvirt/host-validate/acpi.xml
+%{_datadir}/libvirt/host-validate/builtin.xml
+%{_datadir}/libvirt/host-validate/cgroups.xml
+%{_datadir}/libvirt/host-validate/cpu.xml
+%{_datadir}/libvirt/host-validate/devices.xml
+%{_datadir}/libvirt/host-validate/freebsd-kernel.xml
+%{_datadir}/libvirt/host-validate/iommu.xml
+%{_datadir}/libvirt/host-validate/namespaces.xml
+%{_datadir}/libvirt/host-validate/pci.xml
 
 %if %{with_bash_completion}
 %{_datadir}/bash-completion/completions/virsh
