@@ -18547,6 +18547,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
             }
 
             if (!(crdata = qemuBuildStorageSourceChainAttachPrepareBlockdevTop(mirror,
+                                                                               mirror->backingStore,
                                                                                priv->qemuCaps)))
                 goto endjob;
         }
