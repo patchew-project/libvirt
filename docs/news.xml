@@ -63,6 +63,16 @@
           KVM device assignment from libvirt too.
         </description>
       </change>
+      <change>
+        <summary>
+          Remove xenapi driver
+        </summary>
+        <description>
+          The xenapi driver is removed since it has not received any significant
+          development since its initial contribution nine years ago and has no
+          known user base.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
