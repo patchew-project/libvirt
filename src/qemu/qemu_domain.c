@@ -9987,6 +9987,54 @@ qemuDomainStorageAlias(const char *device, int depth)
 
 
 /**
+ * qemuDomainStorageSourceValidateDepth:
+ * @src: storage source chain to validate
+ * @add: offsets the calculated number of images
+ * @diskdst: optional disk target to use in error message
+ *
+ * The XML parser limits the maximum element nesting to 256 layers. As libvirt
+ * reports the chain into the status and in some cases the config XML we must
+ * validate that any user-provided chains will not exceed the XML nesting limit
+ * when formatted to the XML.
+ *
+ * This function validates that the storage source chain starting @src is at
+ * most 200 layers deep. @add allows to modify the calculated value to offset
+ * the number to allow checking cases when new layers are going to be added
+ * to the chain.
+ *
+ * Returns 0 on success and -1 if the chain is too deep. Error is reported.
+ */
+int
+qemuDomainStorageSourceValidateDepth(virStorageSourcePtr src,
+                                     int add,
+                                     const char *diskdst)
+{
+    virStorageSourcePtr n;
+    size_t nlayers = 0;
+
+    for (n = src; virStorageSourceIsBacking(n); n = n->backingStore)
+        nlayers++;
+
+    nlayers += add;
+
+    if (nlayers > 200) {
+        if (diskdst)
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("backing chains more than 200 layers deep are not "
+                             "supported for disk '%s'"), diskdst);
+        else
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("backing chains more than 200 layers deep are not "
+                             "supported"));
+
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/**
  * qemuDomainDetermineDiskChain:
  * @driver: qemu driver object
  * @vm: domain object
@@ -10075,8 +10123,12 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
 
     /* We skipped to the end of the chain. Skip detection if there's the
      * terminator. (An allocated but empty backingStore) */
-    if (src->backingStore)
+    if (src->backingStore) {
+        if (qemuDomainStorageSourceValidateDepth(disksrc, 0, disk->dst) < 0)
+            return -1;
+
         return 0;
+    }
 
     qemuDomainGetImageIds(cfg, vm, src, disksrc, &uid, &gid);
 
@@ -10094,6 +10146,9 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
             qemuDomainPrepareStorageSourceBlockdev(disk, n, priv, cfg) < 0)
             return -1;
     }
+
+    if (qemuDomainStorageSourceValidateDepth(disksrc, 0, disk->dst) < 0)
+        return -1;
 
     return 0;
 }
