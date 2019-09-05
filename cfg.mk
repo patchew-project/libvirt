@@ -1159,7 +1159,7 @@ mock-noinline:
 
 header-ifdef:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.[h]$$' | xargs \
-	$(PERL) $(top_srcdir)/build-aux/header-ifdef.pl
+	$(PYTHON) $(top_srcdir)/build-aux/header-ifdef.py
 
 test-wrap-argv:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) -E '\.(ldargs|args)' | xargs \

@@ -44,7 +44,7 @@ EXTRA_DIST = \
   build-aux/augeas-gentest.py \
   build-aux/check-spacing.py \
   build-aux/gitlog-to-changelog \
-  build-aux/header-ifdef.pl \
+  build-aux/header-ifdef.py \
   build-aux/minimize-po.py \
   build-aux/mock-noinline.py \
   build-aux/prohibit-duplicate-header.py \
