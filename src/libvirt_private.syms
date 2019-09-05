@@ -2152,7 +2152,6 @@ virIdentityGetUNIXGroupID;
 virIdentityGetUNIXUserID;
 virIdentityGetUserName;
 virIdentityGetX509DName;
-virIdentityIsEqual;
 virIdentityNew;
 virIdentitySetCurrent;
 virIdentitySetGroupName;
