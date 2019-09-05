@@ -358,11 +358,11 @@ check-aclrules:
 		$(addprefix $(srcdir)/,$(filter-out /%,$(STATEFUL_DRIVER_SOURCE_FILES)))
 
 check-aclperms:
-	$(AM_V_GEN)$(PERL) $(srcdir)/check-aclperms.pl \
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/check-aclperms.py \
 		$(srcdir)/access/viraccessperm.h \
 		$(srcdir)/access/viraccessperm.c
 
-EXTRA_DIST += check-driverimpls.pl check-aclrules.pl check-aclperms.pl
+EXTRA_DIST += check-driverimpls.pl check-aclrules.pl check-aclperms.py
 
 check-local: check-protocol check-symfile check-symsorting \
 	check-drivername check-driverimpls check-aclrules \
