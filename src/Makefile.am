@@ -274,10 +274,10 @@ PDWTAGS = \
 # rule for libvirt.la.  However, checking symbols relies on Linux ELF layout
 if WITH_LINUX
 check-symfile: libvirt.syms libvirt.la
-	$(AM_V_GEN)$(PERL) $(srcdir)/check-symfile.pl libvirt.syms \
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/check-symfile.py libvirt.syms \
 	  .libs/libvirt.so
 check-admin-symfile: libvirt_admin.syms libvirt-admin.la
-	$(AM_V_GEN)$(PERL) $(srcdir)/check-symfile.pl libvirt_admin.syms \
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/check-symfile.py libvirt_admin.syms \
 	  .libs/libvirt-admin.so
 else ! WITH_LINUX
 check-symfile:
@@ -289,7 +289,7 @@ check-symsorting:
 check-admin-symsorting:
 	$(AM_V_GEN)$(PYTHON) $(srcdir)/check-symsorting.py \
 		$(srcdir) $(ADMIN_SYM_FILES)
-EXTRA_DIST += check-symfile.pl check-symsorting.py
+EXTRA_DIST += check-symfile.py check-symsorting.py
 
 # Keep this list synced with RPC_PROBE_FILES
 PROTOCOL_STRUCTS = \
