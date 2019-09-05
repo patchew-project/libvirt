@@ -1150,7 +1150,7 @@ prohibit-duplicate-header:
 
 spacing-check:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.c$$' | xargs \
-	$(PERL) $(top_srcdir)/build-aux/check-spacing.pl || \
+	$(PYTHON) $(top_srcdir)/build-aux/check-spacing.py || \
 	  { echo '$(ME): incorrect formatting' 1>&2; exit 1; }
 
 mock-noinline:
