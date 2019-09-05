@@ -58,7 +58,7 @@ update-mini-po: $(POTFILE)
 	  $(MSGMERGE) --no-location --no-fuzzy-matching --sort-output \
 	    $$lang.po $(POTFILE) | \
 	  $(SED) $(SED_PO_FIXUP_ARGS) | \
-	  $(PERL) $(top_srcdir)/build-aux/minimize-po.pl > \
+	  $(PYTHON) $(top_srcdir)/build-aux/minimize-po.py > \
 	    $(srcdir)/$$lang.mini.po ; \
 	done
 
