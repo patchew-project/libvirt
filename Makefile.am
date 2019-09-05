@@ -46,7 +46,7 @@ EXTRA_DIST = \
   build-aux/gitlog-to-changelog \
   build-aux/header-ifdef.pl \
   build-aux/minimize-po.py \
-  build-aux/mock-noinline.pl \
+  build-aux/mock-noinline.py \
   build-aux/prohibit-duplicate-header.py \
   build-aux/useless-if-before-free \
   build-aux/vc-list-files \

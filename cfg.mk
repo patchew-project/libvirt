@@ -1155,7 +1155,7 @@ spacing-check:
 
 mock-noinline:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.[ch]$$' | xargs \
-	$(PERL) $(top_srcdir)/build-aux/mock-noinline.pl
+	$(PYTHON) $(top_srcdir)/build-aux/mock-noinline.py
 
 header-ifdef:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.[h]$$' | xargs \
