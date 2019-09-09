@@ -3769,6 +3769,10 @@ qemuProcessReattachUSBDevices(virQEMUDriverPtr driver,
         if (!usbsrc->vendor || !usbsrc->product)
             continue;
 
+        if (hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL ||
+            hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_REQUISITE)
+            continue;
+
         if (!usbsrc->bus && !usbsrc->device) {
             int num;
 
