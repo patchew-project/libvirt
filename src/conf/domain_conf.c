@@ -7546,6 +7546,7 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
     VIR_AUTOFREE(char *) startupPolicy = NULL;
     VIR_AUTOFREE(char *) autoAddress = NULL;
     VIR_AUTOFREE(char *) deleteAction = NULL;
+    VIR_AUTOFREE(char *) missing = NULL;
 
     if ((startupPolicy = virXMLPropString(node, "startupPolicy"))) {
         def->startupPolicy =
@@ -7573,6 +7574,11 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
                            deleteAction);
             goto out;
         }
+    }
+
+    if ((missing = virXMLPropString(node, "missing"))) {
+        if (STREQ(missing, "yes"))
+            def->missing = true;
     }
 
     /* Product can validly be 0, so we need some extra help to determine
