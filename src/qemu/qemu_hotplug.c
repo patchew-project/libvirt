@@ -4542,6 +4542,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     char *objAlias = NULL;
     bool is_vfio = false;
     bool unplug = hostdev->deleteAction == VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG;
+    bool unplugged = false;
 
     VIR_DEBUG("Removing host device %s from domain %p %s",
               hostdev->info->alias, vm, vm->def->name);
@@ -4599,13 +4600,17 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
 
     virDomainAuditHostdev(vm, hostdev, "detach", true);
 
+    if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB) {
+        virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+        unplugged = !usbsrc->bus && !usbsrc->device;
+    }
     /*
      * In case of unplug the attempt to restore label will fail. But we don't
      * need to restore the label! In case of separate mount namespace for the
      * domain we remove device file later in this function. In case of global
      * mount namespace the device file is deleted or being deleted by systemd.
      */
-    if (!is_vfio && !unplug &&
+    if (!is_vfio && !unplug && !unplugged &&
         qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
         VIR_WARN("Failed to restore host device labelling");
 
@@ -5945,6 +5950,15 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                                         unplug) < 0) {
             return -1;
         }
+        if (!unplug) {
+            virDomainHostdevDefPtr hostdev = detach.data.hostdev;
+            virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+
+            if (hostdev->startupPolicy != VIR_DOMAIN_STARTUP_POLICY_OPTIONAL &&
+                hostdev->startupPolicy != VIR_DOMAIN_STARTUP_POLICY_REQUISITE &&
+                usbsrc->device == 0 && usbsrc->bus == 0)
+                return qemuDomainRemoveDevice(driver, vm, &detach);
+            }
         break;
     case VIR_DOMAIN_DEVICE_RNG:
         if (qemuDomainDetachPrepRNG(vm, match->data.rng,
