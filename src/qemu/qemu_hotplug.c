@@ -2550,8 +2550,18 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     bool teardownlabel = false;
     bool teardowndevice = false;
     int ret = -1;
+    bool replug;
+    size_t i;
 
-    if (virDomainUSBAddressEnsure(priv->usbaddrs, hostdev->info) < 0)
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        if (vm->def->hostdevs[i] == hostdev) {
+            replug = true;
+            break;
+        }
+    }
+
+    if (!replug &&
+        virDomainUSBAddressEnsure(priv->usbaddrs, hostdev->info) < 0)
         return -1;
 
     if (qemuHostdevPrepareUSBDevices(driver, vm->def->name, &hostdev, 1, 0) < 0)
@@ -2576,7 +2586,7 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     if (!(devstr = qemuBuildUSBHostdevDevStr(vm->def, hostdev, priv->qemuCaps)))
         goto cleanup;
 
-    if (VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs+1) < 0)
+    if (!replug && VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs+1) < 0)
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
@@ -2589,7 +2599,8 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
     if (ret < 0)
         goto cleanup;
 
-    vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
+    if (!replug)
+        vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
 
     ret = 0;
  cleanup:
@@ -2602,9 +2613,17 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
         if (teardowndevice &&
             qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
             VIR_WARN("Unable to remove host device from /dev");
-        if (added)
+        if (added) {
             qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
-        virDomainUSBAddressRelease(priv->usbaddrs, hostdev->info);
+
+            if (replug) {
+                virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+                usbsrc->bus = 0;
+                usbsrc->device = 0;
+            }
+        }
+        if (!replug)
+            virDomainUSBAddressRelease(priv->usbaddrs, hostdev->info);
     }
     VIR_FREE(devstr);
     return ret;
