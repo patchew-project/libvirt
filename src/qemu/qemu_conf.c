@@ -402,18 +402,12 @@ virQEMUDriverConfigHugeTLBFSInit(virHugeTLBFSPtr hugetlbfs,
                                  const char *path,
                                  bool deflt)
 {
-    int ret = -1;
-
-    if (VIR_STRDUP(hugetlbfs->mnt_dir, path) < 0)
-        goto cleanup;
-
-    if (virFileGetHugepageSize(path, &hugetlbfs->size) < 0)
-        goto cleanup;
+    if (VIR_STRDUP(hugetlbfs->mnt_dir, path) < 0 ||
+        virFileGetHugepageSize(path, &hugetlbfs->size) < 0)
+        return -1;
 
     hugetlbfs->deflt = deflt;
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -1172,8 +1166,6 @@ virQEMUDriverConfigValidate(virQEMUDriverConfigPtr cfg)
 int
 virQEMUDriverConfigSetDefaults(virQEMUDriverConfigPtr cfg)
 {
-    int ret = -1;
-
 #define SET_TLS_SECRET_UUID_DEFAULT(val) \
     do { \
         if (!cfg->val## TLSx509certdir && \
@@ -1181,7 +1173,7 @@ virQEMUDriverConfigSetDefaults(virQEMUDriverConfigPtr cfg)
             cfg->defaultTLSx509secretUUID) { \
             if (VIR_STRDUP(cfg->val## TLSx509secretUUID, \
                            cfg->defaultTLSx509secretUUID) < 0) \
-                goto cleanup; \
+                return -1; \
         } \
     } while (0)
 
@@ -1205,11 +1197,11 @@ virQEMUDriverConfigSetDefaults(virQEMUDriverConfigPtr cfg)
         if (virFileExists(SYSCONFDIR "/pki/libvirt-"#val)) { \
             if (VIR_STRDUP(cfg->val ## TLSx509certdir, \
                            SYSCONFDIR "/pki/libvirt-"#val) < 0) \
-                goto cleanup; \
+                return -1; \
         } else { \
             if (VIR_STRDUP(cfg->val ## TLSx509certdir, \
                            cfg->defaultTLSx509certdir) < 0) \
-                goto cleanup; \
+                return -1; \
         } \
     } while (0)
 
@@ -1234,9 +1226,7 @@ virQEMUDriverConfigSetDefaults(virQEMUDriverConfigPtr cfg)
 
 #undef SET_TLS_VERIFY_DEFAULT
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
