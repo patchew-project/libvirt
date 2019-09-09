@@ -3749,6 +3749,58 @@ qemuProcessUpdateDevices(virQEMUDriverPtr driver,
     return ret;
 }
 
+
+static int
+qemuProcessReattachUSBDevices(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm)
+{
+    size_t i;
+
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        virDomainHostdevDefPtr hostdev = vm->def->hostdevs[i];
+        virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+            continue;
+
+        /* don't mess with devices that don't use stable host addressing
+         * with respect to unplug/plug to host
+         */
+        if (!usbsrc->vendor || !usbsrc->product)
+            continue;
+
+        if (!usbsrc->bus && !usbsrc->device) {
+            int num;
+
+            if ((num = virUSBDeviceFindByVendor(usbsrc->vendor, usbsrc->product,
+                                                NULL, false, NULL)) < 0)
+                return -1;
+
+            if (num > 0 &&
+                qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
+                return -1;
+        } else {
+            virUSBDevicePtr usb;
+
+            if (virUSBDeviceFindByBus(usbsrc->bus, usbsrc->device,
+                                      NULL, false, &usb) < 0)
+                return -1;
+
+            if (!usb) {
+                virDomainDeviceDef dev = { .type = VIR_DOMAIN_DEVICE_HOSTDEV };
+
+                dev.data.hostdev = hostdev;
+                if (qemuDomainDetachDeviceLive(vm, &dev, driver, true, true) < 0)
+                    return -1;
+            }
+            virUSBDeviceFree(usb);
+        }
+    }
+
+    return 0;
+}
+
+
 static int
 qemuDomainPerfRestart(virDomainObjPtr vm)
 {
@@ -8215,6 +8267,9 @@ qemuProcessReconnect(void *opaque)
         goto error;
 
     if (qemuProcessUpdateDevices(driver, obj) < 0)
+        goto error;
+
+    if (qemuProcessReattachUSBDevices(driver, obj) < 0)
         goto error;
 
     if (qemuRefreshPRManagerState(driver, obj) < 0)
