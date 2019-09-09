@@ -338,6 +338,7 @@ typedef enum {
 
     VIR_DOMAIN_HOSTDEV_DELETE_ACTION_LAST
 } virDomainHostdevDeleteActionType;
+VIR_ENUM_DECL(virDomainHostdevDeleteAction);
 
 
 /* basic device for direct passthrough */
