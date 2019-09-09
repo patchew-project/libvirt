@@ -181,37 +181,26 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
             virGetGroupID("tss", &cfg->swtpm_group) < 0)
             cfg->swtpm_group = 0; /* fall back to root */
     } else {
-        char *rundir;
-        char *cachedir;
+        VIR_AUTOFREE(char *) rundir = NULL;
+        VIR_AUTOFREE(char *) cachedir = NULL;
 
         cachedir = virGetUserCacheDirectory();
         if (!cachedir)
             goto error;
 
-        if (virAsprintf(&cfg->logDir,
-                        "%s/qemu/log", cachedir) < 0) {
-            VIR_FREE(cachedir);
+        if (virAsprintf(&cfg->logDir, "%s/qemu/log", cachedir) < 0)
             goto error;
-        }
-        if (virAsprintf(&cfg->swtpmLogDir,
-                        "%s/qemu/log", cachedir) < 0) {
-            VIR_FREE(cachedir);
+        if (virAsprintf(&cfg->swtpmLogDir, "%s/qemu/log", cachedir) < 0)
             goto error;
-        }
-        if (virAsprintf(&cfg->cacheDir, "%s/qemu/cache", cachedir) < 0) {
-            VIR_FREE(cachedir);
+        if (virAsprintf(&cfg->cacheDir, "%s/qemu/cache", cachedir) < 0)
             goto error;
-        }
-        VIR_FREE(cachedir);
 
         rundir = virGetUserRuntimeDirectory();
         if (!rundir)
             goto error;
         if (virAsprintf(&cfg->stateDir, "%s/qemu/run", rundir) < 0) {
-            VIR_FREE(rundir);
             goto error;
         }
-        VIR_FREE(rundir);
 
         if (virAsprintf(&cfg->swtpmStateDir, "%s/swtpm", cfg->stateDir) < 0)
             goto error;
@@ -1261,7 +1250,7 @@ virCapsPtr virQEMUDriverCreateCapabilities(virQEMUDriverPtr driver)
 {
     size_t i, j;
     virCapsPtr caps;
-    virSecurityManagerPtr *sec_managers = NULL;
+    VIR_AUTOFREE(virSecurityManagerPtr) *sec_managers = NULL;
     /* Security driver data */
     const char *doi, *model, *lbl, *type;
     const int virtTypes[] = {VIR_DOMAIN_VIRT_KVM,
@@ -1308,12 +1297,10 @@ virCapsPtr virQEMUDriverCreateCapabilities(virQEMUDriverPtr driver)
         VIR_DEBUG("Initialized caps for security driver \"%s\" with "
                   "DOI \"%s\"", model, doi);
     }
-    VIR_FREE(sec_managers);
 
     return caps;
 
  error:
-    VIR_FREE(sec_managers);
     virObjectUnref(caps);
     return NULL;
 }
@@ -1485,31 +1472,26 @@ qemuCheckUnprivSGIO(virHashTablePtr sharedDevices,
                     const char *device_path,
                     int sgio)
 {
-    char *sysfs_path = NULL;
-    char *key = NULL;
+    VIR_AUTOFREE(char *) sysfs_path = NULL;
+    VIR_AUTOFREE(char *) key = NULL;
     int val;
-    int ret = -1;
 
     if (!(sysfs_path = virGetUnprivSGIOSysfsPath(device_path, NULL)))
-        goto cleanup;
+        return -1;
 
     /* It can't be conflict if unpriv_sgio is not supported by kernel. */
-    if (!virFileExists(sysfs_path)) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!virFileExists(sysfs_path))
+        return 0;
 
     if (!(key = qemuGetSharedDeviceKey(device_path)))
-        goto cleanup;
+        return -1;
 
     /* It can't be conflict if no other domain is sharing it. */
-    if (!(virHashLookup(sharedDevices, key))) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!(virHashLookup(sharedDevices, key)))
+        return 0;
 
     if (virGetDeviceUnprivSGIO(device_path, NULL, &val) < 0)
-        goto cleanup;
+        return -1;
 
     /* Error message on failure needs to be handled in caller
      * since there is more specific knowledge of device
@@ -1519,16 +1501,10 @@ qemuCheckUnprivSGIO(virHashTablePtr sharedDevices,
             sgio == VIR_DOMAIN_DEVICE_SGIO_DEFAULT)) ||
           (val == 1 &&
            sgio == VIR_DOMAIN_DEVICE_SGIO_UNFILTERED))) {
-        ret = -2;
-        goto cleanup;
+        return -2;
     }
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(sysfs_path);
-    VIR_FREE(key);
-    return ret;
+    return 0;
 }
 
 
@@ -1674,7 +1650,7 @@ qemuSharedDiskAddRemoveInternal(virQEMUDriverPtr driver,
                                 const char *name,
                                 bool addDisk)
 {
-    char *key = NULL;
+    VIR_AUTOFREE(char *) key = NULL;
     int ret = -1;
 
     if (virStorageSourceIsEmpty(disk->src) ||
@@ -1701,7 +1677,6 @@ qemuSharedDiskAddRemoveInternal(virQEMUDriverPtr driver,
     ret = 0;
  cleanup:
     qemuDriverUnlock(driver);
-    VIR_FREE(key);
     return ret;
 }
 
@@ -1739,7 +1714,7 @@ qemuGetHostdevPath(virDomainHostdevDefPtr hostdev)
 {
     virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
-    char *dev_name = NULL;
+    VIR_AUTOFREE(char *) dev_name = NULL;
     char *dev_path = NULL;
 
     if (!(dev_name = virSCSIDeviceGetDevName(NULL,
@@ -1747,12 +1722,9 @@ qemuGetHostdevPath(virDomainHostdevDefPtr hostdev)
                                              scsihostsrc->bus,
                                              scsihostsrc->target,
                                              scsihostsrc->unit)))
-        goto cleanup;
+        return NULL;
 
     ignore_value(virAsprintf(&dev_path, "/dev/%s", dev_name));
-
- cleanup:
-    VIR_FREE(dev_name);
     return dev_path;
 }
 
@@ -1763,18 +1735,16 @@ qemuSharedHostdevAddRemoveInternal(virQEMUDriverPtr driver,
                                    const char *name,
                                    bool addDevice)
 {
-    char *dev_path = NULL;
-    char *key = NULL;
+    VIR_AUTOFREE(char *) dev_path = NULL;
+    VIR_AUTOFREE(char *) key = NULL;
     int ret = -1;
 
     if (!qemuIsSharedHostdev(hostdev))
         return 0;
 
-    if (!(dev_path = qemuGetHostdevPath(hostdev)))
-        goto cleanup;
-
-    if (!(key = qemuGetSharedDeviceKey(dev_path)))
-        goto cleanup;
+    if (!(dev_path = qemuGetHostdevPath(hostdev)) ||
+        !(key = qemuGetSharedDeviceKey(dev_path)))
+        return -1;
 
     qemuDriverLock(driver);
 
@@ -1785,11 +1755,7 @@ qemuSharedHostdevAddRemoveInternal(virQEMUDriverPtr driver,
 
     qemuDriverUnlock(driver);
 
- cleanup:
-    VIR_FREE(dev_path);
-    VIR_FREE(key);
     return ret;
-
 }
 
 static int
@@ -1863,10 +1829,9 @@ qemuSetUnprivSGIO(virDomainDeviceDefPtr dev)
 {
     virDomainDiskDefPtr disk = NULL;
     virDomainHostdevDefPtr hostdev = NULL;
-    char *sysfs_path = NULL;
+    VIR_AUTOFREE(char *) sysfs_path = NULL;
     const char *path = NULL;
     int val = -1;
-    int ret = -1;
 
     /* "sgio" is only valid for block disk; cdrom
      * and floopy disk can have empty source.
@@ -1889,7 +1854,7 @@ qemuSetUnprivSGIO(virDomainDeviceDefPtr dev)
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("'sgio' is not supported for SCSI "
                              "generic device yet "));
-            goto cleanup;
+            return -1;
         }
 
         return 0;
@@ -1898,7 +1863,7 @@ qemuSetUnprivSGIO(virDomainDeviceDefPtr dev)
     }
 
     if (!(sysfs_path = virGetUnprivSGIOSysfsPath(path, NULL)))
-        goto cleanup;
+        return -1;
 
     /* By default, filter the SG_IO commands, i.e. set unpriv_sgio to 0.  */
     val = (disk->sgio == VIR_DOMAIN_DEVICE_SGIO_UNFILTERED);
@@ -1909,13 +1874,9 @@ qemuSetUnprivSGIO(virDomainDeviceDefPtr dev)
      */
     if ((virFileExists(sysfs_path) || val == 1) &&
         virSetDeviceUnprivSGIO(path, NULL, val) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(sysfs_path);
-    return ret;
+    return 0;
 }
 
 int qemuDriverAllocateID(virQEMUDriverPtr driver)
@@ -1951,14 +1912,12 @@ char *
 qemuGetDomainHugepagePath(const virDomainDef *def,
                           virHugeTLBFSPtr hugepage)
 {
-    char *base = qemuGetBaseHugepagePath(hugepage);
-    char *domPath = virDomainDefGetShortName(def);
+    VIR_AUTOFREE(char *) base = qemuGetBaseHugepagePath(hugepage);
+    VIR_AUTOFREE(char *) domPath = virDomainDefGetShortName(def);
     char *ret = NULL;
 
     if (base && domPath)
         ignore_value(virAsprintf(&ret, "%s/%s", base, domPath));
-    VIR_FREE(domPath);
-    VIR_FREE(base);
     return ret;
 }
 
@@ -2019,20 +1978,15 @@ qemuGetMemoryBackingDomainPath(const virDomainDef *def,
                                virQEMUDriverConfigPtr cfg,
                                char **path)
 {
-    char *shortName = NULL;
-    char *base = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) shortName = NULL;
+    VIR_AUTOFREE(char *) base = NULL;
 
     if (!(shortName = virDomainDefGetShortName(def)) ||
         qemuGetMemoryBackingBasePath(cfg, &base) < 0 ||
         virAsprintf(path, "%s/%s", base, shortName) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    VIR_FREE(base);
-    VIR_FREE(shortName);
-    return ret;
+    return 0;
 }
 
 
@@ -2054,22 +2008,18 @@ qemuGetMemoryBackingPath(const virDomainDef *def,
                          const char *alias,
                          char **memPath)
 {
-    char *domainPath = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) domainPath = NULL;
 
     if (!alias) {
         /* This should never happen (TM) */
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("memory device alias is not assigned"));
-        goto cleanup;
+        return -1;
     }
 
     if (qemuGetMemoryBackingDomainPath(def, cfg, &domainPath) < 0 ||
         virAsprintf(memPath, "%s/%s", domainPath, alias) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    VIR_FREE(domainPath);
-    return ret;
+    return 0;
 }
