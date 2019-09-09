@@ -4688,6 +4688,44 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuCheckHostdevPlugged(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        const char *devAlias)
+{
+    virDomainHostdevDefPtr hostdev;
+    virDomainHostdevSubsysUSBPtr usbsrc;
+    virDomainDeviceDef dev;
+    int num;
+
+    if (virDomainDefFindDevice(vm->def, devAlias, &dev, false) < 0)
+        return 0;
+
+    if (dev.type != VIR_DOMAIN_DEVICE_HOSTDEV)
+        return 0;
+
+    hostdev = dev.data.hostdev;
+    if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+        return 0;
+
+    usbsrc = &hostdev->source.subsys.u.usb;
+    if (!usbsrc->vendor || !usbsrc->product)
+        return 0;
+
+    if ((num = virUSBDeviceFindByVendor(usbsrc->vendor, usbsrc->product,
+                                        NULL, false, NULL)) < 0)
+        return -1;
+
+    if (num == 0)
+        return 0;
+
+    if (qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 static void
 processDeviceDeletedEvent(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
@@ -4715,6 +4753,11 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
 
         if (qemuDomainRemoveDevice(driver, vm, &dev) < 0)
             goto endjob;
+
+        /* Fall thru and save status file even on error condition because
+         * device is removed successfully and changed configuration need
+         * to be saved in status file. */
+        qemuCheckHostdevPlugged(driver, vm, devAlias);
     }
 
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
@@ -5315,6 +5358,12 @@ processUSBAddedEvent(virQEMUDriverPtr driver,
     }
 
     if (i == vm->def->nhostdevs)
+        goto cleanup;
+
+    /* if device is not yet even deleted from qemu then handle plugging later.
+     * Or we failed handling host usb device unplugging, then another attempt of
+     * unplug/plug could help. */
+    if (usbsrc->bus || usbsrc->device)
         goto cleanup;
 
     if (qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
