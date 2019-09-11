@@ -2832,7 +2832,7 @@ int virDomainDiskGetFormat(virDomainDiskDefPtr def);
 void virDomainDiskSetFormat(virDomainDiskDefPtr def, int format);
 virDomainControllerDefPtr
 virDomainDeviceFindSCSIController(const virDomainDef *def,
-                                  virDomainDeviceInfoPtr info);
+                                  const virDomainDeviceDriveAddress *addr);
 virDomainDiskDefPtr virDomainDiskFindByBusAndDst(virDomainDefPtr def,
                                                  int bus,
                                                  char *dst);
