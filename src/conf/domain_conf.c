@@ -4813,11 +4813,54 @@ bool
 virDomainSCSIDriveAddressIsUsed(const virDomainDef *def,
                                 const virDomainDeviceDriveAddress *addr)
 {
-    /* In current implementation, the maximum unit number of a controller
-     * is either 16 or 7 (narrow SCSI bus), and if the maximum unit number
-     * is 16, the controller itself is on unit 7 */
-    if (addr->unit == 7)
-        return true;
+    const virDomainControllerDef *cont;
+
+    cont = virDomainDeviceFindSCSIController(def, addr);
+    if (cont) {
+        int max = -1;
+        int reserved = -1;
+
+        /* Different controllers have different limits. These limits here are
+         * taken from QEMU source code, but nevertheless they should apply to
+         * other hypervisors too. */
+        switch ((virDomainControllerModelSCSI) cont->model) {
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
+            max = 16383;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI:
+            max = 31;
+            reserved = 7;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068:
+            max = 1;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
+            max = 255;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
+            max = 0;
+            reserved = 7;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VMPVSCSI:
+            max = 0;
+            reserved = 7;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:
+            reserved = 7;
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_DEFAULT:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_AUTO:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
+            break;
+        }
+
+        if (max != -1 && addr->unit >= max)
+            return true;
+        if (reserved != -1 && addr->unit == reserved)
+            return true;
+    }
 
     if (virDomainDriveAddressIsUsedByDisk(def, VIR_DOMAIN_DISK_BUS_SCSI,
                                           addr) ||
