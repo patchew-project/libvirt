@@ -23,8 +23,6 @@
 #include <config.h>
 
 #include "qemu_hotplug.h"
-#define LIBVIRT_QEMU_HOTPLUGPRIV_H_ALLOW
-#include "qemu_hotplugpriv.h"
 #include "qemu_alias.h"
 #include "qemu_capabilities.h"
 #include "qemu_domain.h"
@@ -62,9 +60,6 @@
 VIR_LOG_INIT("qemu.qemu_hotplug");
 
 #define CHANGE_MEDIA_TIMEOUT 5000
-
-/* Wait up to 5 seconds for device removal to finish. */
-unsigned long long qemuDomainRemoveDeviceWaitTime = 1000ull * 5;
 
 
 static void
