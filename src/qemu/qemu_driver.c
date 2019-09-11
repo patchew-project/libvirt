@@ -134,6 +134,13 @@ VIR_LOG_INIT("qemu.qemu_driver");
 
 #define QEMU_NB_BANDWIDTH_PARAM 7
 
+/* Timeout in miliseconds for device removal. PPC64 domains
+ * can experience a bigger delay in unplug operations during
+ * heavy guest activity (vcpu being the most notable case), thus
+ * the timeout for PPC64 is also bigger. */
+#define QEMU_UNPLUG_TIMEOUT 5000
+#define QEMU_UNPLUG_TIMEOUT_PPC64 10000
+
 static void qemuProcessEventHandler(void *data, void *opaque);
 
 static int qemuStateCleanup(void);
@@ -1094,6 +1101,10 @@ qemuStateInitialize(bool privileged,
     qemu_driver->workerPool = virThreadPoolNew(0, 1, 0, qemuProcessEventHandler, qemu_driver);
     if (!qemu_driver->workerPool)
         goto error;
+
+    qemu_driver->unplugTimeout = QEMU_UNPLUG_TIMEOUT;
+    if (ARCH_IS_PPC64(qemu_driver->caps->host.arch))
+        qemu_driver->unplugTimeout = QEMU_UNPLUG_TIMEOUT_PPC64;
 
     qemuProcessReconnectAll(qemu_driver);
 

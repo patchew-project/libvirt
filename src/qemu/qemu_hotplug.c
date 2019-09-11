@@ -5237,7 +5237,8 @@ qemuDomainResetDeviceRemoval(virDomainObjPtr vm)
  *      - we failed to reliably wait for the event and thus use fallback behavior
  */
 static int
-qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
+qemuDomainWaitForDeviceRemoval(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     unsigned long long until;
@@ -5245,7 +5246,7 @@ qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
 
     if (virTimeMillisNow(&until) < 0)
         return 1;
-    until += qemuDomainRemoveDeviceWaitTime;
+    until += driver->unplugTimeout;
 
     while (priv->unplug.alias) {
         if ((rc = virDomainObjWaitUntil(vm, until)) == 1)
@@ -5701,7 +5702,7 @@ qemuDomainDetachDeviceChr(virQEMUDriverPtr driver,
     } else if (async) {
         ret = 0;
     } else {
-        if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
+        if ((ret = qemuDomainWaitForDeviceRemoval(driver, vm)) == 1)
             ret = qemuDomainRemoveChrDevice(driver, vm, tmpChr, true);
     }
 
@@ -6001,7 +6002,7 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
     if (async) {
         ret = 0;
     } else {
-        if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
+        if ((ret = qemuDomainWaitForDeviceRemoval(driver, vm)) == 1)
             ret = qemuDomainRemoveDevice(driver, vm, &detach);
     }
 
@@ -6107,7 +6108,7 @@ qemuDomainHotplugDelVcpu(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if ((rc = qemuDomainWaitForDeviceRemoval(vm)) <= 0) {
+    if ((rc = qemuDomainWaitForDeviceRemoval(driver, vm)) <= 0) {
         if (rc == 0)
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("vcpu unplug request timed out"));
