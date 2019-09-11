@@ -42,7 +42,7 @@ EXTRA_DIST = \
   README.md \
   AUTHORS.in \
   build-aux/augeas-gentest.py \
-  build-aux/check-spacing.pl \
+  build-aux/check-spacing.py \
   build-aux/gitlog-to-changelog \
   build-aux/header-ifdef.pl \
   build-aux/minimize-po.py \
