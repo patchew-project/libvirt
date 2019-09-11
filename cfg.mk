@@ -1164,8 +1164,8 @@ header-ifdef:
 	$(PYTHON) $(top_srcdir)/build-aux/header-ifdef.py
 
 test-wrap-argv:
-	$(AM_V_GEN)$(VC_LIST) | $(GREP) -E '\.(ldargs|args)' | xargs \
-	$(PERL) $(top_srcdir)/tests/test-wrap-argv.pl --check
+	$(AM_V_GEN)$(VC_LIST) | $(GREP) -E '\.(ldargs|args)' | $(RUNUTF8) xargs \
+	$(PYTHON) $(top_srcdir)/tests/test-wrap-argv.py --check
 
 group-qemu-caps:
 	$(AM_V_GEN)$(PERL) $(top_srcdir)/tests/group-qemu-caps.pl --check $(top_srcdir)/
