@@ -812,11 +812,9 @@ sc_require_enum_last_marker:
 	    exit 1; } || :
 
 # In Python files we don't want to end lines with a semicolon like in C
-sc_prohibit_semicolon_at_eol_in_python:
-	@prohibit='^[^#].*\;$$' \
-	in_vc_files='\.py$$' \
-	halt='python does not require to end lines with a semicolon' \
-	  $(_sc_search_regexp)
+sc_flake8:
+	@$(VC_LIST_EXCEPT) | $(GREP) '\.py$$' | xargs $(FLAKE8) --select E703 \
+		| $(GREP) . && { exit 1; } || :
 
 # mymain() in test files should use return, not exit, for nicer output
 sc_prohibit_exit_in_tests:
