@@ -210,6 +210,7 @@
   <flag name='bochs-display'/>
   <flag name='migration-file-drop-cache'/>
   <flag name='net-socket-dgram'/>
+  <flag name='blockdev-file-dynamic-auto-read-only'/>
   <version>4000050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100759</microcodeVersion>
