@@ -151,6 +151,7 @@ qemuBlockJobRegister(qemuBlockJobDataPtr job,
     if (disk) {
         job->disk = disk;
         job->chain = virObjectRef(disk->src);
+        virObjectUnref(QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob);
         QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = virObjectRef(job);
     }
 
