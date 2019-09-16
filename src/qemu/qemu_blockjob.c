@@ -677,6 +677,25 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
             }
 
             virObjectUnref(disk->mirror);
+        } else if (job->type == QEMU_BLOCKJOB_TYPE_COMMIT) {
+            if (qemuSecurityMoveImageMetadata(driver, vm,
+                                              job->data.commit.base, NULL) < 0) {
+                VIR_WARN("Unable to remove disk metadata on "
+                         "vm %s from %s (disk target %s)",
+                         vm->def->name,
+                         NULLSTR(job->data.commit.base->path),
+                         disk->dst);
+            }
+            if (job->data.commit.topparent &&
+                job->data.commit.topparent != disk->src &&
+                qemuSecurityMoveImageMetadata(driver, vm,
+                                              job->data.commit.topparent, NULL) < 0) {
+                VIR_WARN("Unable to remove disk metadata on "
+                         "vm %s from %s (disk target %s)",
+                         vm->def->name,
+                         NULLSTR(job->data.commit.topparent->path),
+                         disk->dst);
+            }
         }
     }
 
