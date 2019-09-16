@@ -41,6 +41,15 @@
 <libvirt>
   <release version="v5.8.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Implement the ccf-assist pSeries feature
+        </summary>
+        <description>
+          Users can now decide whether ccf-assist (Count Cache Flush Assist)
+          support should be available to pSeries guests.
+        </description>
+      </change>
     </section>
     <section title="Removed features">
       <change>
