@@ -1983,7 +1983,8 @@ static int
 virSecurityDACSetAllLabel(virSecurityManagerPtr mgr,
                           virDomainDefPtr def,
                           const char *stdin_path ATTRIBUTE_UNUSED,
-                          bool chardevStdioLogd)
+                          bool chardevStdioLogd,
+                          bool migrated ATTRIBUTE_UNUSED)
 {
     virSecurityDACDataPtr priv = virSecurityManagerGetPrivateData(mgr);
     virSecurityLabelDefPtr secdef;
