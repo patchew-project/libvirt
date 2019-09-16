@@ -791,7 +791,7 @@ virSecuritySELinuxQEMUInitialize(virSecurityManagerPtr mgr)
 static int
 virSecuritySELinuxInitialize(virSecurityManagerPtr mgr)
 {
-    VIR_DEBUG("SELinuxInitialize %s", virSecurityManagerGetDriver(mgr));
+    VIR_DEBUG("SELinuxInitialize %s", virSecurityManagerGetVirtDriver(mgr));
 
     if (virThreadLocalInit(&contextList,
                            virSecuritySELinuxContextListFree) < 0) {
@@ -800,7 +800,7 @@ virSecuritySELinuxInitialize(virSecurityManagerPtr mgr)
         return -1;
     }
 
-    if (STREQ(virSecurityManagerGetDriver(mgr),  "LXC")) {
+    if (STREQ(virSecurityManagerGetVirtDriver(mgr), "LXC")) {
         return virSecuritySELinuxLXCInitialize(mgr);
     } else {
         return virSecuritySELinuxQEMUInitialize(mgr);
@@ -829,7 +829,7 @@ virSecuritySELinuxGenLabel(virSecurityManagerPtr mgr,
 
     data = virSecurityManagerGetPrivateData(mgr);
 
-    VIR_DEBUG("label=%s", virSecurityManagerGetDriver(mgr));
+    VIR_DEBUG("label=%s", virSecurityManagerGetVirtDriver(mgr));
     if (seclabel->type == VIR_DOMAIN_SECLABEL_DYNAMIC &&
         seclabel->label) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
