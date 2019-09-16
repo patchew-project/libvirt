@@ -3612,10 +3612,8 @@ virQEMUCapsLoadCache(virArch hostArch,
     if (!(doc = virXMLParseFile(filename)))
         goto cleanup;
 
-    if (!(ctxt = xmlXPathNewContext(doc))) {
-        virReportOOMError();
+    if (!(ctxt = virXMLXPathContextNew(doc)))
         goto cleanup;
-    }
 
     ctxt->node = xmlDocGetRootElement(doc);
 
