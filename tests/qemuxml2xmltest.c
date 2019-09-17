@@ -439,6 +439,7 @@ mymain(void)
     DO_TEST("channel-unix-source-path", NONE);
 
     DO_TEST("hostdev-usb-address", NONE);
+    DO_TEST("hostdev-usb-replug", NONE);
     DO_TEST("hostdev-pci-address", NONE);
     DO_TEST("hostdev-pci-multifunction", NONE);
     DO_TEST("hostdev-vfio", NONE);
