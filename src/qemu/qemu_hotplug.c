@@ -4465,7 +4465,8 @@ qemuDomainRemoveUSBHostDevice(virQEMUDriverPtr driver,
                               virDomainHostdevDefPtr hostdev)
 {
     qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
-    qemuDomainReleaseDeviceAddress(vm, hostdev->info);
+    if (hostdev->deleteAction != VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG)
+        qemuDomainReleaseDeviceAddress(vm, hostdev->info);
 }
 
 static void
@@ -4507,6 +4508,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     char *drivealias = NULL;
     char *objAlias = NULL;
     bool is_vfio = false;
+    bool unplug = hostdev->deleteAction == VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG;
 
     VIR_DEBUG("Removing host device %s from domain %p %s",
               hostdev->info->alias, vm, vm->def->name);
@@ -4554,16 +4556,24 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         }
     }
 
-    for (i = 0; i < vm->def->nhostdevs; i++) {
-        if (vm->def->hostdevs[i] == hostdev) {
-            virDomainHostdevRemove(vm->def, i);
-            break;
+    if (!unplug) {
+        for (i = 0; i < vm->def->nhostdevs; i++) {
+            if (vm->def->hostdevs[i] == hostdev) {
+                virDomainHostdevRemove(vm->def, i);
+                break;
+            }
         }
     }
 
     virDomainAuditHostdev(vm, hostdev, "detach", true);
 
-    if (!is_vfio &&
+    /*
+     * In case of unplug the attempt to restore label will fail. But we don't
+     * need to restore the label! In case of separate mount namespace for the
+     * domain we remove device file later in this function. In case of global
+     * mount namespace the device file is deleted or being deleted by systemd.
+     */
+    if (!is_vfio && !unplug &&
         qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
         VIR_WARN("Failed to restore host device labelling");
 
@@ -4597,7 +4607,13 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         break;
     }
 
-    virDomainHostdevDefFree(hostdev);
+    if (unplug) {
+        virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
+        usbsrc->bus = 0;
+        usbsrc->device = 0;
+    } else {
+        virDomainHostdevDefFree(hostdev);
+    }
 
     if (net) {
         if (net->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -4611,6 +4627,8 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         }
         virDomainNetDefFree(net);
     }
+
+    hostdev->deleteAction = VIR_DOMAIN_HOSTDEV_DELETE_ACTION_NONE;
 
     ret = 0;
 
@@ -5084,6 +5102,7 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
     virDomainDeviceInfoPtr info;
     virObjectEventPtr event;
     VIR_AUTOFREE(char *) alias = NULL;
+    bool unplug;
 
     /*
      * save the alias to use when sending a DEVICE_REMOVED event after
@@ -5124,8 +5143,13 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
             return -1;
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
+        unplug = dev->data.hostdev->deleteAction == VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG;
+
         if (qemuDomainRemoveHostDevice(driver, vm, dev->data.hostdev) < 0)
             return -1;
+
+        if (unplug)
+            return 0;
         break;
     case VIR_DOMAIN_DEVICE_RNG:
         if (qemuDomainRemoveRNGDevice(driver, vm, dev->data.rng) < 0)
