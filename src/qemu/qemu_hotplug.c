@@ -5451,7 +5451,8 @@ qemuDomainDetachPrepController(virDomainObjPtr vm,
 static int
 qemuDomainDetachPrepHostdev(virDomainObjPtr vm,
                             virDomainHostdevDefPtr match,
-                            virDomainHostdevDefPtr *detach)
+                            virDomainHostdevDefPtr *detach,
+                            bool unplug)
 {
     virDomainHostdevSubsysPtr subsys = &match->source.subsys;
     virDomainHostdevSubsysUSBPtr usbsrc = &subsys->u.usb;
@@ -5522,6 +5523,20 @@ qemuDomainDetachPrepHostdev(virDomainObjPtr vm,
         }
         return -1;
     }
+
+    /*
+     * Why having additional check in second branch? Suppose client
+     * asks for device detaching and we delete device from qemu
+     * but don't get DEVICE_DELETED event yet. Next USB is unplugged
+     * from host and we have this function called again. If we reset
+     * delete action to 'unplug' then device will be left in
+     * libvirt config after handling DEVICE_DELETED event while
+     * it should not as client asked to detach the device before.
+     */
+    if (!unplug)
+        hostdev->deleteAction = VIR_DOMAIN_HOSTDEV_DELETE_ACTION_DELETE;
+    else if (hostdev->deleteAction != VIR_DOMAIN_HOSTDEV_DELETE_ACTION_DELETE)
+        hostdev->deleteAction = VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG;
 
     return 0;
 }
@@ -5824,7 +5839,8 @@ int
 qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                            virDomainDeviceDefPtr match,
                            virQEMUDriverPtr driver,
-                           bool async)
+                           bool async,
+                           bool unplug)
 {
     virDomainDeviceDef detach = { .type = match->type };
     virDomainDeviceInfoPtr info = NULL;
@@ -5869,7 +5885,8 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
         if (qemuDomainDetachPrepHostdev(vm, match->data.hostdev,
-                                        &detach.data.hostdev) < 0) {
+                                        &detach.data.hostdev,
+                                        unplug) < 0) {
             return -1;
         }
         break;
