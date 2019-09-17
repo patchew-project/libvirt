@@ -89,6 +89,7 @@ libvirt_driver_qemu_impl_la_CFLAGS = \
 	-I$(srcdir)/conf \
 	-I$(srcdir)/secret \
 	$(AM_CFLAGS) \
+	$(UDEV_CFLAGS) \
 	$(NULL)
 libvirt_driver_qemu_impl_la_LDFLAGS = $(AM_LDFLAGS)
 libvirt_driver_qemu_impl_la_LIBADD = \
@@ -97,6 +98,7 @@ libvirt_driver_qemu_impl_la_LIBADD = \
 	$(LIBNL_LIBS) \
 	$(SELINUX_LIBS) \
 	$(LIBXML_LIBS) \
+	$(UDEV_LIBS) \
 	$(NULL)
 libvirt_driver_qemu_impl_la_SOURCES = $(QEMU_DRIVER_SOURCES)
 
