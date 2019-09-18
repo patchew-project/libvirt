@@ -2340,8 +2340,8 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     unsigned long long oldmem = virDomainDefGetMemoryTotal(vm->def);
     unsigned long long newmem = oldmem + mem->size;
-    char *devstr = NULL;
-    char *objalias = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
+    VIR_AUTOFREE(char *) objalias = NULL;
     bool objAdded = false;
     bool teardownlabel = false;
     bool teardowncgroup = false;
@@ -2438,8 +2438,6 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     }
 
     virJSONValueFree(props);
-    VIR_FREE(devstr);
-    VIR_FREE(objalias);
     virDomainMemoryDefFree(mem);
     return ret;
 
@@ -2478,7 +2476,7 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
                               virDomainHostdevDefPtr hostdev)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     bool added = false;
     bool teardowncgroup = false;
     bool teardownlabel = false;
@@ -2540,7 +2538,6 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
             qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
         virDomainUSBAddressRelease(priv->usbaddrs, hostdev->info);
     }
-    VIR_FREE(devstr);
     return ret;
 }
 
@@ -2554,10 +2551,10 @@ qemuDomainAttachHostSCSIDevice(virQEMUDriverPtr driver,
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virErrorPtr orig_err;
-    char *devstr = NULL;
-    char *drvstr = NULL;
-    char *drivealias = NULL;
-    char *secobjAlias = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
+    VIR_AUTOFREE(char *) drvstr = NULL;
+    VIR_AUTOFREE(char *) drivealias = NULL;
+    VIR_AUTOFREE(char *) secobjAlias = NULL;
     bool teardowncgroup = false;
     bool teardownlabel = false;
     bool teardowndevice = false;
@@ -2659,10 +2656,6 @@ qemuDomainAttachHostSCSIDevice(virQEMUDriverPtr driver,
     }
     qemuDomainSecretHostdevDestroy(hostdev);
     virJSONValueFree(secobjProps);
-    VIR_FREE(secobjAlias);
-    VIR_FREE(drivealias);
-    VIR_FREE(drvstr);
-    VIR_FREE(devstr);
     return ret;
 
  exit_monitor:
@@ -2692,9 +2685,9 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_HOSTDEV,
                                { .hostdev = hostdev } };
     virDomainCCWAddressSetPtr ccwaddrs = NULL;
-    char *vhostfdName = NULL;
+    VIR_AUTOFREE(char *) vhostfdName = NULL;
     int vhostfd = -1;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     bool teardowncgroup = false;
     bool teardownlabel = false;
     bool teardowndevice = false;
@@ -2790,8 +2783,6 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
     virDomainCCWAddressSetFree(ccwaddrs);
 
     VIR_FORCE_CLOSE(vhostfd);
-    VIR_FREE(vhostfdName);
-    VIR_FREE(devstr);
     return ret;
 }
 
@@ -2802,7 +2793,7 @@ qemuDomainAttachMediatedDevice(virQEMUDriverPtr driver,
                                virDomainHostdevDefPtr hostdev)
 {
     int ret = -1;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     bool added = false;
     bool teardowncgroup = false;
     bool teardownlabel = false;
@@ -2887,7 +2878,6 @@ qemuDomainAttachMediatedDevice(virQEMUDriverPtr driver,
                                                1);
         qemuDomainReleaseDeviceAddress(vm, hostdev->info);
     }
-    VIR_FREE(devstr);
     return ret;
 }
 
@@ -2952,9 +2942,9 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
                             virDomainShmemDefPtr shmem)
 {
     int ret = -1;
-    char *shmstr = NULL;
-    char *charAlias = NULL;
-    char *memAlias = NULL;
+    VIR_AUTOFREE(char *) shmstr = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
+    VIR_AUTOFREE(char *) memAlias = NULL;
     bool release_backing = false;
     bool release_address = true;
     virErrorPtr orig_err = NULL;
@@ -3043,9 +3033,6 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
         qemuDomainReleaseDeviceAddress(vm, &shmem->info);
 
     virJSONValueFree(props);
-    VIR_FREE(memAlias);
-    VIR_FREE(charAlias);
-    VIR_FREE(shmstr);
 
     return ret;
 
@@ -3077,7 +3064,7 @@ qemuDomainAttachWatchdog(virQEMUDriverPtr driver,
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_WATCHDOG, { .watchdog = watchdog } };
     virDomainWatchdogAction actualAction = watchdog->action;
     const char *actionStr = NULL;
-    char *watchdogstr = NULL;
+    VIR_AUTOFREE(char *) watchdogstr = NULL;
     bool releaseAddress = false;
     int rv;
 
@@ -3134,7 +3121,6 @@ qemuDomainAttachWatchdog(virQEMUDriverPtr driver,
  cleanup:
     if (releaseAddress)
         qemuDomainReleaseDeviceAddress(vm, &watchdog->info);
-    VIR_FREE(watchdogstr);
     return ret;
 }
 
@@ -3145,7 +3131,7 @@ qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
                             virDomainInputDefPtr input)
 {
     int ret = -1;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_INPUT,
                                { .input = input } };
@@ -3229,7 +3215,6 @@ qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
         virErrorRestore(&originalError);
     }
 
-    VIR_FREE(devstr);
     return ret;
 
  exit_monitor:
@@ -3253,8 +3238,8 @@ qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
     virErrorPtr originalError = NULL;
     const char *fdprefix = "vsockfd";
     bool releaseaddr = false;
-    char *fdname = NULL;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) fdname = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     int ret = -1;
 
     if (vm->def->vsock) {
@@ -3305,8 +3290,6 @@ qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
         virErrorRestore(&originalError);
     }
 
-    VIR_FREE(devstr);
-    VIR_FREE(fdname);
     return ret;
 
  exit_monitor:
@@ -3986,22 +3969,21 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     time_t now = time(NULL);
     const char *expire;
-    char *validTo = NULL;
+    VIR_AUTOFREE(char *) validTo = NULL;
     const char *connected = NULL;
     const char *password;
     int ret = -1;
 
-    if (!auth->passwd && !defaultPasswd) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!auth->passwd && !defaultPasswd)
+        return ret;
+
     password = auth->passwd ? auth->passwd : defaultPasswd;
 
     if (auth->connected)
         connected = virDomainGraphicsAuthConnectedTypeToString(auth->connected);
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
-        goto cleanup;
+        return ret;
     ret = qemuMonitorSetPassword(priv->mon, type, password, connected);
 
     if (ret != 0)
@@ -4023,8 +4005,7 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
  end_job:
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
- cleanup:
-    VIR_FREE(validTo);
+
     return ret;
 }
 
@@ -4362,7 +4343,7 @@ qemuDomainRemoveMemoryDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     unsigned long long oldmem = virDomainDefGetMemoryTotal(vm->def);
     unsigned long long newmem = oldmem - mem->size;
-    char *backendAlias = NULL;
+    VIR_AUTOFREE(char *) backendAlias = NULL;
     int rc;
     int idx;
 
@@ -4376,8 +4357,6 @@ qemuDomainRemoveMemoryDevice(virQEMUDriverPtr driver,
     rc = qemuMonitorDelObject(priv->mon, backendAlias);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         rc = -1;
-
-    VIR_FREE(backendAlias);
 
     virDomainAuditMemory(vm, oldmem, newmem, "update", rc == 0);
     if (rc < 0)
@@ -4462,10 +4441,9 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
 {
     virDomainNetDefPtr net = NULL;
     size_t i;
-    int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *drivealias = NULL;
-    char *objAlias = NULL;
+    VIR_AUTOFREE(char *) drivealias = NULL;
+    VIR_AUTOFREE(char *) objAlias = NULL;
     bool is_vfio = false;
 
     VIR_DEBUG("Removing host device %s from domain %p %s",
@@ -4481,7 +4459,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
         if (!(drivealias = qemuAliasFromHostdev(hostdev)))
-            goto cleanup;
+            return -1;
 
         /* Look for the markers that the iSCSI hostdev was added with a
          * secret object to manage the username/password. If present, let's
@@ -4490,7 +4468,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
             virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_ISCSI_PASSWORD_SECRET) &&
             qemuDomainStorageSourceHasAuth(iscsisrc->src)) {
             if (!(objAlias = qemuDomainGetSecretAESAlias(hostdev->info->alias, false)))
-                goto cleanup;
+                return -1;
         }
 
         qemuDomainObjEnterMonitor(driver, vm);
@@ -4501,7 +4479,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
             ignore_value(qemuMonitorDelObject(priv->mon, objAlias));
 
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
-            goto cleanup;
+            return -1;
     }
 
     if (hostdev->parentnet) {
@@ -4572,12 +4550,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
         virDomainNetDefFree(net);
     }
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(drivealias);
-    VIR_FREE(objAlias);
-    return ret;
+    return 0;
 }
 
 
