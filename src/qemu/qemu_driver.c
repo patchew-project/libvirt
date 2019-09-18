@@ -4640,7 +4640,7 @@ processNicRxFilterChangedEvent(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                const char *devAlias)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDeviceDef dev;
     virDomainNetDefPtr def;
@@ -4739,7 +4739,6 @@ processNicRxFilterChangedEvent(virQEMUDriverPtr driver,
  cleanup:
     virNetDevRxFilterFree(hostFilter);
     virNetDevRxFilterFree(guestFilter);
-    virObjectUnref(cfg);
 }
 
 
@@ -4749,7 +4748,7 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
                           const char *devAlias,
                           bool connected)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virDomainChrDeviceState newstate;
     virObjectEventPtr event = NULL;
     virDomainDeviceDef dev;
@@ -4782,7 +4781,7 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
     }
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
-        goto cleanup;
+        return;
 
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("Domain is not running");
@@ -4823,9 +4822,6 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
-
- cleanup:
-    virObjectUnref(cfg);
 }
 
 
@@ -5098,21 +5094,20 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
                       virDomainDefPtr persistentDef,
                       unsigned int nvcpus)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     unsigned int topologycpus;
-    int ret = -1;
 
     if (def) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("maximum vcpu count of a live domain can't be modified"));
-        goto cleanup;
+        return -1;
     }
 
     if (virDomainNumaGetCPUCountTotal(persistentDef->numa) > nvcpus) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Number of CPUs in <numa> exceeds the desired "
                          "maximum vcpu count"));
-        goto cleanup;
+        return -1;
     }
 
     if (virDomainDefGetVcpusTopology(persistentDef, &topologycpus) == 0 &&
@@ -5121,23 +5116,19 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
          * setting may be corrected via this API */
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("CPU topology doesn't match the desired vcpu count"));
-        goto cleanup;
+        return -1;
     }
 
     /* ordering information may become invalid, thus clear it */
     virDomainDefVcpuOrderClear(persistentDef);
 
     if (virDomainDefSetVcpusMax(persistentDef, nvcpus, driver->xmlopt) < 0)
-        goto cleanup;
+        return -1;
 
     if (virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virObjectUnref(cfg);
-    return ret;
+    return 0;
 }
 
 
@@ -5302,7 +5293,7 @@ qemuDomainPinVcpuFlags(virDomainPtr dom,
     int ret = -1;
     virBitmapPtr pcpumap = NULL;
     virDomainVcpuDefPtr vcpuinfo = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -5359,7 +5350,6 @@ qemuDomainPinVcpuFlags(virDomainPtr dom,
  cleanup:
     virDomainObjEndAPI(&vm);
     virBitmapFree(pcpumap);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -5422,7 +5412,7 @@ qemuDomainPinEmulator(virDomainPtr dom,
     int ret = -1;
     qemuDomainObjPrivatePtr priv;
     virBitmapPtr pcpumap = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virObjectEventPtr event = NULL;
     char *str = NULL;
     virTypedParameterPtr eventParams = NULL;
@@ -5516,7 +5506,6 @@ qemuDomainPinEmulator(virDomainPtr dom,
     VIR_FREE(str);
     virBitmapFree(pcpumap);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -5887,7 +5876,7 @@ qemuDomainPinIOThread(virDomainPtr dom,
 {
     int ret = -1;
     virQEMUDriverPtr driver = dom->conn->privateData;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virDomainObjPtr vm;
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
@@ -6011,7 +6000,6 @@ qemuDomainPinIOThread(virDomainPtr dom,
     VIR_FREE(str);
     virBitmapFree(pcpumap);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -6360,7 +6348,7 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
                       virDomainIOThreadAction action,
                       unsigned int flags)
 {
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     qemuDomainObjPrivatePtr priv;
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
@@ -6460,7 +6448,6 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -6971,7 +6958,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     int intermediatefd = -1;
     virCommandPtr cmd = NULL;
     char *errbuf = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virQEMUSaveHeaderPtr header = &data->header;
     qemuDomainSaveCookiePtr cookie = NULL;
 
@@ -7093,7 +7080,6 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     VIR_FREE(errbuf);
     if (qemuSecurityRestoreSavedStateLabel(driver, vm, path) < 0)
         VIR_WARN("failed to restore save state label on %s", path);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -7518,12 +7504,10 @@ static char *qemuConnectDomainXMLToNative(virConnectPtr conn,
     virCommandPtr cmd = NULL;
     char *ret = NULL;
     size_t i;
-    virQEMUDriverConfigPtr cfg;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virCapsPtr caps = NULL;
 
     virCheckFlags(0, NULL);
-
-    cfg = virQEMUDriverGetConfig(driver);
 
     if (virConnectDomainXMLToNativeEnsureACL(conn) < 0)
         goto cleanup;
@@ -7584,7 +7568,6 @@ static char *qemuConnectDomainXMLToNative(virConnectPtr conn,
     virCommandFree(cmd);
     virObjectUnref(vm);
     virObjectUnref(caps);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -7771,7 +7754,7 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     virDomainObjPtr vm = NULL;
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
-    virQEMUDriverConfigPtr cfg;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virCapsPtr caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                VIR_DOMAIN_DEF_PARSE_ABI_UPDATE;
@@ -7780,8 +7763,6 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
 
     if (flags & VIR_DOMAIN_DEFINE_VALIDATE)
         parse_flags |= VIR_DOMAIN_DEF_PARSE_VALIDATE_SCHEMA;
-
-    cfg = virQEMUDriverGetConfig(driver);
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
@@ -7839,7 +7820,6 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(caps);
-    virObjectUnref(cfg);
     return dom;
 }
 
@@ -7860,7 +7840,7 @@ qemuDomainUndefineFlags(virDomainPtr dom,
     int ret = -1;
     int nsnapshots;
     int ncheckpoints;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_UNDEFINE_MANAGED_SAVE |
                   VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA |
@@ -7980,7 +7960,6 @@ qemuDomainUndefineFlags(virDomainPtr dom,
     VIR_FREE(name);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -8797,7 +8776,7 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDefPtr vmdef = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virDomainDeviceDefPtr devConf = NULL;
     virDomainDeviceDefPtr devLive = NULL;
     int ret = -1;
@@ -8882,7 +8861,6 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
     virDomainDefFree(vmdef);
     virDomainDeviceDefFree(devConf);
     virDomainDeviceDefFree(devLive);
-    virObjectUnref(cfg);
     virObjectUnref(caps);
 
     return ret;
@@ -8943,7 +8921,7 @@ static int qemuDomainUpdateDeviceFlags(virDomainPtr dom,
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     bool force = (flags & VIR_DOMAIN_DEVICE_MODIFY_FORCE) != 0;
     int ret = -1;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virCapsPtr caps = NULL;
     unsigned int parse_flags = 0;
 
@@ -9044,7 +9022,6 @@ static int qemuDomainUpdateDeviceFlags(virDomainPtr dom,
     virDomainDeviceDefFree(dev);
     virDomainObjEndAPI(&vm);
     virObjectUnref(caps);
-    virObjectUnref(cfg);
     virNWFilterUnlockFilterUpdates();
     return ret;
 }
@@ -9057,7 +9034,7 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virCapsPtr caps = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
     virDomainDefPtr vmdef = NULL;
@@ -9136,7 +9113,6 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
 
  cleanup:
     virObjectUnref(caps);
-    virObjectUnref(cfg);
     if (dev != dev_copy)
         virDomainDeviceDefFree(dev_copy);
     virDomainDeviceDefFree(dev);
@@ -9153,7 +9129,7 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virCapsPtr caps = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
     virDomainDefPtr vmdef = NULL;
@@ -9214,7 +9190,6 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
     ret = 0;
  cleanup:
     virDomainDefFree(vmdef);
-    virObjectUnref(cfg);
     virObjectUnref(caps);
     return ret;
 }
@@ -9323,7 +9298,7 @@ static int qemuDomainSetAutostart(virDomainPtr dom,
     virDomainObjPtr vm;
     char *configFile = NULL, *autostartLink = NULL;
     int ret = -1;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         return -1;
@@ -9388,7 +9363,6 @@ static int qemuDomainSetAutostart(virDomainPtr dom,
     VIR_FREE(configFile);
     VIR_FREE(autostartLink);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -9635,7 +9609,7 @@ qemuDomainSetBlkioParameters(virDomainPtr dom,
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
     int ret = -1;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     qemuDomainObjPrivatePtr priv;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -9835,7 +9809,6 @@ qemuDomainSetBlkioParameters(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -9947,7 +9920,7 @@ qemuDomainSetMemoryParameters(virDomainPtr dom,
     bool set_swap_hard_limit = false;
     bool set_hard_limit = false;
     bool set_soft_limit = false;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     int rc;
     int ret = -1;
     qemuDomainObjPrivatePtr priv;
@@ -10072,7 +10045,6 @@ qemuDomainSetMemoryParameters(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
