@@ -445,11 +445,9 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
                        void *data)
 {
     char *baseDir = (char *)data;
-    char *snapDir = NULL;
+    VIR_AUTOFREE(char *) snapDir = NULL;
     DIR *dir = NULL;
     struct dirent *entry;
-    char *xmlStr;
-    char *fullpath;
     virDomainSnapshotDefPtr def = NULL;
     virDomainMomentObjPtr snap = NULL;
     virDomainMomentObjPtr current = NULL;
@@ -484,6 +482,9 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
         goto cleanup;
 
     while ((direrr = virDirRead(dir, &entry, NULL)) > 0) {
+        VIR_AUTOFREE(char *) xmlStr = NULL;
+        VIR_AUTOFREE(char *) fullpath = NULL;
+
         /* NB: ignoring errors, so one malformed config doesn't
            kill the whole process */
         VIR_INFO("Loading snapshot file '%s'", entry->d_name);
@@ -499,7 +500,6 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
             virReportSystemError(errno,
                                  _("Failed to read snapshot file %s"),
                                  fullpath);
-            VIR_FREE(fullpath);
             continue;
         }
 
@@ -512,8 +512,6 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to parse snapshot XML from file '%s'"),
                            fullpath);
-            VIR_FREE(fullpath);
-            VIR_FREE(xmlStr);
             continue;
         }
 
@@ -527,9 +525,6 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
                                vm->def->name);
             current = snap;
         }
-
-        VIR_FREE(fullpath);
-        VIR_FREE(xmlStr);
     }
     if (direrr < 0)
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -556,7 +551,6 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
     ret = 0;
  cleanup:
     VIR_DIR_CLOSE(dir);
-    VIR_FREE(snapDir);
     virObjectUnref(caps);
     virObjectUnlock(vm);
     return ret;
@@ -568,11 +562,9 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
                          void *data)
 {
     char *baseDir = (char *)data;
-    char *chkDir = NULL;
+    VIR_AUTOFREE(char *) chkDir = NULL;
     DIR *dir = NULL;
     struct dirent *entry;
-    char *xmlStr;
-    char *fullpath;
     virDomainCheckpointDefPtr def = NULL;
     virDomainMomentObjPtr chk = NULL;
     virDomainMomentObjPtr current = NULL;
@@ -603,6 +595,9 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
         goto cleanup;
 
     while ((direrr = virDirRead(dir, &entry, NULL)) > 0) {
+        VIR_AUTOFREE(char *) xmlStr = NULL;
+        VIR_AUTOFREE(char *) fullpath = NULL;
+
         /* NB: ignoring errors, so one malformed config doesn't
            kill the whole process */
         VIR_INFO("Loading checkpoint file '%s'", entry->d_name);
@@ -618,7 +613,6 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
             virReportSystemError(errno,
                                  _("Failed to read checkpoint file %s"),
                                  fullpath);
-            VIR_FREE(fullpath);
             continue;
         }
 
@@ -631,8 +625,6 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to parse checkpoint XML from file '%s'"),
                            fullpath);
-            VIR_FREE(fullpath);
-            VIR_FREE(xmlStr);
             virObjectUnref(def);
             continue;
         }
@@ -640,9 +632,6 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
         chk = virDomainCheckpointAssignDef(vm->checkpoints, def);
         if (chk == NULL)
             virObjectUnref(def);
-
-        VIR_FREE(fullpath);
-        VIR_FREE(xmlStr);
     }
     if (direrr < 0)
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -667,7 +656,6 @@ qemuDomainCheckpointLoad(virDomainObjPtr vm,
     ret = 0;
  cleanup:
     VIR_DIR_CLOSE(dir);
-    VIR_FREE(chkDir);
     virObjectUnref(caps);
     virObjectUnlock(vm);
     return ret;
@@ -726,12 +714,11 @@ qemuStateInitialize(bool privileged,
                     virStateInhibitCallback callback,
                     void *opaque)
 {
-    char *driverConf = NULL;
+    VIR_AUTOFREE(char *) driverConf = NULL;
     virQEMUDriverConfigPtr cfg;
     uid_t run_uid = -1;
     gid_t run_gid = -1;
-    char *hugepagePath = NULL;
-    char *memoryBackingPath = NULL;
+    VIR_AUTOFREE(char *) memoryBackingPath = NULL;
     size_t i;
 
     if (VIR_ALLOC(qemu_driver) < 0)
@@ -771,7 +758,6 @@ qemuStateInitialize(bool privileged,
 
     if (virQEMUDriverConfigLoadFile(cfg, driverConf, privileged) < 0)
         goto error;
-    VIR_FREE(driverConf);
 
     if (virQEMUDriverConfigValidate(cfg) < 0)
         goto error;
@@ -895,7 +881,7 @@ qemuStateInitialize(bool privileged,
         goto error;
 
     if (privileged) {
-        char *channeldir;
+        VIR_AUTOFREE(char *) channeldir = NULL;
 
         if (chown(cfg->libDir, cfg->user, cfg->group) < 0) {
             virReportSystemError(errno,
@@ -948,10 +934,8 @@ qemuStateInitialize(bool privileged,
                                  _("unable to set ownership of '%s' to %d:%d"),
                                  channeldir, (int)cfg->user,
                                  (int)cfg->group);
-            VIR_FREE(channeldir);
             goto error;
         }
-        VIR_FREE(channeldir);
         if (chown(cfg->channelTargetDir, cfg->user, cfg->group) < 0) {
             virReportSystemError(errno,
                                  _("unable to set ownership of '%s' to %d:%d"),
@@ -1002,6 +986,8 @@ qemuStateInitialize(bool privileged,
      * it, since we can't assume the root mount point has permissions that
      * will let our spawned QEMU instances use it. */
     for (i = 0; i < cfg->nhugetlbfs; i++) {
+        VIR_AUTOFREE(char *) hugepagePath = NULL;
+
         hugepagePath = qemuGetBaseHugepagePath(&cfg->hugetlbfs[i]);
 
         if (!hugepagePath)
@@ -1017,7 +1003,6 @@ qemuStateInitialize(bool privileged,
             virFileUpdatePerm(cfg->hugetlbfs[i].mnt_dir,
                               0, S_IXGRP | S_IXOTH) < 0)
             goto error;
-        VIR_FREE(hugepagePath);
     }
 
     if (qemuGetMemoryBackingBasePath(cfg, &memoryBackingPath) < 0)
@@ -1034,7 +1019,6 @@ qemuStateInitialize(bool privileged,
         virFileUpdatePerm(memoryBackingPath,
                           0, S_IXGRP | S_IXOTH) < 0)
         goto error;
-    VIR_FREE(memoryBackingPath);
 
     if (!(qemu_driver->closeCallbacks = virCloseCallbacksNew()))
         goto error;
@@ -1099,9 +1083,6 @@ qemuStateInitialize(bool privileged,
     return VIR_DRV_STATE_INIT_COMPLETE;
 
  error:
-    VIR_FREE(driverConf);
-    VIR_FREE(hugepagePath);
-    VIR_FREE(memoryBackingPath);
     qemuStateCleanup();
     return VIR_DRV_STATE_INIT_ERROR;
 }
@@ -1447,8 +1428,8 @@ static int
 qemuGetSchedInfo(unsigned long long *cpuWait,
                  pid_t pid, pid_t tid)
 {
-    char *proc = NULL;
-    char *data = NULL;
+    VIR_AUTOFREE(char *) proc = NULL;
+    VIR_AUTOFREE(char *) data = NULL;
     char **lines = NULL;
     size_t i;
     int ret = -1;
@@ -1512,8 +1493,6 @@ qemuGetSchedInfo(unsigned long long *cpuWait,
     ret = 0;
 
  cleanup:
-    VIR_FREE(data);
-    VIR_FREE(proc);
     virStringListFree(lines);
     return ret;
 }
@@ -1523,7 +1502,7 @@ static int
 qemuGetProcessInfo(unsigned long long *cpuTime, int *lastCpu, long *vm_rss,
                    pid_t pid, int tid)
 {
-    char *proc;
+    VIR_AUTOFREE(char *) proc = NULL;
     FILE *pidinfo;
     unsigned long long usertime = 0, systime = 0;
     long rss = 0;
@@ -1540,7 +1519,6 @@ qemuGetProcessInfo(unsigned long long *cpuTime, int *lastCpu, long *vm_rss,
         return -1;
 
     pidinfo = fopen(proc, "r");
-    VIR_FREE(proc);
 
     /* See 'man proc' for information about what all these fields are. We're
      * only interested in a very few of them */
@@ -3000,7 +2978,7 @@ virQEMUSaveDataWrite(virQEMUSaveDataPtr data,
     size_t cookie_len = 0;
     int ret = -1;
     size_t zerosLen = 0;
-    char *zeros = NULL;
+    VIR_AUTOFREE(char *) zeros = NULL;
 
     xml_len = strlen(data->xml) + 1;
     if (data->cookie)
@@ -3057,7 +3035,6 @@ virQEMUSaveDataWrite(virQEMUSaveDataPtr data,
     ret = 0;
 
  cleanup:
-    VIR_FREE(zeros);
     return ret;
 }
 
@@ -3388,7 +3365,7 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
                        int compressed, const char *compressedpath,
                        const char *xmlin, unsigned int flags)
 {
-    char *xml = NULL;
+    VIR_AUTOFREE(char *) xml = NULL;
     bool was_running = false;
     int ret = -1;
     virObjectEventPtr event = NULL;
@@ -3469,7 +3446,6 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
     if (!(data = virQEMUSaveDataNew(xml, cookie, was_running, compressed,
                                     driver->xmlopt)))
         goto endjob;
-    xml = NULL;
 
     ret = qemuDomainSaveMemory(driver, vm, path, data, compressedpath,
                                flags, QEMU_ASYNC_JOB_SAVE);
@@ -3505,7 +3481,6 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
 
  cleanup:
     virObjectUnref(cookie);
-    VIR_FREE(xml);
     virQEMUSaveDataFree(data);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(caps);
@@ -3594,7 +3569,7 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     int compressed;
-    char *compressedpath = NULL;
+    VIR_AUTOFREE(char *) compressedpath = NULL;
     int ret = -1;
     virDomainObjPtr vm = NULL;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
@@ -3623,7 +3598,6 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    VIR_FREE(compressedpath);
     return ret;
 }
 
@@ -3651,9 +3625,9 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
     virQEMUDriverPtr driver = dom->conn->privateData;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     int compressed;
-    char *compressedpath = NULL;
+    VIR_AUTOFREE(char *) compressedpath = NULL;
     virDomainObjPtr vm;
-    char *name = NULL;
+    VIR_AUTOFREE(char *) name = NULL;
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_SAVE_BYPASS_CACHE |
@@ -3693,8 +3667,6 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    VIR_FREE(name);
-    VIR_FREE(compressedpath);
 
     return ret;
 }
@@ -3704,7 +3676,7 @@ qemuDomainManagedSaveLoad(virDomainObjPtr vm,
                           void *opaque)
 {
     virQEMUDriverPtr driver = opaque;
-    char *name;
+    VIR_AUTOFREE(char *) name = NULL;
     int ret = -1;
 
     virObjectLock(vm);
@@ -3717,7 +3689,6 @@ qemuDomainManagedSaveLoad(virDomainObjPtr vm,
     ret = 0;
  cleanup:
     virObjectUnlock(vm);
-    VIR_FREE(name);
     return ret;
 }
 
@@ -3749,7 +3720,7 @@ qemuDomainManagedSaveRemove(virDomainPtr dom, unsigned int flags)
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     int ret = -1;
-    char *name = NULL;
+    VIR_AUTOFREE(char *) name = NULL;
 
     virCheckFlags(0, -1);
 
@@ -3773,7 +3744,6 @@ qemuDomainManagedSaveRemove(virDomainPtr dom, unsigned int flags)
     ret = 0;
 
  cleanup:
-    VIR_FREE(name);
     virDomainObjEndAPI(&vm);
     return ret;
 }
@@ -3893,7 +3863,7 @@ doCoreDump(virQEMUDriverPtr driver,
     unsigned int flags = VIR_FILE_WRAPPER_NON_BLOCKING;
     const char *memory_dump_format = NULL;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
-    char *compressedpath = NULL;
+    VIR_AUTOFREE(char *) compressedpath = NULL;
 
     /* We reuse "save" flag for "dump" here. Then, we can support the same
      * format in "save" and "dump". This path doesn't need the compression
@@ -3973,7 +3943,6 @@ doCoreDump(virQEMUDriverPtr driver,
     virFileWrapperFdFree(wrapperFd);
     if (ret != 0)
         unlink(path);
-    VIR_FREE(compressedpath);
     return ret;
 }
 
@@ -4099,7 +4068,7 @@ qemuDomainScreenshot(virDomainPtr dom,
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     qemuDomainObjPrivatePtr priv;
-    char *tmp = NULL;
+    VIR_AUTOFREE(char *) tmp = NULL;
     int tmp_fd = -1;
     size_t i;
     const char *videoAlias = NULL;
@@ -4191,7 +4160,6 @@ qemuDomainScreenshot(virDomainPtr dom,
     VIR_FORCE_CLOSE(tmp_fd);
     if (unlink_tmp)
         unlink(tmp);
-    VIR_FREE(tmp);
 
     qemuDomainObjEndJob(driver, vm);
 
@@ -4205,7 +4173,7 @@ getAutoDumpPath(virQEMUDriverPtr driver,
                 virDomainObjPtr vm)
 {
     char *dumpfile = NULL;
-    char *domname = virDomainDefGetShortName(vm->def);
+    VIR_AUTOFREE(char *domname) = virDomainDefGetShortName(vm->def);
     char timestr[100];
     struct tm time_info;
     time_t curtime = time(NULL);
@@ -4224,7 +4192,6 @@ getAutoDumpPath(virQEMUDriverPtr driver,
                              domname,
                              timestr));
 
-    VIR_FREE(domname);
     return dumpfile;
 }
 
