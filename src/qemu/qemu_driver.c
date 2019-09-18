@@ -264,7 +264,7 @@ qemuAutostartDomain(virDomainObjPtr vm,
 {
     virQEMUDriverPtr driver = opaque;
     int flags = 0;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     int ret = -1;
 
     if (cfg->autoStartBypassCache)
@@ -296,7 +296,6 @@ qemuAutostartDomain(virDomainObjPtr vm,
     ret = 0;
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -370,7 +369,7 @@ qemuSecurityInit(virQEMUDriverPtr driver)
     char **names;
     virSecurityManagerPtr mgr = NULL;
     virSecurityManagerPtr stack = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     unsigned int flags = 0;
 
     if (cfg->securityDefaultConfined)
@@ -430,7 +429,6 @@ qemuSecurityInit(virQEMUDriverPtr driver)
     }
 
     driver->securityManager = stack;
-    virObjectUnref(cfg);
     return 0;
 
  error:
@@ -438,7 +436,6 @@ qemuSecurityInit(virQEMUDriverPtr driver)
                    _("Failed to initialize security drivers"));
     virObjectUnref(stack);
     virObjectUnref(mgr);
-    virObjectUnref(cfg);
     return -1;
 }
 
@@ -1131,7 +1128,7 @@ static void qemuNotifyLoadDomain(virDomainObjPtr vm, int newVM, void *opaque)
 static int
 qemuStateReload(void)
 {
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     virCapsPtr caps = NULL;
 
     if (!qemu_driver)
@@ -1147,7 +1144,6 @@ qemuStateReload(void)
                                    caps, qemu_driver->xmlopt,
                                    qemuNotifyLoadDomain, qemu_driver);
  cleanup:
-    virObjectUnref(cfg);
     virObjectUnref(caps);
     return 0;
 }
@@ -1169,7 +1165,7 @@ qemuStateStop(void)
     int state;
     virDomainPtr *domains = NULL;
     unsigned int *flags = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(qemu_driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(qemu_driver);
 
     if (!(conn = virConnectOpen(cfg->uri)))
         goto cleanup;
@@ -1208,7 +1204,6 @@ qemuStateStop(void)
     }
     VIR_FREE(flags);
     virObjectUnref(conn);
-    virObjectUnref(cfg);
 
     return ret;
 }
@@ -1266,20 +1261,16 @@ qemuStateCleanup(void)
 static int
 qemuConnectURIProbe(char **uri)
 {
-    virQEMUDriverConfigPtr cfg = NULL;
-    int ret = -1;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     if (qemu_driver == NULL)
         return 0;
 
     cfg = virQEMUDriverGetConfig(qemu_driver);
     if (VIR_STRDUP(*uri, cfg->uri) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    virObjectUnref(cfg);
-    return ret;
+    return 0;
 }
 
 static virDrvOpenStatus qemuConnectOpen(virConnectPtr conn,
@@ -1956,7 +1947,7 @@ static int qemuDomainSuspend(virDomainPtr dom)
     qemuDomainObjPrivatePtr priv;
     virDomainPausedReason reason;
     int state;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         return -1;
@@ -1999,7 +1990,6 @@ static int qemuDomainSuspend(virDomainPtr dom)
  cleanup:
     virDomainObjEndAPI(&vm);
 
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2011,7 +2001,7 @@ static int qemuDomainResume(virDomainPtr dom)
     int ret = -1;
     int state;
     int reason;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         return -1;
@@ -2057,7 +2047,6 @@ static int qemuDomainResume(virDomainPtr dom)
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2438,7 +2427,7 @@ static int qemuDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
     int ret = -1, r;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG |
@@ -2543,7 +2532,6 @@ static int qemuDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2566,7 +2554,7 @@ static int qemuDomainSetMemoryStatsPeriod(virDomainPtr dom, int period,
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
     int ret = -1, r;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -2629,7 +2617,6 @@ static int qemuDomainSetMemoryStatsPeriod(virDomainPtr dom, int period,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -3141,27 +3128,21 @@ qemuOpenFile(virQEMUDriverPtr driver,
              int oflags,
              bool *needUnlink)
 {
-    int ret = -1;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     uid_t user = cfg->user;
     gid_t group = cfg->group;
     bool dynamicOwnership = cfg->dynamicOwnership;
     virSecurityLabelDefPtr seclabel;
-
-    virObjectUnref(cfg);
 
     /* TODO: Take imagelabel into account? */
     if (vm &&
         (seclabel = virDomainDefGetSecurityLabelDef(vm->def, "dac")) != NULL &&
         seclabel->label != NULL &&
         (virParseOwnershipIds(seclabel->label, &user, &group) < 0))
-        goto cleanup;
+        return -1;
 
-    ret = qemuOpenFileAs(user, group, dynamicOwnership,
-                         path, oflags, needUnlink);
-
- cleanup:
-    return ret;
+    return qemuOpenFileAs(user, group, dynamicOwnership,
+                          path, oflags, needUnlink);
 }
 
 static int
@@ -3326,7 +3307,7 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
                      unsigned int flags,
                      qemuDomainAsyncJob asyncJob)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     bool needUnlink = false;
     int ret = -1;
     int fd = -1;
@@ -3389,7 +3370,6 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
     if (qemuFileWrapperFDClose(vm, wrapperFd) < 0)
         ret = -1;
     virFileWrapperFdFree(wrapperFd);
-    virObjectUnref(cfg);
 
     if (ret < 0 && needUnlink)
         unlink(path);
@@ -3617,7 +3597,7 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
     char *compressedpath = NULL;
     int ret = -1;
     virDomainObjPtr vm = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_SAVE_BYPASS_CACHE |
                   VIR_DOMAIN_SAVE_RUNNING |
@@ -3644,7 +3624,6 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
  cleanup:
     virDomainObjEndAPI(&vm);
     VIR_FREE(compressedpath);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -3658,14 +3637,11 @@ static char *
 qemuDomainManagedSavePath(virQEMUDriverPtr driver, virDomainObjPtr vm)
 {
     char *ret;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
 
-    if (virAsprintf(&ret, "%s/%s.save", cfg->saveDir, vm->def->name) < 0) {
-        virObjectUnref(cfg);
+    if (virAsprintf(&ret, "%s/%s.save", cfg->saveDir, vm->def->name) < 0)
         return NULL;
-    }
 
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -3673,7 +3649,7 @@ static int
 qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
     int compressed;
     char *compressedpath = NULL;
     virDomainObjPtr vm;
@@ -3719,7 +3695,6 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
     virDomainObjEndAPI(&vm);
     VIR_FREE(name);
     VIR_FREE(compressedpath);
-    virObjectUnref(cfg);
 
     return ret;
 }
@@ -3917,7 +3892,7 @@ doCoreDump(virQEMUDriverPtr driver,
     int directFlag = 0;
     unsigned int flags = VIR_FILE_WRAPPER_NON_BLOCKING;
     const char *memory_dump_format = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     char *compressedpath = NULL;
 
     /* We reuse "save" flag for "dump" here. Then, we can support the same
@@ -3999,7 +3974,6 @@ doCoreDump(virQEMUDriverPtr driver,
     if (ret != 0)
         unlink(path);
     VIR_FREE(compressedpath);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4131,7 +4105,7 @@ qemuDomainScreenshot(virDomainPtr dom,
     const char *videoAlias = NULL;
     char *ret = NULL;
     bool unlink_tmp = false;
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -4223,7 +4197,6 @@ qemuDomainScreenshot(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4236,7 +4209,7 @@ getAutoDumpPath(virQEMUDriverPtr driver,
     char timestr[100];
     struct tm time_info;
     time_t curtime = time(NULL);
-    virQEMUDriverConfigPtr cfg = NULL;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
 
     if (!domname)
         return NULL;
@@ -4251,7 +4224,6 @@ getAutoDumpPath(virQEMUDriverPtr driver,
                              domname,
                              timestr));
 
-    virObjectUnref(cfg);
     VIR_FREE(domname);
     return dumpfile;
 }
@@ -4262,7 +4234,7 @@ processWatchdogEvent(virQEMUDriverPtr driver,
                      int action)
 {
     int ret;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     char *dumpfile = getAutoDumpPath(driver, vm);
     unsigned int flags = VIR_DUMP_MEMORY_ONLY;
 
@@ -4303,7 +4275,6 @@ processWatchdogEvent(virQEMUDriverPtr driver,
     qemuDomainObjEndAsyncJob(driver, vm);
 
  cleanup:
-    virObjectUnref(cfg);
     VIR_FREE(dumpfile);
 }
 
@@ -4313,7 +4284,7 @@ doCoreDumpToAutoDumpPath(virQEMUDriverPtr driver,
                          unsigned int flags)
 {
     int ret = -1;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     char *dumpfile = getAutoDumpPath(driver, vm);
 
     if (!dumpfile)
@@ -4326,7 +4297,6 @@ doCoreDumpToAutoDumpPath(virQEMUDriverPtr driver,
                        "%s", _("Dump failed"));
  cleanup:
     VIR_FREE(dumpfile);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4355,13 +4325,13 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     bool removeInactive = false;
     unsigned long flags = VIR_DUMP_MEMORY_ONLY;
 
     if (qemuDomainObjBeginAsyncJob(driver, vm, QEMU_ASYNC_JOB_DUMP,
                                    VIR_DOMAIN_JOB_OPERATION_DUMP, flags) < 0)
-        goto cleanup;
+        return;
 
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("Ignoring GUEST_PANICKED event from inactive domain %s",
@@ -4428,9 +4398,6 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
     qemuDomainObjEndAsyncJob(driver, vm);
     if (removeInactive)
         qemuDomainRemoveInactiveJob(driver, vm);
-
- cleanup:
-    virObjectUnref(cfg);
 }
 
 
@@ -4439,14 +4406,14 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           const char *devAlias)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virDomainDeviceDef dev;
 
     VIR_DEBUG("Removing device %s from domain %p %s",
               devAlias, vm, vm->def->name);
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
-        goto cleanup;
+        return;
 
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("Domain is not running");
@@ -4469,9 +4436,6 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
-
- cleanup:
-    virObjectUnref(cfg);
 }
 
 
