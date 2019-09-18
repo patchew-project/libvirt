@@ -136,20 +136,15 @@ static int
 qemuDomainAttachZPCIDevice(qemuMonitorPtr mon,
                            virDomainDeviceInfoPtr info)
 {
-    char *devstr_zpci = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) devstr_zpci = NULL;
 
     if (!(devstr_zpci = qemuBuildZPCIDevStr(info)))
-        goto cleanup;
+        return -1;
 
     if (qemuMonitorAddDevice(mon, devstr_zpci) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(devstr_zpci);
-    return ret;
+    return 0;
 }
 
 
@@ -157,20 +152,15 @@ static int
 qemuDomainDetachZPCIDevice(qemuMonitorPtr mon,
                            virDomainDeviceInfoPtr info)
 {
-    char *zpciAlias = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) zpciAlias = NULL;
 
     if (virAsprintf(&zpciAlias, "zpci%d", info->addr.pci.zpci.uid) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuMonitorDelDevice(mon, zpciAlias) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(zpciAlias);
-    return ret;
+    return 0;
 }
 
 
@@ -517,7 +507,7 @@ qemuDomainChangeMediaBlockdev(virQEMUDriverPtr driver,
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
     VIR_AUTOPTR(qemuBlockStorageSourceChainData) newbackend = NULL;
     VIR_AUTOPTR(qemuBlockStorageSourceChainData) oldbackend = NULL;
-    char *nodename = NULL;
+    VIR_AUTOFREE(char *) nodename = NULL;
     int rc;
     int ret = -1;
 
@@ -572,7 +562,6 @@ qemuDomainChangeMediaBlockdev(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
-    VIR_FREE(nodename);
     return ret;
 }
 
@@ -823,7 +812,7 @@ int qemuDomainAttachControllerDevice(virQEMUDriverPtr driver,
 {
     int ret = -1;
     const char* type = virDomainControllerTypeToString(controller->type);
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_CONTROLLER,
                                { .controller = controller } };
@@ -890,7 +879,6 @@ int qemuDomainAttachControllerDevice(virQEMUDriverPtr driver,
     if (ret != 0 && releaseaddr)
         qemuDomainReleaseDeviceAddress(vm, &controller->info);
 
-    VIR_FREE(devstr);
     return ret;
 }
 
@@ -1156,8 +1144,8 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     int *vhostfd = NULL;
     size_t vhostfdSize = 0;
     size_t queueSize = 0;
-    char *nicstr = NULL;
-    char *netstr = NULL;
+    VIR_AUTOFREE(char *) nicstr = NULL;
+    VIR_AUTOFREE(char *) netstr = NULL;
     int ret = -1;
     bool releaseaddr = false;
     bool iface_connected = false;
@@ -1166,10 +1154,10 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virDomainCCWAddressSetPtr ccwaddrs = NULL;
     size_t i;
-    char *charDevAlias = NULL;
+    VIR_AUTOFREE(char *) charDevAlias = NULL;
     bool charDevPlugged = false;
     bool netdevPlugged = false;
-    char *netdev_name;
+    VIR_AUTOFREE(char *) netdev_name = NULL;
     virConnectPtr conn = NULL;
     virErrorPtr save_err = NULL;
 
@@ -1499,8 +1487,6 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         virErrorRestore(&save_err);
     }
 
-    VIR_FREE(nicstr);
-    VIR_FREE(netstr);
     for (i = 0; tapfd && i < tapfdSize; i++) {
         VIR_FORCE_CLOSE(tapfd[i]);
         if (tapfdName)
@@ -1515,7 +1501,6 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     }
     VIR_FREE(vhostfd);
     VIR_FREE(vhostfdName);
-    VIR_FREE(charDevAlias);
     virObjectUnref(conn);
     virDomainCCWAddressSetFree(ccwaddrs);
     VIR_FORCE_CLOSE(slirpfd);
@@ -1539,7 +1524,6 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
             VIR_WARN("Failed to remove network backend for netdev %s",
                      netdev_name);
         ignore_value(qemuDomainObjExitMonitor(driver, vm));
-        VIR_FREE(netdev_name);
     }
     virErrorRestore(&originalError);
     goto cleanup;
@@ -1556,7 +1540,7 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
                                { .hostdev = hostdev } };
     virDomainDeviceInfoPtr info = hostdev->info;
     int ret;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     bool releaseaddr = false;
     bool teardowncgroup = false;
     bool teardownlabel = false;
@@ -1658,8 +1642,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
 
     vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
 
-    VIR_FREE(devstr);
-
     return 0;
 
  error:
@@ -1678,8 +1660,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
         qemuDomainReleaseDeviceAddress(vm, info);
 
     qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
-
-    VIR_FREE(devstr);
 
  cleanup:
     return -1;
@@ -1726,7 +1706,7 @@ qemuDomainAddTLSObjects(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virErrorPtr orig_err;
-    char *secAlias = NULL;
+    VIR_AUTOFREE(char *) secAlias = NULL;
 
     if (!tlsProps && !secProps)
         return 0;
@@ -1742,8 +1722,6 @@ qemuDomainAddTLSObjects(virQEMUDriverPtr driver,
         qemuMonitorAddObject(priv->mon, tlsProps, NULL) < 0)
         goto error;
 
-    VIR_FREE(secAlias);
-
     return qemuDomainObjExitMonitor(driver, vm);
 
  error:
@@ -1751,7 +1729,6 @@ qemuDomainAddTLSObjects(virQEMUDriverPtr driver,
     ignore_value(qemuDomainObjExitMonitor(driver, vm));
     virErrorRestore(&orig_err);
     qemuDomainDelTLSObjects(driver, vm, asyncJob, secAlias, NULL);
-    VIR_FREE(secAlias);
 
     return -1;
 }
@@ -1850,20 +1827,18 @@ qemuDomainDelChardevTLSObjects(virQEMUDriverPtr driver,
                                virDomainChrSourceDefPtr dev,
                                const char *inAlias)
 {
-    int ret = -1;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *tlsAlias = NULL;
-    char *secAlias = NULL;
+    VIR_AUTOFREE(char *) tlsAlias = NULL;
+    VIR_AUTOFREE(char *) secAlias = NULL;
 
     if (dev->type != VIR_DOMAIN_CHR_TYPE_TCP ||
         dev->data.tcp.haveTLS != VIR_TRISTATE_BOOL_YES) {
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     if (!(tlsAlias = qemuAliasTLSObjFromSrcAlias(inAlias)))
-        goto cleanup;
+        return -1;
 
     /* Best shot at this as the secinfo is destroyed after process launch
      * and this path does not recreate it. Thus, if the config has the
@@ -1871,7 +1846,7 @@ qemuDomainDelChardevTLSObjects(virQEMUDriverPtr driver,
      * secAlias which we'll attempt to destroy. */
     if (cfg->chardevTLSx509secretUUID &&
         !(secAlias = qemuDomainGetSecretAESAlias(inAlias, false)))
-        goto cleanup;
+        return -1;
 
     qemuDomainObjEnterMonitor(driver, vm);
 
@@ -1880,14 +1855,9 @@ qemuDomainDelChardevTLSObjects(virQEMUDriverPtr driver,
         ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(tlsAlias);
-    VIR_FREE(secAlias);
-    return ret;
+    return 0;
 }
 
 
@@ -1898,10 +1868,10 @@ int qemuDomainAttachRedirdevDevice(virQEMUDriverPtr driver,
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDefPtr def = vm->def;
-    char *charAlias = NULL;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     bool chardevAdded = false;
-    char *tlsAlias = NULL;
+    VIR_AUTOFREE(char *) tlsAlias = NULL;
     const char *secAlias = NULL;
     bool need_release = false;
     virErrorPtr orig_err;
@@ -1948,9 +1918,6 @@ int qemuDomainAttachRedirdevDevice(virQEMUDriverPtr driver,
  cleanup:
     if (ret < 0 && need_release)
         qemuDomainReleaseDeviceAddress(vm, &redirdev->info);
-    VIR_FREE(tlsAlias);
-    VIR_FREE(charAlias);
-    VIR_FREE(devstr);
     return ret;
 
  exit_monitor:
@@ -2134,14 +2101,14 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virErrorPtr orig_err;
     virDomainDefPtr vmdef = vm->def;
-    char *devstr = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
     virDomainChrSourceDefPtr dev = chr->source;
-    char *charAlias = NULL;
+    VIR_AUTOFREE(char *)charAlias = NULL;
     bool chardevAttached = false;
     bool teardowncgroup = false;
     bool teardowndevice = false;
     bool teardownlabel = false;
-    char *tlsAlias = NULL;
+    VIR_AUTOFREE(char *) tlsAlias = NULL;
     const char *secAlias = NULL;
     bool need_release = false;
     bool guestfwd = false;
@@ -2222,9 +2189,6 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
         if (teardowndevice && qemuDomainNamespaceTeardownChardev(vm, chr) < 0)
             VIR_WARN("Unable to remove chr device from /dev");
     }
-    VIR_FREE(tlsAlias);
-    VIR_FREE(charAlias);
-    VIR_FREE(devstr);
     return ret;
 
  exit_monitor:
@@ -2249,10 +2213,10 @@ qemuDomainAttachRNGDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_RNG, { .rng = rng } };
     virErrorPtr orig_err;
-    char *devstr = NULL;
-    char *charAlias = NULL;
-    char *objAlias = NULL;
-    char *tlsAlias = NULL;
+    VIR_AUTOFREE(char *) devstr = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
+    VIR_AUTOFREE(char *) objAlias = NULL;
+    VIR_AUTOFREE(char *) tlsAlias = NULL;
     const char *secAlias = NULL;
     bool releaseaddr = false;
     bool teardowncgroup = false;
@@ -2338,10 +2302,6 @@ qemuDomainAttachRNGDevice(virQEMUDriverPtr driver,
             VIR_WARN("Unable to remove chr device from /dev");
     }
 
-    VIR_FREE(tlsAlias);
-    VIR_FREE(charAlias);
-    VIR_FREE(objAlias);
-    VIR_FREE(devstr);
     return ret;
 
  exit_monitor:
