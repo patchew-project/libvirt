@@ -4561,17 +4561,15 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
 {
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *hostnet_name = NULL;
-    char *charDevAlias = NULL;
+    VIR_AUTOFREE(char *) hostnet_name = NULL;
+    VIR_AUTOFREE(char *) charDevAlias = NULL;
     size_t i;
-    int ret = -1;
     int actualType = virDomainNetGetActualType(net);
 
     if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
         /* this function handles all hostdev and netdev cleanup */
-        ret = qemuDomainRemoveHostDevice(driver, vm,
-                                         virDomainNetGetActualHostdev(net));
-        goto cleanup;
+        return qemuDomainRemoveHostDevice(driver, vm,
+                                          virDomainNetGetActualHostdev(net));
     }
 
     VIR_DEBUG("Removing network interface %s from domain %p %s",
@@ -4579,7 +4577,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
 
     if (virAsprintf(&hostnet_name, "host%s", net->info.alias) < 0 ||
         !(charDevAlias = qemuAliasChardevFromDevAlias(net->info.alias)))
-        goto cleanup;
+        return -1;
 
     if (virDomainNetGetActualBandwidth(net) &&
         virNetDevSupportBandwidth(virDomainNetGetActualType(net)) &&
@@ -4596,9 +4594,9 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
     qemuDomainObjEnterMonitor(driver, vm);
     if (qemuMonitorRemoveNetdev(priv->mon, hostnet_name) < 0) {
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
-            goto cleanup;
+            return -1;
         virDomainAuditNet(vm, net, NULL, "detach", false);
-        goto cleanup;
+        return -1;
     }
 
     if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
@@ -4612,7 +4610,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
     }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp)
         qemuSlirpStop(QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp, vm, driver, net, true);
@@ -4656,12 +4654,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
         }
     }
     virDomainNetDefFree(net);
-    ret = 0;
-
- cleanup:
-    VIR_FREE(charDevAlias);
-    VIR_FREE(hostnet_name);
-    return ret;
+    return 0;
 }
 
 
@@ -4672,32 +4665,31 @@ qemuDomainRemoveChrDevice(virQEMUDriverPtr driver,
                           bool monitor)
 {
     virObjectEventPtr event;
-    char *charAlias = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    int ret = -1;
     int rc = 0;
 
     VIR_DEBUG("Removing character device %s from domain %p %s",
               chr->info.alias, vm, vm->def->name);
 
     if (!(charAlias = qemuAliasChardevFromDevAlias(chr->info.alias)))
-        goto cleanup;
+        return -1;
 
     if (monitor) {
         qemuDomainObjEnterMonitor(driver, vm);
         rc = qemuMonitorDetachCharDev(priv->mon, charAlias);
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
-            goto cleanup;
+            return -1;
     }
 
     if (rc == 0 &&
         qemuDomainDelChardevTLSObjects(driver, vm, chr->source, charAlias) < 0)
-        goto cleanup;
+        return -1;
 
     virDomainAuditChardev(vm, chr, NULL, "detach", rc == 0);
 
     if (rc < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuTeardownChardevCgroup(vm, chr) < 0)
         VIR_WARN("Failed to remove chr device cgroup ACL");
@@ -4719,11 +4711,7 @@ qemuDomainRemoveChrDevice(virQEMUDriverPtr driver,
     virObjectEventStateQueue(driver->domainEventState, event);
 
     virDomainChrDefFree(chr);
-    ret = 0;
-
- cleanup:
-    VIR_FREE(charAlias);
-    return ret;
+    return 0;
 }
 
 
@@ -4732,11 +4720,10 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainRNGDefPtr rng)
 {
-    char *charAlias = NULL;
-    char *objAlias = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
+    VIR_AUTOFREE(char *) objAlias = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     ssize_t idx;
-    int ret = -1;
     int rc = 0;
 
     VIR_DEBUG("Removing RNG device %s from domain %p %s",
@@ -4744,10 +4731,10 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
 
 
     if (virAsprintf(&objAlias, "obj%s", rng->info.alias) < 0)
-        goto cleanup;
+        return -1;
 
     if (!(charAlias = qemuAliasChardevFromDevAlias(rng->info.alias)))
-        goto cleanup;
+        return -1;
 
     qemuDomainObjEnterMonitor(driver, vm);
 
@@ -4761,7 +4748,7 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
         rc = -1;
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD &&
         rc == 0 &&
@@ -4772,7 +4759,7 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
     virDomainAuditRNG(vm, rng, NULL, "detach", rc == 0);
 
     if (rc < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuTeardownRNGCgroup(vm, rng) < 0)
         VIR_WARN("Failed to remove RNG device cgroup ACL");
@@ -4784,12 +4771,7 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
         virDomainRNGRemove(vm->def, idx);
     qemuDomainReleaseDeviceAddress(vm, &rng->info);
     virDomainRNGDefFree(rng);
-    ret = 0;
-
- cleanup:
-    VIR_FREE(charAlias);
-    VIR_FREE(objAlias);
-    return ret;
+    return 0;
 }
 
 
@@ -4799,10 +4781,9 @@ qemuDomainRemoveShmemDevice(virQEMUDriverPtr driver,
                             virDomainShmemDefPtr shmem)
 {
     int rc;
-    int ret = -1;
     ssize_t idx = -1;
-    char *charAlias = NULL;
-    char *memAlias = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
+    VIR_AUTOFREE(char *) memAlias = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     VIR_DEBUG("Removing shmem device %s from domain %p %s",
@@ -4824,24 +4805,19 @@ qemuDomainRemoveShmemDevice(virQEMUDriverPtr driver,
         rc = qemuMonitorDelObject(priv->mon, memAlias);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        return -1;
 
     virDomainAuditShmem(vm, shmem, "detach", rc == 0);
 
     if (rc < 0)
-        goto cleanup;
+        return -1;
 
     if ((idx = virDomainShmemDefFind(vm->def, shmem)) >= 0)
         virDomainShmemDefRemove(vm->def, idx);
     qemuDomainReleaseDeviceAddress(vm, &shmem->info);
     virDomainShmemDefFree(shmem);
 
-    ret = 0;
- cleanup:
-    VIR_FREE(charAlias);
-    VIR_FREE(memAlias);
-
-    return ret;
+    return 0;
 }
 
 
@@ -4908,15 +4884,14 @@ qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
                                virDomainRedirdevDefPtr dev)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *charAlias = NULL;
+    VIR_AUTOFREE(char *) charAlias = NULL;
     ssize_t idx;
-    int ret = -1;
 
     VIR_DEBUG("Removing redirdev device %s from domain %p %s",
               dev->info.alias, vm, vm->def->name);
 
     if (!(charAlias = qemuAliasChardevFromDevAlias(dev->info.alias)))
-        goto cleanup;
+        return -1;
 
     qemuDomainObjEnterMonitor(driver, vm);
     /* DeviceDel from Detach may remove chardev,
@@ -4925,10 +4900,10 @@ qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
     ignore_value(qemuMonitorDetachCharDev(priv->mon, charAlias));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuDomainDelChardevTLSObjects(driver, vm, dev->source, charAlias) < 0)
-        goto cleanup;
+        return -1;
 
     virDomainAuditRedirdev(vm, dev, "detach", true);
 
@@ -4937,11 +4912,7 @@ qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
     qemuDomainReleaseDeviceAddress(vm, &dev->info);
     virDomainRedirdevDefFree(dev);
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(charAlias);
-    return ret;
+    return 0;
 }
 
 
