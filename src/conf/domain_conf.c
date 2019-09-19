@@ -16504,7 +16504,8 @@ virDomainDeviceDefParse(const char *xmlStr,
     return dev;
 
  error:
-    VIR_FREE(dev);
+    virDomainDeviceDefFree(dev);
+    dev = NULL;
     goto cleanup;
 }
 
