@@ -1519,8 +1519,10 @@ virNodeDevPCICapSRIOVVirtualParseXML(xmlXPathContextPtr ctxt,
 
         if (VIR_APPEND_ELEMENT(pci_dev->virtual_functions,
                                pci_dev->num_virtual_functions,
-                               addr) < 0)
+                               addr) < 0) {
+            VIR_FREE(addr);
             goto cleanup;
+        }
     }
 
     pci_dev->flags |= VIR_NODE_DEV_CAP_FLAG_PCI_VIRTUAL_FUNCTION;
