@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "virutil.h"
 #include "virenum.h"
+#include "virautoclean.h"
 
 /**
  * VIR_TYPED_PARAM_MULTIPLE:
@@ -94,6 +95,15 @@ int virTypedParamsCopy(virTypedParameterPtr *dst,
                        virTypedParameterPtr src,
                        int nparams);
 
+
+int virTypedParamsAddPrintf(virTypedParameterPtr *params,
+                            int *nparams,
+                            int *maxparams,
+                            const char *namefmt,
+                            int type,
+                            ...)
+    ATTRIBUTE_FMT_PRINTF(4, 0) ATTRIBUTE_RETURN_CHECK;
+
 char *virTypedParameterToString(virTypedParameterPtr param);
 
 void virTypedParamsRemoteFree(virTypedParameterRemotePtr remote_params_val,
@@ -128,3 +138,54 @@ VIR_ENUM_DECL(virTypedParameter);
             VIR_FREE(_value); \
         } \
     } while (0)
+
+typedef struct _virTypedParamList virTypedParamList;
+typedef virTypedParamList *virTypedParamListPtr;
+
+struct _virTypedParamList {
+    virTypedParameterPtr par;
+    size_t npar;
+    size_t par_alloc;
+};
+
+void virTypedParamListFree(virTypedParamListPtr list);
+VIR_DEFINE_AUTOPTR_FUNC(virTypedParamList, virTypedParamListFree);
+
+size_t virTypedParamListStealParams(virTypedParamListPtr list,
+                                    virTypedParameterPtr *params);
+
+int virTypedParamListAddI(virTypedParamListPtr list,
+                          int value,
+                          const char *namefmt,
+                          ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddUI(virTypedParamListPtr list,
+                           unsigned int value,
+                           const char *namefmt,
+                           ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddLL(virTypedParamListPtr list,
+                           long long value,
+                           const char *namefmt,
+                           ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddULL(virTypedParamListPtr list,
+                            unsigned long long value,
+                            const char *namefmt,
+                            ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddS(virTypedParamListPtr list,
+                          const char *value,
+                          const char *namefmt,
+                          ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddB(virTypedParamListPtr list,
+                          bool value,
+                          const char *namefmt,
+                          ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
+int virTypedParamListAddD(virTypedParamListPtr list,
+                          double value,
+                          const char *namefmt,
+                          ...)
+    ATTRIBUTE_FMT_PRINTF(3, 4) ATTRIBUTE_RETURN_CHECK;
