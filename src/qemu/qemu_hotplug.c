@@ -6105,6 +6105,9 @@ qemuDomainHotplugDelVcpu(virQEMUDriverPtr driver,
 
     qemuDomainVcpuPersistOrder(vm->def);
 
+    virBitmapFree(vcpuinfo->cpumask);
+    vcpuinfo->cpumask = NULL;
+
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
         goto cleanup;
 
@@ -6390,6 +6393,8 @@ qemuDomainSetVcpusConfig(virDomainDefPtr def,
 
             vcpu->online = false;
             vcpu->hotpluggable = VIR_TRISTATE_BOOL_YES;
+            virBitmapFree(vcpu->cpumask);
+            vcpu->cpumask = NULL;
 
             if (--curvcpus == nvcpus)
                 break;
