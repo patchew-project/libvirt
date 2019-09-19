@@ -234,6 +234,9 @@ bool virPCIDeviceAddressIsEmpty(const virPCIDeviceAddress *addr);
 bool virPCIDeviceAddressEqual(const virPCIDeviceAddress *addr1,
                               const virPCIDeviceAddress *addr2);
 
+void virPCIDeviceSetAddress(virPCIDeviceAddress *addr1,
+                            const virPCIDeviceAddress *addr2);
+
 char *virPCIDeviceAddressAsString(const virPCIDeviceAddress *addr)
       ATTRIBUTE_NONNULL(1);
 

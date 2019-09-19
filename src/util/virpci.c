@@ -1483,6 +1483,16 @@ virPCIDeviceGetName(virPCIDevicePtr dev)
     return dev->name;
 }
 
+void
+virPCIDeviceSetAddress(virPCIDeviceAddress *addr1,
+                       const virPCIDeviceAddress *addr2)
+{
+    addr1->domain = addr2->domain;
+    addr1->bus = addr2->bus;
+    addr1->slot = addr2->slot;
+    addr1->function = addr2->function;
+}
+
 /**
  * virPCIDeviceGetConfigPath:
  *
