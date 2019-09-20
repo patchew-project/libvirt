@@ -581,6 +581,7 @@ struct _qemuDomainXmlNsDef {
     char **capsdel;
 };
 
+virDomainObjPtr qemuDomainObjFromDomain(virDomainPtr domain);
 
 qemuDomainSaveCookiePtr qemuDomainSaveCookieNew(virDomainObjPtr vm);
 
