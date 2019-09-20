@@ -17547,9 +17547,6 @@ qemuDomainCheckpointGetXMLDesc(virDomainCheckpointPtr checkpoint,
     xml = virDomainCheckpointDefFormat(chkdef, driver->caps, driver->xmlopt,
                                        format_flags);
 
-    if (flags & VIR_DOMAIN_CHECKPOINT_XML_SIZE)
-        qemuDomainObjEndJob(driver, vm);
-
  cleanup:
     virDomainObjEndAPI(&vm);
     return xml;
