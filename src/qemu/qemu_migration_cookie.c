@@ -1538,7 +1538,8 @@ qemuMigrationEatCookie(virQEMUDriverPtr driver,
         }
     }
 
-    if (flags & QEMU_MIGRATION_COOKIE_STATS && mig->jobInfo)
+    if (flags & QEMU_MIGRATION_COOKIE_STATS && mig->jobInfo &&
+        priv && priv->job.current)
         mig->jobInfo->operation = priv->job.current->operation;
 
     return mig;
