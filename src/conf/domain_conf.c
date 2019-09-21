@@ -30938,60 +30938,47 @@ virDomainNetCreatePort(virConnectPtr conn,
                        virDomainNetDefPtr iface,
                        unsigned int flags)
 {
-    virNetworkPtr net = NULL;
-    int ret = -1;
-    virNetworkPortDefPtr portdef = NULL;
-    virNetworkPortPtr port = NULL;
-    char *portxml = NULL;
-    virErrorPtr saved;
+    virErrorPtr save_err;
+    VIR_AUTOUNREF(virNetworkPtr) net = NULL;
+    VIR_AUTOPTR(virNetworkPortDef) portdef = NULL;
+    VIR_AUTOUNREF(virNetworkPortPtr) port = NULL;
+    VIR_AUTOFREE(char *) portxml = NULL;
 
     if (!(net = virNetworkLookupByName(conn, iface->data.network.name)))
         return -1;
 
     if (flags & VIR_NETWORK_PORT_CREATE_RECLAIM) {
         if (!(portdef = virDomainNetDefActualToNetworkPort(dom, iface)))
-            goto cleanup;
+            return -1;
     } else {
         if (!(portdef = virDomainNetDefToNetworkPort(dom, iface)))
-            goto cleanup;
+            return -1;
     }
 
     if (!(portxml = virNetworkPortDefFormat(portdef)))
-        goto cleanup;
+        return -1;
 
+    /* prepare to re-use portdef */
     virNetworkPortDefFree(portdef);
     portdef = NULL;
 
     if (!(port = virNetworkPortCreateXML(net, portxml, flags)))
-        goto cleanup;
+        return -1;
 
+    /* prepare to re-use portxml */
     VIR_FREE(portxml);
 
-    if (!(portxml = virNetworkPortGetXMLDesc(port, 0)))
-        goto deleteport;
-
-    if (!(portdef = virNetworkPortDefParseString(portxml)))
-        goto deleteport;
-
-    if (virDomainNetDefActualFromNetworkPort(iface, portdef) < 0)
-        goto deleteport;
+    if (!(portxml = virNetworkPortGetXMLDesc(port, 0)) ||
+        !(portdef = virNetworkPortDefParseString(portxml)) ||
+        virDomainNetDefActualFromNetworkPort(iface, portdef) < 0) {
+        virErrorPreserveLast(&save_err);
+        virNetworkPortDelete(port, 0);
+        virErrorRestore(&save_err);
+        return -1;
+    }
 
     virNetworkPortGetUUID(port, iface->data.network.portid);
-
-    ret = 0;
- cleanup:
-    virNetworkPortDefFree(portdef);
-    VIR_FREE(portxml);
-    virObjectUnref(port);
-    virObjectUnref(net);
-    return ret;
-
- deleteport:
-    saved = virSaveLastError();
-    virNetworkPortDelete(port, 0);
-    virSetError(saved);
-    virFreeError(saved);
-    goto cleanup;
+    return 0;
 }
 
 int
