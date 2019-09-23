@@ -276,7 +276,8 @@ virConnectValidateURIPath(const char *uriPath,
                           bool privileged)
 {
     if (privileged) {
-        if (STRNEQ(uriPath, "/system")) {
+        if (STRNEQ(uriPath, "/system") &&
+            STRNEQ(uriPath, "/session")) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected %s URI path '%s', try %s:///system"),
                            entityName, uriPath, entityName);
