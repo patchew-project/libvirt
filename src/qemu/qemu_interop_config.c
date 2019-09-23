@@ -41,8 +41,14 @@ qemuBuildFileList(virHashTablePtr files, const char *dir)
     int rc;
     int ret = -1;
 
-    if ((rc = virDirOpenIfExists(&dirp, dir)) < 0)
+    if ((rc = virDirOpenIfExists(&dirp, dir)) < 0) {
+        /* silently ignore unreadable directories */
+        if (virLastErrorIsSystemErrno(EACCES)) {
+            virResetLastError();
+            return 0;
+        }
         return -1;
+    }
 
     if (rc == 0)
         return 0;
