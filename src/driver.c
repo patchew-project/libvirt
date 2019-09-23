@@ -276,7 +276,23 @@ virConnectValidateURIPath(const char *uriPath,
                           bool privileged)
 {
     if (privileged) {
-        if (STRNEQ(uriPath, "/system")) {
+        /* TODO: QEMU and vbox drivers allow '/session'
+         * connections as root. This is not ideal, but changing
+         * these drivers to refuse privileged '/session'
+         * connections, like everyone else is already doing, can
+         * break existing applications. Until we decide what to do,
+         * for now we can handle them as exception in this validate
+         * function.
+         */
+        if (STREQ(entityName, "QEMU") || STREQ(entityName, "vbox")) {
+            if (STRNEQ(uriPath, "/system") &&
+                STRNEQ(uriPath, "/session")) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("unexpected %s URI path '%s', try %s:///system"),
+                               entityName, uriPath, entityName);
+                return false;
+            }
+        } else if (STRNEQ(uriPath, "/system")) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected %s URI path '%s', try %s:///system"),
                            entityName, uriPath, entityName);
