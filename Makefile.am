@@ -45,7 +45,7 @@ EXTRA_DIST = \
   build-aux/check-spacing.pl \
   build-aux/gitlog-to-changelog \
   build-aux/header-ifdef.pl \
-  build-aux/minimize-po.pl \
+  build-aux/minimize-po.py \
   build-aux/mock-noinline.pl \
   build-aux/prohibit-duplicate-header.pl \
   build-aux/useless-if-before-free \
