@@ -3,7 +3,7 @@
 EXTRA_DIST += \
 	rpc/gendispatch.pl \
 	rpc/genprotocol.pl \
-	rpc/gensystemtap.pl \
+	rpc/gensystemtap.py \
 	rpc/virnetprotocol.x \
 	rpc/virkeepaliveprotocol.x \
 	$(NULL)

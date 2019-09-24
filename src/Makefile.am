@@ -635,8 +635,9 @@ RPC_PROBE_FILES += $(srcdir)/rpc/virnetprotocol.x \
 		  $(srcdir)/remote/qemu_protocol.x \
 		  $(srcdir)/admin/admin_protocol.x
 
-libvirt_functions.stp: $(RPC_PROBE_FILES) $(srcdir)/rpc/gensystemtap.pl
-	$(AM_V_GEN)$(PERL) -w $(srcdir)/rpc/gensystemtap.pl $(RPC_PROBE_FILES) > $@
+libvirt_functions.stp: $(RPC_PROBE_FILES) $(srcdir)/rpc/gensystemtap.py
+	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(srcdir)/rpc/gensystemtap.py \
+	  $(RPC_PROBE_FILES) > $@
 
 %_probes.stp: %_probes.d $(srcdir)/dtrace2systemtap.py \
 		$(top_builddir)/config.status
