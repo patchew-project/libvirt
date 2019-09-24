@@ -423,11 +423,20 @@ daemonSetupNetworking(virNetServerPtr srv,
         return -1;
 
 #ifdef WITH_IP
+# ifdef (LIBVIRTD
     if (act && ipsock) {
         VIR_ERROR(_("--listen parameter not permitted with systemd activation "
                     "sockets, see 'man libvirtd' for further guidance"));
         return -1;
     }
+# else /* ! LIBVIRTD */
+    /* We don't have a --listen arg with virtproxyd, we're just
+     * hardcoded to assume --listen. Thus with systemd we must
+     * change that default
+     */
+    if (act)
+        ipsock = 0;
+# endif /* ! LIBVIRTD */
 #endif /* ! WITH_IP */
 
     if (config->unix_sock_group) {
