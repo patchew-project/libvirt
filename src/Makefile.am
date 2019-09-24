@@ -284,12 +284,12 @@ check-symfile:
 check-admin-symfile:
 endif ! WITH_LINUX
 check-symsorting:
-	$(AM_V_GEN)$(PERL) $(srcdir)/check-symsorting.pl \
+	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(srcdir)/check-symsorting.py \
 		$(srcdir) $(SYM_FILES)
 check-admin-symsorting:
-	$(AM_V_GEN)$(PERL) $(srcdir)/check-symsorting.pl \
+	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(srcdir)/check-symsorting.py \
 		$(srcdir) $(ADMIN_SYM_FILES)
-EXTRA_DIST += check-symfile.pl check-symsorting.pl
+EXTRA_DIST += check-symfile.pl check-symsorting.py
 
 # Keep this list synced with RPC_PROBE_FILES
 PROTOCOL_STRUCTS = \
