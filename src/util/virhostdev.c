@@ -1007,29 +1007,16 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
 }
 
 
-/* @oldStateDir:
- * For upgrade purpose: see virHostdevRestoreNetConfig
- */
-void
-virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
-                             const char *drv_name,
-                             const char *dom_name,
-                             virDomainHostdevDefPtr *hostdevs,
-                             int nhostdevs,
-                             const char *oldStateDir)
+static void
+virHostdevReAttachPCIDevicesImpl(virHostdevManagerPtr mgr,
+                                 const char *drv_name,
+                                 const char *dom_name,
+                                 virPCIDeviceListPtr pcidevs,
+                                 virDomainHostdevDefPtr *hostdevs,
+                                 int nhostdevs,
+                                 const char *oldStateDir)
 {
-    VIR_AUTOUNREF(virPCIDeviceListPtr) pcidevs = NULL;
     size_t i;
-
-    if (!nhostdevs)
-        return;
-
-    if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs))) {
-        VIR_ERROR(_("Failed to allocate PCI device list: %s"),
-                  virGetLastErrorMessage());
-        virResetLastError();
-        return;
-    }
 
     virObjectLock(mgr->activePCIHostdevs);
     virObjectLock(mgr->inactivePCIHostdevs);
@@ -1125,6 +1112,35 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
     virObjectUnlock(mgr->activePCIHostdevs);
     virObjectUnlock(mgr->inactivePCIHostdevs);
 }
+
+
+/* @oldStateDir:
+ * For upgrade purpose: see virHostdevRestoreNetConfig
+ */
+void
+virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
+                             const char *drv_name,
+                             const char *dom_name,
+                             virDomainHostdevDefPtr *hostdevs,
+                             int nhostdevs,
+                             const char *oldStateDir)
+{
+    VIR_AUTOUNREF(virPCIDeviceListPtr) pcidevs = NULL;
+
+    if (!nhostdevs)
+        return;
+
+    if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs))) {
+        VIR_ERROR(_("Failed to allocate PCI device list: %s"),
+                  virGetLastErrorMessage());
+        virResetLastError();
+        return;
+    }
+
+    virHostdevReAttachPCIDevicesImpl(mgr, drv_name, dom_name, pcidevs,
+                                     hostdevs, nhostdevs, oldStateDir);
+}
+
 
 int
 virHostdevUpdateActivePCIDevices(virHostdevManagerPtr mgr,
