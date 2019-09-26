@@ -13540,6 +13540,10 @@ qemuDomainSetupHostdev(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
             goto cleanup;
     }
 
+    if (qemuHostdevNeedsVFIO(dev) &&
+        qemuDomainCreateDevice(QEMU_DEV_VFIO, data, false) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     for (i = 0; i < npaths; i++)
@@ -14576,6 +14580,17 @@ qemuDomainNamespaceTeardownDisk(virDomainObjPtr vm ATTRIBUTE_UNUSED,
 }
 
 
+/**
+ * qemuDomainNamespaceSetupHostdev:
+ * @vm: domain object
+ * @hostdev: hostdev to create in @vm's namespace
+ *
+ * For given @hostdev, create its devfs representation (if it has one) in
+ * domain namespace. Note, @hostdev must not be in @vm's definition.
+ *
+ * Returns: 0 on success,
+ *         -1 otherwise.
+ */
 int
 qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
                                 virDomainHostdevDefPtr hostdev)
@@ -14590,6 +14605,11 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
     if (qemuDomainNamespaceMknodPaths(vm, (const char **)paths, npaths) < 0)
         goto cleanup;
 
+    if (qemuHostdevNeedsVFIO(hostdev) &&
+        !qemuDomainNeedsVFIO(vm->def) &&
+        qemuDomainNamespaceMknodPath(vm, QEMU_DEV_VFIO) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     for (i = 0; i < npaths; i++)
@@ -14599,6 +14619,17 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
 }
 
 
+/**
+ * qemuDomainNamespaceTeardownHostdev:
+ * @vm: domain object
+ * @hostdev: hostdev to remove in @vm's namespace
+ *
+ * For given @hostdev, remove its devfs representation (if it has one) in
+ * domain namespace. Note, @hostdev must not be in @vm's definition.
+ *
+ * Returns: 0 on success,
+ *         -1 otherwise.
+ */
 int
 qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
                                    virDomainHostdevDefPtr hostdev)
@@ -14612,6 +14643,11 @@ qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
         goto cleanup;
 
     if (qemuDomainNamespaceUnlinkPaths(vm, (const char **)paths, npaths) < 0)
+        goto cleanup;
+
+    if (qemuHostdevNeedsVFIO(hostdev) &&
+        !qemuDomainNeedsVFIO(vm->def) &&
+        qemuDomainNamespaceUnlinkPath(vm, QEMU_DEV_VFIO) < 0)
         goto cleanup;
 
     ret = 0;
