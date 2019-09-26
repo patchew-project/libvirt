@@ -803,22 +803,35 @@ AppArmorSetSecurityImageLabel(virSecurityManagerPtr mgr,
 {
     int rc = -1;
     char *profile_name = NULL;
+    VIR_AUTOFREE(char *) vfioGroupDev = NULL;
+    const char *path = NULL;
     virSecurityLabelDefPtr secdef;
-
-    if (!src->path || !virStorageSourceIsLocalStorage(src))
-        return 0;
 
     secdef = virDomainDefGetSecurityLabelDef(def, SECURITY_APPARMOR_NAME);
     if (!secdef || !secdef->relabel)
         return 0;
 
     if (secdef->imagelabel) {
-        /* if the device doesn't exist, error out */
-        if (!virFileExists(src->path)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("\'%s\' does not exist"),
-                           src->path);
-            return -1;
+        if (src->type == VIR_STORAGE_TYPE_NVME) {
+            const virStorageSourceNVMeDef *nvme = src->nvme;
+
+            if (!(vfioGroupDev = virPCIDeviceAddressGetIOMMUGroupDev(&nvme->pciAddr)))
+                return -1;
+
+            path = vfioGroupDev;
+        } else {
+            if (!src->path || !virStorageSourceIsLocalStorage(src))
+                return 0;
+
+            /* if the device doesn't exist, error out */
+            if (!virFileExists(src->path)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("\'%s\' does not exist"),
+                               src->path);
+                return -1;
+            }
+
+            path = src->path;
         }
 
         if ((profile_name = get_profile_name(def)) == NULL)
@@ -827,7 +840,7 @@ AppArmorSetSecurityImageLabel(virSecurityManagerPtr mgr,
         /* update the profile only if it is loaded */
         if (profile_loaded(secdef->imagelabel) >= 0) {
             if (load_profile(mgr, secdef->imagelabel, def,
-                             src->path, false) < 0) {
+                             path, false) < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("cannot update AppArmor profile "
                                  "\'%s\'"),
