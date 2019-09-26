@@ -56,7 +56,9 @@
     <feature name='pat'/>
     <feature name='pcid'/>
     <feature name='pclmuldq'/>
-    <feature name='pconfig'/>
+    <!-- 'pconfig' was added by accident in QEMU 3.1.0 but never worked.
+         It was removed in QEMU 3.1.1 and 4.0.0.  See QEMU commits
+         76e5a4d58357 and 712f807e1965 for details -->
     <feature name='pdpe1gb'/>
     <feature name='pge'/>
     <feature name='pku'/>
