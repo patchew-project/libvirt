@@ -1084,6 +1084,8 @@ int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
 bool qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
                                 virQEMUCapsPtr qemuCaps);
 
+bool qemuDomainNeedsVFIO(const virDomainDef *def);
+
 int qemuDomainGetHostdevPath(virDomainDefPtr def,
                              virDomainHostdevDefPtr dev,
                              bool teardown,
