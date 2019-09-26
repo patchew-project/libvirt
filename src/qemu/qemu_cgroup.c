@@ -379,13 +379,13 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     VIR_AUTOFREE(char *) path = NULL;
     int perms;
-    int rv, ret = -1;
+    int rv;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
     if (qemuDomainGetHostdevPath(dev, &path, &perms) < 0)
-        goto cleanup;
+        return -1;
 
     VIR_DEBUG("Cgroup allow %s perms=%d", path, perms);
     rv = virCgroupAllowDevicePath(priv->cgroup, path, perms, false);
@@ -393,7 +393,7 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
                              virCgroupGetDevicePermsString(perms),
                              rv);
     if (rv < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuHostdevNeedsVFIO(dev) &&
         !qemuDomainNeedsVFIO(vm->def)) {
@@ -403,13 +403,10 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
         virDomainAuditCgroupPath(vm, priv->cgroup, "allow",
                                  QEMU_DEV_VFIO, "rw", rv);
         if (rv < 0)
-            goto cleanup;
+            return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -430,13 +427,13 @@ qemuTeardownHostdevCgroup(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     VIR_AUTOFREE(char *) path = NULL;
-    int rv, ret = -1;
+    int rv;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
     if (qemuDomainGetHostdevPath(dev, &path, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     VIR_DEBUG("Cgroup deny %s", path);
     rv = virCgroupDenyDevicePath(priv->cgroup, path,
@@ -444,7 +441,7 @@ qemuTeardownHostdevCgroup(virDomainObjPtr vm,
     virDomainAuditCgroupPath(vm, priv->cgroup,
                              "deny", path, "rwm", rv);
     if (rv < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuHostdevNeedsVFIO(dev) &&
         !qemuDomainNeedsVFIO(vm->def)) {
@@ -454,12 +451,10 @@ qemuTeardownHostdevCgroup(virDomainObjPtr vm,
         virDomainAuditCgroupPath(vm, priv->cgroup, "deny",
                                  QEMU_DEV_VFIO, "rwm", rv);
         if (rv < 0)
-            goto cleanup;
+            return -1;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 

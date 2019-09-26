@@ -12854,7 +12854,6 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
                          char **path,
                          int *perms)
 {
-    int ret = -1;
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
@@ -12877,10 +12876,10 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
                                       pcisrc->addr.slot,
                                       pcisrc->addr.function);
                 if (!pci)
-                    goto cleanup;
+                    return -1;
 
                 if (!(tmpPath = virPCIDeviceGetIOMMUGroupDev(pci)))
-                    goto cleanup;
+                    return -1;
 
                 perm = VIR_CGROUP_DEVICE_RW;
             }
@@ -12893,10 +12892,10 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
                                   usbsrc->device,
                                   NULL);
             if (!usb)
-                goto cleanup;
+                return -1;
 
             if (VIR_STRDUP(tmpPath, virUSBDeviceGetPath(usb)) < 0)
-                goto cleanup;
+                return -1;
             perm = VIR_CGROUP_DEVICE_RW;
             break;
 
@@ -12915,10 +12914,10 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
                                         dev->shareable);
 
                 if (!scsi)
-                    goto cleanup;
+                    return -1;
 
                 if (VIR_STRDUP(tmpPath, virSCSIDeviceGetPath(scsi)) < 0)
-                    goto cleanup;
+                    return -1;
                 perm = virSCSIDeviceGetReadonly(scsi) ?
                     VIR_CGROUP_DEVICE_READ : VIR_CGROUP_DEVICE_RW;
             }
@@ -12928,10 +12927,10 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
             if (hostsrc->protocol ==
                 VIR_DOMAIN_HOSTDEV_SUBSYS_SCSI_HOST_PROTOCOL_TYPE_VHOST) {
                 if (!(host = virSCSIVHostDeviceNew(hostsrc->wwpn)))
-                    goto cleanup;
+                    return -1;
 
                 if (VIR_STRDUP(tmpPath, virSCSIVHostDeviceGetPath(host)) < 0)
-                    goto cleanup;
+                    return -1;
                 perm = VIR_CGROUP_DEVICE_RW;
             }
             break;
@@ -12939,7 +12938,7 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
             if (!(tmpPath = virMediatedDeviceGetIOMMUGroupDev(mdevsrc->uuidstr)))
-                goto cleanup;
+                return -1;
 
             perm = VIR_CGROUP_DEVICE_RW;
             break;
@@ -12957,9 +12956,7 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
     VIR_STEAL_PTR(*path, tmpPath);
     if (perms)
         *perms = perm;
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -13473,22 +13470,19 @@ qemuDomainSetupHostdev(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
                        virDomainHostdevDefPtr dev,
                        const struct qemuDomainCreateDeviceData *data)
 {
-    int ret = -1;
     VIR_AUTOFREE(char *) path = NULL;
 
     if (qemuDomainGetHostdevPath(dev, &path, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuDomainCreateDevice(path, data, false) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuHostdevNeedsVFIO(dev) &&
         qemuDomainCreateDevice(QEMU_DEV_VFIO, data, false) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -14534,23 +14528,20 @@ int
 qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
                                 virDomainHostdevDefPtr hostdev)
 {
-    int ret = -1;
     VIR_AUTOFREE(char *) path = NULL;
 
     if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuDomainNamespaceMknodPath(vm, path) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuHostdevNeedsVFIO(hostdev) &&
         !qemuDomainNeedsVFIO(vm->def) &&
         qemuDomainNamespaceMknodPath(vm, QEMU_DEV_VFIO) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -14569,23 +14560,20 @@ int
 qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
                                    virDomainHostdevDefPtr hostdev)
 {
-    int ret = -1;
     VIR_AUTOFREE(char *) path = NULL;
 
     if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuDomainNamespaceUnlinkPath(vm, path) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuHostdevNeedsVFIO(hostdev) &&
         !qemuDomainNeedsVFIO(vm->def) &&
         qemuDomainNamespaceUnlinkPath(vm, QEMU_DEV_VFIO) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
