@@ -11888,6 +11888,9 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
         }
     }
 
+    if (virDomainDefHasNVMeDisk(def))
+        usesVFIO = true;
+
     memory = virDomainDefGetMemoryTotal(def);
 
     if (def->mem.max_memory)
@@ -11986,6 +11989,7 @@ unsigned long long
 qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
 {
     unsigned long long memKB = 0;
+    bool usesVFIO = false;
     size_t i;
 
     /* prefer the hard limit */
@@ -12026,10 +12030,16 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
     for (i = 0; i < def->nhostdevs; i++) {
         if (virHostdevIsVFIODevice(def->hostdevs[i]) ||
             virHostdevIsMdevDevice(def->hostdevs[i])) {
-            memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
-            goto done;
+            usesVFIO = true;
+            break;
         }
     }
+
+    if (virDomainDefHasNVMeDisk(def))
+        usesVFIO = true;
+
+    if (usesVFIO)
+        memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
 
  done:
     return memKB << 10;
