@@ -12866,14 +12866,14 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr hostsrc = &dev->source.subsys.u.scsi_host;
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &dev->source.subsys.u.mdev;
-    virPCIDevicePtr pci = NULL;
-    virUSBDevicePtr usb = NULL;
-    virSCSIDevicePtr scsi = NULL;
-    virSCSIVHostDevicePtr host = NULL;
-    char *tmpPath = NULL;
+    VIR_AUTOPTR(virPCIDevice) pci = NULL;
+    VIR_AUTOPTR(virUSBDevice) usb = NULL;
+    VIR_AUTOPTR(virSCSIDevice) scsi = NULL;
+    VIR_AUTOPTR(virSCSIVHostDevice) host = NULL;
+    VIR_AUTOFREE(char *) tmpPath = NULL;
     bool includeVFIO = false;
     char **tmpPaths = NULL;
-    int *tmpPerms = NULL;
+    VIR_AUTOFREE(int *) tmpPerms = NULL;
     size_t tmpNpaths = 0;
     int perm = 0;
 
@@ -13004,12 +13004,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
     ret = 0;
  cleanup:
     virStringListFreeCount(tmpPaths, tmpNpaths);
-    VIR_FREE(tmpPerms);
-    virPCIDeviceFree(pci);
-    virUSBDeviceFree(usb);
-    virSCSIDeviceFree(scsi);
-    virSCSIVHostDeviceFree(host);
-    VIR_FREE(tmpPath);
     return ret;
 }
 
