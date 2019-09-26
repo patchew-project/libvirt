@@ -3024,6 +3024,7 @@ virStoragePRDefIsManaged;
 virStoragePRDefParseXML;
 virStorageSourceBackingStoreClear;
 virStorageSourceChainHasManagedPR;
+virStorageSourceChainHasNVMe;
 virStorageSourceClear;
 virStorageSourceCopy;
 virStorageSourceFindByNodeName;

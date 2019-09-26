@@ -433,6 +433,8 @@ virStorageSourceChainHasManagedPR(virStorageSourcePtr src);
 void virStorageSourceNVMeDefFree(virStorageSourceNVMeDefPtr def);
 VIR_DEFINE_AUTOPTR_FUNC(virStorageSourceNVMeDef, virStorageSourceNVMeDefFree);
 
+bool virStorageSourceChainHasNVMe(const virStorageSource *src);
+
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
                                     const char *model);
