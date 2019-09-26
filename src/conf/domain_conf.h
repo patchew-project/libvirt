@@ -3667,6 +3667,9 @@ bool
 virDomainDefHasManagedPR(const virDomainDef *def);
 
 bool
+virDomainDefHasNVMeDisk(const virDomainDef *def);
+
+bool
 virDomainDefHasVFIOHostdev(const virDomainDef *def);
 
 bool
