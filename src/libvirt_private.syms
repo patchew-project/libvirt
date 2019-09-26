@@ -2104,6 +2104,7 @@ virHostCPUStatsAssign;
 virHostdevFindUSBDevice;
 virHostdevIsMdevDevice;
 virHostdevIsSCSIDevice;
+virHostdevIsVFIODevice;
 virHostdevManagerGetDefault;
 virHostdevPCINodeDeviceDetach;
 virHostdevPCINodeDeviceReAttach;

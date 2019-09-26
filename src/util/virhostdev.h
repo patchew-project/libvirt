@@ -190,6 +190,9 @@ virHostdevIsSCSIDevice(const virDomainHostdevDef *hostdev)
 bool
 virHostdevIsMdevDevice(const virDomainHostdevDef *hostdev)
     ATTRIBUTE_NONNULL(1);
+bool
+virHostdevIsVFIODevice(const virDomainHostdevDef *hostdev)
+    ATTRIBUTE_NONNULL(1);
 
 /* functions used by NodeDevDetach/Reattach/Reset */
 int virHostdevPCINodeDeviceDetach(virHostdevManagerPtr mgr,

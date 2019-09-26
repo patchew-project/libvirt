@@ -4440,15 +4440,9 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     VIR_AUTOFREE(char *) drivealias = NULL;
     VIR_AUTOFREE(char *) objAlias = NULL;
-    bool is_vfio = false;
 
     VIR_DEBUG("Removing host device %s from domain %p %s",
               hostdev->info->alias, vm, vm->def->name);
-
-    if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
-        int backend = hostdev->source.subsys.u.pci.backend;
-        is_vfio = backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO;
-    }
 
     if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI) {
         virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
@@ -4497,7 +4491,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
 
     virDomainAuditHostdev(vm, hostdev, "detach", true);
 
-    if (!is_vfio &&
+    if (!virHostdevIsVFIODevice(hostdev) &&
         qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
         VIR_WARN("Failed to restore host device labelling");
 
