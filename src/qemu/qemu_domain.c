@@ -12836,29 +12836,23 @@ qemuDomainNeedsVFIO(const virDomainDef *def)
 
 /**
  * qemuDomainGetHostdevPath:
- * @def: domain definition
  * @dev: host device definition
- * @teardown: true if device will be removed
- * @npaths: number of items in @path and @perms arrays
  * @path: resulting path to @dev
  * @perms: Optional pointer to VIR_CGROUP_DEVICE_* perms
  *
  * For given device @dev fetch its host path and store it at
- * @path. If a device requires other paths to be present/allowed
- * they are stored in the @path array after the actual path.
- * Optionally, caller can get @perms on the path (e.g. rw/ro).
+ * @path. Optionally, caller can get @perms on the path (e.g.
+ * rw/ro).
  *
- * The caller is responsible for freeing the memory.
+ * The caller is responsible for freeing the @path when no longer
+ * needed.
  *
  * Returns 0 on success, -1 otherwise.
  */
 int
-qemuDomainGetHostdevPath(virDomainDefPtr def,
-                         virDomainHostdevDefPtr dev,
-                         bool teardown,
-                         size_t *npaths,
-                         char ***path,
-                         int **perms)
+qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
+                         char **path,
+                         int *perms)
 {
     int ret = -1;
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
@@ -12871,13 +12865,7 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
     VIR_AUTOPTR(virSCSIDevice) scsi = NULL;
     VIR_AUTOPTR(virSCSIVHostDevice) host = NULL;
     VIR_AUTOFREE(char *) tmpPath = NULL;
-    bool includeVFIO = false;
-    char **tmpPaths = NULL;
-    VIR_AUTOFREE(int *) tmpPerms = NULL;
-    size_t tmpNpaths = 0;
     int perm = 0;
-
-    *npaths = 0;
 
     switch ((virDomainHostdevMode) dev->mode) {
     case VIR_DOMAIN_HOSTDEV_MODE_SUBSYS:
@@ -12895,12 +12883,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
                     goto cleanup;
 
                 perm = VIR_CGROUP_DEVICE_RW;
-                if (teardown) {
-                    if (!virDomainDefHasVFIOHostdev(def))
-                        includeVFIO = true;
-                } else {
-                    includeVFIO = true;
-                }
             }
             break;
 
@@ -12959,7 +12941,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
             if (!(tmpPath = virMediatedDeviceGetIOMMUGroupDev(mdevsrc->uuidstr)))
                 goto cleanup;
 
-            includeVFIO = true;
             perm = VIR_CGROUP_DEVICE_RW;
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
@@ -12973,37 +12954,11 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
         break;
     }
 
-    if (tmpPath) {
-        size_t toAlloc = 1;
-
-        if (includeVFIO)
-            toAlloc = 2;
-
-        if (VIR_ALLOC_N(tmpPaths, toAlloc) < 0 ||
-            VIR_ALLOC_N(tmpPerms, toAlloc) < 0 ||
-            VIR_STRDUP(tmpPaths[0], tmpPath) < 0)
-            goto cleanup;
-        tmpNpaths = toAlloc;
-        tmpPerms[0] = perm;
-
-        if (includeVFIO) {
-            if (VIR_STRDUP(tmpPaths[1], QEMU_DEV_VFIO) < 0)
-                goto cleanup;
-            tmpPerms[1] = VIR_CGROUP_DEVICE_RW;
-        }
-    }
-
-    *npaths = tmpNpaths;
-    tmpNpaths = 0;
-    *path = tmpPaths;
-    tmpPaths = NULL;
-    if (perms) {
-        *perms = tmpPerms;
-        tmpPerms = NULL;
-    }
+    VIR_STEAL_PTR(*path, tmpPath);
+    if (perms)
+        *perms = perm;
     ret = 0;
  cleanup:
-    virStringListFreeCount(tmpPaths, tmpNpaths);
     return ret;
 }
 
@@ -13519,16 +13474,13 @@ qemuDomainSetupHostdev(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
                        const struct qemuDomainCreateDeviceData *data)
 {
     int ret = -1;
-    char **path = NULL;
-    size_t i, npaths = 0;
+    VIR_AUTOFREE(char *) path = NULL;
 
-    if (qemuDomainGetHostdevPath(NULL, dev, false, &npaths, &path, NULL) < 0)
+    if (qemuDomainGetHostdevPath(dev, &path, NULL) < 0)
         goto cleanup;
 
-    for (i = 0; i < npaths; i++) {
-        if (qemuDomainCreateDevice(path[i], data, false) < 0)
-            goto cleanup;
-    }
+    if (qemuDomainCreateDevice(path, data, false) < 0)
+        goto cleanup;
 
     if (qemuHostdevNeedsVFIO(dev) &&
         qemuDomainCreateDevice(QEMU_DEV_VFIO, data, false) < 0)
@@ -13536,9 +13488,6 @@ qemuDomainSetupHostdev(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 
     ret = 0;
  cleanup:
-    for (i = 0; i < npaths; i++)
-        VIR_FREE(path[i]);
-    VIR_FREE(path);
     return ret;
 }
 
@@ -14586,13 +14535,12 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
                                 virDomainHostdevDefPtr hostdev)
 {
     int ret = -1;
-    char **paths = NULL;
-    size_t i, npaths = 0;
+    VIR_AUTOFREE(char *) path = NULL;
 
-    if (qemuDomainGetHostdevPath(NULL, hostdev, false, &npaths, &paths, NULL) < 0)
+    if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
         goto cleanup;
 
-    if (qemuDomainNamespaceMknodPaths(vm, (const char **)paths, npaths) < 0)
+    if (qemuDomainNamespaceMknodPath(vm, path) < 0)
         goto cleanup;
 
     if (qemuHostdevNeedsVFIO(hostdev) &&
@@ -14602,9 +14550,6 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
-    for (i = 0; i < npaths; i++)
-        VIR_FREE(paths[i]);
-    VIR_FREE(paths);
     return ret;
 }
 
@@ -14625,14 +14570,12 @@ qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
                                    virDomainHostdevDefPtr hostdev)
 {
     int ret = -1;
-    char **paths = NULL;
-    size_t i, npaths = 0;
+    VIR_AUTOFREE(char *) path = NULL;
 
-    if (qemuDomainGetHostdevPath(vm->def, hostdev, true,
-                                 &npaths, &paths, NULL) < 0)
+    if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
         goto cleanup;
 
-    if (qemuDomainNamespaceUnlinkPaths(vm, (const char **)paths, npaths) < 0)
+    if (qemuDomainNamespaceUnlinkPath(vm, path) < 0)
         goto cleanup;
 
     if (qemuHostdevNeedsVFIO(hostdev) &&
@@ -14642,9 +14585,6 @@ qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
-    for (i = 0; i < npaths; i++)
-        VIR_FREE(paths[i]);
-    VIR_FREE(paths);
     return ret;
 }
 
