@@ -12871,7 +12871,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
     virSCSIDevicePtr scsi = NULL;
     virSCSIVHostDevicePtr host = NULL;
     char *tmpPath = NULL;
-    bool freeTmpPath = false;
     bool includeVFIO = false;
     char **tmpPaths = NULL;
     int *tmpPerms = NULL;
@@ -12894,7 +12893,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
 
                 if (!(tmpPath = virPCIDeviceGetIOMMUGroupDev(pci)))
                     goto cleanup;
-                freeTmpPath = true;
 
                 perm = VIR_CGROUP_DEVICE_RW;
                 if (teardown) {
@@ -12915,7 +12913,8 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
             if (!usb)
                 goto cleanup;
 
-            tmpPath = (char *)virUSBDeviceGetPath(usb);
+            if (VIR_STRDUP(tmpPath, virUSBDeviceGetPath(usb)) < 0)
+                goto cleanup;
             perm = VIR_CGROUP_DEVICE_RW;
             break;
 
@@ -12936,7 +12935,8 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
                 if (!scsi)
                     goto cleanup;
 
-                tmpPath = (char *)virSCSIDeviceGetPath(scsi);
+                if (VIR_STRDUP(tmpPath, virSCSIDeviceGetPath(scsi)) < 0)
+                    goto cleanup;
                 perm = virSCSIDeviceGetReadonly(scsi) ?
                     VIR_CGROUP_DEVICE_READ : VIR_CGROUP_DEVICE_RW;
             }
@@ -12948,7 +12948,8 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
                 if (!(host = virSCSIVHostDeviceNew(hostsrc->wwpn)))
                     goto cleanup;
 
-                tmpPath = (char *)virSCSIVHostDeviceGetPath(host);
+                if (VIR_STRDUP(tmpPath, virSCSIVHostDeviceGetPath(host)) < 0)
+                    goto cleanup;
                 perm = VIR_CGROUP_DEVICE_RW;
             }
             break;
@@ -12958,7 +12959,6 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
             if (!(tmpPath = virMediatedDeviceGetIOMMUGroupDev(mdevsrc->uuidstr)))
                 goto cleanup;
 
-            freeTmpPath = true;
             includeVFIO = true;
             perm = VIR_CGROUP_DEVICE_RW;
             break;
@@ -13009,8 +13009,7 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
     virUSBDeviceFree(usb);
     virSCSIDeviceFree(scsi);
     virSCSIVHostDeviceFree(host);
-    if (freeTmpPath)
-        VIR_FREE(tmpPath);
+    VIR_FREE(tmpPath);
     return ret;
 }
 
