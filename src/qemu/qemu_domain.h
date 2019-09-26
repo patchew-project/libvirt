@@ -962,8 +962,10 @@ bool qemuDomainSupportsPCI(virDomainDefPtr def,
 
 void qemuDomainUpdateCurrentMemorySize(virDomainObjPtr vm);
 
-unsigned long long qemuDomainGetMemLockLimitBytes(virDomainDefPtr def);
-int qemuDomainAdjustMaxMemLock(virDomainObjPtr vm);
+unsigned long long qemuDomainGetMemLockLimitBytes(virDomainDefPtr def,
+                                                  bool forceVFIO);
+int qemuDomainAdjustMaxMemLock(virDomainObjPtr vm,
+                               bool forceVFIO);
 int qemuDomainAdjustMaxMemLockHostdev(virDomainObjPtr vm,
                                       virDomainHostdevDefPtr hostdev);
 

@@ -11843,12 +11843,14 @@ ppc64VFIODeviceIsNV2Bridge(const char *device)
 /**
  * getPPC64MemLockLimitBytes:
  * @def: domain definition
+ * @forceVFIO: force VFIO usage
  *
  * A PPC64 helper that calculates the memory locking limit in order for
  * the guest to operate properly.
  */
 static unsigned long long
-getPPC64MemLockLimitBytes(virDomainDefPtr def)
+getPPC64MemLockLimitBytes(virDomainDefPtr def,
+                          bool forceVFIO)
 {
     unsigned long long memKB = 0;
     unsigned long long baseLimit = 0;
@@ -11939,7 +11941,7 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
         passthroughLimit = maxMemory +
                            128 * (1ULL<<30) / 512 * nPCIHostBridges +
                            8192;
-    } else if (usesVFIO) {
+    } else if (usesVFIO || forceVFIO) {
         /* For regular (non-NVLink2 present) VFIO passthrough, the value
          * of passthroughLimit is:
          *
@@ -11977,16 +11979,20 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
 /**
  * qemuDomainGetMemLockLimitBytes:
  * @def: domain definition
+ * @forceVFIO: force VFIO calculation
  *
  * Calculate the memory locking limit that needs to be set in order for
  * the guest to operate properly. The limit depends on a number of factors,
  * including certain configuration options and less immediately apparent ones
  * such as the guest architecture or the use of certain devices.
+ * The @forceVFIO argument can be used to tell this function will use VFIO even
+ * though @def doesn't indicates so right now.
  *
  * Returns: the memory locking limit, or 0 if setting the limit is not needed
  */
 unsigned long long
-qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
+qemuDomainGetMemLockLimitBytes(virDomainDefPtr def,
+                               bool forceVFIO)
 {
     unsigned long long memKB = 0;
     bool usesVFIO = false;
@@ -12007,7 +12013,7 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
         return VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
 
     if (ARCH_IS_PPC64(def->os.arch) && def->virtType == VIR_DOMAIN_VIRT_KVM)
-        return getPPC64MemLockLimitBytes(def);
+        return getPPC64MemLockLimitBytes(def, forceVFIO);
 
     /* For device passthrough using VFIO the guest memory and MMIO memory
      * regions need to be locked persistent in order to allow DMA.
@@ -12027,18 +12033,20 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
      *
      * Note that this may not be valid for all platforms.
      */
-    for (i = 0; i < def->nhostdevs; i++) {
-        if (virHostdevIsVFIODevice(def->hostdevs[i]) ||
-            virHostdevIsMdevDevice(def->hostdevs[i])) {
-            usesVFIO = true;
-            break;
+    if (!forceVFIO) {
+        for (i = 0; i < def->nhostdevs; i++) {
+            if (virHostdevIsVFIODevice(def->hostdevs[i]) ||
+                virHostdevIsMdevDevice(def->hostdevs[i])) {
+                usesVFIO = true;
+                break;
+            }
         }
+
+        if (virDomainDefHasNVMeDisk(def))
+            usesVFIO = true;
     }
 
-    if (virDomainDefHasNVMeDisk(def))
-        usesVFIO = true;
-
-    if (usesVFIO)
+    if (usesVFIO || forceVFIO)
         memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
 
  done:
@@ -12049,9 +12057,12 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
 /**
  * qemuDomainAdjustMaxMemLock:
  * @vm: domain
+ * @forceVFIO: apply VFIO requirements even if vm's def doesn't require it
  *
  * Adjust the memory locking limit for the QEMU process associated to @vm, in
- * order to comply with VFIO or architecture requirements.
+ * order to comply with VFIO or architecture requirements. If @forceVFIO is
+ * true then the limit is changed even if nothing in @vm's definition indicates
+ * so.
  *
  * The limit will not be changed unless doing so is needed; the first time
  * the limit is changed, the original (default) limit is stored in @vm and
@@ -12061,12 +12072,13 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
  * Returns: 0 on success, <0 on failure
  */
 int
-qemuDomainAdjustMaxMemLock(virDomainObjPtr vm)
+qemuDomainAdjustMaxMemLock(virDomainObjPtr vm,
+                           bool forceVFIO)
 {
     unsigned long long bytes = 0;
     int ret = -1;
 
-    bytes = qemuDomainGetMemLockLimitBytes(vm->def);
+    bytes = qemuDomainGetMemLockLimitBytes(vm->def, forceVFIO);
 
     if (bytes) {
         /* If this is the first time adjusting the limit, save the current
@@ -12115,7 +12127,7 @@ qemuDomainAdjustMaxMemLockHostdev(virDomainObjPtr vm,
     int ret = 0;
 
     vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
-    if (qemuDomainAdjustMaxMemLock(vm) < 0)
+    if (qemuDomainAdjustMaxMemLock(vm, false) < 0)
         ret = -1;
 
     vm->def->hostdevs[--(vm->def->nhostdevs)] = NULL;
