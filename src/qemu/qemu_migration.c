@@ -228,6 +228,7 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
 
     case VIR_STORAGE_TYPE_BLOCK:
     case VIR_STORAGE_TYPE_DIR:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1269,6 +1270,10 @@ qemuMigrationSrcIsSafe(virDomainDefPtr def,
         case VIR_STORAGE_TYPE_NETWORK:
             /* But network disks are safe again. */
             continue;
+
+        case VIR_STORAGE_TYPE_NVME:
+            unsafe = true;
+            break;
 
         case VIR_STORAGE_TYPE_NONE:
         case VIR_STORAGE_TYPE_BLOCK:

@@ -3045,6 +3045,7 @@ virStorageSourceNetworkAssignDefaultPorts;
 virStorageSourceNew;
 virStorageSourceNewFromBacking;
 virStorageSourceNewFromBackingAbsolute;
+virStorageSourceNVMeDefFree;
 virStorageSourceParseRBDColonString;
 virStorageSourcePoolDefFree;
 virStorageSourcePoolModeTypeFromString;

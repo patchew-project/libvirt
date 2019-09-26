@@ -1077,6 +1077,7 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
         break;
 
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         return NULL;
@@ -2367,6 +2368,7 @@ qemuBlockStorageSourceCreateGetStorageProps(virStorageSourcePtr src,
     case VIR_STORAGE_TYPE_BLOCK:
     case VIR_STORAGE_TYPE_DIR:
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
         return 0;
 
     case VIR_STORAGE_TYPE_NONE:
