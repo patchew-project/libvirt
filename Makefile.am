@@ -20,7 +20,7 @@ LCOV = lcov
 GENHTML = genhtml
 
 SUBDIRS = . gnulib/lib include/libvirt src tools docs gnulib/tests \
-  tests po examples
+  tests po
 
 XZ_OPT ?= -v -T0
 export XZ_OPT
