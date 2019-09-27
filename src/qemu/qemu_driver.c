@@ -2723,14 +2723,13 @@ qemuDomainGetInfo(virDomainPtr dom,
                   virDomainInfoPtr info)
 {
     unsigned long long maxmem;
-    virDomainObjPtr vm;
-    int ret = -1;
+    VIR_AUTORELEASE(virDomainObjPtr) vm = NULL;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
-        goto cleanup;
+        return -1;
 
     if (virDomainGetInfoEnsureACL(dom->conn, vm->def) < 0)
-        goto cleanup;
+        return -1;
 
     qemuDomainUpdateCurrentMemorySize(vm);
 
@@ -2742,33 +2741,29 @@ qemuDomainGetInfo(virDomainPtr dom,
     if (VIR_ASSIGN_IS_OVERFLOW(info->maxMem, maxmem)) {
         virReportError(VIR_ERR_OVERFLOW, "%s",
                        _("Initial memory size too large"));
-        goto cleanup;
+        return -1;
     }
 
     if (VIR_ASSIGN_IS_OVERFLOW(info->memory, vm->def->mem.cur_balloon)) {
         virReportError(VIR_ERR_OVERFLOW, "%s",
                        _("Current memory size too large"));
-        goto cleanup;
+        return -1;
     }
 
     if (virDomainObjIsActive(vm)) {
         if (qemuGetProcessInfo(&(info->cpuTime), NULL, NULL, vm->pid, 0) < 0) {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("cannot read cputime for domain"));
-            goto cleanup;
+            return -1;
         }
     }
 
     if (VIR_ASSIGN_IS_OVERFLOW(info->nrVirtCpu, virDomainDefGetVcpus(vm->def))) {
         virReportError(VIR_ERR_OVERFLOW, "%s", _("cpu count too large"));
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    virDomainObjEndAPI(&vm);
-    return ret;
+    return 0;
 }
 
 static int
