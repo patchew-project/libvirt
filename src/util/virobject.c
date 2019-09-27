@@ -382,6 +382,35 @@ virObjectAutoUnref(void *objptr)
 
 
 /**
+ * virObjectAutoUnlock:
+ *
+ * Helper used by VIR_AUTOUNLOCK
+ */
+void
+virObjectAutoUnlock(void *objptr)
+{
+    virObjectPtr *obj = objptr;
+    virObjectUnlock(*obj);
+    *obj = NULL;
+}
+
+
+/**
+ * virObjectAutoRelease:
+ *
+ * Helper used by VIR_AUTORELEASE
+ */
+void
+virObjectAutoRelease(void *objptr)
+{
+    virObjectPtr *obj = objptr;
+    virObjectUnlock(*obj);
+    virObjectUnref(*obj);
+    *obj = NULL;
+}
+
+
+/**
  * virObjectRef:
  * @anyobj: any instance of virObjectPtr
  *

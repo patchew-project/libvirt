@@ -112,6 +112,12 @@ virObjectUnref(void *obj);
 void
 virObjectAutoUnref(void *objptr);
 
+void
+virObjectAutoUnlock(void *objptr);
+
+void
+virObjectAutoRelease(void *objptr);
+
 /**
  * VIR_AUTOUNREF:
  * @type: type of an virObject subclass to be unref'd automatically
@@ -123,6 +129,30 @@ virObjectAutoUnref(void *objptr);
  */
 #define VIR_AUTOUNREF(type) \
     __attribute__((cleanup(virObjectAutoUnref))) type
+
+/**
+ * VIR_AUTOUNLOCK:
+ * @type: type of an virObjectLockable subclass to be unlocked automatically
+ *
+ * Declares a variable of @type which will be automatically unlocked when
+ * control goes out of the scope. The lockable object referenced by the pointer
+ * assigned to the variable declared by this macro must already be locked
+ * at the time of assignment.
+ */
+#define VIR_AUTOUNLOCK(type) \
+    __attribute__((cleanup(virObjectAutoUnlock))) type
+
+/**
+ * VIR_AUTORELEASE:
+ * @type: type of an virObjectLockable subclass to be unlocked and unref'd automatically
+ *
+ * Declares a variable of @type which will be automatically unlocked and unref'd
+ * when control goes out of the scope. The lockable object referenced by the
+ * pointer assigned to the variable declared by this macro must already be
+ * locked and referenced at the time of assignment.
+ */
+#define VIR_AUTORELEASE(type) \
+    __attribute__((cleanup(virObjectAutoRelease))) type
 
 void *
 virObjectRef(void *obj);
