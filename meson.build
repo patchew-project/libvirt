@@ -33,3 +33,4 @@ gnulib_dep = declare_dependency(
 meson.add_dist_script('build-aux' / 'dist.py', meson.source_root(), meson.build_root())
 
 subdir('src')
+subdir('examples')
