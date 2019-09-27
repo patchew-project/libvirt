@@ -53,7 +53,6 @@ ICON_FILES = \
 
 PODFILES = \
 	virt-admin.pod \
-	virt-host-validate.pod \
 	virt-login-shell.pod \
 	virt-pki-validate.pod \
 	virt-sanlock-cleanup.pod \
@@ -63,7 +62,6 @@ PODFILES = \
 
 MANINFILES = \
 	virt-admin.1.in \
-	virt-host-validate.1.in \
 	virt-login-shell.1.in \
 	virt-pki-validate.1.in \
 	virt-sanlock-cleanup.8.in \
@@ -116,11 +114,6 @@ libexec_PROGRAMS = virt-login-shell-helper
 man1_MANS += virt-login-shell.1
 endif WITH_LOGIN_SHELL
 
-if WITH_HOST_VALIDATE
-bin_PROGRAMS += virt-host-validate
-man1_MANS += virt-host-validate.1
-endif WITH_HOST_VALIDATE
-
 virt-xml-validate: virt-xml-validate.in Makefile
 	$(AM_V_GEN)sed -e 's|[@]schemadir@|$(pkgdatadir)/schemas|g' \
 		       -e 's|[@]VERSION@|$(VERSION)|g' \
@@ -156,51 +149,6 @@ libvirt_shell_la_SOURCES = \
 		vsh.c vsh.h \
 		vsh-table.c vsh-table.h
 
-virt_host_validate_SOURCES = \
-		virt-host-validate.c \
-		virt-host-validate-common.c virt-host-validate-common.h
-
-VIRT_HOST_VALIDATE_QEMU = \
-		virt-host-validate-qemu.c \
-		virt-host-validate-qemu.h
-VIRT_HOST_VALIDATE_LXC = \
-		virt-host-validate-lxc.c \
-		virt-host-validate-lxc.h
-VIRT_HOST_VALIDATE_BHYVE = \
-		virt-host-validate-bhyve.c \
-		virt-host-validate-bhyve.h
-if WITH_QEMU
-virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_QEMU)
-else ! WITH_QEMU
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_QEMU)
-endif ! WITH_QEMU
-
-if WITH_LXC
-virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_LXC)
-else ! WITH_LXC
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_LXC)
-endif ! WITH_LXC
-
-if WITH_BHYVE
-virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_BHYVE)
-else ! WITH_BHYVE
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_BHYVE)
-endif ! WITH_BHYVE
-
-virt_host_validate_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		$(PIE_LDFLAGS) \
-		$(COVERAGE_LDFLAGS) \
-		$(NULL)
-
-virt_host_validate_LDADD = \
-		../src/libvirt.la \
-		../gnulib/lib/libgnu.la \
-		$(NULL)
-
-virt_host_validate_CFLAGS = \
-		$(AM_CFLAGS) \
-		$(NULL)
 
 # virt-login-shell will be setuid, and must not link to anything
 # except glibc. It wil scrub the environment and then invoke the

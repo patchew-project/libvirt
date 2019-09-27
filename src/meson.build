@@ -1,4 +1,15 @@
 
+src_inc_dir = include_directories('.')
+util_inc_dir = include_directories('util')
+common_inc_dir = [
+  gnulib_inc_dir,
+  public_inc_dir,
+  top_inc_dir,
+  src_inc_dir,
+  util_inc_dir,
+]
+
+
 libvirt = cc.find_library('libvirt', dirs: [meson.build_root() / 'src' / '.libs'])
 libvirt_admin = cc.find_library('libvirt-admin', dirs: [meson.build_root() / 'src' / '.libs'])
 libvirt_qemu = cc.find_library('libvirt-qemu', dirs: [meson.build_root() / 'src' / '.libs'])

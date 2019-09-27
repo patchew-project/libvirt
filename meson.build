@@ -24,6 +24,7 @@ gnulib_inc_dir = include_directories('gnulib/lib')
 top_inc_dir = include_directories('.')
 
 cc = meson.get_compiler('c')
+pod2man = find_program('pod2man')
 
 gnulib = cc.find_library('libgnu', dirs: [meson.build_root() / 'gnulib' / 'lib' / '.libs'])
 gnulib_dep = declare_dependency(
@@ -34,7 +35,10 @@ gnulib_dep = declare_dependency(
 meson.add_dist_script('build-aux' / 'dist.py', meson.source_root(), meson.build_root())
 
 yajl_min_version = '>= 2.0.3'
+libxml_min_version = '>= 2.9.1'
+
 yajl_dep = dependency('yajl', version: yajl_min_version)
+libxml_dep = dependency('libxml-2.0', version: libxml_min_version)
 
 subdir('src')
 subdir('examples')

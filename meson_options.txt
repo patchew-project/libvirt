@@ -21,3 +21,5 @@ option('with-driver-nodedev', type: 'boolean', value: true, description: 'Enable
 option('with-driver-nwfilter', type: 'boolean', value: true, description: 'Enable nwfilter driver')
 option('with-driver-secret', type: 'boolean', value: true, description: 'Enable secret driver')
 option('with-driver-storage', type: 'boolean', value: true, description: 'Enable storage driver')
+
+option('with-tools-host-validate', type: 'boolean', value: true, description: 'Enable virt-host-validate tool')
