@@ -1367,6 +1367,8 @@ qemuDomainVideoPrivateNew(void)
     if (!(priv = virObjectNew(qemuDomainVideoPrivateClass)))
         return NULL;
 
+    priv->vhost_user_fd = -1;
+
     return (virObjectPtr) priv;
 }
 
