@@ -23,3 +23,28 @@ libvirt_lxc_dep = declare_dependency(
   dependencies: libvirt_lxc,
   include_directories: [public_inc_dir]
 )
+
+# General
+subdir('remote')
+
+# Primary virt drivers
+subdir('bhyve')
+subdir('esx')
+subdir('hyperv')
+subdir('libxl')
+subdir('lxc')
+subdir('openvz')
+subdir('phyp')
+subdir('qemu')
+subdir('test')
+subdir('vbox')
+subdir('vz')
+subdir('vmware')
+
+# Secondary drivers
+subdir('interface')
+subdir('network')
+subdir('node_device')
+subdir('nwfilter')
+subdir('secret')
+subdir('storage')

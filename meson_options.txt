@@ -1,0 +1,23 @@
+
+option('with-driver-remote', type: 'boolean', value: true, description: 'Enable remote driver')
+option('with-remote-daemon', type: 'boolean', value: true, description: 'Enable remote daemon')
+
+option('with-driver-bhyve', type: 'boolean', value: true, description: 'Enable bhyve driver')
+option('with-driver-esx', type: 'boolean', value: true, description: 'Enable esx driver')
+option('with-driver-hyperv', type: 'boolean', value: true, description: 'Enable hyperv driver')
+option('with-driver-libxl', type: 'boolean', value: true, description: 'Enable libxl driver')
+option('with-driver-lxc', type: 'boolean', value: true, description: 'Enable lxc driver')
+option('with-driver-openvz', type: 'boolean', value: true, description: 'Enable openvz driver')
+option('with-driver-phyp', type: 'boolean', value: true, description: 'Enable phyp driver')
+option('with-driver-qemu', type: 'boolean', value: true, description: 'Enable qemu driver')
+option('with-driver-test', type: 'boolean', value: true, description: 'Enable test driver')
+option('with-driver-vbox', type: 'boolean', value: true, description: 'Enable vbox driver')
+option('with-driver-vz', type: 'boolean', value: true, description: 'Enable vz driver')
+option('with-driver-vmware', type: 'boolean', value: true, description: 'Enable vmware driver')
+
+option('with-driver-interface', type: 'boolean', value: true, description: 'Enable interface driver')
+option('with-driver-network', type: 'boolean', value: true, description: 'Enable network driver')
+option('with-driver-nodedev', type: 'boolean', value: true, description: 'Enable nodedev driver')
+option('with-driver-nwfilter', type: 'boolean', value: true, description: 'Enable nwfilter driver')
+option('with-driver-secret', type: 'boolean', value: true, description: 'Enable secret driver')
+option('with-driver-storage', type: 'boolean', value: true, description: 'Enable storage driver')
