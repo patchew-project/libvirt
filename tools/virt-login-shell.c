@@ -38,10 +38,12 @@
 int main(int argc, char **argv) {
     char uidstr[INT_BUFSIZE_BOUND(uid_t)];
     char gidstr[INT_BUFSIZE_BOUND(gid_t)];
-    const char *const newargv[] = {
+    const char * newargv[] = {
         LIBEXECDIR "/virt-login-shell-helper",
         uidstr,
         gidstr,
+        NULL,
+        NULL,
         NULL,
     };
     char *newenv[] = {
@@ -60,8 +62,15 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if (argc != 1) {
-        fprintf(stderr, "%s: no arguments expected\n", argv[0]);
+    if (argc == 3) {
+        if (strcmp(argv[1], "-c") != 0) {
+            fprintf(stderr, "%s: syntax: %s [-c CMDSTR]\n", argv[0], argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        newargv[3] = argv[1];
+        newargv[4] = argv[2];
+    } else if (argc != 1) {
+        fprintf(stderr, "%s: syntax: %s [-c CMDSTR]\n", argv[0], argv[0]);
         exit(EXIT_FAILURE);
     }
 
