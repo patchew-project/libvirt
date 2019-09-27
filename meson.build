@@ -21,6 +21,7 @@ pkg_doc_dir = data_dir / 'doc' / meson.project_name() + '-' + meson.project_vers
 
 public_inc_dir = include_directories('include')
 gnulib_inc_dir = include_directories('gnulib/lib')
+top_inc_dir = include_directories('.')
 
 cc = meson.get_compiler('c')
 
@@ -32,5 +33,9 @@ gnulib_dep = declare_dependency(
 
 meson.add_dist_script('build-aux' / 'dist.py', meson.source_root(), meson.build_root())
 
+yajl_min_version = '>= 2.0.3'
+yajl_dep = dependency('yajl', version: yajl_min_version)
+
 subdir('src')
 subdir('examples')
+subdir('tools')

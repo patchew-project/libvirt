@@ -354,10 +354,10 @@ POD2MAN = pod2man -c "Virtualization Support" -r "$(PACKAGE)-$(VERSION)"
 		< $< > $@-t && \
 	mv $@-t $@
 
-install-data-local: install-systemd install-nss \
+install-data-local: install-systemd \
 	install-bash-completion
 
-uninstall-local: uninstall-systemd uninstall-nss \
+uninstall-local: uninstall-systemd \
 	uninstall-bash-completion
 
 install-sysconfig:
@@ -469,114 +469,6 @@ wireshark/src/libvirt/protocol.h: wireshark/util/genxdrstub.pl \
 		  $(WS_DISSECTOR_PROTO_FILES)
 
 endif WITH_WIRESHARK_DISSECTOR
-
-if WITH_BSD_NSS
-LIBVIRT_NSS_SYMBOL_FILE = \
-	$(srcdir)/nss/libvirt_nss_bsd.syms
-LIBVIRT_GUEST_NSS_SYMBOL_FILE = \
-	$(LIBVIRT_NSS_SYMBOL_FILE)
-NSS_SO_VER = 1
-
-install-nss:
-	( cd $(DESTDIR)$(libdir) && \
-	  rm -f nss_libvirt.so.$(NSS_SO_VER) && \
-	  $(LN_S) libnss_libvirt.so.$(NSS_SO_VER) nss_libvirt.so.$(NSS_SO_VER) && \
-	  rm -f nss_libvirt_guest.so.$(NSS_SO_VER) && \
-	  $(LN_S) libnss_libvirt_guest.so.$(NSS_SO_VER) \
-	  nss_libvirt_guest.so.$(NSS_SO_VER))
-
-uninstall-nss:
-	-rm -f $(DESTDIR)$(libdir)/nss_libvirt.so.$(NSS_SO_VER)
-	-rm -f $(DESTDIR)$(libdir)/nss_libvirt_guest.so.$(NSS_SO_VER)
-else ! WITH_BSD_NSS
-LIBVIRT_NSS_SYMBOL_FILE = \
-	$(srcdir)/nss/libvirt_nss.syms
-LIBVIRT_GUEST_NSS_SYMBOL_FILE = \
-	$(srcdir)/nss/libvirt_guest_nss.syms
-NSS_SO_VER = 2
-
-install-nss:
-uninstall-nss:
-endif ! WITH_BSD_NSS
-
-LIBVIRT_NSS_SOURCES = \
-	nss/libvirt_nss.c \
-	nss/libvirt_nss.h \
-	nss/libvirt_nss_leases.c \
-	nss/libvirt_nss_leases.h \
-	$(NULL)
-
-if WITH_NSS
-noinst_LTLIBRARIES += nss/libnss_libvirt_impl.la
-nss_libnss_libvirt_impl_la_SOURCES = \
-	$(LIBVIRT_NSS_SOURCES)
-
-nss_libnss_libvirt_impl_la_CPPFLAGS = $(STANDALONE_CPPFLAGS)
-nss_libnss_libvirt_impl_la_CFLAGS = \
-	-DLIBVIRT_NSS \
-	$(YAJL_CFLAGS) \
-	$(AM_CFLAGS) \
-	$(NULL)
-
-nss_libnss_libvirt_impl_la_LIBADD = \
-	$(YAJL_LIBS) \
-	$(NULL)
-
-nss_libnss_libvirt_la_SOURCES =
-nss_libnss_libvirt_la_LDFLAGS = \
-	$(VERSION_SCRIPT_FLAGS)$(LIBVIRT_NSS_SYMBOL_FILE) \
-	$(AM_LDFLAGS) \
-	-module \
-	-export-dynamic \
-	-avoid-version \
-	-shared \
-	-shrext .so.$(NSS_SO_VER)
-
-nss_libnss_libvirt_la_LIBADD = \
-	nss/libnss_libvirt_impl.la
-
-noinst_LTLIBRARIES += nss/libnss_libvirt_guest_impl.la
-nss_libnss_libvirt_guest_impl_la_SOURCES = \
-	$(LIBVIRT_NSS_SOURCES) \
-	nss/libvirt_nss_macs.h \
-	nss/libvirt_nss_macs.c \
-	$(NULL)
-
-nss_libnss_libvirt_guest_impl_la_CPPFLAGS = $(STANDALONE_CPPFLAGS)
-nss_libnss_libvirt_guest_impl_la_CFLAGS = \
-	-DLIBVIRT_NSS \
-	-DLIBVIRT_NSS_GUEST \
-	$(YAJL_CFLAGS) \
-	$(AM_CFLAGS) \
-	$(NULL)
-
-nss_libnss_libvirt_guest_impl_la_LIBADD = \
-	$(YAJL_LIBS) \
-	$(NULL)
-
-nss_libnss_libvirt_guest_la_SOURCES =
-nss_libnss_libvirt_guest_la_LDFLAGS = \
-	$(VERSION_SCRIPT_FLAGS)$(LIBVIRT_GUEST_NSS_SYMBOL_FILE) \
-	$(AM_LDFLAGS) \
-	-module \
-	-export-dynamic \
-	-avoid-version \
-	-shared \
-	-shrext .so.$(NSS_SO_VER)
-
-nss_libnss_libvirt_guest_la_LIBADD = \
-	nss/libnss_libvirt_guest_impl.la
-
-lib_LTLIBRARIES = \
-	nss/libnss_libvirt.la \
-	nss/libnss_libvirt_guest.la
-
-endif WITH_NSS
-
-EXTRA_DIST += $(LIBVIRT_NSS_SOURCES) \
-	$(srcdir)/nss/libvirt_nss.syms \
-	$(srcdir)/nss/libvirt_nss_bsd.syms \
-	$(srcdir)/nss/libvirt_guest_nss.syms
 
 clean-local:
 	-rm -rf wireshark/src/libvirt
