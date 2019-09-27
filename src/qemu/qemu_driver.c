@@ -18911,21 +18911,19 @@ static int
 qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
                     unsigned int flags)
 {
-    virDomainObjPtr vm;
+    VIR_AUTORELEASE(virDomainObjPtr) vm = NULL;
+
     virCheckFlags(VIR_DOMAIN_BLOCK_PULL_BANDWIDTH_BYTES, -1);
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         return -1;
 
-    if (virDomainBlockPullEnsureACL(dom->conn, vm->def) < 0) {
-        virDomainObjEndAPI(&vm);
+    if (virDomainBlockPullEnsureACL(dom->conn, vm->def) < 0)
         return -1;
-    }
 
     if (virDomainListCheckpoints(vm->checkpoints, NULL, dom, NULL, 0) > 0) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cannot perform block pull while checkpoint exists"));
-        virDomainObjEndAPI(&vm);
         return -1;
     }
 
