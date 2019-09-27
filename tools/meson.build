@@ -116,3 +116,137 @@ if with_tools_login_shell
     install_dir : join_paths(get_option('mandir'), 'man1')
   )
 endif
+
+libvirt_shell_src = [
+  'vsh.c',
+  'vsh.h',
+  'vsh-table.c',
+  'vsh-table.h',
+]
+libvirt_shell_inc = common_inc_dir
+libvirt_shell_libs = [libvirt_dep, readline_dep, libxml_dep, gnulib_dep]
+libvirt_shell = static_library(
+  'virt-shell',
+  libvirt_shell_src,
+  include_directories: libvirt_shell_inc,
+  dependencies: libvirt_shell_libs,
+)
+libvirt_shell_dep = declare_dependency(
+  link_with: libvirt_shell,
+)
+
+
+virsh_src = [
+  'virsh.c',
+  'virsh.h',
+  'virsh-checkpoint.c',
+  'virsh-checkpoint.h',
+  'virsh-completer.c',
+  'virsh-completer.h',
+  'virsh-completer-domain.c',
+  'virsh-completer-domain.h',
+  'virsh-completer-checkpoint.c',
+  'virsh-completer-checkpoint.h',
+  'virsh-completer-host.c',
+  'virsh-completer-host.h',
+  'virsh-completer-interface.c',
+  'virsh-completer-interface.h',
+  'virsh-completer-network.c',
+  'virsh-completer-network.h',
+  'virsh-completer-nodedev.c',
+  'virsh-completer-nodedev.h',
+  'virsh-completer-nwfilter.c',
+  'virsh-completer-nwfilter.h',
+  'virsh-completer-pool.c',
+  'virsh-completer-pool.h',
+  'virsh-completer-secret.c',
+  'virsh-completer-secret.h',
+  'virsh-completer-snapshot.c',
+  'virsh-completer-snapshot.h',
+  'virsh-completer-volume.c',
+  'virsh-completer-volume.h',
+  'virsh-console.c',
+  'virsh-console.h',
+  'virsh-domain.c',
+  'virsh-domain.h',
+  'virsh-domain-monitor.c',
+  'virsh-domain-monitor.h',
+  'virsh-host.c',
+  'virsh-host.h',
+  'virsh-interface.c',
+  'virsh-interface.h',
+  'virsh-network.c',
+  'virsh-network.h',
+  'virsh-nodedev.c',
+  'virsh-nodedev.h',
+  'virsh-nwfilter.c',
+  'virsh-nwfilter.h',
+  'virsh-pool.c',
+  'virsh-pool.h',
+  'virsh-secret.c',
+  'virsh-secret.h',
+  'virsh-snapshot.c',
+  'virsh-snapshot.h',
+  'virsh-util.c',
+  'virsh-util.h',
+  'virsh-volume.c',
+  'virsh-volume.h',
+]
+virsh_inc = common_inc_dir
+virsh_libs = [libvirt_shell_dep, libvirt_qemu_dep, libvirt_lxc_dep, libxml_dep, threads_dep, gnulib_dep]
+
+virsh = executable(
+  'virsh',
+  install: true,
+  sources: virsh_src,
+  include_directories: virsh_inc,
+  dependencies: virsh_libs,
+)
+virsh_man = custom_target(
+  'virsh_man',
+  output : 'virsh.1',
+  input : 'virsh.pod',
+  command : [
+    pod2man,
+    '--section=1',
+    '--center=Virtualization Support',
+    '--release=libvirt @0@'.format(meson.project_version()),
+    '@INPUT@', '@OUTPUT@'
+  ],
+  install : true,
+  install_dir : join_paths(get_option('mandir'), 'man1')
+)
+
+
+virt_admin_src = [
+  'virt-admin.c',
+  'virt-admin.h',
+  'virt-admin-completer.c',
+  'virt-admin-completer.h'
+]
+virt_admin_inc = common_inc_dir
+virt_admin_libs = [libvirt_shell_dep, libvirt_admin_dep, libxml_dep, threads_dep, gnulib_dep]
+
+virt_admin = executable(
+  'virt-admin',
+  install: true,
+  sources: virt_admin_src,
+  include_directories: virt_admin_inc,
+  dependencies: virt_admin_libs,
+)
+virt_admin_man = custom_target(
+  'virt_admin_man',
+  output : 'virt-admin.1',
+  input : 'virt-admin.pod',
+  command : [
+    pod2man,
+    '--section=1',
+    '--center=Virtualization Support',
+    '--release=libvirt @0@'.format(meson.project_version()),
+    '@INPUT@', '@OUTPUT@'
+  ],
+  install : true,
+  install_dir : join_paths(get_option('mandir'), 'man1')
+)
+
+subdir('bash-completion')

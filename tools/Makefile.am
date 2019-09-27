@@ -52,19 +52,16 @@ ICON_FILES = \
 	virsh_win_icon.rc
 
 PODFILES = \
-	virt-admin.pod \
 	virt-pki-validate.pod \
 	virt-sanlock-cleanup.pod \
 	virt-xml-validate.pod \
-	virsh.pod \
 	$(NULL)
 
 MANINFILES = \
-	virt-admin.1.in \
+
 	virt-pki-validate.1.in \
 	virt-sanlock-cleanup.8.in \
 	virt-xml-validate.1.in \
-	virsh.1.in \
 	$(NULL)
 
 EXTRA_DIST = \
@@ -74,8 +71,6 @@ EXTRA_DIST = \
 	virt-pki-validate.in \
 	virt-sanlock-cleanup.in \
 	libvirt-guests.sysconf \
-	virsh-edit.c \
-	bash-completion/vsh \
 	libvirt_recover_xattrs.sh \
 	$(PODFILES) \
 	$(MANINFILES) \
@@ -90,13 +85,10 @@ confdir = $(sysconfdir)/libvirt
 conf_DATA =
 
 bin_SCRIPTS = virt-xml-validate virt-pki-validate
-bin_PROGRAMS = virsh virt-admin
 libexec_SCRIPTS = libvirt-guests.sh
 man1_MANS = \
 		virt-pki-validate.1 \
-		virt-xml-validate.1 \
-		virsh.1 \
-		virt-admin.1
+		virt-xml-validate.1
 
 if WITH_SANLOCK
 sbin_SCRIPTS = virt-sanlock-cleanup
@@ -119,90 +111,7 @@ virt-sanlock-cleanup: virt-sanlock-cleanup.in Makefile
 	    -e 's|[@]localstatedir@|$(localstatedir)|' < $< > $@ \
 	    || (rm $@ && exit 1) && chmod +x $@
 
-noinst_LTLIBRARIES = libvirt_shell.la
-libvirt_shell_la_CFLAGS = \
-		$(AM_CFLAGS) \
-		$(READLINE_CFLAGS) \
-		$(NULL)
-libvirt_shell_la_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		$(PIE_LDFLAGS) \
-		$(COVERAGE_LDFLAGS) \
-		$(NULL)
-libvirt_shell_la_LIBADD = \
-		../src/libvirt.la \
-		$(LIBXML_LIBS) \
-		$(READLINE_LIBS) \
-		../gnulib/lib/libgnu.la \
-		$(NULL)
-libvirt_shell_la_SOURCES = \
-		vsh.c vsh.h \
-		vsh-table.c vsh-table.h
 
-
-virsh_SOURCES = \
-		virsh.c virsh.h \
-		virsh-checkpoint.c virsh-checkpoint.h \
-		virsh-completer.c virsh-completer.h \
-		virsh-completer-domain.c virsh-completer-domain.h \
-		virsh-completer-checkpoint.c virsh-completer-checkpoint.h \
-		virsh-completer-host.c virsh-completer-host.h \
-		virsh-completer-interface.c virsh-completer-interface.h \
-		virsh-completer-network.c virsh-completer-network.h \
-		virsh-completer-nodedev.c virsh-completer-nodedev.h \
-		virsh-completer-nwfilter.c virsh-completer-nwfilter.h \
-		virsh-completer-pool.c virsh-completer-pool.h \
-		virsh-completer-secret.c virsh-completer-secret.h \
-		virsh-completer-snapshot.c virsh-completer-snapshot.h \
-		virsh-completer-volume.c virsh-completer-volume.h \
-		virsh-console.c virsh-console.h \
-		virsh-domain.c virsh-domain.h \
-		virsh-domain-monitor.c virsh-domain-monitor.h \
-		virsh-host.c virsh-host.h \
-		virsh-interface.c virsh-interface.h \
-		virsh-network.c virsh-network.h \
-		virsh-nodedev.c virsh-nodedev.h \
-		virsh-nwfilter.c virsh-nwfilter.h \
-		virsh-pool.c virsh-pool.h \
-		virsh-secret.c virsh-secret.h \
-		virsh-snapshot.c virsh-snapshot.h \
-		virsh-util.c virsh-util.h \
-		virsh-volume.c virsh-volume.h \
-		$(NULL)
-
-virsh_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		$(PIE_LDFLAGS) \
-		$(COVERAGE_LDFLAGS) \
-		$(NULL)
-virsh_LDADD = \
-		$(STATIC_BINARIES) \
-		../src/libvirt-lxc.la \
-		../src/libvirt-qemu.la \
-		libvirt_shell.la
-virsh_CFLAGS = \
-		$(AM_CFLAGS) \
-		$(READLINE_CFLAGS)
-
-virt_admin_SOURCES = \
-		virt-admin.c virt-admin.h \
-		virt-admin-completer.c virt-admin-completer.h \
-		$(NULL)
-
-virt_admin_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		$(COVERAGE_LDFLAGS) \
-		$(STATIC_BINARIES) \
-		$(PIE_LDFLAGS) \
-		$(NULL)
-virt_admin_LDADD = \
-		../src/libvirt-admin.la \
-		libvirt_shell.la \
-		$(LIBXML_LIBS) \
-		$(NULL)
-virt_admin_CFLAGS = \
-		$(AM_CFLAGS) \
-		$(READLINE_CFLAGS)
 BUILT_SOURCES =
 
 if WITH_WIN_ICON
@@ -267,11 +176,9 @@ POD2MAN = pod2man -c "Virtualization Support" -r "$(PACKAGE)-$(VERSION)"
 		< $< > $@-t && \
 	mv $@-t $@
 
-install-data-local: install-systemd \
-	install-bash-completion
+install-data-local: install-systemd
 
-uninstall-local: uninstall-systemd \
-	uninstall-bash-completion
+uninstall-local: uninstall-systemd
 
 install-sysconfig:
 	$(MKDIR_P) $(DESTDIR)$(sysconfdir)/sysconfig
@@ -329,26 +236,6 @@ libvirt-guests.service: libvirt-guests.service.in $(top_builddir)/config.status
 	    < $< > $@-t && \
 	    mv $@-t $@
 
-
-if WITH_BASH_COMPLETION
-install-bash-completion:
-	$(MKDIR_P) "$(DESTDIR)$(BASH_COMPLETIONS_DIR)"
-	$(INSTALL_SCRIPT) $(srcdir)/bash-completion/vsh \
-		"$(DESTDIR)$(BASH_COMPLETIONS_DIR)/vsh"
-	( cd $(DESTDIR)$(BASH_COMPLETIONS_DIR) && \
-		rm -f virsh virt-admin && \
-		$(LN_S) vsh virsh && \
-		$(LN_S) vsh virt-admin )
-
-uninstall-bash-completion:
-	rm -f $(DESTDIR)$(BASH_COMPLETIONS_DIR)/vsh \
-		$(DESTDIR)$(BASH_COMPLETIONS_DIR)/virsh \
-		$(DESTDIR)$(BASH_COMPLETIONS_DIR)/virt-admin
-	rmdir $(DESTDIR)$(BASH_COMPLETIONS_DIR) ||:
-else ! WITH_BASH_COMPLETION
-install-bash-completion:
-uninstall-bash-completion:
-endif ! WITH_BASH_COMPLETION
 
 
 EXTRA_DIST += wireshark/util/genxdrstub.pl

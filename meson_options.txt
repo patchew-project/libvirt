@@ -24,3 +24,4 @@ option('with-driver-storage', type: 'boolean', value: true, description: 'Enable
 
 option('with-tools-host-validate', type: 'boolean', value: true, description: 'Enable virt-host-validate tool')
 option('with-tools-login-shell', type: 'boolean', value: true, description: 'Enable virt-login-shell tool')
+option('with-tools-bash-completion', type: 'boolean', value: true, description: 'Enable bash completion')

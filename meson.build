@@ -38,9 +38,16 @@ meson.add_dist_script('build-aux' / 'dist.py', meson.source_root(), meson.build_
 
 yajl_min_version = '>= 2.0.3'
 libxml_min_version = '>= 2.9.1'
+readline_min_version = '>= 7.0'
+bash_completion_min_version = '>= 2.0'
 
+threads_dep = dependency('threads')
 yajl_dep = dependency('yajl', version: yajl_min_version)
 libxml_dep = dependency('libxml-2.0', version: libxml_min_version)
+readline_dep = dependency('readline', version: readline_min_version)
+bash_completion_dep = dependency('bash-completion', version: bash_completion_min_version)
+
+bash_completion_dir = bash_completion_dep.get_pkgconfig_variable('completionsdir', define_variable: ['prefix', prefix])
 
 subdir('src')
 subdir('examples')
