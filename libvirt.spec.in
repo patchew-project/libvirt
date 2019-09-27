@@ -254,6 +254,7 @@ BuildRequires: gettext-devel
 BuildRequires: libtool
 BuildRequires: /usr/bin/pod2man
 %endif
+BuildRequires: meson
 BuildRequires: gcc
 BuildRequires: git
 %if 0%{?fedora} || 0%{?rhel} > 7
@@ -1224,6 +1225,9 @@ cd %{_vpath_builddir}
            --with-init-script=systemd \
            %{?arg_login_shell}
 make %{?_smp_mflags} V=1
+cd ..
+%meson
+%meson_build
 
 %install
 rm -fr %{buildroot}
@@ -1232,6 +1236,8 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 
 cd %{_vpath_builddir}
 %make_install %{?_smp_mflags} SYSTEMD_UNIT_DIR=%{_unitdir} V=1
+cd ..
+%meson_install
 
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
@@ -1318,6 +1324,8 @@ then
   cat test-suite.log || true
   exit 1
 fi
+cd ../..
+%meson_test
 
 %post libs
 %if 0%{?rhel} == 7
