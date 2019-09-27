@@ -117,7 +117,9 @@ virObjectAutoUnref(void *objptr);
  * @type: type of an virObject subclass to be unref'd automatically
  *
  * Declares a variable of @type which will be automatically unref'd when
- * control goes out of the scope.
+ * control goes out of the scope. The object referenced by the pointer assigned
+ * to the variable declared by this macro must already have the reference
+ * counter increased at the time of assignment.
  */
 #define VIR_AUTOUNREF(type) \
     __attribute__((cleanup(virObjectAutoUnref))) type
