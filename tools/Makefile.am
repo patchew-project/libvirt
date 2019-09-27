@@ -53,7 +53,6 @@ ICON_FILES = \
 
 PODFILES = \
 	virt-admin.pod \
-	virt-login-shell.pod \
 	virt-pki-validate.pod \
 	virt-sanlock-cleanup.pod \
 	virt-xml-validate.pod \
@@ -62,7 +61,6 @@ PODFILES = \
 
 MANINFILES = \
 	virt-admin.1.in \
-	virt-login-shell.1.in \
 	virt-pki-validate.1.in \
 	virt-sanlock-cleanup.8.in \
 	virt-xml-validate.1.in \
@@ -76,7 +74,6 @@ EXTRA_DIST = \
 	virt-pki-validate.in \
 	virt-sanlock-cleanup.in \
 	libvirt-guests.sysconf \
-	virt-login-shell.conf \
 	virsh-edit.c \
 	bash-completion/vsh \
 	libvirt_recover_xattrs.sh \
@@ -106,13 +103,6 @@ sbin_SCRIPTS = virt-sanlock-cleanup
 man8_MANS = virt-sanlock-cleanup.8
 DISTCLEANFILES += virt-sanlock-cleanup
 endif WITH_SANLOCK
-
-if WITH_LOGIN_SHELL
-conf_DATA += virt-login-shell.conf
-bin_PROGRAMS += virt-login-shell
-libexec_PROGRAMS = virt-login-shell-helper
-man1_MANS += virt-login-shell.1
-endif WITH_LOGIN_SHELL
 
 virt-xml-validate: virt-xml-validate.in Makefile
 	$(AM_V_GEN)sed -e 's|[@]schemadir@|$(pkgdatadir)/schemas|g' \
@@ -149,31 +139,6 @@ libvirt_shell_la_SOURCES = \
 		vsh.c vsh.h \
 		vsh-table.c vsh-table.h
 
-
-# virt-login-shell will be setuid, and must not link to anything
-# except glibc. It wil scrub the environment and then invoke the
-# real virt-login-shell-helper binary.
-virt_login_shell_SOURCES = \
-		virt-login-shell.c
-
-virt_login_shell_CPPFLAGS = $(STANDALONE_CPPFLAGS)
-
-virt_login_shell_helper_SOURCES = \
-		virt-login-shell-helper.c
-
-virt_login_shell_helper_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		$(PIE_LDFLAGS) \
-		$(COVERAGE_LDFLAGS) \
-		$(NULL)
-virt_login_shell_helper_LDADD = \
-		../src/libvirt.la \
-		../src/libvirt-lxc.la \
-		../gnulib/lib/libgnu.la
-
-virt_login_shell_helper_CFLAGS = \
-		$(AM_CFLAGS) \
-		$(NULL)
 
 virsh_SOURCES = \
 		virsh.c virsh.h \

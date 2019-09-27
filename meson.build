@@ -13,11 +13,13 @@ project(
 prefix = get_option('prefix')
 bin_dir = get_option('bindir')
 lib_dir = get_option('libdir')
+libexec_dir = get_option('libexecdir')
 sys_conf_dir = get_option('sysconfdir')
 data_dir = get_option('datadir')
 local_state_dir = get_option('localstatedir')
 pkg_data_dir = data_dir / meson.project_name()
 pkg_doc_dir = data_dir / 'doc' / meson.project_name() + '-' + meson.project_version()
+pkg_sys_conf_dir = sys_conf_dir / 'libvirt'
 
 public_inc_dir = include_directories('include')
 gnulib_inc_dir = include_directories('gnulib/lib')
