@@ -5880,6 +5880,8 @@ qemuDomainDeviceDefValidateDisk(const virDomainDiskDef *disk,
 {
     const char *driverName = virDomainDiskGetDriver(disk);
     virStorageSourcePtr n;
+    int idx;
+    int partition;
 
     if (disk->src->shared && !disk->src->readonly &&
         !qemuBlockStorageSourceSupportsConcurrentAccess(disk->src)) {
@@ -5944,6 +5946,14 @@ qemuDomainDeviceDefValidateDisk(const virDomainDiskDef *disk,
         disk->bus == VIR_DOMAIN_DISK_BUS_VIRTIO) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("disk type 'virtio' of '%s' does not support ejectable media"),
+                       disk->dst);
+        return -1;
+    }
+
+    int result = virDiskNameParse(disk->dst, &idx, &partition);
+    if (result != 0 || partition != 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("can't attach disk partition '%s', please attach whole disk instead"),
                        disk->dst);
         return -1;
     }

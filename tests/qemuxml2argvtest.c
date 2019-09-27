@@ -1097,6 +1097,7 @@ mymain(void)
     DO_TEST("disk-no-boot", NONE);
     DO_TEST_PARSE_ERROR("disk-device-lun-type-invalid",
                         QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_CAPS_LATEST_PARSE_ERROR("disk-attaching-partition-invalid");
     DO_TEST_FAILURE("disk-usb-nosupport", NONE);
     DO_TEST("disk-usb-device",
             QEMU_CAPS_DEVICE_USB_STORAGE);
