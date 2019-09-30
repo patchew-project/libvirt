@@ -1038,6 +1038,9 @@ typedef enum {
     VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE,
     VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL,
 
+    VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI,
+    VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK,
+
     VIR_DOMAIN_CHR_DEVICE_TYPE_LAST
 } virDomainChrDeviceType;
 
@@ -2474,6 +2477,12 @@ struct _virDomainDef {
 
     size_t nconsoles;
     virDomainChrDefPtr *consoles;
+
+    size_t n_vhost_user_blk;
+    virDomainChrDefPtr *vhost_user_blk;
+
+    size_t n_vhost_user_scsi;
+    virDomainChrDefPtr *vhost_user_scsi;
 
     size_t nleases;
     virDomainLeaseDefPtr *leases;

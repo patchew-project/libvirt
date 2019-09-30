@@ -9403,6 +9403,60 @@ qemuBuildConsoleCommandLine(virLogManagerPtr logManager,
     return 0;
 }
 
+static int
+qemuBuildVhostUserDisksCommandLine(virLogManagerPtr logManager,
+                            virSecurityManagerPtr secManager,
+                            virCommandPtr cmd,
+                            virQEMUDriverConfigPtr cfg,
+                            const virDomainDef *def,
+                            virQEMUCapsPtr qemuCaps,
+                            bool chardevStdioLogd)
+{
+    size_t i;
+    unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
+        QEMU_BUILD_CHARDEV_UNIX_FD_PASS;
+    if (chardevStdioLogd)
+        cdevflags |= QEMU_BUILD_CHARDEV_FILE_LOGD;
+
+    for (i = 0; i < def->n_vhost_user_blk; i++) {
+        virDomainChrDefPtr vhostuserdisk = def->vhost_user_blk[i];
+        char *devstr;
+
+
+        if (!(devstr = qemuBuildChrChardevStr(logManager, secManager,
+                                              cmd, cfg, def,
+                                              vhostuserdisk->source,
+                                              vhostuserdisk->info.alias,
+                                              qemuCaps, cdevflags)))
+            return -1;
+        virCommandAddArg(cmd, "-chardev");
+        virCommandAddArg(cmd, devstr);
+        VIR_FREE(devstr);
+
+        if (qemuBuildChrDeviceCommandLine(cmd, def, vhostuserdisk, qemuCaps) < 0)
+            return -1;
+    }
+
+    for (i = 0; i < def->n_vhost_user_scsi; i++) {
+        virDomainChrDefPtr vhostuserdisk = def->vhost_user_scsi[i];
+        char *devstr;
+
+
+        if (!(devstr = qemuBuildChrChardevStr(logManager, secManager,
+                                              cmd, cfg, def,
+                                              vhostuserdisk->source,
+                                              vhostuserdisk->info.alias,
+                                              qemuCaps, cdevflags)))
+            return -1;
+        virCommandAddArg(cmd, "-chardev");
+        virCommandAddArg(cmd, devstr);
+        VIR_FREE(devstr);
+
+        if (qemuBuildChrDeviceCommandLine(cmd, def, vhostuserdisk, qemuCaps) < 0)
+            return -1;
+    }
+    return 0;
+}
 
 char *
 qemuBuildRedirdevDevStr(const virDomainDef *def,
@@ -10436,6 +10490,11 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                                     chardevStdioLogd) < 0)
         return NULL;
 
+    if (qemuBuildVhostUserDisksCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
+                                    chardevStdioLogd) < 0)
+        return NULL;
+
+
     if (qemuBuildTPMCommandLine(cmd, def, qemuCaps) < 0)
         return NULL;
 
@@ -10662,6 +10721,40 @@ qemuBuildConsoleChrDeviceStr(char **deviceStr,
     return 0;
 }
 
+/* This function generates the correct '-device' string for character
+ * devices of each architecture.
+ */
+static int
+qemuBuildVhostUserChrDeviceStr(char **deviceStr,
+                            const virDomainDef *def,
+                            virDomainChrDefPtr vhostuser,
+                            virQEMUCapsPtr qemuCaps)
+{
+    VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
+    const char* device_type;
+
+    if ((virDomainChrDeviceType)vhostuser->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI) {
+        device_type = "vhost-user-scsi-pci";
+    } else if ((virDomainChrDeviceType)vhostuser->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK) {
+        device_type = "vhost-user-blk-pci";
+    } else {
+        return -1;
+    }
+    virBufferAsprintf(&buf, "%s,chardev=char%s,id=%s",
+                      device_type,
+                      vhostuser->info.alias, vhostuser->info.alias);
+
+    if (qemuBuildDeviceAddressStr(&buf, def, &vhostuser->info, qemuCaps) < 0)
+        return -1;
+
+    if (virBufferCheckError(&buf) < 0)
+        return -1;
+
+    *deviceStr = virBufferContentAndReset(&buf);
+    return 0;
+}
+
+
 int
 qemuBuildChrDeviceStr(char **deviceStr,
                       const virDomainDef *vmdef,
@@ -10685,6 +10778,11 @@ qemuBuildChrDeviceStr(char **deviceStr,
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
         ret = qemuBuildConsoleChrDeviceStr(deviceStr, vmdef, chr);
+        break;
+
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
+        ret = qemuBuildVhostUserChrDeviceStr(deviceStr, vmdef, chr, qemuCaps);
         break;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:

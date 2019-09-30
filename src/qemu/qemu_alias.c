@@ -107,6 +107,14 @@ qemuAssignDeviceChrAlias(virDomainDefPtr def,
         prefix = "channel";
         break;
 
+   case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+       prefix = "vhost-user-scsi-disk";
+       break;
+
+   case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
+       prefix = "vhost-user-blk-disk";
+       break;
+
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
         return -1;
     }
@@ -640,6 +648,14 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
     }
     for (i = 0; i < def->nconsoles; i++) {
         if (qemuAssignDeviceChrAlias(def, def->consoles[i], i) < 0)
+            return -1;
+    }
+    for (i = 0; i < def->n_vhost_user_blk; i++) {
+        if (qemuAssignDeviceChrAlias(def, def->vhost_user_blk[i], i) < 0)
+            return -1;
+    }
+    for (i = 0; i < def->n_vhost_user_scsi; i++) {
+        if (qemuAssignDeviceChrAlias(def, def->vhost_user_scsi[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nhubs; i++) {

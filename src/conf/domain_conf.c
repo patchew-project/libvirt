@@ -619,6 +619,8 @@ VIR_ENUM_IMPL(virDomainChrDevice,
               "serial",
               "console",
               "channel",
+              "vhost-user-scsi-pci",
+              "vhost-user-blk-pci",
 );
 
 VIR_ENUM_IMPL(virDomainChr,
@@ -4180,6 +4182,16 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     for (i = 0; i < def->nchannels; i++) {
         device.data.chr = def->channels[i];
         if ((rc = cb(def, &device, &def->channels[i]->info, opaque)) != 0)
+            return rc;
+    }
+    for (i = 0; i < def->n_vhost_user_blk; i++) {
+        device.data.chr = def->vhost_user_blk[i];
+        if ((rc = cb(def, &device, &def->vhost_user_blk[i]->info, opaque)) != 0)
+            return rc;
+    }
+    for (i = 0; i < def->n_vhost_user_scsi; i++) {
+        device.data.chr = def->vhost_user_scsi[i];
+        if ((rc = cb(def, &device, &def->vhost_user_scsi[i]->info, opaque)) != 0)
             return rc;
     }
     for (i = 0; i < def->nconsoles; i++) {
@@ -12284,6 +12296,8 @@ virDomainChrDefaultTargetType(int devtype)
     case VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL:
         return VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
 
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
         /* No target type yet*/
@@ -12315,6 +12329,8 @@ virDomainChrTargetTypeFromString(int devtype,
         ret = virDomainChrSerialTargetTypeFromString(targetType);
         break;
 
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
         /* No target type yet*/
@@ -12339,6 +12355,8 @@ virDomainChrTargetModelFromString(int devtype,
         ret = virDomainChrSerialTargetModelTypeFromString(targetModel);
         break;
 
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
@@ -16410,7 +16428,9 @@ virDomainDeviceDefParse(const char *xmlStr,
         if (virXMLNodeNameEqual(node, "channel") ||
             virXMLNodeNameEqual(node, "console") ||
             virXMLNodeNameEqual(node, "parallel") ||
-            virXMLNodeNameEqual(node, "serial")) {
+            virXMLNodeNameEqual(node, "serial") ||
+            virXMLNodeNameEqual(node, "vhost-user-blk-pci") ||
+            virXMLNodeNameEqual(node, "vhost-user-scsi-pci")) {
             dev->type = VIR_DOMAIN_DEVICE_CHR;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -17486,6 +17506,11 @@ virDomainChrEquals(virDomainChrDefPtr src,
 
         ATTRIBUTE_FALLTHROUGH;
 
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
+        return STREQ_NULLABLE(src->source->data.nix.path,
+                tgt->source->data.nix.path);
+
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
         return src->target.port == tgt->target.port;
@@ -17544,6 +17569,14 @@ virDomainChrGetDomainPtrsInternal(virDomainDefPtr vmdef,
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
         *arrPtr = &vmdef->channels;
         *cntPtr = &vmdef->nchannels;
+        return 0;
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
+        *arrPtr = &vmdef->vhost_user_blk;
+        *cntPtr = &vmdef->n_vhost_user_blk;
+        return 0;
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+        *arrPtr = &vmdef->vhost_user_scsi;
+        *cntPtr = &vmdef->n_vhost_user_scsi;
         return 0;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
@@ -21042,6 +21075,46 @@ virDomainDefParseXML(xmlDocPtr xml,
             goto error;
 
         def->channels[def->nchannels++] = chr;
+    }
+    VIR_FREE(nodes);
+
+    if ((n = virXPathNodeSet("./devices/vhost-user-blk-pci", ctxt, &nodes)) < 0)
+        goto error;
+
+    if (n && VIR_ALLOC_N(def->vhost_user_blk, n) < 0)
+        goto error;
+
+    for (i = 0; i < n; i++) {
+        virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
+                                                         ctxt,
+                                                         nodes[i],
+                                                         def->seclabels,
+                                                         def->nseclabels,
+                                                         flags);
+        if (!chr)
+            goto error;
+
+        def->vhost_user_blk[def->n_vhost_user_blk++] = chr;
+    }
+    VIR_FREE(nodes);
+
+    if ((n = virXPathNodeSet("./devices/vhost-user-scsi-pci", ctxt, &nodes)) < 0)
+        goto error;
+
+    if (n && VIR_ALLOC_N(def->vhost_user_scsi, n) < 0)
+        goto error;
+
+    for (i = 0; i < n; i++) {
+        virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
+                                                         ctxt,
+                                                         nodes[i],
+                                                         def->seclabels,
+                                                         def->nseclabels,
+                                                         flags);
+        if (!chr)
+            goto error;
+
+        def->vhost_user_scsi[def->n_vhost_user_scsi++] = chr;
     }
     VIR_FREE(nodes);
 
@@ -26006,6 +26079,10 @@ virDomainChrTargetDefFormat(virBufferPtr buf,
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
         virBufferAsprintf(buf, "<target port='%d'/>\n",
                           def->target.port);
+        break;
+
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
         break;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:

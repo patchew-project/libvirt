@@ -5223,6 +5223,8 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
         }
         break;
 
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI:
+    case VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
