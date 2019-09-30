@@ -4375,6 +4375,52 @@
     </optional>
   </define>
 
+  <define name="vhost-user-blk-pci">
+    <element name="vhost-user-blk-pci">
+      <optional>
+        <attribute name="type">
+          <choice>
+            <value>unix</value>
+          </choice>
+        </attribute>
+      </optional>
+      <interleave>
+        <optional>
+            <ref name="unixSocketSource"/>
+        </optional>
+        <optional>
+          <ref name="address"/>
+        </optional>
+        <optional>
+          <ref name="alias"/>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
+  <define name="vhost-user-scsi-pci">
+    <element name="vhost-user-scsi-pci">
+      <optional>
+        <attribute name="type">
+          <choice>
+            <value>unix</value>
+          </choice>
+        </attribute>
+      </optional>
+      <interleave>
+        <optional>
+            <ref name="unixSocketSource"/>
+        </optional>
+        <optional>
+          <ref name="address"/>
+        </optional>
+        <optional>
+          <ref name="alias"/>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
   <define name="vsock">
     <element name="vsock">
       <optional>
@@ -4973,6 +5019,8 @@
             <ref name="tpm"/>
             <ref name="shmem"/>
             <ref name="memorydev"/>
+            <ref name="vhost-user-blk-pci"/>
+            <ref name="vhost-user-scsi-pci"/>
           </choice>
         </zeroOrMore>
         <optional>
