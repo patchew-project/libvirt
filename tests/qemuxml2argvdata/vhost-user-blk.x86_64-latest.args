@@ -31,7 +31,7 @@ file=/tmp/lib/domain--1-test/master-key.aes \
 -chardev socket,id=charvhost-user-blk-disk0,path=/tmp/vhost-blk.sock,\
 reconnect=1 \
 -device vhost-user-blk-pci,chardev=charvhost-user-blk-disk0,\
-id=vhost-user-blk-disk0 \
+id=vhost-user-blk-disk0,num-queues=4 \
 -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,\
 resourcecontrol=deny \
 -msg timestamp=on

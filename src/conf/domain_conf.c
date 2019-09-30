@@ -7483,10 +7483,12 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
     xmlNodePtr alias = NULL;
     xmlNodePtr boot = NULL;
     xmlNodePtr rom = NULL;
+    xmlNodePtr queue = NULL;
     int ret = -1;
     VIR_AUTOFREE(char *) romenabled = NULL;
     VIR_AUTOFREE(char *) rombar = NULL;
     VIR_AUTOFREE(char *) aliasStr = NULL;
+    VIR_AUTOFREE(char *) queueStr = NULL;
 
     virDomainDeviceInfoClear(info);
 
@@ -7510,6 +7512,9 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
                        (flags & VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) &&
                        virXMLNodeNameEqual(cur, "rom")) {
                 rom = cur;
+            } else if (queue == NULL &&
+                       virXMLNodeNameEqual(cur, "queue")) {
+                queue = cur;
             }
         }
         cur = cur->next;
@@ -7563,6 +7568,15 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
         virDomainDeviceAddressParseXML(address, info) < 0)
         goto cleanup;
 
+    if (queue) {
+        queueStr = virXMLPropString(queue, "num");
+        if (virStrToLong_uip(queueStr, NULL, 10, &info->num_queues) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Cannot parse <queue> 'num' attribute '%s'"), queueStr);
+
+            goto cleanup;
+        }
+    }
 
     ret = 0;
  cleanup:

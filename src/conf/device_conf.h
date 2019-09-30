@@ -179,6 +179,11 @@ struct _virDomainDeviceInfo {
      * cases we might want to prevent that from happening by
      * locking the isolation group */
     bool isolationGroupLocked;
+
+    /* vhost-user-scsi/blk/nvme support multiqueue, parse the queue
+     * num from xml.
+     */
+    unsigned int num_queues;
 };
 
 void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);

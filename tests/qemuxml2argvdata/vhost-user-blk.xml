@@ -32,6 +32,7 @@
         <source type='bind' path='/tmp/vhost-blk.sock'>
             <reconnect enabled='yes' timeout='1' />
         </source>
+        <queue num='4'/>
     </vhost-user-blk-pci>
   </devices>
 </domain>

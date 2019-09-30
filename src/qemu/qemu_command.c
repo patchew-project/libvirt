@@ -10743,6 +10743,13 @@ qemuBuildVhostUserChrDeviceStr(char **deviceStr,
     virBufferAsprintf(&buf, "%s,chardev=char%s,id=%s",
                       device_type,
                       vhostuser->info.alias, vhostuser->info.alias);
+    if (vhostuser->info.num_queues > 0) {
+        if ((virDomainChrDeviceType)vhostuser->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_SCSI) {
+            virBufferAsprintf(&buf, ",num_queues=%d", vhostuser->info.num_queues);
+        } else if ((virDomainChrDeviceType)vhostuser->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_VHOST_USER_BLK) {
+            virBufferAsprintf(&buf, ",num-queues=%d", vhostuser->info.num_queues);
+        }
+    }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &vhostuser->info, qemuCaps) < 0)
         return -1;
