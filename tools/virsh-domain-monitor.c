@@ -473,6 +473,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     char *cap = NULL;
     char *alloc = NULL;
     char *phy = NULL;
+    char *device_type = NULL;
     vshTablePtr table = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
@@ -510,6 +511,8 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
             rc = virDomainGetBlockInfo(dom, target, &info, 0);
 
             if (rc < 0) {
+                device_type = virXPathString("string(./@device)", ctxt);
+
                 /* If protocol is present that's an indication of a networked
                  * storage device which cannot provide statistics, so generate
                  * 0 based data and get the next disk. */
@@ -518,9 +521,16 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
                     virGetLastErrorDomain() == VIR_FROM_STORAGE) {
                     memset(&info, 0, sizeof(info));
                     vshResetLibvirtError();
+                } else if (device_type != NULL &&
+                        (STRCASEEQ(device_type, "cdrom") ||
+                        STRCASEEQ(device_type, "floppy"))) {
+                    memset(&info, 0, sizeof(info));
+                    vshResetLibvirtError();
                 } else {
                     goto cleanup;
                 }
+
+                VIR_FREE(device_type);
             }
 
             if (!cmdDomblkinfoGet(ctl, &info, &cap, &alloc, &phy, human))
@@ -556,6 +566,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     VIR_FREE(target);
     VIR_FREE(protocol);
     VIR_FREE(disks);
+    VIR_FREE(device_type);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(xmldoc);
     return ret;
