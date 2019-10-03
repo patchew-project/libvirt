@@ -1883,6 +1883,44 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
 }
 
 
+static virDomainCapsCPUModelsPtr
+virQEMUCapsCPUDefsToModels(qemuMonitorCPUDefsPtr defs,
+                           const char **modelWhitelist,
+                           const char **modelBlacklist)
+{
+    VIR_AUTOUNREF(virDomainCapsCPUModelsPtr) cpuModels = NULL;
+    size_t i;
+
+    if (!defs)
+        return NULL;
+
+    if (!(cpuModels = virDomainCapsCPUModelsNew(defs->ncpus)))
+        return NULL;
+
+    for (i = 0; i < defs->ncpus; i++) {
+        qemuMonitorCPUDefInfoPtr cpu = defs->cpus + i;
+        virDomainCapsCPUUsable usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
+
+        if (modelWhitelist && !virStringListHasString(modelWhitelist, cpu->name))
+            continue;
+
+        if (modelBlacklist && virStringListHasString(modelBlacklist, cpu->name))
+            continue;
+
+        if (cpu->usable == VIR_TRISTATE_BOOL_YES)
+            usable = VIR_DOMCAPS_CPU_USABLE_YES;
+        else if (cpu->usable == VIR_TRISTATE_BOOL_NO)
+            usable = VIR_DOMCAPS_CPU_USABLE_NO;
+
+        if (virDomainCapsCPUModelsAdd(cpuModels, cpu->name,
+                                      usable, cpu->blockers) < 0)
+            return NULL;
+    }
+
+    VIR_RETURN_PTR(cpuModels);
+}
+
+
 virDomainCapsCPUModelsPtr
 virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
                              virDomainVirtType type,
@@ -2452,33 +2490,11 @@ virDomainCapsCPUModelsPtr
 virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon)
 {
     VIR_AUTOPTR(qemuMonitorCPUDefs) defs = NULL;
-    virDomainCapsCPUModelsPtr models = NULL;
-    size_t i;
 
     if (qemuMonitorGetCPUDefinitions(mon, &defs) < 0)
         return NULL;
 
-    if (!(models = virDomainCapsCPUModelsNew(defs->ncpus)))
-        goto error;
-
-    for (i = 0; i < defs->ncpus; i++) {
-        virDomainCapsCPUUsable usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
-
-        if (defs->cpus[i].usable == VIR_TRISTATE_BOOL_YES)
-            usable = VIR_DOMCAPS_CPU_USABLE_YES;
-        else if (defs->cpus[i].usable == VIR_TRISTATE_BOOL_NO)
-            usable = VIR_DOMCAPS_CPU_USABLE_NO;
-
-        if (virDomainCapsCPUModelsAddSteal(models, &defs->cpus[i].name, usable,
-                                           &defs->cpus[i].blockers) < 0)
-            goto error;
-    }
-
-    return models;
-
- error:
-    virObjectUnref(models);
-    return NULL;
+    return virQEMUCapsCPUDefsToModels(defs, NULL, NULL);
 }
 
 
