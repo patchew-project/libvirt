@@ -41,15 +41,13 @@ EXTRA_DIST = \
   README.md \
   AUTHORS.in \
   build-aux/augeas-gentest.pl \
-  build-aux/cfg.mk \
   build-aux/check-spacing.pl \
   build-aux/gitlog-to-changelog \
-  build-aux/GNUmakefile \
   build-aux/header-ifdef.pl \
-  build-aux/maint.mk \
   build-aux/minimize-po.pl \
   build-aux/mock-noinline.pl \
   build-aux/prohibit-duplicate-header.pl \
+  build-aux/syntax-check.mk \
   build-aux/useless-if-before-free \
   build-aux/vc-list-files \
   ci/Makefile \
@@ -87,7 +85,7 @@ srpm: clean
 	@(unset CDPATH ; $(MAKE) dist && rpmbuild -ts $(distdir).tar.xz)
 
 syntax-check:
-	@make -C $(srcdir)/build-aux syntax-check \
+	@make -C $(srcdir)/build-aux -f syntax-check.mk syntax-check \
 		abs_top_builddir=$(abs_top_builddir) \
 		FLAKE8=$(FLAKE8)
 
