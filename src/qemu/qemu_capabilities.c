@@ -2464,13 +2464,13 @@ virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon)
     for (i = 0; i < defs->ncpus; i++) {
         virDomainCapsCPUUsable usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
 
-        if (defs->cpus[i]->usable == VIR_TRISTATE_BOOL_YES)
+        if (defs->cpus[i].usable == VIR_TRISTATE_BOOL_YES)
             usable = VIR_DOMCAPS_CPU_USABLE_YES;
-        else if (defs->cpus[i]->usable == VIR_TRISTATE_BOOL_NO)
+        else if (defs->cpus[i].usable == VIR_TRISTATE_BOOL_NO)
             usable = VIR_DOMCAPS_CPU_USABLE_NO;
 
-        if (virDomainCapsCPUModelsAddSteal(models, &defs->cpus[i]->name, usable,
-                                           &defs->cpus[i]->blockers) < 0)
+        if (virDomainCapsCPUModelsAddSteal(models, &defs->cpus[i].name, usable,
+                                           &defs->cpus[i].blockers) < 0)
             goto error;
     }
 

@@ -3540,9 +3540,8 @@ qemuMonitorCPUDefsFree(qemuMonitorCPUDefsPtr defs)
         return;
 
     for (i = 0; i < defs->ncpus; i++) {
-        virStringListFree(defs->cpus[i]->blockers);
-        VIR_FREE(defs->cpus[i]->name);
-        VIR_FREE(defs->cpus[i]);
+        virStringListFree(defs->cpus[i].blockers);
+        VIR_FREE(defs->cpus[i].name);
     }
 
     VIR_FREE(defs->cpus);
