@@ -3566,6 +3566,39 @@ qemuMonitorCPUDefsNew(size_t count)
 
 
 int
+qemuMonitorCPUDefsCopy(qemuMonitorCPUDefsPtr *dst,
+                       qemuMonitorCPUDefsPtr src)
+{
+    VIR_AUTOPTR(qemuMonitorCPUDefs) defs = NULL;
+    size_t i;
+
+    if (!src) {
+        *dst = NULL;
+        return 0;
+    }
+
+    if (!(defs = qemuMonitorCPUDefsNew(src->ncpus)))
+        return -1;
+
+    defs->ncpus = src->ncpus;
+    for (i = 0; i < src->ncpus; i++) {
+        qemuMonitorCPUDefInfoPtr cpuDst = defs->cpus + i;
+        qemuMonitorCPUDefInfoPtr cpuSrc = src->cpus + i;
+
+        cpuDst->usable = cpuSrc->usable;
+
+        if (VIR_STRDUP(cpuDst->name, cpuSrc->name) < 0 ||
+            virStringListCopy(&cpuDst->blockers,
+                              (const char **)cpuSrc->blockers) < 0)
+            return -1;
+    }
+
+    VIR_STEAL_PTR(*dst, defs);
+    return 0;
+}
+
+
+int
 qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
                                 qemuMonitorCPUModelExpansionType type,
                                 virCPUDefPtr cpu,

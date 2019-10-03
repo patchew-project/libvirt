@@ -1111,6 +1111,8 @@ struct _qemuMonitorCPUDefs {
 int qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
                                  qemuMonitorCPUDefsPtr *cpuDefs);
 qemuMonitorCPUDefsPtr qemuMonitorCPUDefsNew(size_t count);
+int qemuMonitorCPUDefsCopy(qemuMonitorCPUDefsPtr *dst,
+                           qemuMonitorCPUDefsPtr src);
 void qemuMonitorCPUDefsFree(qemuMonitorCPUDefsPtr defs);
 VIR_DEFINE_AUTOPTR_FUNC(qemuMonitorCPUDefs, qemuMonitorCPUDefsFree);
 
