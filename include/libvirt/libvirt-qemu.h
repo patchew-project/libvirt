@@ -53,6 +53,8 @@ typedef enum {
 char *virDomainQemuAgentCommand(virDomainPtr domain, const char *cmd,
                                 int timeout, unsigned int flags);
 
+int virDomainQemuAgentSetTimeout(virDomainPtr domain, int timeout);
+
 /**
  * virConnectDomainQemuMonitorEventCallback:
  * @conn: the connection pointer

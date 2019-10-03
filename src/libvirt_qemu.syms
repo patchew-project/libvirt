@@ -30,3 +30,7 @@ LIBVIRT_QEMU_1.2.3 {
         virConnectDomainQemuMonitorEventDeregister;
         virConnectDomainQemuMonitorEventRegister;
 } LIBVIRT_QEMU_0.10.0;
+LIBVIRT_QEMU_5.8.0 {
+    global:
+        virDomainQemuAgentSetTimeout;
+} LIBVIRT_QEMU_1.2.3;

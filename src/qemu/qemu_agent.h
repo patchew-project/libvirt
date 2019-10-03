@@ -140,3 +140,6 @@ int qemuAgentGetTimezone(qemuAgentPtr mon,
                          virTypedParameterPtr *params,
                          int *nparams,
                          int *maxparams);
+
+int qemuAgentSetTimeout(qemuAgentPtr mon,
+                        int timeout);

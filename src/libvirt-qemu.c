@@ -216,6 +216,46 @@ virDomainQemuAgentCommand(virDomainPtr domain,
     return NULL;
 }
 
+/**
+ * virDomainQemuAgentSetTimeout:
+ * @domain: a domain object
+ * @timeout: timeout in seconds
+ *
+ * Set how long to wait for a response from qemu agent commands. By default,
+ * agent commands block forever waiting for a response.
+ *
+ * @timeout must be -2, -1, 0 or positive.
+ * VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK(-2): meaning to block forever waiting for
+ * a result.
+ * VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT(-1): use default timeout value.
+ * VIR_DOMAIN_QEMU_AGENT_COMMAND_NOWAIT(0): does not wait.
+ * positive value: wait for @timeout seconds
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virDomainQemuAgentSetTimeout(virDomainPtr domain,
+                             int timeout)
+{
+    virConnectPtr conn;
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    if (conn->driver->domainQemuAgentSetTimeout) {
+        if (conn->driver->domainQemuAgentSetTimeout(domain, timeout) < 0)
+            goto error;
+        return 0;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(conn);
+    return -1;
+}
 
 /**
  * virConnectDomainQemuMonitorEventRegister:

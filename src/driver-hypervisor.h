@@ -1372,6 +1372,10 @@ typedef int
                             int *nparams,
                             unsigned int flags);
 
+typedef int
+(*virDrvDomainQemuAgentSetTimeout)(virDomainPtr domain,
+                                   int timeout);
+
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
 
@@ -1632,4 +1636,5 @@ struct _virHypervisorDriver {
     virDrvDomainCheckpointGetParent domainCheckpointGetParent;
     virDrvDomainCheckpointDelete domainCheckpointDelete;
     virDrvDomainGetGuestInfo domainGetGuestInfo;
+    virDrvDomainQemuAgentSetTimeout domainQemuAgentSetTimeout;
 };
