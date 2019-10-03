@@ -554,6 +554,7 @@ struct virQEMUCapsMachineType {
     unsigned int maxCpus;
     bool hotplugCpus;
     bool qemuDefault;
+    char *defaultCPU;
 };
 
 typedef struct _virQEMUCapsHostCPUData virQEMUCapsHostCPUData;
@@ -1634,7 +1635,8 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
     ret->nmachineTypes = qemuCaps->nmachineTypes;
     for (i = 0; i < qemuCaps->nmachineTypes; i++) {
         if (VIR_STRDUP(ret->machineTypes[i].name, qemuCaps->machineTypes[i].name) < 0 ||
-            VIR_STRDUP(ret->machineTypes[i].alias, qemuCaps->machineTypes[i].alias) < 0)
+            VIR_STRDUP(ret->machineTypes[i].alias, qemuCaps->machineTypes[i].alias) < 0 ||
+            VIR_STRDUP(ret->machineTypes[i].defaultCPU, qemuCaps->machineTypes[i].defaultCPU) < 0)
             goto error;
         ret->machineTypes[i].maxCpus = qemuCaps->machineTypes[i].maxCpus;
         ret->machineTypes[i].hotplugCpus = qemuCaps->machineTypes[i].hotplugCpus;
@@ -1669,6 +1671,7 @@ void virQEMUCapsDispose(void *obj)
     for (i = 0; i < qemuCaps->nmachineTypes; i++) {
         VIR_FREE(qemuCaps->machineTypes[i].name);
         VIR_FREE(qemuCaps->machineTypes[i].alias);
+        VIR_FREE(qemuCaps->machineTypes[i].defaultCPU);
     }
     VIR_FREE(qemuCaps->machineTypes);
 
@@ -2402,7 +2405,8 @@ virQEMUCapsProbeQMPMachineTypes(virQEMUCapsPtr qemuCaps,
         mach = &(qemuCaps->machineTypes[qemuCaps->nmachineTypes++]);
 
         if (VIR_STRDUP(mach->alias, machines[i]->alias) < 0 ||
-            VIR_STRDUP(mach->name, machines[i]->name) < 0)
+            VIR_STRDUP(mach->name, machines[i]->name) < 0 ||
+            VIR_STRDUP(mach->defaultCPU, machines[i]->defaultCPU) < 0)
             goto cleanup;
 
         mach->maxCpus = machines[i]->maxCpus;
@@ -3790,6 +3794,8 @@ virQEMUCapsLoadCache(virArch hostArch,
             if (STREQ_NULLABLE(str, "yes"))
                 qemuCaps->machineTypes[i].qemuDefault = true;
             VIR_FREE(str);
+
+            qemuCaps->machineTypes[i].defaultCPU = virXMLPropString(nodes[i], "defaultCPU");
         }
     }
     VIR_FREE(nodes);
@@ -4064,6 +4070,11 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
                           qemuCaps->machineTypes[i].maxCpus);
         if (qemuCaps->machineTypes[i].qemuDefault)
             virBufferAddLit(&buf, " default='yes'");
+
+        if (qemuCaps->machineTypes[i].defaultCPU)
+            virBufferEscapeString(&buf, " defaultCPU='%s'",
+                                  qemuCaps->machineTypes[i].defaultCPU);
+
         virBufferAddLit(&buf, "/>\n");
     }
 
