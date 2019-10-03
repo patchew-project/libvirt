@@ -201,7 +201,6 @@ int virDomainCapsCPUModelsAddSteal(virDomainCapsCPUModelsPtr cpuModels,
                                    char ***blockers);
 int virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
                               const char *name,
-                              ssize_t nameLen,
                               virDomainCapsCPUUsable usable,
                               char **blockers);
 virDomainCapsCPUModelPtr
