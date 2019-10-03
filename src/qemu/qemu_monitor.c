@@ -3521,25 +3521,48 @@ qemuMonitorMachineInfoFree(qemuMonitorMachineInfoPtr machine)
 
 int
 qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
-                             qemuMonitorCPUDefInfoPtr **cpus)
+                             qemuMonitorCPUDefsPtr *cpuDefs)
 {
-    VIR_DEBUG("cpus=%p", cpus);
+    VIR_DEBUG("cpuDefs=%p", cpuDefs);
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONGetCPUDefinitions(mon, cpus);
+    return qemuMonitorJSONGetCPUDefinitions(mon, cpuDefs);
 }
 
 
 void
-qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu)
+qemuMonitorCPUDefsFree(qemuMonitorCPUDefsPtr defs)
 {
-    if (!cpu)
+    size_t i;
+
+    if (!defs)
         return;
 
-    virStringListFree(cpu->blockers);
-    VIR_FREE(cpu->name);
-    VIR_FREE(cpu);
+    for (i = 0; i < defs->ncpus; i++) {
+        virStringListFree(defs->cpus[i]->blockers);
+        VIR_FREE(defs->cpus[i]->name);
+        VIR_FREE(defs->cpus[i]);
+    }
+
+    VIR_FREE(defs->cpus);
+    VIR_FREE(defs);
+}
+
+
+qemuMonitorCPUDefsPtr
+qemuMonitorCPUDefsNew(size_t count)
+{
+    VIR_AUTOPTR(qemuMonitorCPUDefs) defs = NULL;
+
+    if (VIR_ALLOC(defs) < 0)
+        return NULL;
+
+    if (count > 0 && VIR_ALLOC_N(defs->cpus, count) < 0)
+        return NULL;
+
+    defs->ncpus = count;
+    VIR_RETURN_PTR(defs);
 }
 
 

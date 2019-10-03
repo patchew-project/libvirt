@@ -2451,40 +2451,34 @@ virQEMUCapsProbeQMPMachineProps(virQEMUCapsPtr qemuCaps,
 virDomainCapsCPUModelsPtr
 virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon)
 {
+    VIR_AUTOPTR(qemuMonitorCPUDefs) defs = NULL;
     virDomainCapsCPUModelsPtr models = NULL;
-    qemuMonitorCPUDefInfoPtr *cpus = NULL;
-    int ncpus = 0;
     size_t i;
 
-    if ((ncpus = qemuMonitorGetCPUDefinitions(mon, &cpus)) < 0)
+    if (qemuMonitorGetCPUDefinitions(mon, &defs) < 0)
         return NULL;
 
-    if (!(models = virDomainCapsCPUModelsNew(ncpus)))
+    if (!(models = virDomainCapsCPUModelsNew(defs->ncpus)))
         goto error;
 
-    for (i = 0; i < ncpus; i++) {
+    for (i = 0; i < defs->ncpus; i++) {
         virDomainCapsCPUUsable usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
 
-        if (cpus[i]->usable == VIR_TRISTATE_BOOL_YES)
+        if (defs->cpus[i]->usable == VIR_TRISTATE_BOOL_YES)
             usable = VIR_DOMCAPS_CPU_USABLE_YES;
-        else if (cpus[i]->usable == VIR_TRISTATE_BOOL_NO)
+        else if (defs->cpus[i]->usable == VIR_TRISTATE_BOOL_NO)
             usable = VIR_DOMCAPS_CPU_USABLE_NO;
 
-        if (virDomainCapsCPUModelsAddSteal(models, &cpus[i]->name, usable,
-                                           &cpus[i]->blockers) < 0)
+        if (virDomainCapsCPUModelsAddSteal(models, &defs->cpus[i]->name, usable,
+                                           &defs->cpus[i]->blockers) < 0)
             goto error;
     }
 
- cleanup:
-    for (i = 0; i < ncpus; i++)
-        qemuMonitorCPUDefInfoFree(cpus[i]);
-    VIR_FREE(cpus);
     return models;
 
  error:
     virObjectUnref(models);
-    models = NULL;
-    goto cleanup;
+    return NULL;
 }
 
 

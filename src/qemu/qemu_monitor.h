@@ -1101,9 +1101,19 @@ struct _qemuMonitorCPUDefInfo {
     char **blockers; /* NULL-terminated string list */
 };
 
+typedef struct _qemuMonitorCPUDefs qemuMonitorCPUDefs;
+typedef qemuMonitorCPUDefs *qemuMonitorCPUDefsPtr;
+struct _qemuMonitorCPUDefs {
+    size_t ncpus;
+    qemuMonitorCPUDefInfoPtr *cpus;
+};
+
 int qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
-                                 qemuMonitorCPUDefInfoPtr **cpus);
-void qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu);
+                                 qemuMonitorCPUDefsPtr *cpuDefs);
+qemuMonitorCPUDefsPtr qemuMonitorCPUDefsNew(size_t count);
+void qemuMonitorCPUDefsFree(qemuMonitorCPUDefsPtr defs);
+VIR_DEFINE_AUTOPTR_FUNC(qemuMonitorCPUDefs, qemuMonitorCPUDefsFree);
+
 
 typedef enum {
     QEMU_MONITOR_CPU_PROPERTY_BOOLEAN,
