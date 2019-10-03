@@ -186,27 +186,6 @@ virDomainCapsCPUModelsCopy(virDomainCapsCPUModelsPtr old)
 
 
 int
-virDomainCapsCPUModelsAddSteal(virDomainCapsCPUModelsPtr cpuModels,
-                               char **name,
-                               virDomainCapsCPUUsable usable,
-                               char ***blockers)
-{
-    if (VIR_RESIZE_N(cpuModels->models, cpuModels->nmodels_max,
-                     cpuModels->nmodels, 1) < 0)
-        return -1;
-
-    cpuModels->models[cpuModels->nmodels].usable = usable;
-    VIR_STEAL_PTR(cpuModels->models[cpuModels->nmodels].name, *name);
-
-    if (blockers)
-        VIR_STEAL_PTR(cpuModels->models[cpuModels->nmodels].blockers, *blockers);
-
-    cpuModels->nmodels++;
-    return 0;
-}
-
-
-int
 virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
                           const char *name,
                           virDomainCapsCPUUsable usable,
@@ -214,6 +193,7 @@ virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
 {
     VIR_AUTOFREE(char *) nameCopy = NULL;
     VIR_AUTOSTRINGLIST blockersCopy = NULL;
+    virDomainCapsCPUModelPtr cpu;
 
     if (VIR_STRDUP(nameCopy, name) < 0)
         return -1;
@@ -221,9 +201,16 @@ virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
     if (virStringListCopy(&blockersCopy, (const char **)blockers) < 0)
         return -1;
 
-    if (virDomainCapsCPUModelsAddSteal(cpuModels, &nameCopy,
-                                       usable, &blockersCopy) < 0)
+    if (VIR_RESIZE_N(cpuModels->models, cpuModels->nmodels_max,
+                     cpuModels->nmodels, 1) < 0)
         return -1;
+
+    cpu = cpuModels->models + cpuModels->nmodels;
+    cpuModels->nmodels++;
+
+    cpu->usable = usable;
+    VIR_STEAL_PTR(cpu->name, nameCopy);
+    VIR_STEAL_PTR(cpu->blockers, blockersCopy);
 
     return 0;
 }

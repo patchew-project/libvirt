@@ -191,7 +191,6 @@ virDomainAuditVcpu;
 
 # conf/domain_capabilities.h
 virDomainCapsCPUModelsAdd;
-virDomainCapsCPUModelsAddSteal;
 virDomainCapsCPUModelsCopy;
 virDomainCapsCPUModelsGet;
 virDomainCapsCPUModelsNew;
