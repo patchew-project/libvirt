@@ -3079,6 +3079,7 @@ virStringIsEmpty;
 virStringIsPrintable;
 virStringListAdd;
 virStringListAutoFree;
+virStringListCopy;
 virStringListFree;
 virStringListFreeCount;
 virStringListGetFirstWithPrefix;
