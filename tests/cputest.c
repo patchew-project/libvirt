@@ -551,7 +551,6 @@ cpuTestGetCPUModels(const struct data *data,
         return -1;
 
     *models = virQEMUCapsGetCPUDefinitions(qemuCaps, VIR_DOMAIN_VIRT_KVM);
-    virObjectRef(*models);
 
     virObjectUnref(qemuCaps);
 
