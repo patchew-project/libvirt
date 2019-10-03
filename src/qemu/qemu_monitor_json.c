@@ -5571,6 +5571,10 @@ qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
         if (VIR_STRDUP(cpu->name, tmp) < 0)
             return -1;
 
+        if ((tmp = virJSONValueObjectGetString(child, "typename")) &&
+            VIR_STRDUP(cpu->type, tmp) < 0)
+            return -1;
+
         if (virJSONValueObjectHasKey(child, "unavailable-features")) {
             virJSONValuePtr blockers;
             size_t j;

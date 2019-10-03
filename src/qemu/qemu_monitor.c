@@ -3542,6 +3542,7 @@ qemuMonitorCPUDefsFree(qemuMonitorCPUDefsPtr defs)
     for (i = 0; i < defs->ncpus; i++) {
         virStringListFree(defs->cpus[i].blockers);
         VIR_FREE(defs->cpus[i].name);
+        VIR_FREE(defs->cpus[i].type);
     }
 
     VIR_FREE(defs->cpus);
@@ -3588,6 +3589,7 @@ qemuMonitorCPUDefsCopy(qemuMonitorCPUDefsPtr *dst,
         cpuDst->usable = cpuSrc->usable;
 
         if (VIR_STRDUP(cpuDst->name, cpuSrc->name) < 0 ||
+            VIR_STRDUP(cpuDst->type, cpuSrc->type) < 0 ||
             virStringListCopy(&cpuDst->blockers,
                               (const char **)cpuSrc->blockers) < 0)
             return -1;

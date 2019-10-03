@@ -1098,6 +1098,7 @@ typedef qemuMonitorCPUDefInfo *qemuMonitorCPUDefInfoPtr;
 struct _qemuMonitorCPUDefInfo {
     virTristateBool usable;
     char *name;
+    char *type;
     char **blockers; /* NULL-terminated string list */
 };
 
