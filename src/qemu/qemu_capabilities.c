@@ -2175,6 +2175,42 @@ bool virQEMUCapsGetMachineHotplugCpus(virQEMUCapsPtr qemuCaps,
 }
 
 
+const char *
+virQEMUCapsGetMachineDefaultCPU(virQEMUCapsPtr qemuCaps,
+                                const char *name,
+                                virDomainVirtType type)
+{
+    qemuMonitorCPUDefsPtr defs;
+    const char *cpuType = NULL;
+    size_t i;
+
+    if (type == VIR_DOMAIN_VIRT_KVM)
+        defs = qemuCaps->kvmCPUModels;
+    else
+        defs = qemuCaps->tcgCPUModels;
+
+    if (!name || !defs)
+        return NULL;
+
+    for (i = 0; i < qemuCaps->nmachineTypes; i++) {
+        if (STREQ(qemuCaps->machineTypes[i].name, name)) {
+            cpuType = qemuCaps->machineTypes[i].defaultCPU;
+            break;
+        }
+    }
+
+    if (!cpuType)
+        return NULL;
+
+    for (i = 0; i < defs->ncpus; i++) {
+        if (STREQ(defs->cpus[i].type, cpuType))
+            return defs->cpus[i].name;
+    }
+
+    return NULL;
+}
+
+
 /**
  * virQEMUCapsSetGICCapabilities:
  * @qemuCaps: QEMU capabilities
