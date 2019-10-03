@@ -37,14 +37,16 @@ EXTRA_DIST = \
   libvirt-admin.pc.in \
   Makefile.nonreentrant \
   autogen.sh \
-  cfg.mk \
   run.in \
   README.md \
   AUTHORS.in \
   build-aux/augeas-gentest.pl \
+  build-aux/cfg.mk \
   build-aux/check-spacing.pl \
   build-aux/gitlog-to-changelog \
+  build-aux/GNUmakefile \
   build-aux/header-ifdef.pl \
+  build-aux/maint.mk \
   build-aux/minimize-po.pl \
   build-aux/mock-noinline.pl \
   build-aux/prohibit-duplicate-header.pl \
@@ -83,6 +85,11 @@ rpm: clean
 
 srpm: clean
 	@(unset CDPATH ; $(MAKE) dist && rpmbuild -ts $(distdir).tar.xz)
+
+syntax-check:
+	@make -C $(srcdir)/build-aux syntax-check \
+		abs_top_builddir=$(abs_top_builddir) \
+		FLAKE8=$(FLAKE8)
 
 check-local: all tests
 

@@ -1182,16 +1182,17 @@ sc_po_check: \
 		$(srcdir)/src/remote/remote_client_bodies.h \
 		$(srcdir)/src/admin/admin_server_dispatch_stubs.h \
 		$(srcdir)/src/admin/admin_client.h
+
 $(srcdir)/src/remote/remote_daemon_dispatch_stubs.h: $(srcdir)/src/remote/remote_protocol.x
-	$(MAKE) -C src remote/remote_daemon_dispatch_stubs.h
+	$(MAKE) -C $(abs_top_builddir)/src remote/remote_daemon_dispatch_stubs.h
 $(srcdir)/src/remote/remote_daemon_dispatch_qemu_stubs.h: $(srcdir)/src/remote/qemu_protocol.x
-	$(MAKE) -C src remote/remote_daemon_dispatch_qemu_stubs.h
+	$(MAKE) -C $(abs_top_builddir)/src remote/remote_daemon_dispatch_qemu_stubs.h
 $(srcdir)/src/remote/remote_client_bodies.h: $(srcdir)/src/remote/remote_protocol.x
-	$(MAKE) -C src remote/remote_client_bodies.h
+	$(MAKE) -C $(abs_top_builddir)/src remote/remote_client_bodies.h
 $(srcdir)/src/admin/admin_server_dispatch_stubs.h: $(srcdir)/src/admin/admin_protocol.x
-	$(MAKE) -C src admin/admin_server_dispatch_stubs.h
+	$(MAKE) -C $(abs_top_builddir)/src admin/admin_server_dispatch_stubs.h
 $(srcdir)/src/admin/admin_client.h: $(srcdir)/src/admin/admin_protocol.x
-	$(MAKE) -C src admin/admin_client.h
+	$(MAKE) -C $(abs_top_builddir)/src admin/admin_client.h
 
 # List all syntax-check exemptions:
 exclude_file_name_regexp--sc_avoid_strcase = ^tools/vsh\.h$$
@@ -1206,13 +1207,13 @@ exclude_file_name_regexp--sc_bindtextdomain = .*
 exclude_file_name_regexp--sc_gettext_init = ^((tests|examples)/|tools/virt-login-shell.c)
 
 exclude_file_name_regexp--sc_copyright_format = \
-	^cfg\.mk$$
+	^build-aux/cfg\.mk$$
 
 exclude_file_name_regexp--sc_copyright_usage = \
-  ^COPYING(|\.LESSER)$$
+  ^COPYING(|\.LESSER)|build-aux/maint.mk$$
 
 exclude_file_name_regexp--sc_flags_usage = \
-  ^(cfg\.mk|docs/|src/util/virnetdevtap\.c$$|tests/((vir(cgroup|pci|test|usb)|nss|qemuxml2argv|qemusecurity)mock|virfilewrapper)\.c$$)
+  ^(build-aux/cfg\.mk|docs/|src/util/virnetdevtap\.c$$|tests/((vir(cgroup|pci|test|usb)|nss|qemuxml2argv|qemusecurity)mock|virfilewrapper)\.c$$)
 
 exclude_file_name_regexp--sc_libvirt_unmarked_diagnostics = \
   ^(src/rpc/gendispatch\.pl$$|tests/)
@@ -1220,16 +1221,22 @@ exclude_file_name_regexp--sc_libvirt_unmarked_diagnostics = \
 exclude_file_name_regexp--sc_po_check = ^(docs/|src/rpc/gendispatch\.pl$$)
 
 exclude_file_name_regexp--sc_prohibit_VIR_ERR_NO_MEMORY = \
-  ^(cfg\.mk|include/libvirt/virterror\.h|src/remote/remote_daemon_dispatch\.c|src/util/virerror\.c|docs/internals/oomtesting\.html\.in)$$
+  ^(build-aux/cfg\.mk|include/libvirt/virterror\.h|src/remote/remote_daemon_dispatch\.c|src/util/virerror\.c|docs/internals/oomtesting\.html\.in)$$
+
+exclude_file_name_regexp--sc_makefile_TAB_only_indentation = \
+  ^build-aux/maint\.mk$$
+
+exclude_file_name_regexp--sc_makefile_at_at_check = \
+  ^build-aux/maint\.mk$$
 
 exclude_file_name_regexp--sc_prohibit_PATH_MAX = \
-	^cfg\.mk$$
+	^build-aux/(cfg|maint)\.mk$$
 
 exclude_file_name_regexp--sc_prohibit_access_xok = \
-	^(cfg\.mk|src/util/virutil\.c)$$
+	^(build-aux/cfg\.mk|src/util/virutil\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_asprintf = \
-  ^(cfg\.mk|bootstrap.conf$$|examples/|src/util/virstring\.[ch]$$|tests/vircgroupmock\.c|tools/virt-login-shell\.c|tools/nss/libvirt_nss\.c$$)
+  ^(build-aux/cfg\.mk|bootstrap.conf$$|examples/|src/util/virstring\.[ch]$$|tests/vircgroupmock\.c|tools/virt-login-shell\.c|tools/nss/libvirt_nss\.c$$)
 
 exclude_file_name_regexp--sc_prohibit_strdup = \
   ^(docs/|examples/|src/util/virstring\.c|tests/vir(netserverclient|cgroup)mock.c|tests/commandhelper\.c|tools/nss/libvirt_nss_(leases|macs)\.c$$)
@@ -1259,13 +1266,13 @@ exclude_file_name_regexp--sc_prohibit_nonreentrant = \
   ^((po|tests|examples)/|docs/.*(py|js|html\.in)|run.in$$|tools/wireshark/util/genxdrstub\.pl|tools/virt-login-shell\.c$$)
 
 exclude_file_name_regexp--sc_prohibit_select = \
-	^cfg\.mk$$
+	^build-aux/cfg\.mk$$
 
 exclude_file_name_regexp--sc_prohibit_canonicalize_file_name = \
-  ^(cfg\.mk|tests/virfilemock\.c)$$
+  ^(build-aux/cfg\.mk|tests/virfilemock\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_raw_allocation = \
-  ^(docs/hacking\.html\.in|src/util/viralloc\.[ch]|examples/.*|tests/(securityselinuxhelper|(vircgroup|nss)mock|commandhelper)\.c|tools/wireshark/src/packet-libvirt\.c|tools/nss/libvirt_nss(_leases|_macs)?\.c)$$
+  ^(docs/hacking\.html\.in|src/util/viralloc\.[ch]|examples/.*|tests/(securityselinuxhelper|(vircgroup|nss)mock|commandhelper)\.c|tools/wireshark/src/packet-libvirt\.c|tools/nss/libvirt_nss(_leases|_macs)?\.c|build-aux/useless-if-before-free)$$
 
 exclude_file_name_regexp--sc_prohibit_readlink = \
   ^src/(util/virutil|lxc/lxc_container)\.c$$
@@ -1273,7 +1280,7 @@ exclude_file_name_regexp--sc_prohibit_readlink = \
 exclude_file_name_regexp--sc_prohibit_setuid = ^src/util/virutil\.c|tools/virt-login-shell\.c$$
 
 exclude_file_name_regexp--sc_prohibit_sprintf = \
-  ^(cfg\.mk|docs/hacking\.html\.in|.*\.stp|.*\.pl)$$
+  ^(build-aux/cfg\.mk|docs/hacking\.html\.in|.*\.stp|.*\.pl)$$
 
 exclude_file_name_regexp--sc_prohibit_strncpy = ^src/util/virstring\.c$$
 
@@ -1283,7 +1290,7 @@ exclude_file_name_regexp--sc_prohibit_xmlGetProp = ^src/util/virxml\.c$$
 
 exclude_file_name_regexp--sc_prohibit_xmlURI = ^src/util/viruri\.c$$
 
-exclude_file_name_regexp--sc_prohibit_return_as_function = \.py$$
+exclude_file_name_regexp--sc_prohibit_return_as_function = \.py|build-aux/useless-if-before-free$$
 
 exclude_file_name_regexp--sc_require_config_h = \
 	^(examples/|tools/virsh-edit\.c$$|tests/virmockstathelpers.c)
@@ -1297,7 +1304,7 @@ exclude_file_name_regexp--sc_trailing_blank = \
 exclude_file_name_regexp--sc_unmarked_diagnostics = \
   ^(docs/apibuild.py|tests/virt-aa-helper-test|docs/js/.*\.js)$$
 
-exclude_file_name_regexp--sc_size_of_brackets = cfg.mk
+exclude_file_name_regexp--sc_size_of_brackets = build-aux/cfg\.mk
 
 exclude_file_name_regexp--sc_correct_id_types = \
   (^src/locking/lock_protocol.x$$)
@@ -1311,7 +1318,7 @@ exclude_file_name_regexp--sc_prohibit_include_public_headers_brackets = \
   ^(tools/|examples/|include/libvirt/(virterror|libvirt(-(admin|qemu|lxc))?)\.h$$)
 
 exclude_file_name_regexp--sc_prohibit_int_ijk = \
-  ^(src/remote_protocol-structs|src/remote/remote_protocol\.x|cfg\.mk|include/libvirt/libvirt.+|src/admin_protocol-structs|src/admin/admin_protocol\.x)$$
+  ^(src/remote_protocol-structs|src/remote/remote_protocol\.x|build-aux/cfg\.mk|include/libvirt/libvirt.+|src/admin_protocol-structs|src/admin/admin_protocol\.x)$$
 
 exclude_file_name_regexp--sc_prohibit_unsigned_pid = \
   ^(include/libvirt/.*\.h|src/(qemu/qemu_driver\.c|driver-hypervisor\.h|libvirt(-[a-z]*)?\.c|.*\.x|util/vir(polkit|systemd)\.c)|tests/virpolkittest\.c|tools/virsh-domain\.c)$$
@@ -1329,16 +1336,16 @@ exclude_file_name_regexp--sc_prohibit_useless_translation = \
   ^tests/virpolkittest.c
 
 exclude_file_name_regexp--sc_prohibit_devname = \
-  ^(tools/virsh.pod|cfg.mk|docs/.*)$$
+  ^(tools/virsh.pod|build-aux/cfg\.mk|docs/.*)$$
 
 exclude_file_name_regexp--sc_prohibit_virXXXFree = \
-  ^(docs/|tests/|examples/|tools/|cfg.mk|src/test/test_driver.c|src/libvirt_public.syms|include/libvirt/libvirt-(domain|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).h|src/libvirt-(domain|qemu|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).c$$)
+  ^(docs/|tests/|examples/|tools/|build-aux/cfg\.mk|src/test/test_driver.c|src/libvirt_public.syms|include/libvirt/libvirt-(domain|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).h|src/libvirt-(domain|qemu|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).c$$)
 
 exclude_file_name_regexp--sc_prohibit_sysconf_pagesize = \
-  ^(cfg\.mk|src/util/virutil\.c)$$
+  ^(build-aux/cfg\.mk|src/util/virutil\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_pthread_create = \
-  ^(cfg\.mk|src/util/virthread\.c|tests/.*)$$
+  ^(build-aux/cfg\.mk|src/util/virthread\.c|tests/.*)$$
 
 exclude_file_name_regexp--sc_prohibit_always-defined_macros = \
   ^tests/virtestmock.c$$
@@ -1354,3 +1361,6 @@ exclude_file_name_regexp--sc_prohibit_dirent_d_type = \
 
 exclude_file_name_regexp--sc_prohibit_strcmp = \
   ^(tools/nss/libvirt_nss.*\.c|tools/virt-login-shell\.c)
+
+exclude_file_name_regexp--sc_prohibit_backslash_alignment = \
+  ^build-aux/maint\.mk$$
