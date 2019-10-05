@@ -2920,6 +2920,10 @@ static const vshCmdOptDef opts_blockresize[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("New size of the block device, as scaled integer (default KiB)")
     },
+    {.name = "shrink",
+     .type = VSH_OT_BOOL,
+     .help = N_("allow the resize to shrink the volume")
+    },
     {.name = NULL}
 };
 
@@ -2937,6 +2941,9 @@ cmdBlockresize(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptScaledInt(ctl, cmd, "size", &size, 1024, ULLONG_MAX) < 0)
         return false;
+
+    if (vshCommandOptBool(cmd, "shrink"))
+        flags |= VIR_STORAGE_VOL_RESIZE_SHRINK;
 
     /* Prefer the older interface of KiB.  */
     if (size % 1024 == 0)

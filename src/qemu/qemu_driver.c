@@ -11265,8 +11265,10 @@ qemuDomainBlockResize(virDomainPtr dom,
     char *device = NULL;
     const char *nodename = NULL;
     virDomainDiskDefPtr disk = NULL;
+    virDomainBlockInfo info;
 
-    virCheckFlags(VIR_DOMAIN_BLOCK_RESIZE_BYTES, -1);
+    virCheckFlags(VIR_DOMAIN_BLOCK_RESIZE_BYTES |
+                  VIR_STORAGE_VOL_RESIZE_SHRINK, -1);
 
     /* We prefer operating on bytes.  */
     if ((flags & VIR_DOMAIN_BLOCK_RESIZE_BYTES) == 0) {
@@ -11278,6 +11280,9 @@ qemuDomainBlockResize(virDomainPtr dom,
         }
         size *= 1024;
     }
+
+    if (virDomainGetBlockInfo(dom, path, &info, 0) < 0)
+        goto cleanup;
 
     if (!(vm = qemuDomainObjFromDomain(dom)))
         goto cleanup;
@@ -11296,6 +11301,14 @@ qemuDomainBlockResize(virDomainPtr dom,
     if (!(disk = virDomainDiskByName(vm->def, path, false))) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("disk '%s' was not found in the domain config"), path);
+        goto endjob;
+    }
+
+    if (size < info.capacity &&
+        !(flags & VIR_STORAGE_VOL_RESIZE_SHRINK)) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Can't shrink capacity below current "
+                         "capacity unless shrink flag explicitly specified"));
         goto endjob;
     }
 

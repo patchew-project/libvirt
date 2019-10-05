@@ -1027,7 +1027,7 @@ I<bandwidth> specifies copying bandwidth limit in MiB/s. For further information
 on the I<bandwidth> argument see the corresponding section for the B<blockjob>
 command.
 
-=item B<blockresize> I<domain> I<path> I<size>
+=item B<blockresize> I<domain> I<path> I<--size> I<--shrink>
 
 Resize a block device of domain while the domain is running, I<path>
 specifies the absolute path of the block device; it corresponds
@@ -1039,6 +1039,13 @@ I<size> is a scaled integer (see B<NOTES> above) which defaults to KiB
 (blocks of 1024 bytes) if there is no suffix.  You must use a suffix of
 "B" to get bytes (note that for historical reasons, this differs from
 B<vol-resize> which defaults to bytes without a suffix).
+
+Attempts to shrink the block device will fail unless I<--shrink> is present.
+The I<capacity> cannot be negative since the given capacity is the absolute
+size of the block device. Always exercise caution when shrinking a block device.
+B<Also note> that it is up to the driver to implement the check if shrinking
+should be allowed or not depending on if I<--shrink> is set. So far only the
+qemu-driver does this.
 
 =item B<console> I<domain> [I<devname>] [I<--safe>] [I<--force>]
 
