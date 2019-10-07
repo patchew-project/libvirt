@@ -858,6 +858,11 @@ static const vshCmdOptDef opts_attach_interface[] = {
      .type = VSH_OT_BOOL,
      .help = N_("libvirt will automatically detach/attach the device from/to host")
     },
+    {.name = "assigned",
+     .type = VSH_OT_BOOL,
+     .help = N_("hostdev virtual function will be assigned to the guest "
+                "(multifunction PCI device only)")
+    },
     {.name = NULL}
 };
 

@@ -4629,6 +4629,11 @@
     <attribute name="type">
       <value>pci</value>
     </attribute>
+    <optional>
+      <attribute name="assigned">
+        <ref name="virYesNo"/>
+      </attribute>
+    </optional>
     <interleave>
       <optional>
         <element name="driver">

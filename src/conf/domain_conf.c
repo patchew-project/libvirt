@@ -7755,7 +7755,6 @@ virDomainHostdevSubsysPCIDefParseXML(xmlNodePtr node,
             if (virXMLNodeNameEqual(cur, "address")) {
                 virPCIDeviceAddressPtr addr =
                     &def->source.subsys.u.pci.addr;
-
                 if (virPCIDeviceAddressParseXML(cur, addr) < 0)
                     goto out;
             } else if ((flags & VIR_DOMAIN_DEF_PARSE_STATUS) &&
@@ -8147,7 +8146,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
                                   virDomainHostdevDefPtr def,
                                   unsigned int flags)
 {
-    xmlNodePtr sourcenode;
+    xmlNodePtr sourcenode, addressnode;
     int backend;
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
@@ -8159,6 +8158,8 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     VIR_AUTOFREE(char *) backendStr = NULL;
     VIR_AUTOFREE(char *) model = NULL;
     VIR_AUTOFREE(char *) display = NULL;
+    VIR_AUTOFREE(char *) assigned = NULL;
+
 
     /* @managed can be read from the xml document - it is always an
      * attribute of the toplevel element, no matter what type of
@@ -8288,6 +8289,32 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         if (virDomainHostdevSubsysPCIDefParseXML(sourcenode, def, flags) < 0)
             return -1;
+
+        /* @assigned can only be set for multifunction PCI devices.
+         * In case the attribute is missing, always assume
+         * assigned = true.
+         */
+        def->assigned = true;
+
+        if ((assigned = virXMLPropString(node, "assigned")) != NULL) {
+            if (!virHostdevIsPCIMultifunctionDevice(def)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("'assigned' can only be set for multifunction "
+                                 "PCI devices"));
+                return -1;
+            }
+
+            if (STREQ(assigned, "no"))
+                def->assigned = false;
+
+            if ((addressnode = virXPathNode("./address", ctxt)) &&
+                !def->assigned) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("unable to set <address> element "
+                                 "for assign='no' hostdev"));
+                return -1;
+            }
+        }
 
         backend = VIR_DOMAIN_HOSTDEV_PCI_BACKEND_DEFAULT;
         if ((backendStr = virXPathString("string(./driver/@name)", ctxt)) &&
@@ -27253,6 +27280,11 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
         virBufferAsprintf(buf, " managed='%s'",
                           def->managed ? "yes" : "no");
+
+        if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
+            virHostdevIsPCIMultifunctionDevice(def))
+            virBufferAsprintf(buf, " assigned='%s'",
+                              def->assigned ? "yes" : "no");
 
         if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
             scsisrc->sgio)
