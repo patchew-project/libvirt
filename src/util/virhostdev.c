@@ -56,6 +56,13 @@ struct virHostdevIsPCINodeDeviceUsedData {
     bool usesVFIO;
 };
 
+struct virHostdevIsAllIOMMUGroupUsedData {
+    virPCIDeviceListPtr pcidevs;
+    const char *domainName;
+    const char *deviceName;
+};
+
+
 /* This module makes heavy use of bookkeeping lists contained inside a
  * virHostdevManager instance to keep track of the devices' status. To make
  * it easy to spot potential ownership errors when moving devices from one
@@ -112,6 +119,26 @@ static int virHostdevIsPCINodeDeviceUsed(virPCIDeviceAddressPtr devAddr, void *o
     ret = 0;
  cleanup:
     return ret;
+}
+
+static int virHostdevIsAllIOMMUGroupUsed(virPCIDeviceAddressPtr devAddr, void *opaque)
+{
+    struct virHostdevIsAllIOMMUGroupUsedData *helperData = opaque;
+    virPCIDevicePtr actual;
+
+    actual = virPCIDeviceListFindByIDs(helperData->pcidevs,
+                                       devAddr->domain, devAddr->bus,
+                                       devAddr->slot, devAddr->function);
+    if (actual) {
+        return 0;
+    } else {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("All devices of the same IOMMU group as the "
+                         "multifunction PCI device %s must belong to "
+                         "domain %s"),
+                         helperData->deviceName, helperData->domainName);
+        return -1;
+    }
 }
 
 static int virHostdevManagerOnceInit(void)
@@ -714,15 +741,19 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
                             unsigned int flags)
 {
     VIR_AUTOUNREF(virPCIDeviceListPtr) pcidevs = NULL;
+    VIR_AUTOFREE(unsigned int *) searchedIOMMUs = NULL;
     int last_processed_hostdev_vf = -1;
-    size_t i;
-    int ret = -1;
+    size_t i, j;
+    int ret = -1, nSearchedIOMMUs = 0;
     virPCIDeviceAddressPtr devAddr = NULL;
 
     if (!nhostdevs)
         return 0;
 
     if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs)))
+        return -1;
+
+    if (VIR_ALLOC_N(searchedIOMMUs, virPCIDeviceListCount(pcidevs)))
         return -1;
 
     virObjectLock(mgr->activePCIHostdevs);
@@ -766,6 +797,35 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
         devAddr = virPCIDeviceGetAddress(pci);
         if (virHostdevIsPCINodeDeviceUsed(devAddr, &data))
             goto cleanup;
+
+        /* Multifunction PCI devices are more restrict than regular
+         * VFIO devices, since it requires *all* devices from the same
+         * IOMMU to belong to the same domain - even if not all of
+         * them are assigned to the guest.
+         */
+        if (virPCIDeviceIsMultifunction(pci)) {
+            struct virHostdevIsAllIOMMUGroupUsedData helper = {
+                pcidevs, dom_name, virPCIDeviceGetName(pci)};
+            int devIOMMUGroup = virPCIDeviceAddressGetIOMMUGroupNum(devAddr);
+            bool alreadySearched = false;
+
+            for (j = 0; j < nSearchedIOMMUs; j++) {
+                if (devIOMMUGroup == searchedIOMMUs[j]) {
+                    alreadySearched = true;
+                    break;
+                }
+            }
+
+            if (alreadySearched)
+                continue;
+
+            if (virPCIDeviceAddressIOMMUGroupIterate(
+                    devAddr, virHostdevIsAllIOMMUGroupUsed, &helper) < 0)
+                goto cleanup;
+
+            searchedIOMMUs[nSearchedIOMMUs++] = devIOMMUGroup;
+            continue;
+        }
 
         /* VFIO devices belonging to same IOMMU group can't be
          * shared across guests. Check if that's the case. */
