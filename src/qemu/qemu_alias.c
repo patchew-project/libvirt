@@ -602,6 +602,14 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nhostdevs; i++) {
+        /* do not assign alias for PCI multifunction hostdevs that
+         * will not be assigned to the guest.
+         */
+
+        if (virHostdevIsPCIMultifunctionDevice(def->hostdevs[i]) &&
+            !def->hostdevs[i]->assigned)
+            continue;
+
         /* we can't start assigning at 0, since netdevs may have used
          * up some hostdevN entries already. Also if the HostdevDef is
          * linked to a NetDef, they will share an info and the alias

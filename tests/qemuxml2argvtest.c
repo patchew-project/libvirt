@@ -1357,6 +1357,10 @@ mymain(void)
             QEMU_CAPS_KVM,
             QEMU_CAPS_DEVICE_VFIO_PCI);
 
+    DO_TEST("hostdev-pci-multifunction-partial",
+            QEMU_CAPS_KVM,
+            QEMU_CAPS_DEVICE_VFIO_PCI);
+
     DO_TEST("serial-file-log",
             QEMU_CAPS_CHARDEV_FILE_APPEND,
             QEMU_CAPS_DEVICE_ISA_SERIAL,

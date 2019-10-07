@@ -2319,6 +2319,13 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             continue;
         }
 
+        /* Do not assign an address to a hostdev that will not
+         * be assigned to the guest.
+         */
+        if (virHostdevIsPCIMultifunctionDevice(def->hostdevs[i]) &&
+            !def->hostdevs[i]->assigned)
+            continue;
+
         if (qemuDomainPCIAddressReserveNextAddr(addrs,
                                                 def->hostdevs[i]->info) < 0)
             goto error;

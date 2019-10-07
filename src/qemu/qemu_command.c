@@ -5490,6 +5490,11 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                 }
             }
 
+            /* Ignore 'noAssign' devices
+             */
+            if (!hostdev->assigned)
+                continue;
+
             unsigned int bootIndex = hostdev->info->bootIndex;
 
             /* bootNet will be non-0 if boot order was set and no other
