@@ -20,7 +20,6 @@
 #include <config.h>
 
 #include <fnmatch.h>
-#include <getopt.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -115,25 +114,6 @@ static int virLoginShellGetShellArgv(virConfPtr conf,
 
 static char *progname;
 
-/*
- * Print usage
- */
-static void
-usage(void)
-{
-    fprintf(stdout,
-            _("\n"
-              "Usage:\n"
-              "  %s [option]\n\n"
-              "Options:\n"
-              "  -h | --help            Display program help\n"
-              "  -V | --version         Display program version\n"
-              "  -c CMD                 Run CMD via shell\n"
-              "\n"
-              "libvirt login shell\n"),
-            progname);
-    return;
-}
 
 /* Display version information. */
 static void
@@ -170,8 +150,6 @@ main(int argc, char **argv)
     virDomainPtr dom = NULL;
     virConnectPtr conn = NULL;
     char *homedir = NULL;
-    int arg;
-    int longindex = -1;
     int ngroups;
     gid_t *groups = NULL;
     ssize_t nfdlist = 0;
@@ -183,12 +161,19 @@ main(int argc, char **argv)
     char *term = NULL;
     virErrorPtr saved_err = NULL;
     bool autoshell = false;
-
-    struct option opt[] = {
-        {"help", no_argument, NULL, 'h'},
-        {"version", optional_argument, NULL, 'V'},
-        {NULL, 0, NULL, 0}
+    bool version = false;
+    GOptionEntry opt[] = {
+        { "version", 'V', 0,
+          G_OPTION_ARG_NONE, &version,
+          _("Print version"), NULL },
+        { "command", 'c', 0,
+          G_OPTION_ARG_STRING, &cmdstr,
+          _("Run CMD inside container"), "CMD"},
+        { NULL, 0, 0, 0, NULL, NULL, NULL },
     };
+    g_autoptr(GOptionContext) optctx = NULL;
+    g_autoptr(GError) error = NULL;
+
     if (virInitialize() < 0) {
         fprintf(stderr, _("Failed to initialize libvirt error handling"));
         return EXIT_CANCELED;
@@ -211,44 +196,35 @@ main(int argc, char **argv)
         return ret;
     }
 
-    while ((arg = getopt_long(argc, argv, "hVc:", opt, &longindex)) != -1) {
-        switch (arg) {
-        case 'h':
-            usage();
-            exit(EXIT_SUCCESS);
+    optctx = g_option_context_new(_("UID GID - libvirt login shell"));
+    g_option_context_add_main_entries(optctx, opt, PACKAGE);
 
-        case 'V':
-            show_version();
-            exit(EXIT_SUCCESS);
-
-        case 'c':
-            cmdstr = optarg;
-            break;
-
-        case '?':
-        default:
-            usage();
-            exit(EXIT_CANCELED);
-        }
+    if (!g_option_context_parse(optctx, &argc, &argv, &error)) {
+        fprintf(stderr, _("%s: option parsing failed: %s\n"), argv[0], error->message);
+        return ret;
     }
 
-    if (optind != (argc - 2)) {
+    if (version) {
+        show_version();
+        exit(EXIT_SUCCESS);
+    }
+
+    if (argc != 3) {
         virReportSystemError(EINVAL, _("%s expects UID and GID parameters"), progname);
         goto cleanup;
     }
 
-    if (virStrToLong_ull(argv[optind], NULL, 10, &uidval) < 0 ||
+    if (virStrToLong_ull(argv[1], NULL, 10, &uidval) < 0 ||
         ((uid_t)uidval) != uidval) {
         virReportSystemError(EINVAL, _("%s cannot parse UID '%s'"),
-                             progname, argv[optind]);
+                             progname, argv[1]);
         goto cleanup;
     }
 
-    optind++;
-    if (virStrToLong_ull(argv[optind], NULL, 10, &gidval) < 0 ||
+    if (virStrToLong_ull(argv[2], NULL, 10, &gidval) < 0 ||
         ((gid_t)gidval) != gidval) {
         virReportSystemError(EINVAL, _("%s cannot parse GID '%s'"),
-                             progname, argv[optind]);
+                             progname, argv[2]);
         goto cleanup;
     }
 
