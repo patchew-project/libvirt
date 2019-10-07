@@ -24,7 +24,6 @@
 #ifdef HAVE_LIBINTL_H
 # include <libintl.h>
 #endif /* HAVE_LIBINTL_H */
-#include <getopt.h>
 
 #include "internal.h"
 #include "virgettext.h"
@@ -41,80 +40,63 @@
 #endif
 
 static void
-show_help(FILE *out, const char *argv0)
-{
-    fprintf(out,
-            _("\n"
-              "syntax: %s [OPTIONS] [HVTYPE]\n"
-              "\n"
-              " Hypervisor types:\n"
-              "\n"
-              "   - qemu\n"
-              "   - lxc\n"
-              "   - bhyve\n"
-              "\n"
-              " Options:\n"
-              "   -h, --help     Display command line help\n"
-              "   -v, --version  Display command version\n"
-              "   -q, --quiet    Don't display progress information\n"
-              "\n"),
-            argv0);
-}
-
-static void
 show_version(FILE *out, const char *argv0)
 {
     fprintf(out, "version: %s %s\n", argv0, VERSION);
 }
 
-static const struct option argOptions[] = {
-    { "help", 0, NULL, 'h', },
-    { "version", 0, NULL, 'v', },
-    { "quiet", 0, NULL, 'q', },
-    { NULL, 0, NULL, '\0', }
-};
 
 int
 main(int argc, char **argv)
 {
     const char *hvname = NULL;
-    int c;
     int ret = EXIT_SUCCESS;
     bool quiet = false;
     bool usedHvname = false;
+    bool version = false;
+    GOptionEntry opt[] = {
+        { "version", 'v', 0,
+          G_OPTION_ARG_NONE, &version,
+          _("Print version"), NULL },
+        { "quiet", 'q', 0,
+          G_OPTION_ARG_NONE, &quiet,
+          _("Don't display progress information"), NULL },
+        { NULL, 0, 0, 0, NULL, NULL, NULL },
+    };
+    g_autoptr(GOptionContext) optctx = NULL;
+    g_autoptr(GError) error = NULL;
 
     if (virGettextInitialize() < 0)
         return EXIT_FAILURE;
 
-    while ((c = getopt_long(argc, argv, "hvq", argOptions, NULL)) != -1) {
-        switch (c) {
-        case 'v':
-            show_version(stdout, argv[0]);
-            return EXIT_SUCCESS;
+    optctx = g_option_context_new(_("HV-TYPE - validate host OS suppport"));
+    g_option_context_add_main_entries(optctx, opt, PACKAGE);
+    g_option_context_set_description(optctx,
+                                     "Hypervisor types:\n"
+                                     "\n"
+                                     "   - qemu\n"
+                                     "   - lxc\n"
+                                     "   - bhyve\n");
 
-        case 'h':
-            show_help(stdout, argv[0]);
-            return EXIT_SUCCESS;
-
-        case 'q':
-            quiet = true;
-            break;
-
-        case '?':
-        default:
-            show_help(stderr, argv[0]);
-            return EXIT_FAILURE;
-        }
+    if (!g_option_context_parse(optctx, &argc, &argv, &error)) {
+        fprintf(stderr, _("%s: option parsing failed: %s\n"), argv[0], error->message);
+        return ret;
     }
 
-    if ((argc-optind) > 2) {
+    if (version) {
+        show_version(stdout, argv[0]);
+        return EXIT_SUCCESS;
+    }
+
+    if (argc > 2) {
         fprintf(stderr, _("%s: too many command line arguments\n"), argv[0]);
-        show_help(stderr, argv[0]);
+        g_autofree char *help = g_option_context_get_help(optctx, TRUE, NULL);
+        fprintf(stderr, "%s", help);
         return EXIT_FAILURE;
     }
 
-    if (argc > 1)
-        hvname = argv[optind];
+    if (argc == 2)
+        hvname = argv[1];
 
     virHostMsgSetQuiet(quiet);
 
