@@ -21,8 +21,6 @@
 #include <config.h>
 #include "virt-admin.h"
 
-#include <getopt.h>
-
 #if WITH_READLINE
 # include <readline/readline.h>
 # include <readline/history.h>
@@ -1212,44 +1210,34 @@ vshAdmDeinit(vshControl *ctl)
 /*
  * Print usage
  */
-static void
-vshAdmUsage(void)
+static char *
+vshAdmBuildDescription(void)
 {
     const vshCmdGrp *grp;
     const vshCmdDef *cmd;
-
-    fprintf(stdout, _("\n%s [options]... [<command_string>]"
-                      "\n%s [options]... <command> [args...]\n\n"
-                      "  options:\n"
-                      "    -c | --connect=URI      daemon admin connection URI\n"
-                      "    -d | --debug=NUM        debug level [0-4]\n"
-                      "    -h | --help             this help\n"
-                      "    -l | --log=FILE         output logging to file\n"
-                      "    -q | --quiet            quiet mode\n"
-                      "    -v                      short version\n"
-                      "    -V                      long version\n"
-                      "         --version[=TYPE]   version, TYPE is short or long (default short)\n"
-                      "  commands (non interactive mode):\n\n"), progname,
-            progname);
+    GString *str = g_string_new("Commands (non interactive mode):\n\n");
 
     for (grp = cmdGroups; grp->name; grp++) {
-        fprintf(stdout, _(" %s (help keyword '%s')\n"),
-                grp->name, grp->keyword);
+        g_string_append_printf(str,
+                               _("  %s (help keyword '%s')\n"),
+                               grp->name, grp->keyword);
         for (cmd = grp->commands; cmd->name; cmd++) {
             if (cmd->flags & VSH_CMD_FLAG_ALIAS)
                 continue;
-            fprintf(stdout,
-                    "    %-30s %s\n", cmd->name,
-                    _(vshCmddefGetInfo(cmd, "help")));
+            g_string_append_printf(str,
+                                   "    %-30s %s\n",
+                                   cmd->name,
+                                   _(vshCmddefGetInfo(cmd, "help")));
         }
-        fprintf(stdout, "\n");
+        g_string_append_printf(str, "\n");
     }
 
-    fprintf(stdout, "%s",
-            _("\n  (specify help <group> for details about the commands in the group)\n"));
-    fprintf(stdout, "%s",
-            _("\n  (specify help <command> for details about the command)\n\n"));
-    return;
+    g_string_append_printf(str,
+                           _("Specify help <group> for details about the commands in the group)\n"));
+    g_string_append_printf(str,
+                           _("Specify help <command> for details about the command)\n"));
+
+    return g_string_free(str, FALSE);
 }
 
 /*
@@ -1275,102 +1263,106 @@ vshAdmShowVersion(vshControl *ctl ATTRIBUTE_UNUSED)
     vshPrint(ctl, "\n");
 }
 
+static gboolean
+vshAdmVersion(const gchar *option_name G_GNUC_UNUSED,
+              const gchar *value,
+              gpointer data,
+              GError **error G_GNUC_UNUSED)
+{
+    vshControl *ctl = data;
+
+    if (STREQ(option_name, "-V") || STREQ_NULLABLE(value, "long"))
+        vshAdmShowVersion(ctl);
+    else
+        puts(VERSION);
+
+    exit(EXIT_SUCCESS);
+}
+
+/*
+ * argv[]:  virsh [options] [command]
+ *
+ */
 static bool
 vshAdmParseArgv(vshControl *ctl, int argc, char **argv)
 {
-    int arg, debug;
-    size_t i;
-    int longindex = -1;
-    struct option opt[] = {
-        {"connect", required_argument, NULL, 'c'},
-        {"debug", required_argument, NULL, 'd'},
-        {"help", no_argument, NULL, 'h'},
-        {"log", required_argument, NULL, 'l'},
-        {"quiet", no_argument, NULL, 'q'},
-        {"version", optional_argument, NULL, 'v'},
-        {NULL, 0, NULL, 0}
+    int debug = 0;
+    char *logfile = NULL;
+    GOptionEntry opt[] = {
+        { "connect", 'c', 0,
+          G_OPTION_ARG_STRING, &ctl->connname,
+          _("hypervisor connection URI"), "URI" },
+        { "debug", 'd', 0,
+          G_OPTION_ARG_INT, &debug,
+          _("debug level [0-4]\n"), "LEVEL" },
+        { "log", 'l', 0,
+          G_OPTION_ARG_STRING, &logfile,
+          _("output logging to file"), "FILENAME" },
+        { "quiet", 'q', 0,
+          G_OPTION_ARG_NONE, &ctl->quiet,
+          _("quite mode"), NULL },
+        { "version", 'v', G_OPTION_FLAG_OPTIONAL_ARG,
+          G_OPTION_ARG_CALLBACK, vshAdmVersion,
+          _("print short version"), "[short]" },
+        { "version", 'V', G_OPTION_FLAG_OPTIONAL_ARG,
+          G_OPTION_ARG_CALLBACK, vshAdmVersion,
+          _("print long version"), "long" },
+        { NULL, 0, 0, 0, NULL, NULL, NULL },
     };
+    g_autoptr(GOptionContext) optctx = NULL;
+    GOptionGroup *optgrp;
+    g_autoptr(GError) error = NULL;
 
-    /* Standard (non-command) options. The leading + ensures that no
-     * argument reordering takes place, so that command options are
-     * not confused with top-level virt-admin options. */
-    while ((arg = getopt_long(argc, argv, "+:c:d:hl:qvV", opt, &longindex)) != -1) {
-        switch (arg) {
-        case 'c':
-            VIR_FREE(ctl->connname);
-            ctl->connname = vshStrdup(ctl, optarg);
-            break;
-        case 'd':
-            if (virStrToLong_i(optarg, NULL, 10, &debug) < 0) {
-                vshError(ctl, _("option %s takes a numeric argument"),
-                         longindex == -1 ? "-d" : "--debug");
-                exit(EXIT_FAILURE);
-            }
-            if (debug < VSH_ERR_DEBUG || debug > VSH_ERR_ERROR)
-                vshError(ctl, _("ignoring debug level %d out of range [%d-%d]"),
-                         debug, VSH_ERR_DEBUG, VSH_ERR_ERROR);
-            else
-                ctl->debug = debug;
-            break;
-        case 'h':
-            vshAdmUsage();
-            exit(EXIT_SUCCESS);
-            break;
-        case 'l':
-            vshCloseLogFile(ctl);
-            ctl->logfile = vshStrdup(ctl, optarg);
-            vshOpenLogFile(ctl);
-            break;
-        case 'q':
-            ctl->quiet = true;
-            break;
-        case 'v':
-            if (STRNEQ_NULLABLE(optarg, "long")) {
-                puts(VERSION);
-                exit(EXIT_SUCCESS);
-            }
-            ATTRIBUTE_FALLTHROUGH;
-        case 'V':
-            vshAdmShowVersion(ctl);
-            exit(EXIT_SUCCESS);
-        case ':':
-            for (i = 0; opt[i].name != NULL; i++) {
-                if (opt[i].val == optopt)
-                    break;
-            }
-            if (opt[i].name)
-                vshError(ctl, _("option '-%c'/'--%s' requires an argument"),
-                         optopt, opt[i].name);
-            else
-                vshError(ctl, _("option '-%c' requires an argument"), optopt);
-            exit(EXIT_FAILURE);
-        case '?':
-            if (optopt)
-                vshError(ctl, _("unsupported option '-%c'. See --help."), optopt);
-            else
-                vshError(ctl, _("unsupported option '%s'. See --help."), argv[optind - 1]);
-            exit(EXIT_FAILURE);
-        default:
-            vshError(ctl, _("unknown option"));
-            exit(EXIT_FAILURE);
-        }
-        longindex = -1;
+    optctx = g_option_context_new(_("[COMMAND [OPTION…] - libvirt admin shell"));
+    optgrp = g_option_group_new(NULL, NULL, NULL, ctl, NULL);
+    g_option_group_set_translation_domain(optgrp, PACKAGE);
+    g_option_group_add_entries(optgrp, opt);
+    g_option_context_set_main_group(optctx, optgrp);
+    g_option_context_set_strict_posix(optctx, true);
+    g_option_context_set_description(optctx,
+                                     vshAdmBuildDescription());
+
+    if (!g_option_context_parse(optctx, &argc, &argv, &error)) {
+        vshError(ctl, _("option parsing failed: %s\n"), error->message);
+        exit(EXIT_FAILURE);
     }
 
-    if (argc == optind) {
+    /* GOptionContext doesn't support -- explicitly, but
+     * we told it to stop at first unknown option, or
+     * first non-option, so we'll see '--' and can discard it
+     */
+    if (argc >= 2 && STREQ(argv[1], "--")) {
+        argc--;
+        argv++;
+    }
+
+    if (debug < VSH_ERR_DEBUG || debug > VSH_ERR_ERROR) {
+        vshError(ctl, _("debug level %d out of range [%d-%d]"),
+                 debug, VSH_ERR_DEBUG, VSH_ERR_ERROR);
+        exit(EXIT_FAILURE);
+    }
+
+    if (logfile) {
+        vshCloseLogFile(ctl);
+        ctl->logfile = logfile;
+        vshOpenLogFile(ctl);
+    }
+
+    if (argc == 1) {
         ctl->imode = true;
     } else {
         /* parse command */
         ctl->imode = false;
-        if (argc - optind == 1) {
-            vshDebug(ctl, VSH_ERR_INFO, "commands: \"%s\"\n", argv[optind]);
-            return vshCommandStringParse(ctl, argv[optind], NULL);
+        if (argc == 2) {
+            vshDebug(ctl, VSH_ERR_INFO, "commands: \"%s\"\n", argv[1]);
+            return vshCommandStringParse(ctl, argv[1], NULL);
         } else {
-            return vshCommandArgvParse(ctl, argc - optind, argv + optind);
+            return vshCommandArgvParse(ctl, argc - 1, argv + 1);
         }
     }
     return true;
 }
+
 
 static const vshCmdDef vshAdmCmds[] = {
     VSH_CMD_CD,
