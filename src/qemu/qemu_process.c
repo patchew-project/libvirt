@@ -8051,7 +8051,7 @@ qemuProcessReconnect(void *opaque)
     bool tryMonReconn = false;
 
     virIdentitySetCurrent(data->identity);
-    virObjectUnref(data->identity);
+    g_clear_object(&data->identity);
     VIR_FREE(data);
 
     qemuDomainObjRestoreJob(obj, &oldjob);
@@ -8364,7 +8364,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
 
         virDomainObjEndAPI(&obj);
         virNWFilterUnlockFilterUpdates();
-        virObjectUnref(data->identity);
+        g_clear_object(&data->identity);
         VIR_FREE(data);
         return -1;
     }
