@@ -190,6 +190,9 @@ virHostdevIsSCSIDevice(virDomainHostdevDefPtr hostdev)
 bool
 virHostdevIsMdevDevice(virDomainHostdevDefPtr hostdev)
     ATTRIBUTE_NONNULL(1);
+bool
+virHostdevIsPCIMultifunctionDevice(virDomainHostdevDefPtr hostdev)
+    ATTRIBUTE_NONNULL(1);
 
 /* functions used by NodeDevDetach/Reattach/Reset */
 int virHostdevPCINodeDeviceDetach(virHostdevManagerPtr mgr,

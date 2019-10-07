@@ -264,6 +264,8 @@ int virPCIDeviceGetLinkCapSta(virPCIDevicePtr dev,
 
 int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType);
 
+bool virPCIDeviceIsMultifunction(virPCIDevicePtr dev);
+
 void virPCIEDeviceInfoFree(virPCIEDeviceInfoPtr dev);
 
 ssize_t virPCIGetMdevTypes(const char *sysfspath,

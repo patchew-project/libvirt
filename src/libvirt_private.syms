@@ -2106,6 +2106,7 @@ virHostCPUStatsAssign;
 # util/virhostdev.h
 virHostdevFindUSBDevice;
 virHostdevIsMdevDevice;
+virHostdevIsPCIMultifunctionDevice;
 virHostdevIsSCSIDevice;
 virHostdevManagerGetDefault;
 virHostdevPCINodeDeviceDetach;
@@ -2684,6 +2685,7 @@ virPCIDeviceGetUnbindFromStub;
 virPCIDeviceGetUsedBy;
 virPCIDeviceHasPCIExpressLink;
 virPCIDeviceIsAssignable;
+virPCIDeviceIsMultifunction;
 virPCIDeviceIsPCIExpress;
 virPCIDeviceListAdd;
 virPCIDeviceListAddCopy;

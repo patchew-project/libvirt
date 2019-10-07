@@ -2863,6 +2863,21 @@ int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType)
     return 0;
 }
 
+bool
+virPCIDeviceIsMultifunction(virPCIDevicePtr dev)
+{
+   int fd;
+   uint8_t type;
+
+   if ((fd = virPCIDeviceConfigOpen(dev)) < 0)
+       return -1;
+
+   type = virPCIDeviceRead8(dev, fd, PCI_HEADER_TYPE);
+
+   virPCIDeviceConfigClose(dev, fd);
+
+   return type & PCI_HEADER_TYPE_MULTI;
+}
 
 void
 virPCIEDeviceInfoFree(virPCIEDeviceInfoPtr dev)
