@@ -274,9 +274,8 @@
         <span class="since">Since 0.10.2 (QEMU only)</span> there is
         another attribute, <code>rebootTimeout</code> that controls
         whether and after how long the guest should start booting
-        again in case the boot fails (according to BIOS). The value is
-        in milliseconds with maximum of <code>65535</code> and special
-        value <code>-1</code> disables the reboot.
+        again in case the boot fails (according to BIOS). The value is in
+        milliseconds from <code>0</code> to <code>65535</code>.
       </dd>
     </dl>
 
