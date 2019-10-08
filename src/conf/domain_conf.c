@@ -18090,10 +18090,12 @@ virDomainDefParseBootXML(xmlXPathContextPtr ctxt,
             /* that was really just for the check if it is there */
 
             if (virStrToLong_i(tmp, NULL, 0, &def->os.bios.rt_delay) < 0 ||
-                def->os.bios.rt_delay < -1 || def->os.bios.rt_delay > 65535) {
+                def->os.bios.rt_delay < 0 || def->os.bios.rt_delay > 65535) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("invalid value for rebootTimeout, "
-                                 "must be in range [-1,65535]"));
+                                 "must be in range [0,65535]. "
+                                 "To disable reboot, "
+                                 "just remove this attribute."));
                 return -1;
             }
             def->os.bios.rt_set = true;
