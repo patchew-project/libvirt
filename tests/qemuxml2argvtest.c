@@ -95,6 +95,30 @@ static virSecretDriver fakeSecretDriver = {
     .secretUndefine = NULL,
 };
 
+static void
+testSetHostSysinfo(virSysinfoDefPtr sysinfo)
+{
+    if (!sysinfo) {
+        virSysinfoDefFree(driver.hostsysinfo);
+        return;
+    }
+
+    driver.hostsysinfo = sysinfo;
+}
+
+static virSysinfoDefPtr
+fakeVirSysinfoReadPPC(void)
+{
+    virSysinfoDefPtr sysinfo = NULL;
+
+    if (VIR_ALLOC(sysinfo) < 0 || VIR_ALLOC(sysinfo->system) < 0) {
+        virSysinfoDefFree(sysinfo);
+        return NULL;
+    }
+
+    ignore_value(VIR_STRDUP(sysinfo->system->serial, "fake_model"));
+    return sysinfo;
+}
 
 # define STORAGE_POOL_XML_PATH "storagepoolxml2xmlout/"
 static const unsigned char fakeUUID[VIR_UUID_BUFLEN] = "fakeuuid";
@@ -1955,12 +1979,16 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
 
+    testSetHostSysinfo(fakeVirSysinfoReadPPC());
     DO_TEST("pseries-features",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_MACHINE_PSERIES_CAP_HPT_MAX_PAGE_SIZE,
             QEMU_CAPS_MACHINE_PSERIES_CAP_HTM,
             QEMU_CAPS_MACHINE_PSERIES_CAP_NESTED_HV,
-            QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+            QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT,
+            QEMU_CAPS_MACHINE_PSERIES_HOST_MODEL);
+    testSetHostSysinfo(NULL);
+
     DO_TEST_FAILURE("pseries-features",
                     QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
     DO_TEST_PARSE_ERROR("pseries-features-invalid-machine", NONE);

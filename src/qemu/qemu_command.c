@@ -7110,7 +7110,6 @@ qemuAppendLoadparmMachineParm(virBuffer *buf,
     }
 }
 
-
 static int
 qemuBuildNameCommandLine(virCommandPtr cmd,
                          virQEMUDriverConfigPtr cfg,
@@ -7140,14 +7139,16 @@ qemuBuildNameCommandLine(virCommandPtr cmd,
 
 static int
 qemuBuildMachineCommandLine(virCommandPtr cmd,
-                            virQEMUDriverConfigPtr cfg,
+                            virQEMUDriverPtr driver,
                             const virDomainDef *def,
                             virQEMUCapsPtr qemuCaps)
 {
     virTristateSwitch vmport = def->features[VIR_DOMAIN_FEATURE_VMPORT];
     virTristateSwitch smm = def->features[VIR_DOMAIN_FEATURE_SMM];
     virCPUDefPtr cpu = def->cpu;
+    virSysinfoDefPtr hostinfo = driver->hostsysinfo;
     VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
+    VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     size_t i;
 
     /* This should *never* be NULL, since we always provide
@@ -7407,6 +7408,24 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
         }
 
         virBufferAsprintf(&buf, ",cap-nested-hv=%s", str);
+    }
+
+    if (def->features[VIR_DOMAIN_FEATURE_HOST_MODEL_PASSTHROUGH] == VIR_TRISTATE_SWITCH_ON) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_HOST_MODEL)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Host model passthrough is not supported by "
+                             "this QEMU binary"));
+            return -1;
+        }
+
+        if (!hostinfo || !hostinfo->system) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Host model information is not available"));
+            return -1;
+        }
+
+        virBufferAddLit(&buf, ",host-model=");
+        virQEMUBuildBufferEscapeComma(&buf, hostinfo->system->serial);
     }
 
     if (cpu && cpu->model &&
@@ -10309,7 +10328,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (enableFips)
         virCommandAddArg(cmd, "-enable-fips");
 
-    if (qemuBuildMachineCommandLine(cmd, cfg, def, qemuCaps) < 0)
+    if (qemuBuildMachineCommandLine(cmd, driver, def, qemuCaps) < 0)
         return NULL;
 
     qemuBuildTSEGCommandLine(cmd, def);

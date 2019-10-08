@@ -2357,6 +2357,15 @@
           will not be ignored.
           <span class="since">Since 5.1.0</span> (bhyve only)
       </dd>
+      <dt><code>host-model-passthrough</code></dt>
+      <dd>Configure the passthrough of the host's model string to
+          pSeries guests. The host model will be present in the guest at
+          /proc/device-tree/host-model.
+          Possible values for the <code>state</code> attribute are
+          <code>on</code> and <code>off</code>. If the attribute is
+          not defined, the default value (<code>off</code>) is assumed.
+          <span class="since">Since 5.8.0</span> (QEMU/KVM only)
+      </dd>
     </dl>
 
     <h3><a id="elementsTime">Time keeping</a></h3>

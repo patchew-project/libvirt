@@ -5118,6 +5118,11 @@
             </element>
           </optional>
           <optional>
+            <element name="host-model-passthrough">
+              <ref name="featurestate"/>
+            </element>
+          </optional>
+          <optional>
             <ref name="msrs"/>
           </optional>
         </interleave>
