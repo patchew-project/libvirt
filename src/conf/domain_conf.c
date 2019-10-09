@@ -7559,24 +7559,6 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
 }
 
 static int
-virDomainParseLegacyDeviceAddress(char *devaddr,
-                                  virPCIDeviceAddressPtr pci)
-{
-    char *tmp;
-
-    /* expected format: <domain>:<bus>:<slot> */
-    if (/* domain */
-        virStrToLong_ui(devaddr, &tmp, 16, &pci->domain) < 0 || *tmp != ':' ||
-        /* bus */
-        virStrToLong_ui(tmp + 1, &tmp, 16, &pci->bus) < 0 || *tmp != ':' ||
-        /* slot */
-        virStrToLong_ui(tmp + 1, NULL, 16, &pci->slot) < 0)
-        return -1;
-
-    return 0;
-}
-
-static int
 virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
                                      virDomainHostdevDefPtr def)
 {
@@ -7758,19 +7740,7 @@ virDomainHostdevSubsysPCIDefParseXML(xmlNodePtr node,
 
                 if (virPCIDeviceAddressParseXML(cur, addr) < 0)
                     goto out;
-            } else if ((flags & VIR_DOMAIN_DEF_PARSE_STATUS) &&
-                       virXMLNodeNameEqual(cur, "state")) {
-                /* Legacy back-compat. Don't add any more attributes here */
-                VIR_AUTOFREE(char *) devaddr = virXMLPropString(cur, "devaddr");
-                if (devaddr &&
-                    virDomainParseLegacyDeviceAddress(devaddr,
-                                                      &def->info->addr.pci) < 0) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   _("Unable to parse devaddr parameter '%s'"),
-                                   devaddr);
-                    goto out;
-                }
-                def->info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+
             } else if ((flags & VIR_DOMAIN_DEF_PARSE_PCI_ORIG_STATES) &&
                        virXMLNodeNameEqual(cur, "origstates")) {
                 virDomainHostdevOrigStatesPtr states = &def->origstates;
@@ -9959,7 +9929,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) sgio = NULL;
     VIR_AUTOFREE(char *) target = NULL;
     VIR_AUTOFREE(char *) bus = NULL;
-    VIR_AUTOFREE(char *) devaddr = NULL;
     VIR_AUTOFREE(char *) serial = NULL;
     VIR_AUTOFREE(char *) startupPolicy = NULL;
     VIR_AUTOFREE(char *) tray = NULL;
@@ -10126,10 +10095,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             def->src->shared = true;
         } else if (virXMLNodeNameEqual(cur, "transient")) {
             def->transient = true;
-        } else if ((flags & VIR_DOMAIN_DEF_PARSE_STATUS) &&
-                   virXMLNodeNameEqual(cur, "state")) {
-            /* Legacy back-compat. Don't add any more attributes here */
-            devaddr = virXMLPropString(cur, "devaddr");
         } else if (!encryption &&
                    virXMLNodeNameEqual(cur, "encryption")) {
             /* If we've already parsed <source> and found an <encryption> child,
@@ -10314,19 +10279,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
-    if (devaddr) {
-        if (virDomainParseLegacyDeviceAddress(devaddr,
-                                              &def->info.addr.pci) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unable to parse devaddr parameter '%s'"),
-                           devaddr);
-            goto error;
-        }
-        def->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-    } else {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
-                                        flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT) < 0)
-            goto error;
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
+                                    flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT) < 0) {
+        goto error;
     }
 
     if (startupPolicy) {
@@ -11488,7 +11443,6 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) str = NULL;
     VIR_AUTOFREE(char *) filter = NULL;
     VIR_AUTOFREE(char *) internal = NULL;
-    VIR_AUTOFREE(char *) devaddr = NULL;
     VIR_AUTOFREE(char *) mode = NULL;
     VIR_AUTOFREE(char *) linkstate = NULL;
     VIR_AUTOFREE(char *) addrtype = NULL;
@@ -11669,10 +11623,6 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 filter = virXMLPropString(cur, "filter");
                 virHashFree(filterparams);
                 filterparams = virNWFilterParseParamAttributes(cur);
-            } else if ((flags & VIR_DOMAIN_DEF_PARSE_STATUS) &&
-                       virXMLNodeNameEqual(cur, "state")) {
-                /* Legacy back-compat. Don't add any more attributes here */
-                devaddr = virXMLPropString(cur, "devaddr");
             } else if (virXMLNodeNameEqual(cur, "boot")) {
                 /* boot is parsed as part of virDomainDeviceInfoParseXML */
             } else if (!actual &&
@@ -11725,20 +11675,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         def->mac_generated = true;
     }
 
-    if (devaddr) {
-        if (virDomainParseLegacyDeviceAddress(devaddr,
-                                              &def->info.addr.pci) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unable to parse devaddr parameter '%s'"),
-                           devaddr);
-            goto error;
-        }
-        def->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-    } else {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
-                                        flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT
-                                        | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0)
-            goto error;
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
+                                    flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT
+                                    | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0) {
+        goto error;
     }
 
     if (model != NULL &&
