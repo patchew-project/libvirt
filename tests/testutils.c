@@ -740,13 +740,11 @@ virtTestLogOutput(virLogSourcePtr source ATTRIBUTE_UNUSED,
                   const char *funcname ATTRIBUTE_UNUSED,
                   const char *timestamp,
                   virLogMetadataPtr metadata ATTRIBUTE_UNUSED,
-                  unsigned int flags,
                   const char *rawstr ATTRIBUTE_UNUSED,
                   const char *str,
                   void *data)
 {
     struct virtTestLogData *log = data;
-    virCheckFlags(VIR_LOG_STACK_TRACE,);
     virBufferAsprintf(&log->buf, "%s: %s", timestamp, str);
 }
 
