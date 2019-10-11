@@ -7213,7 +7213,7 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
     if ((ret = qemuDomainDeviceDefValidateAddress(dev, qemuCaps)) < 0)
         return ret;
 
-    if (virDomainCapsDeviceDefValidate(domCaps, dev, def) < 0)
+    if ((ret = virDomainCapsDeviceDefValidate(domCaps, dev, def)) < 0)
         return ret;
 
     switch ((virDomainDeviceType)dev->type) {
