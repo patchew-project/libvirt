@@ -5717,51 +5717,6 @@ qemuDomainDeviceDefValidateVideo(const virDomainVideoDef *video,
             return -1;
         }
     } else {
-        switch ((virDomainVideoType) video->type) {
-            case VIR_DOMAIN_VIDEO_TYPE_NONE:
-                return 0;
-            case VIR_DOMAIN_VIDEO_TYPE_XEN:
-            case VIR_DOMAIN_VIDEO_TYPE_VBOX:
-            case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
-            case VIR_DOMAIN_VIDEO_TYPE_GOP:
-            case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("video type '%s' is not supported with QEMU"),
-                               virDomainVideoTypeToString(video->type));
-                return -1;
-            case VIR_DOMAIN_VIDEO_TYPE_VGA:
-            case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
-            case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
-            case VIR_DOMAIN_VIDEO_TYPE_QXL:
-            case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
-            case VIR_DOMAIN_VIDEO_TYPE_BOCHS:
-            case VIR_DOMAIN_VIDEO_TYPE_RAMFB:
-            case VIR_DOMAIN_VIDEO_TYPE_LAST:
-                break;
-        }
-        if ((video->type == VIR_DOMAIN_VIDEO_TYPE_VGA &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VGA)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_CIRRUS &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_CIRRUS_VGA)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMWARE_SVGA)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_QXL)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_GPU)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO &&
-             video->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_BOCHS &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_BOCHS_DISPLAY)) ||
-            (video->type == VIR_DOMAIN_VIDEO_TYPE_RAMFB &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_RAMFB))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("this QEMU does not support '%s' video device"),
-                           virDomainVideoTypeToString(video->type));
-            return -1;
-        }
-
         if (!video->primary &&
             video->type != VIR_DOMAIN_VIDEO_TYPE_QXL &&
             video->type != VIR_DOMAIN_VIDEO_TYPE_VIRTIO) {
