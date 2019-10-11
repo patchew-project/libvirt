@@ -5706,83 +5706,125 @@ qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
 
 
 static int
-qemuDomainDeviceDefValidateVideo(const virDomainVideoDef *video)
+qemuDomainDeviceDefValidateVideo(const virDomainVideoDef *video,
+                                 virQEMUCapsPtr qemuCaps)
 {
-    switch ((virDomainVideoType) video->type) {
-    case VIR_DOMAIN_VIDEO_TYPE_NONE:
-        return 0;
-    case VIR_DOMAIN_VIDEO_TYPE_XEN:
-    case VIR_DOMAIN_VIDEO_TYPE_VBOX:
-    case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
-    case VIR_DOMAIN_VIDEO_TYPE_GOP:
-    case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("video type '%s' is not supported with QEMU"),
-                       virDomainVideoTypeToString(video->type));
-        return -1;
-    case VIR_DOMAIN_VIDEO_TYPE_VGA:
-    case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
-    case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
-    case VIR_DOMAIN_VIDEO_TYPE_QXL:
-    case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
-    case VIR_DOMAIN_VIDEO_TYPE_BOCHS:
-    case VIR_DOMAIN_VIDEO_TYPE_RAMFB:
-    case VIR_DOMAIN_VIDEO_TYPE_LAST:
-        break;
-    }
-
-    if (!video->primary &&
-        video->type != VIR_DOMAIN_VIDEO_TYPE_QXL &&
-        video->type != VIR_DOMAIN_VIDEO_TYPE_VIRTIO) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("video type '%s' is only valid as primary "
-                         "video device"),
-                       virDomainVideoTypeToString(video->type));
-        return -1;
-    }
-
-    if (video->accel && video->accel->accel2d == VIR_TRISTATE_SWITCH_ON) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("qemu does not support the accel2d setting"));
-        return -1;
-    }
-
-    if (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL) {
-        if (video->vram > (UINT_MAX / 1024)) {
-            virReportError(VIR_ERR_OVERFLOW,
-                           _("value for 'vram' must be less than '%u'"),
-                           UINT_MAX / 1024);
+    if (video->backend == VIR_DOMAIN_VIDEO_BACKEND_TYPE_VHOSTUSER) {
+        if (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VHOST_USER_GPU)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("this QEMU does not support 'vhost-user' video device"));
             return -1;
         }
-        if (video->ram > (UINT_MAX / 1024)) {
-            virReportError(VIR_ERR_OVERFLOW,
-                           _("value for 'ram' must be less than '%u'"),
-                           UINT_MAX / 1024);
-            return -1;
-        }
-        if (video->vgamem) {
-            if (video->vgamem < 1024) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("value for 'vgamem' must be at least 1 MiB "
-                                 "(1024 KiB)"));
+    } else {
+        switch ((virDomainVideoType) video->type) {
+            case VIR_DOMAIN_VIDEO_TYPE_NONE:
+                return 0;
+            case VIR_DOMAIN_VIDEO_TYPE_XEN:
+            case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+            case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+            case VIR_DOMAIN_VIDEO_TYPE_GOP:
+            case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("video type '%s' is not supported with QEMU"),
+                               virDomainVideoTypeToString(video->type));
                 return -1;
-            }
-
-            if (video->vgamem != VIR_ROUND_UP_POWER_OF_TWO(video->vgamem)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("value for 'vgamem' must be power of two"));
-                return -1;
-            }
+            case VIR_DOMAIN_VIDEO_TYPE_VGA:
+            case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+            case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+            case VIR_DOMAIN_VIDEO_TYPE_QXL:
+            case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
+            case VIR_DOMAIN_VIDEO_TYPE_BOCHS:
+            case VIR_DOMAIN_VIDEO_TYPE_RAMFB:
+            case VIR_DOMAIN_VIDEO_TYPE_LAST:
+                break;
         }
-    }
-
-    if (video->type == VIR_DOMAIN_VIDEO_TYPE_VGA ||
-        video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA) {
-        if (video->vram && video->vram < 1024) {
+        if ((video->type == VIR_DOMAIN_VIDEO_TYPE_VGA &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VGA)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_CIRRUS &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_CIRRUS_VGA)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMWARE_SVGA)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_QXL)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_GPU)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO &&
+             video->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_BOCHS &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_BOCHS_DISPLAY)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_RAMFB &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_RAMFB))) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           "%s", _("value for 'vram' must be at least "
-                                   "1 MiB (1024 KiB)"));
+                           _("this QEMU does not support '%s' video device"),
+                           virDomainVideoTypeToString(video->type));
             return -1;
+        }
+
+        if (!video->primary &&
+            video->type != VIR_DOMAIN_VIDEO_TYPE_QXL &&
+            video->type != VIR_DOMAIN_VIDEO_TYPE_VIRTIO) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("video type '%s' is only valid as primary "
+                             "video device"),
+                           virDomainVideoTypeToString(video->type));
+            return -1;
+        }
+
+        if (video->accel) {
+            if (video->accel->accel3d == VIR_TRISTATE_SWITCH_ON &&
+                (video->type != VIR_DOMAIN_VIDEO_TYPE_VIRTIO ||
+                 !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_GPU_VIRGL))) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("%s 3d acceleration is not supported"),
+                               virDomainVideoTypeToString(video->type));
+                return -1;
+            }
+            if (video->accel->accel2d == VIR_TRISTATE_SWITCH_ON) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("qemu does not support the accel2d setting"));
+                return -1;
+            }
+        }
+
+        if (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL) {
+            if (video->vram > (UINT_MAX / 1024)) {
+                virReportError(VIR_ERR_OVERFLOW,
+                               _("value for 'vram' must be less than '%u'"),
+                               UINT_MAX / 1024);
+                return -1;
+            }
+            if (video->ram > (UINT_MAX / 1024)) {
+                virReportError(VIR_ERR_OVERFLOW,
+                               _("value for 'ram' must be less than '%u'"),
+                               UINT_MAX / 1024);
+                return -1;
+            }
+            if (video->vgamem) {
+                if (video->vgamem < 1024) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("value for 'vgamem' must be at least 1 MiB "
+                                     "(1024 KiB)"));
+                    return -1;
+                }
+
+                if (video->vgamem != VIR_ROUND_UP_POWER_OF_TWO(video->vgamem)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("value for 'vgamem' must be power of two"));
+                    return -1;
+                }
+            }
+        }
+
+        if (video->type == VIR_DOMAIN_VIDEO_TYPE_VGA ||
+            video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA) {
+            if (video->vram && video->vram < 1024) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               "%s", _("value for 'vram' must be at least "
+                                       "1 MiB (1024 KiB)"));
+                return -1;
+            }
         }
     }
 
@@ -7247,7 +7289,7 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         break;
 
     case VIR_DOMAIN_DEVICE_VIDEO:
-        ret = qemuDomainDeviceDefValidateVideo(dev->data.video);
+        ret = qemuDomainDeviceDefValidateVideo(dev->data.video, qemuCaps);
         break;
 
     case VIR_DOMAIN_DEVICE_DISK:
