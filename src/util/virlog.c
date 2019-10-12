@@ -39,6 +39,7 @@
 # include <sys/un.h>
 #endif
 #include <fnmatch.h>
+#include <signal.h>
 
 #include "virerror.h"
 #include "virlog.h"
@@ -732,6 +733,9 @@ virLogOutputToFd(virLogSourcePtr source ATTRIBUTE_UNUSED,
     if (fd < 0)
         return;
 
+    if (fd == STDERR_FILENO || fd == STDOUT_FILENO)
+        signal(SIGPIPE, SIG_IGN);
+
     if (virAsprintfQuiet(&msg, "%s: %s", timestamp, str) < 0)
         return;
 
@@ -740,6 +744,10 @@ virLogOutputToFd(virLogSourcePtr source ATTRIBUTE_UNUSED,
 
     if (flags & VIR_LOG_STACK_TRACE)
         virLogStackTraceToFd(fd);
+
+    if (fd == STDERR_FILENO || fd == STDOUT_FILENO)
+        signal(SIGPIPE, SIG_DFL);
+
 }
 
 
