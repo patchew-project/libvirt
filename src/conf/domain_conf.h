@@ -328,6 +328,19 @@ struct _virDomainHostdevCaps {
     } u;
 };
 
+typedef enum {
+    VIR_DOMAIN_HOSTDEV_DELETE_ACTION_NONE = 0,
+    /* delete associated device from libvirt config
+     * as intended by client API call */
+    VIR_DOMAIN_HOSTDEV_DELETE_ACTION_DELETE,
+    /* keep associated device in libvirt config as
+     * qemu device is deleted as a result of unplugging
+     * device from host */
+    VIR_DOMAIN_HOSTDEV_DELETE_ACTION_UNPLUG,
+
+    VIR_DOMAIN_HOSTDEV_DELETE_ACTION_LAST
+} virDomainHostdevDeleteActionType;
+
 
 /* basic device for direct passthrough */
 struct _virDomainHostdevDef {
@@ -345,6 +358,7 @@ struct _virDomainHostdevDef {
     bool missing;
     bool readonly;
     bool shareable;
+    virDomainHostdevDeleteActionType deleteAction;
     union {
         virDomainHostdevSubsys subsys;
         virDomainHostdevCaps caps;

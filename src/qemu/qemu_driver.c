@@ -9086,7 +9086,7 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     if (flags & VIR_DOMAIN_AFFECT_LIVE) {
         int rc;
 
-        if ((rc = qemuDomainDetachDeviceLive(vm, dev_copy, driver, false)) < 0)
+        if ((rc = qemuDomainDetachDeviceLive(vm, dev_copy, driver, false, false)) < 0)
             goto cleanup;
 
         if (rc == 0 && qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
@@ -9175,7 +9175,7 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
         if (virDomainDefFindDevice(def, alias, &dev, true) < 0)
             goto cleanup;
 
-        if ((rc = qemuDomainDetachDeviceLive(vm, &dev, driver, true)) < 0)
+        if ((rc = qemuDomainDetachDeviceLive(vm, &dev, driver, true, false)) < 0)
             goto cleanup;
 
         if (rc == 0 && qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
