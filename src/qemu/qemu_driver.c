@@ -11956,7 +11956,7 @@ qemuDomainMemoryPeek(virDomainPtr dom,
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
-    char *tmp = NULL;
+    VIR_AUTOFREE(char *) tmp = NULL;
     int fd = -1, ret = -1;
     qemuDomainObjPrivatePtr priv;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = NULL;
@@ -12028,7 +12028,6 @@ qemuDomainMemoryPeek(virDomainPtr dom,
     VIR_FORCE_CLOSE(fd);
     if (tmp)
         unlink(tmp);
-    VIR_FREE(tmp);
     virDomainObjEndAPI(&vm);
     return ret;
 }
@@ -12194,7 +12193,7 @@ qemuStorageLimitsRefresh(virQEMUDriverPtr driver,
     int ret = -1;
     int fd = -1;
     struct stat sb;
-    char *buf = NULL;
+    VIR_AUTOFREE(char *) buf = NULL;
     ssize_t len;
 
     if ((rc = qemuDomainStorageOpenStat(driver, cfg, vm, src, &fd, &sb,
@@ -12230,7 +12229,6 @@ qemuStorageLimitsRefresh(virQEMUDriverPtr driver,
     ret = 1;
 
  cleanup:
-    VIR_FREE(buf);
     qemuDomainStorageCloseStat(src, &fd);
     return ret;
 }
@@ -12451,7 +12449,7 @@ qemuDomainMigratePrepareTunnel(virConnectPtr dconn,
 {
     virQEMUDriverPtr driver = dconn->privateData;
     virDomainDefPtr def = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12486,7 +12484,6 @@ qemuDomainMigratePrepareTunnel(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -12508,7 +12505,7 @@ qemuDomainMigratePrepare2(virConnectPtr dconn,
 {
     virQEMUDriverPtr driver = dconn->privateData;
     virDomainDefPtr def = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12553,7 +12550,6 @@ qemuDomainMigratePrepare2(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -12754,7 +12750,7 @@ qemuDomainMigratePrepare3(virConnectPtr dconn,
 {
     virQEMUDriverPtr driver = dconn->privateData;
     virDomainDefPtr def = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12789,7 +12785,6 @@ qemuDomainMigratePrepare3(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -12815,7 +12810,7 @@ qemuDomainMigratePrepare3Params(virConnectPtr dconn,
     int nbdPort = 0;
     int nmigrate_disks;
     const char **migrate_disks = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12878,7 +12873,6 @@ qemuDomainMigratePrepare3Params(virConnectPtr dconn,
  cleanup:
     qemuMigrationParamsFree(migParams);
     VIR_FREE(migrate_disks);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -12898,7 +12892,7 @@ qemuDomainMigratePrepareTunnel3(virConnectPtr dconn,
 {
     virQEMUDriverPtr driver = dconn->privateData;
     virDomainDefPtr def = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12927,7 +12921,6 @@ qemuDomainMigratePrepareTunnel3(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -12947,7 +12940,7 @@ qemuDomainMigratePrepareTunnel3Params(virConnectPtr dconn,
     virDomainDefPtr def = NULL;
     const char *dom_xml = NULL;
     const char *dname = NULL;
-    char *origname = NULL;
+    VIR_AUTOFREE(char *) origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
 
@@ -12986,7 +12979,6 @@ qemuDomainMigratePrepareTunnel3Params(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    VIR_FREE(origname);
     virDomainDefFree(def);
     return ret;
 }
@@ -13308,7 +13300,7 @@ qemuNodeDeviceDetachFlags(virNodeDevicePtr dev,
     unsigned domain = 0, bus = 0, slot = 0, function = 0;
     int ret = -1;
     virNodeDeviceDefPtr def = NULL;
-    char *xml = NULL;
+    VIR_AUTOFREE(char *) xml = NULL;
     bool vfio = qemuHostdevHostSupportsPassthroughVFIO();
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
 
@@ -13358,7 +13350,6 @@ qemuNodeDeviceDetachFlags(virNodeDevicePtr dev,
  cleanup:
     virPCIDeviceFree(pci);
     virNodeDeviceDefFree(def);
-    VIR_FREE(xml);
     return ret;
 }
 
@@ -13376,7 +13367,7 @@ qemuNodeDeviceReAttach(virNodeDevicePtr dev)
     unsigned domain = 0, bus = 0, slot = 0, function = 0;
     int ret = -1;
     virNodeDeviceDefPtr def = NULL;
-    char *xml = NULL;
+    VIR_AUTOFREE(char *) xml = NULL;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
 
     xml = virNodeDeviceGetXMLDesc(dev, 0);
@@ -13402,7 +13393,6 @@ qemuNodeDeviceReAttach(virNodeDevicePtr dev)
     virPCIDeviceFree(pci);
  cleanup:
     virNodeDeviceDefFree(def);
-    VIR_FREE(xml);
     return ret;
 }
 
@@ -13414,7 +13404,7 @@ qemuNodeDeviceReset(virNodeDevicePtr dev)
     unsigned domain = 0, bus = 0, slot = 0, function = 0;
     int ret = -1;
     virNodeDeviceDefPtr def = NULL;
-    char *xml = NULL;
+    VIR_AUTOFREE(char *) xml = NULL;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
 
     xml = virNodeDeviceGetXMLDesc(dev, 0);
@@ -13440,7 +13430,6 @@ qemuNodeDeviceReset(virNodeDevicePtr dev)
     virPCIDeviceFree(pci);
  cleanup:
     virNodeDeviceDefFree(def);
-    VIR_FREE(xml);
     return ret;
 }
 
@@ -15277,7 +15266,6 @@ qemuDomainSnapshotDiskPrepareOne(virQEMUDriverPtr driver,
                                  qemuDomainAsyncJob asyncJob)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    char *backingStoreStr;
     virDomainDiskDefPtr persistdisk;
     VIR_AUTOUNREF(virStorageSourcePtr) terminator = NULL;
     bool supportsCreate;
@@ -15323,13 +15311,13 @@ qemuDomainSnapshotDiskPrepareOne(virQEMUDriverPtr driver,
          * block commit still works */
         if (reuse) {
             if (supportsBacking) {
+                VIR_AUTOFREE(char *) backingStoreStr = NULL;
+
                 if (virStorageFileGetBackingStoreStr(dd->src, &backingStoreStr) < 0)
                     return -1;
                 if (backingStoreStr != NULL) {
                     if (virStorageIsRelative(backingStoreStr))
                         VIR_STEAL_PTR(dd->relPath, backingStoreStr);
-                    else
-                        VIR_FREE(backingStoreStr);
                 }
             }
         } else {
@@ -15776,7 +15764,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 {
     virQEMUDriverPtr driver = domain->conn->privateData;
     virDomainObjPtr vm = NULL;
-    char *xml = NULL;
+    VIR_AUTOFREE(char *) xml = NULL;
     virDomainMomentObjPtr snap = NULL;
     virDomainSnapshotPtr snapshot = NULL;
     virDomainMomentObjPtr current = NULL;
@@ -16057,7 +16045,6 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    VIR_FREE(xml);
     return snapshot;
 }
 
@@ -17844,7 +17831,7 @@ qemuDomainBlockJobSetSpeed(virDomainPtr dom,
     virDomainDiskDefPtr disk;
     int ret = -1;
     virDomainObjPtr vm;
-    char *device = NULL;
+    VIR_AUTOFREE(char *) device = NULL;
     unsigned long long speed = bandwidth;
 
     virCheckFlags(VIR_DOMAIN_BLOCK_JOB_SPEED_BANDWIDTH_BYTES, -1);
@@ -17889,7 +17876,6 @@ qemuDomainBlockJobSetSpeed(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    VIR_FREE(device);
     virDomainObjEndAPI(&vm);
 
     return ret;
@@ -18969,7 +18955,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
     virDomainBlockIoTuneInfo info;
-    char *drivealias = NULL;
+    VIR_AUTOFREE(char *) drivealias = NULL;
     const char *qdevid = NULL;
     int ret = -1;
     size_t i;
@@ -19296,7 +19282,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
 
  cleanup:
     VIR_FREE(info.group_name);
-    VIR_FREE(drivealias);
     virDomainObjEndAPI(&vm);
     if (eventNparams)
         virTypedParamsFree(eventParams, eventNparams);
@@ -19317,7 +19302,7 @@ qemuDomainGetBlockIoTune(virDomainPtr dom,
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
     virDomainBlockIoTuneInfo reply = {0};
-    char *drivealias = NULL;
+    VIR_AUTOFREE(char *) drivealias = NULL;
     const char *qdevid = NULL;
     int ret = -1;
     int maxparams;
@@ -19454,7 +19439,6 @@ qemuDomainGetBlockIoTune(virDomainPtr dom,
 
  cleanup:
     VIR_FREE(reply.group_name);
-    VIR_FREE(drivealias);
     virDomainObjEndAPI(&vm);
     return ret;
 }
@@ -21078,12 +21062,10 @@ qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
                                   bool blockdev)
 
 {
-    char *alias = NULL;
     virStorageSourcePtr n;
     const char *frontendalias;
     const char *backendalias;
     const char *backendstoragealias;
-    int ret = -1;
 
     /*
      * This helps to keep logs clean from error messages on getting stats
@@ -21100,6 +21082,8 @@ qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
     }
 
     for (n = disk->src; virStorageSourceIsBacking(n); n = n->backingStore) {
+        VIR_AUTOFREE(char *) alias = NULL;
+
         if (blockdev) {
             frontendalias = QEMU_DOMAIN_DISK_PRIVATE(disk)->qomName;
             backendalias = n->nodeformat;
@@ -21108,7 +21092,7 @@ qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
             /* alias may be NULL if the VM is not running */
             if (disk->info.alias &&
                 !(alias = qemuDomainStorageAlias(disk->info.alias, n->id)))
-                goto cleanup;
+                return -1;
 
             qemuDomainGetStatsOneBlockRefreshNamed(n, alias, stats, nodestats);
 
@@ -21118,37 +21102,32 @@ qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
         }
 
         if (qemuDomainGetStatsBlockExportHeader(disk, n, *recordnr, params) < 0)
-            goto cleanup;
+            return -1;
 
         /* The following stats make sense only for the frontend device */
         if (n == disk->src) {
             if (qemuDomainGetStatsBlockExportFrontend(frontendalias, stats, *recordnr,
                                                       params) < 0)
-                goto cleanup;
+                return -1;
         }
 
         if (qemuDomainGetStatsOneBlock(driver, cfg, dom, params,
                                        backendalias, n, *recordnr,
                                        stats) < 0)
-            goto cleanup;
+            return -1;
 
         if (qemuDomainGetStatsBlockExportBackendStorage(backendstoragealias,
                                                         stats, *recordnr,
                                                         params) < 0)
-            goto cleanup;
+            return -1;
 
-        VIR_FREE(alias);
         (*recordnr)++;
 
         if (!visitBacking)
             break;
     }
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(alias);
-    return ret;
+    return 0;
 }
 
 
@@ -21864,12 +21843,12 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     virObjectEventPtr event_new = NULL;
     virObjectEventPtr event_old = NULL;
     int ret = -1;
-    char *new_dom_name = NULL;
-    char *old_dom_name = NULL;
-    char *new_dom_cfg_file = NULL;
-    char *old_dom_cfg_file = NULL;
-    char *new_dom_autostart_link = NULL;
-    char *old_dom_autostart_link = NULL;
+    VIR_AUTOFREE(char *) new_dom_name = NULL;
+    VIR_AUTOFREE(char *) old_dom_name = NULL;
+    VIR_AUTOFREE(char *) new_dom_cfg_file = NULL;
+    VIR_AUTOFREE(char *) old_dom_cfg_file = NULL;
+    VIR_AUTOFREE(char *) new_dom_autostart_link = NULL;
+    VIR_AUTOFREE(char *) old_dom_autostart_link = NULL;
 
     virCheckFlags(0, ret);
 
@@ -21941,12 +21920,6 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     ret = 0;
 
  cleanup:
-    VIR_FREE(old_dom_autostart_link);
-    VIR_FREE(new_dom_autostart_link);
-    VIR_FREE(old_dom_cfg_file);
-    VIR_FREE(new_dom_cfg_file);
-    VIR_FREE(old_dom_name);
-    VIR_FREE(new_dom_name);
     virObjectEventStateQueue(driver->domainEventState, event_old);
     virObjectEventStateQueue(driver->domainEventState, event_new);
     return ret;
@@ -22051,7 +22024,7 @@ qemuDomainGetGuestVcpusParams(virTypedParameterPtr *params,
     virBitmapPtr vcpus = NULL;
     virBitmapPtr online = NULL;
     virBitmapPtr offlinable = NULL;
-    char *tmp = NULL;
+    VIR_AUTOFREE(char *) tmp = NULL;
     size_t i;
     int ret = -1;
 
@@ -22080,7 +22053,6 @@ qemuDomainGetGuestVcpusParams(virTypedParameterPtr *params,
         goto cleanup; \
     if (virTypedParamsAddString(&par, &npar, &maxpar, #name, tmp) < 0) \
         goto cleanup; \
-    VIR_FREE(tmp)
 
     ADD_BITMAP(vcpus);
     ADD_BITMAP(online);
@@ -22094,7 +22066,6 @@ qemuDomainGetGuestVcpusParams(virTypedParameterPtr *params,
     ret = 0;
 
  cleanup:
-    VIR_FREE(tmp);
     virBitmapFree(vcpus);
     virBitmapFree(online);
     virBitmapFree(offlinable);
@@ -22322,7 +22293,7 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
     qemuDomainObjPrivatePtr priv;
     virDomainObjPtr vm = NULL;
     virStorageSourcePtr src;
-    char *nodename = NULL;
+    VIR_AUTOFREE(char *) nodename = NULL;
     int rc;
     int ret = -1;
 
@@ -22376,7 +22347,6 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    VIR_FREE(nodename);
     virDomainObjEndAPI(&vm);
     return ret;
 }
@@ -22550,7 +22520,7 @@ qemuDomainGetSEVMeasurement(virQEMUDriverPtr driver,
                             unsigned int flags)
 {
     int ret = -1;
-    char *tmp = NULL;
+    VIR_AUTOFREE(char *) tmp = NULL;
     int maxpar = 0;
 
     virCheckFlags(VIR_TYPED_PARAM_STRING_OKAY, -1);
@@ -22575,7 +22545,6 @@ qemuDomainGetSEVMeasurement(virQEMUDriverPtr driver,
     ret = 0;
 
  endjob:
-    VIR_FREE(tmp);
     qemuDomainObjEndJob(driver, vm);
     return ret;
 }
