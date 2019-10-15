@@ -305,8 +305,8 @@ static int
 qemuSecurityInit(virQEMUDriverPtr driver)
 {
     char **names;
-    virSecurityManagerPtr mgr = NULL;
-    virSecurityManagerPtr stack = NULL;
+    VIR_AUTOUNREF(virSecurityManagerPtr) mgr = NULL;
+    VIR_AUTOUNREF(virSecurityManagerPtr) stack = NULL;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     unsigned int flags = 0;
 
@@ -372,8 +372,6 @@ qemuSecurityInit(virQEMUDriverPtr driver)
  error:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("Failed to initialize security drivers"));
-    virObjectUnref(stack);
-    virObjectUnref(mgr);
     return -1;
 }
 
@@ -1098,7 +1096,7 @@ static int
 qemuStateStop(void)
 {
     int ret = -1;
-    virConnectPtr conn;
+    VIR_AUTOUNREF(virConnectPtr) conn = NULL;
     int numDomains = 0;
     size_t i;
     int state;
@@ -1142,7 +1140,6 @@ qemuStateStop(void)
         VIR_FREE(domains);
     }
     VIR_FREE(flags);
-    virObjectUnref(conn);
 
     return ret;
 }
@@ -3310,7 +3307,7 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     VIR_AUTOUNREF(virCapsPtr) caps = NULL;
     virQEMUSaveDataPtr data = NULL;
-    qemuDomainSaveCookiePtr cookie = NULL;
+    VIR_AUTOUNREF(qemuDomainSaveCookiePtr) cookie = NULL;
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
@@ -3419,7 +3416,6 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
         qemuDomainRemoveInactiveJob(driver, vm);
 
  cleanup:
-    virObjectUnref(cookie);
     VIR_FREE(xml);
     virQEMUSaveDataFree(data);
     virObjectEventStateQueue(driver->domainEventState, event);
@@ -6866,7 +6862,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     char *errbuf = NULL;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virQEMUSaveHeaderPtr header = &data->header;
-    qemuDomainSaveCookiePtr cookie = NULL;
+    VIR_AUTOUNREF(qemuDomainSaveCookiePtr) cookie = NULL;
 
     if (virSaveCookieParseString(data->cookie, (virObjectPtr *)&cookie,
                                  virDomainXMLOptionGetSaveCookie(driver->xmlopt)) < 0)
@@ -6981,7 +6977,6 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     ret = 0;
 
  cleanup:
-    virObjectUnref(cookie);
     virCommandFree(cmd);
     VIR_FREE(errbuf);
     if (qemuSecurityRestoreSavedStateLabel(driver, vm, path) < 0)
@@ -13588,7 +13583,7 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
     int ret = VIR_CPU_COMPARE_ERROR;
     virQEMUDriverPtr driver = conn->privateData;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
-    virQEMUCapsPtr qemuCaps = NULL;
+    VIR_AUTOUNREF(virQEMUCapsPtr) qemuCaps = NULL;
     bool failIncompatible;
     virCPUDefPtr hvCPU;
     virCPUDefPtr cpu = NULL;
@@ -13642,7 +13637,6 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
 
  cleanup:
     virCPUDefFree(cpu);
-    virObjectUnref(qemuCaps);
     return ret;
 }
 
@@ -13802,7 +13796,7 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virQEMUDriverPtr driver = conn->privateData;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     virCPUDefPtr *cpus = NULL;
-    virQEMUCapsPtr qemuCaps = NULL;
+    VIR_AUTOUNREF(virQEMUCapsPtr) qemuCaps = NULL;
     virArch arch;
     virDomainVirtType virttype;
     virDomainCapsCPUModelsPtr cpuModels;
@@ -13881,7 +13875,6 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
  cleanup:
     virCPUDefListFree(cpus);
     virCPUDefFree(cpu);
-    virObjectUnref(qemuCaps);
     virStringListFree(features);
 
     return cpustr;
@@ -17689,7 +17682,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(driver);
     bool pivot = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT);
     bool async = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC);
-    qemuBlockJobDataPtr job = NULL;
+    VIR_AUTOUNREF(qemuBlockJobDataPtr) job = NULL;
     virDomainObjPtr vm;
     qemuDomainObjPrivatePtr priv = NULL;
     bool blockdev = false;
@@ -17790,7 +17783,6 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    virObjectUnref(job);
     virDomainObjEndAPI(&vm);
     return ret;
 }
@@ -20460,17 +20452,16 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
                                  const char *virttype_str,
                                  unsigned int flags)
 {
-    char *ret = NULL;
     virQEMUDriverPtr driver = conn->privateData;
-    virQEMUCapsPtr qemuCaps = NULL;
+    VIR_AUTOUNREF(virQEMUCapsPtr) qemuCaps = NULL;
     virArch arch;
     virDomainVirtType virttype;
-    virDomainCapsPtr domCaps = NULL;
+    VIR_AUTOUNREF(virDomainCapsPtr) domCaps = NULL;
 
-    virCheckFlags(0, ret);
+    virCheckFlags(0, NULL);
 
     if (virConnectGetDomainCapabilitiesEnsureACL(conn) < 0)
-        return ret;
+        return NULL;
 
     qemuCaps = virQEMUCapsCacheLookupDefault(driver->qemuCapsCache,
                                              emulatorbin,
@@ -20479,18 +20470,14 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
                                              machine,
                                              &arch, &virttype, &machine);
     if (!qemuCaps)
-        goto cleanup;
+        return NULL;
 
     if (!(domCaps = virQEMUDriverGetDomainCapabilities(driver,
                                                        qemuCaps, machine,
                                                        arch, virttype)))
-        goto cleanup;
+        return NULL;
 
-    ret = virDomainCapsFormat(domCaps);
- cleanup:
-    virObjectUnref(domCaps);
-    virObjectUnref(qemuCaps);
-    return ret;
+    return virDomainCapsFormat(domCaps);
 }
 
 
@@ -21733,7 +21720,7 @@ qemuGetDHCPInterfaces(virDomainPtr dom,
     int n_leases = 0;
     size_t i, j;
     size_t ifaces_count = 0;
-    virNetworkPtr network = NULL;
+    VIR_AUTOUNREF(virNetworkPtr) network = NULL;
     char macaddr[VIR_MAC_STRING_BUFLEN];
     virDomainInterfacePtr iface = NULL;
     virNetworkDHCPLeasePtr *leases = NULL;
@@ -21801,7 +21788,6 @@ qemuGetDHCPInterfaces(virDomainPtr dom,
     rv = ifaces_count;
 
  cleanup:
-    virObjectUnref(network);
     if (leases) {
         for (i = 0; i < n_leases; i++)
             virNetworkDHCPLeaseFree(leases[i]);
@@ -22596,32 +22582,26 @@ qemuNodeGetSEVInfo(virConnectPtr conn,
                    unsigned int flags)
 {
     virQEMUDriverPtr driver = conn->privateData;
-    virQEMUCapsPtr qemucaps = NULL;
-    int ret = -1;
+    VIR_AUTOUNREF(virQEMUCapsPtr) qemucaps = NULL;
 
     if (virNodeGetSevInfoEnsureACL(conn) < 0)
-        return ret;
+        return -1;
 
     qemucaps = virQEMUCapsCacheLookupByArch(driver->qemuCapsCache,
                                             virArchFromHost());
     if (!qemucaps)
-        goto cleanup;
+        return -1;
 
     if (!virQEMUCapsGet(qemucaps, QEMU_CAPS_SEV_GUEST)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("QEMU does not support SEV guest"));
-        goto cleanup;
+        return -1;
     }
 
     if (qemuGetSEVInfoToParams(qemucaps, params, nparams, flags) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virObjectUnref(qemucaps);
-
-    return ret;
+    return 0;
 }
 
 
