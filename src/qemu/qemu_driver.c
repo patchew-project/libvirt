@@ -5187,10 +5187,13 @@ processUSBAddedEvent(virQEMUDriverPtr driver,
 {
     virDomainHostdevDefPtr hostdev;
     virDomainHostdevSubsysUSBPtr usbsrc;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     size_t i;
 
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {
+        virObjectUnref(cfg);
         return;
+    }
 
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("Domain is not running");
@@ -5218,8 +5221,13 @@ processUSBAddedEvent(virQEMUDriverPtr driver,
     if (qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
         goto cleanup;
 
+    if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+        VIR_WARN("unable to save domain status after plugging device %s",
+                 hostdev->info->alias);
+
  cleanup:
     qemuDomainObjEndJob(driver, vm);
+    virObjectUnref(cfg);
 }
 
 
@@ -5231,9 +5239,12 @@ processUSBRemovedEvent(virQEMUDriverPtr driver,
     size_t i;
     virDomainHostdevDefPtr hostdev;
     virDomainDeviceDef dev = { .type = VIR_DOMAIN_DEVICE_HOSTDEV };
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {
+        virObjectUnref(cfg);
         return;
+    }
 
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("Domain is not running");
@@ -5269,8 +5280,13 @@ processUSBRemovedEvent(virQEMUDriverPtr driver,
     if (qemuDomainDetachDeviceLive(vm, &dev, driver, true, true) < 0)
         goto cleanup;
 
+    if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+        VIR_WARN("unable to save domain status after unplugging device %s",
+                 hostdev->info->alias);
+
  cleanup:
     qemuDomainObjEndJob(driver, vm);
+    virObjectUnref(cfg);
 }
 
 
