@@ -2097,10 +2097,10 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
     if (!def)
         return;
 
-    virObjectUnref(def->src);
+    g_clear_object(&def->src);
     VIR_FREE(def->serial);
     VIR_FREE(def->dst);
-    virObjectUnref(def->mirror);
+    g_clear_object(&def->mirror);
     VIR_FREE(def->wwn);
     VIR_FREE(def->driverName);
     VIR_FREE(def->vendor);
@@ -2312,7 +2312,7 @@ void virDomainFSDefFree(virDomainFSDefPtr def)
     if (!def)
         return;
 
-    virObjectUnref(def->src);
+    g_object_unref(def->src);
     VIR_FREE(def->dst);
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def->virtio);
@@ -2896,8 +2896,7 @@ virDomainHostdevSubsysSCSIiSCSIClear(virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc
     if (!iscsisrc)
         return;
 
-    virObjectUnref(iscsisrc->src);
-    iscsisrc->src = NULL;
+    g_clear_object(&iscsisrc->src);
 }
 
 
@@ -9276,7 +9275,7 @@ virDomainStorageSourceParseBase(const char *type,
                                 const char *format,
                                 const char *index)
 {
-    VIR_AUTOUNREF(virStorageSourcePtr) src = NULL;
+    g_autoptr(virStorageSource) src = NULL;
     virStorageSourcePtr ret = NULL;
 
     if (!(src = virStorageSourceNew()))
@@ -9402,7 +9401,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     xmlNodePtr source;
-    VIR_AUTOUNREF(virStorageSourcePtr) backingStore = NULL;
+    g_autoptr(virStorageSource) backingStore = NULL;
     VIR_AUTOFREE(char *) type = NULL;
     VIR_AUTOFREE(char *) format = NULL;
     VIR_AUTOFREE(char *) idx = NULL;

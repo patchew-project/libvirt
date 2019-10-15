@@ -636,8 +636,7 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     ignore_value(qemuDomainStorageSourceChainAccessRevoke(driver, vm, oldsrc));
 
     /* media was changed, so we can remove the old media definition now */
-    virObjectUnref(oldsrc);
-    oldsrc = NULL;
+    g_clear_object(&oldsrc);
     disk->src = newsrc;
 
     ret = 0;

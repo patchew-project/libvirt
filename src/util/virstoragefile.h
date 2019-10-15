@@ -21,8 +21,10 @@
 
 #pragma once
 
+#include <glib-object.h>
 #include <sys/stat.h>
 
+#include "internal.h"
 #include "virbitmap.h"
 #include "virobject.h"
 #include "virseclabel.h"
@@ -234,7 +236,9 @@ struct _virStorageSourceInitiatorDef {
 typedef struct _virStorageDriverData virStorageDriverData;
 typedef virStorageDriverData *virStorageDriverDataPtr;
 
-typedef struct _virStorageSource virStorageSource;
+#define VIR_TYPE_STORAGESOURCE vir_storagesource_get_type()
+G_DECLARE_FINAL_TYPE(virStorageSource, vir_storagesource, VIR, STORAGESOURCE, GObject);
+
 typedef virStorageSource *virStorageSourcePtr;
 
 /* Stores information related to a host resource.  In the case of backing
@@ -243,7 +247,7 @@ typedef virStorageSource *virStorageSourcePtr;
  * IMPORTANT: When adding fields to this struct it's also necessary to add
  * appropriate code to the virStorageSourceCopy deep copy function */
 struct _virStorageSource {
-    virObject parent;
+    GObject parent;
 
     unsigned int id; /* backing chain identifier, 0 is unset */
     int type; /* virStorageType */
@@ -344,7 +348,6 @@ struct _virStorageSource {
     bool hostcdrom; /* backing device is a cdrom */
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStorageSource, virObjectUnref);
 
 
 #ifndef DEV_BSIZE

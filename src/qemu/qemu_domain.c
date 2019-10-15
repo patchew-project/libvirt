@@ -3015,7 +3015,7 @@ qemuDomainObjPrivateXMLParseBlockjobChain(xmlNodePtr node,
     VIR_AUTOFREE(char *) format = NULL;
     VIR_AUTOFREE(char *) type = NULL;
     VIR_AUTOFREE(char *) index = NULL;
-    VIR_AUTOUNREF(virStorageSourcePtr) src = NULL;
+    g_autoptr(virStorageSource) src = NULL;
     xmlNodePtr sourceNode;
     unsigned int xmlflags = VIR_DOMAIN_DEF_PARSE_STATUS;
 
@@ -3220,7 +3220,7 @@ qemuDomainObjPrivateXMLParseBlockjobData(virDomainObjPtr vm,
 
     if (mirror) {
         if (disk)
-            job->mirrorChain = virObjectRef(disk->mirror);
+            job->mirrorChain = g_object_ref(disk->mirror);
         else
             invalidData = true;
     }
@@ -3313,7 +3313,7 @@ qemuDomainObjPrivateXMLParseJobNBDSource(xmlNodePtr node,
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
     VIR_AUTOFREE(char *) format = NULL;
     VIR_AUTOFREE(char *) type = NULL;
-    VIR_AUTOUNREF(virStorageSourcePtr) migrSource = NULL;
+    g_autoptr(virStorageSource) migrSource = NULL;
     xmlNodePtr sourceNode;
 
     ctxt->node = node;
