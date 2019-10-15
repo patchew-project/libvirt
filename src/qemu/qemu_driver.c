@@ -4646,6 +4646,9 @@ processDeviceDeletedEvent(virQEMUDriverPtr driver,
     if (STRPREFIX(devAlias, "vcpu")) {
         qemuDomainRemoveVcpuAlias(driver, vm, devAlias);
     } else {
+        if (qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
+            goto cleanup;
+
         if (virDomainDefFindDevice(vm->def, devAlias, &dev, true) < 0)
             goto endjob;
 
