@@ -2754,6 +2754,15 @@ void virDomainSmartcardDefFree(virDomainSmartcardDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainSoundDefPtr
+virDomainSoundDefRemove(virDomainDefPtr def, size_t idx)
+{
+    virDomainSoundDefPtr ret = def->sounds[idx];
+    VIR_DELETE_ELEMENT(def->sounds, idx, def->nsounds);
+    return ret;
+ }
+
+
 void virDomainSoundCodecDefFree(virDomainSoundCodecDefPtr def)
 {
     if (!def)
@@ -17211,6 +17220,58 @@ virDomainNetUpdate(virDomainDefPtr def,
     return 0;
 }
 
+/**
+ * virDomainSoundFindIdx:
+ * @def: domain definition
+ * @sound: sound definition
+ *
+ * Lookup domain's sound interface based on passed @sound
+ * definition.
+ *
+ * Return: index of match if unique match found,
+ *         -1 otherwise and an error is logged.
+ */
+
+int
+virDomainSoundFindIdx(virDomainDefPtr def, virDomainSoundDefPtr sound)
+{
+    size_t i;
+    int matchidx = -1;
+    bool PCIAddrSpecified = virDomainDeviceAddressIsValid(&sound->info,
+                                                          VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI);
+
+    for (i = 0; i < def->nsounds; i++) {
+
+        if (PCIAddrSpecified &&
+            !virPCIDeviceAddressEqual(&def->sounds[i]->info.addr.pci,
+                                      &sound->info.addr.pci))
+            continue;
+
+        if (matchidx >= 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                           _("multiple matching devices found"));
+
+            return -1;
+        }
+
+        matchidx = i;
+    }
+
+    if (matchidx < 0) {
+        if (PCIAddrSpecified) {
+            virReportError(VIR_ERR_DEVICE_MISSING,
+                           _("no device found on %.4x:%.2x:%.2x.%.1x"),
+                           sound->info.addr.pci.domain,
+                           sound->info.addr.pci.bus,
+                           sound->info.addr.pci.slot,
+                           sound->info.addr.pci.function);
+        } else {
+            virReportError(VIR_ERR_DEVICE_MISSING, "%s",
+                           _("no matching device found"));
+        }
+    }
+    return matchidx;
+}
 
 int virDomainControllerInsert(virDomainDefPtr def,
                               virDomainControllerDefPtr controller)

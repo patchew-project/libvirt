@@ -2873,6 +2873,8 @@ void virDomainSmartcardDefFree(virDomainSmartcardDefPtr def);
 void virDomainChrDefFree(virDomainChrDefPtr def);
 int virDomainChrSourceDefCopy(virDomainChrSourceDefPtr dest,
                               virDomainChrSourceDefPtr src);
+int virDomainSoundFindIdx(virDomainDefPtr def, virDomainSoundDefPtr sound);
+virDomainSoundDefPtr virDomainSoundDefRemove(virDomainDefPtr def, size_t idx);
 void virDomainSoundCodecDefFree(virDomainSoundCodecDefPtr def);
 void virDomainSoundDefFree(virDomainSoundDefPtr def);
 void virDomainMemballoonDefFree(virDomainMemballoonDefPtr def);
