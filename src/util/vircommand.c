@@ -321,6 +321,15 @@ virFork(void)
             virDispatchError(NULL);
             _exit(EXIT_CANCELED);
         }
+
+        sigemptyset(&newmask);
+        sigaddset(&newmask, SIGPIPE);
+        if (pthread_sigmask(SIG_BLOCK, &newmask, NULL) != 0) {
+            virReportSystemError(errno, "%s", _("cannot block SIGPIPE"));
+            virDispatchError(NULL);
+            _exit(EXIT_CANCELED);
+        }
+
     }
     return pid;
 }
@@ -553,6 +562,7 @@ virExec(virCommandPtr cmd)
     struct sigaction waxon, waxoff;
     VIR_AUTOFREE(gid_t *) groups = NULL;
     int ngroups;
+    sigset_t set;
 
     if (cmd->args[0][0] != '/') {
         if (!(binary = binarystr = virFindFileInPath(cmd->args[0]))) {
@@ -791,6 +801,13 @@ virExec(virCommandPtr cmd)
 
     /* Close logging again to ensure no FDs leak to child */
     virLogReset();
+
+    sigemptyset(&set);
+    sigaddset(&set, SIGPIPE);
+    if (pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
+        virReportSystemError(errno, "%s", _("cannot unblock SIGPIPE"));
+        goto fork_error;
+    }
 
     if (cmd->env)
         execve(binary, cmd->args, cmd->env);
