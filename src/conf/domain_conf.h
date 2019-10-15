@@ -230,6 +230,8 @@ struct _virDomainHostdevSubsysUSB {
 
     unsigned vendor;
     unsigned product;
+
+    bool replug;
 };
 
 struct _virDomainHostdevSubsysPCI {

@@ -4688,7 +4688,7 @@
 <pre>
 ...
 &lt;devices&gt;
-  &lt;hostdev mode='subsystem' type='usb'&gt;
+  &lt;hostdev mode='subsystem' type='usb' replug='yes'&gt;
     &lt;source startupPolicy='optional'&gt;
       &lt;vendor id='0x1234'/&gt;
       &lt;product id='0xbeef'/&gt;
@@ -4787,7 +4787,13 @@
           <dt><code>usb</code></dt>
           <dd>USB devices are detached from the host on guest startup
             and reattached after the guest exits or the device is
-            hot-unplugged.
+            hot-unplugged. If optional <code>replug</code>
+            (<span class="since">since 5.8.0</span>) is "yes" then libvirt
+            tracks USB device unplug/plug on host. On unplug the correspondent
+            QEMU device will be be deleted but device stays in libvirt config.
+            On plug the device will be added back to QEMU. This applies only
+            for USB devices with product/vendor pair specified. Default value
+            is "no".
           </dd>
           <dt><code>pci</code></dt>
           <dd>For PCI devices, when <code>managed</code> is "yes" it is
