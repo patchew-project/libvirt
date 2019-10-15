@@ -34,6 +34,7 @@
 #include <sys/ioctl.h>
 #include <sys/un.h>
 #include <byteswap.h>
+#include <libudev.h>
 
 
 #include "qemu_driver.h"
@@ -657,6 +658,221 @@ qemuDomainFindMaxID(virDomainObjPtr vm,
 }
 
 
+struct qemuUdevUSBRemoveData {
+    unsigned int bus;
+    unsigned int device;
+};
+
+struct qemuUdevUSBAddData {
+    unsigned int vendor;
+    unsigned int product;
+};
+
+struct qemuUdevUSBEventData {
+    union {
+        struct qemuUdevUSBRemoveData remove;
+        struct qemuUdevUSBAddData add;
+    } data;
+    bool remove;
+};
+
+static int
+qemuUdevUSBHandleEvent(virDomainObjPtr vm, void *opaque)
+{
+    struct qemuUdevUSBEventData *data = opaque;
+    struct qemuProcessEvent *event = NULL;
+
+    if (VIR_ALLOC(event) < 0)
+        return 0;
+
+    if (data->remove) {
+        struct qemuUdevUSBRemoveData *rm_data;
+
+
+        if (VIR_ALLOC(rm_data) < 0)
+            goto cleanup;
+
+        *rm_data = data->data.remove;
+        event->data = rm_data;
+        event->eventType = QEMU_PROCESS_EVENT_USB_REMOVED;
+    } else {
+        struct qemuUdevUSBAddData *add_data;
+
+        if (VIR_ALLOC(add_data) < 0)
+            goto cleanup;
+
+        *add_data = data->data.add;
+        event->data = add_data;
+        event->eventType = QEMU_PROCESS_EVENT_USB_ADDED;
+    }
+
+    event->vm = virObjectRef(vm);
+
+    if (virThreadPoolSendJob(qemu_driver->workerPool, 0, event) < 0) {
+        virObjectUnref(vm);
+        goto cleanup;
+    }
+
+    event = NULL;
+
+ cleanup:
+    qemuProcessEventFree(event);
+
+    return 0;
+}
+
+
+static void
+qemuUdevEventHandleCallback(int watch G_GNUC_UNUSED,
+                            int fd G_GNUC_UNUSED,
+                            int events G_GNUC_UNUSED,
+                            void *data G_GNUC_UNUSED)
+{
+    struct qemuUdevUSBEventData event_data;
+    struct udev_device *dev = NULL;
+    const char *action;
+    const char *devtype;
+    const char *tmp;
+
+    /* libvirtd daemon do not run event loop before full state drivers
+     * initialization. Also state drivers uninitialized only after
+     * full stop of event loop. In short driver initialization/uninitialization
+     * and handling events occurs in same main loop thread. Thus we
+     * don't need any locking here. */
+
+    if (!(dev = udev_monitor_receive_device(qemu_driver->udev_monitor))) {
+        VIR_WARNINGS_NO_WLOGICALOP_EQUAL_EXPR
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        VIR_WARNINGS_RESET
+            return;
+        }
+
+        virReportSystemError(errno, "%s",
+                             _("failed to receive device from udev monitor"));
+        return;
+    }
+
+    devtype = udev_device_get_devtype(dev);
+
+    if (STRNEQ_NULLABLE(devtype, "usb_device"))
+        goto cleanup;
+
+    if (!(action = udev_device_get_action(dev))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("failed to receive action from udev monitor"));
+        goto cleanup;
+    }
+
+    if (STREQ(action, "remove")) {
+        struct qemuUdevUSBRemoveData *rm_data = &event_data.data.remove;
+
+        if (!(tmp = udev_device_get_property_value(dev, "BUSNUM"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("failed to receive busnum from udev monitor"));
+            goto cleanup;
+        }
+        if (virStrToLong_ui(tmp, NULL, 10, &rm_data->bus) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to convert busnum to int"));
+            goto cleanup;
+        }
+
+        if (!(tmp = udev_device_get_property_value(dev, "DEVNUM"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("failed to receive devnum from udev monitor"));
+            goto cleanup;
+        }
+        if (virStrToLong_ui(tmp, NULL, 10, &rm_data->device) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to convert devnum to int"));
+            goto cleanup;
+        }
+        event_data.remove = true;
+    } else if (STREQ(action, "add")) {
+        struct qemuUdevUSBAddData *add_data = &event_data.data.add;
+
+        if (!(tmp = udev_device_get_property_value(dev, "ID_VENDOR_ID"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("failed to receive vendor from udev monitor"));
+            goto cleanup;
+        }
+        if (virStrToLong_ui(tmp, NULL, 16, &add_data->vendor) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to convert vendor to int"));
+            goto cleanup;
+        }
+
+        if (!(tmp = udev_device_get_property_value(dev, "ID_MODEL_ID"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("failed to receive product from udev monitor"));
+            goto cleanup;
+        }
+        if (virStrToLong_ui(tmp, NULL, 16, &add_data->product) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to convert product to int"));
+            goto cleanup;
+        }
+        event_data.remove = false;
+    } else {
+        goto cleanup;
+    }
+
+    virDomainObjListForEach(qemu_driver->domains, false, qemuUdevUSBHandleEvent, &event_data);
+
+ cleanup:
+    udev_device_unref(dev);
+}
+
+
+static int
+qemuUdevInitialize(void)
+{
+    struct udev *udev;
+
+    if (!(udev = udev_new())) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("failed to create udev context"));
+        return -1;
+    }
+
+    if (!(qemu_driver->udev_monitor = udev_monitor_new_from_netlink(udev, "udev"))) {
+        udev_unref(udev);
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("udev_monitor_new_from_netlink returned NULL"));
+        return -1;
+    }
+
+    udev_monitor_enable_receiving(qemu_driver->udev_monitor);
+
+    qemu_driver->udev_watch = virEventAddHandle(udev_monitor_get_fd(qemu_driver->udev_monitor),
+                                                VIR_EVENT_HANDLE_READABLE,
+                                                qemuUdevEventHandleCallback, NULL, NULL);
+
+    if (qemu_driver->udev_watch < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static void
+qemuUdevCleanup(void)
+{
+    if (qemu_driver->udev_monitor) {
+        struct udev *udev = udev_monitor_get_udev(qemu_driver->udev_monitor);
+
+        udev_monitor_unref(qemu_driver->udev_monitor);
+        udev_unref(udev);
+        qemu_driver->udev_monitor = NULL;
+    }
+
+    if (qemu_driver->udev_watch > 0) {
+        virEventRemoveHandle(qemu_driver->udev_watch);
+        qemu_driver->udev_watch = 0;
+    }
+}
+
+
 /**
  * qemuStateInitialize:
  *
@@ -981,6 +1197,9 @@ qemuStateInitialize(bool privileged,
     if (!(qemu_driver->closeCallbacks = virCloseCallbacksNew()))
         goto error;
 
+    if (qemuUdevInitialize() < 0)
+        goto error;
+
     /* Get all the running persistent or transient configs first */
     if (virDomainObjListLoadAllConfigs(qemu_driver->domains,
                                        cfg->stateDir,
@@ -1198,6 +1417,8 @@ qemuStateCleanup(void)
     virObjectUnref(qemu_driver->domainEventState);
 
     virLockManagerPluginUnref(qemu_driver->lockManager);
+
+    qemuUdevCleanup();
 
     virMutexDestroy(&qemu_driver->lock);
     VIR_FREE(qemu_driver);
@@ -4959,7 +5180,102 @@ processRdmaGidStatusChangedEvent(virDomainObjPtr vm,
 }
 
 
-static void qemuProcessEventHandler(void *data, void *opaque)
+static void
+processUSBAddedEvent(virQEMUDriverPtr driver,
+                     virDomainObjPtr vm,
+                     struct qemuUdevUSBAddData *data)
+{
+    virDomainHostdevDefPtr hostdev;
+    virDomainHostdevSubsysUSBPtr usbsrc;
+    size_t i;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        return;
+
+    if (!virDomainObjIsActive(vm)) {
+        VIR_DEBUG("Domain is not running");
+        goto cleanup;
+    }
+
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        hostdev = vm->def->hostdevs[i];
+
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+            continue;
+
+        usbsrc = &hostdev->source.subsys.u.usb;
+
+        if (!usbsrc->replug)
+            continue;
+
+        if (usbsrc->vendor == data->vendor && usbsrc->product == data->product)
+            break;
+    }
+
+    if (i == vm->def->nhostdevs)
+        goto cleanup;
+
+    if (qemuDomainAttachHostDevice(driver, vm, hostdev) < 0)
+        goto cleanup;
+
+ cleanup:
+    qemuDomainObjEndJob(driver, vm);
+}
+
+
+static void
+processUSBRemovedEvent(virQEMUDriverPtr driver,
+                       virDomainObjPtr vm,
+                       struct qemuUdevUSBRemoveData *data)
+{
+    size_t i;
+    virDomainHostdevDefPtr hostdev;
+    virDomainDeviceDef dev = { .type = VIR_DOMAIN_DEVICE_HOSTDEV };
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        return;
+
+    if (!virDomainObjIsActive(vm)) {
+        VIR_DEBUG("Domain is not running");
+        goto cleanup;
+    }
+
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        virDomainHostdevSubsysUSBPtr usbsrc;
+
+        hostdev = vm->def->hostdevs[i];
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+            continue;
+
+        usbsrc = &hostdev->source.subsys.u.usb;
+
+        if (!usbsrc->replug)
+            continue;
+
+        /* don't mess with devices that don't use stable host addressing
+         * with respect to unplug/plug to host
+         */
+        if (!usbsrc->vendor || !usbsrc->product)
+            continue;
+
+        if (usbsrc->bus == data->bus && usbsrc->device == data->device)
+            break;
+    }
+
+    if (i == vm->def->nhostdevs)
+        goto cleanup;
+
+    dev.data.hostdev = hostdev;
+    if (qemuDomainDetachDeviceLive(vm, &dev, driver, true, true) < 0)
+        goto cleanup;
+
+ cleanup:
+    qemuDomainObjEndJob(driver, vm);
+}
+
+
+static void
+qemuProcessEventHandler(void *data, void *opaque)
 {
     struct qemuProcessEvent *processEvent = data;
     virDomainObjPtr vm = processEvent->vm;
@@ -5004,6 +5320,12 @@ static void qemuProcessEventHandler(void *data, void *opaque)
         break;
     case QEMU_PROCESS_EVENT_RDMA_GID_STATUS_CHANGED:
         processRdmaGidStatusChangedEvent(vm, processEvent->data);
+        break;
+    case QEMU_PROCESS_EVENT_USB_REMOVED:
+        processUSBRemovedEvent(driver, vm, processEvent->data);
+        break;
+    case QEMU_PROCESS_EVENT_USB_ADDED:
+        processUSBAddedEvent(driver, vm, processEvent->data);
         break;
     case QEMU_PROCESS_EVENT_LAST:
         break;
