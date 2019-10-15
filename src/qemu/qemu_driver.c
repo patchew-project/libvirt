@@ -1082,7 +1082,7 @@ qemuStateStop(void)
     size_t i;
     int state;
     virDomainPtr *domains = NULL;
-    unsigned int *flags = NULL;
+    VIR_AUTOFREE(unsigned int *) flags = NULL;
     VIR_AUTOUNREF(virQEMUDriverConfigPtr) cfg = virQEMUDriverGetConfig(qemu_driver);
 
     if (!(conn = virConnectOpen(cfg->uri)))
@@ -1120,7 +1120,6 @@ qemuStateStop(void)
             virObjectUnref(domains[i]);
         VIR_FREE(domains);
     }
-    VIR_FREE(flags);
 
     return ret;
 }
@@ -20715,7 +20714,7 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
     size_t i;
     int ret = -1;
     virVcpuInfoPtr cpuinfo = NULL;
-    unsigned long long *cpuwait = NULL;
+    VIR_AUTOFREE(unsigned long long *) cpuwait = NULL;
 
     if (virTypedParamListAddUInt(params, virDomainDefGetVcpus(dom->def),
                                  "vcpu.current") < 0)
@@ -20780,7 +20779,6 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
 
  cleanup:
     VIR_FREE(cpuinfo);
-    VIR_FREE(cpuwait);
     return ret;
 }
 
