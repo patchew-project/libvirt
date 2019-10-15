@@ -5252,6 +5252,10 @@ processUSBAddedEvent(virQEMUDriverPtr driver,
         if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
             continue;
 
+        if (hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL ||
+            hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_REQUISITE)
+            continue;
+
         usbsrc = &hostdev->source.subsys.u.usb;
 
         if (!usbsrc->replug)
@@ -5308,6 +5312,10 @@ processUSBRemovedEvent(virQEMUDriverPtr driver,
 
         hostdev = vm->def->hostdevs[i];
         if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB)
+            continue;
+
+        if (hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL ||
+            hostdev->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_REQUISITE)
             continue;
 
         usbsrc = &hostdev->source.subsys.u.usb;
