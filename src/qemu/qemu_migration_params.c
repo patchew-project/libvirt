@@ -1326,11 +1326,7 @@ qemuMigrationParamsParse(xmlXPathContextPtr ctxt,
             break;
 
         case QEMU_MIGRATION_PARAM_TYPE_BOOL:
-            if (STREQ(value, "yes"))
-                pv->value.b = true;
-            else if (STREQ(value, "no"))
-                pv->value.b = false;
-            else
+            if (virStringParseYesNo(value, &pv->value.b) < 0)
                 rc = -1;
             break;
 
