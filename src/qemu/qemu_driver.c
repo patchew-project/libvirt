@@ -13454,6 +13454,52 @@ qemuConnectCompareCPU(virConnectPtr conn,
 }
 
 
+static int
+qemuConnectCheckCPUModel(qemuMonitorPtr mon,
+                         virCPUDefPtr cpu)
+{
+    qemuMonitorCPUModelInfoPtr modelInfo = NULL;
+    qemuMonitorCPUModelExpansionType type;
+    size_t i, j;
+    int ret = -1;
+
+    /* Collect CPU model name and features known by QEMU */
+    type = QEMU_MONITOR_CPU_MODEL_EXPANSION_FULL;
+    if (qemuMonitorGetCPUModelExpansion(mon, type, cpu, true,
+                                        false, &modelInfo) < 0)
+        goto cleanup;
+
+    /* Sanity check CPU model */
+    if (!modelInfo) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unknown CPU model: %s"), cpu->model);
+        goto cleanup;
+    }
+
+    /* Sanity check CPU features */
+    for (i = 0; i < cpu->nfeatures; i++) {
+        const char *feat = cpu->features[i].name;
+
+        for (j = 0; j < modelInfo->nprops; j++) {
+            const char *prop = modelInfo->props[j].name;
+            if (STREQ(feat, prop))
+                break;
+        }
+
+        if (j == modelInfo->nprops) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unknown CPU feature: %s"), feat);
+            goto cleanup;
+        }
+    }
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(modelInfo);
+    return ret;
+}
+
+
 static virCPUCompareResult
 qemuConnectCPUModelComparison(virQEMUCapsPtr qemuCaps,
                               const char *libDir,
@@ -13473,6 +13519,11 @@ qemuConnectCPUModelComparison(virQEMUCapsPtr qemuCaps,
 
     if (qemuProcessQMPStart(proc) < 0)
         goto cleanup;
+
+    if (qemuConnectCheckCPUModel(proc->mon, cpu_a) < 0 ||
+        qemuConnectCheckCPUModel(proc->mon, cpu_b) < 0) {
+        goto cleanup;
+    }
 
     if (qemuMonitorGetCPUModelComparison(proc->mon, cpu_a, cpu_b, &result) < 0)
         goto cleanup;
@@ -13671,6 +13722,9 @@ qemuConnectCPUModelBaseline(virQEMUCapsPtr qemuCaps,
     if (qemuProcessQMPStart(proc) < 0)
         goto cleanup;
 
+    if (qemuConnectCheckCPUModel(proc->mon, cpus[0]) < 0)
+        goto cleanup;
+
     if (VIR_ALLOC(baseline) < 0)
         goto cleanup;
 
@@ -13678,6 +13732,9 @@ qemuConnectCPUModelBaseline(virQEMUCapsPtr qemuCaps,
         goto cleanup;
 
     for (i = 1; i < ncpus; i++) {
+        if (qemuConnectCheckCPUModel(proc->mon, cpus[i]) < 0)
+            goto cleanup;
+
         if (qemuMonitorGetCPUModelBaseline(proc->mon, baseline,
                                            cpus[i], &result) < 0)
             goto cleanup;
