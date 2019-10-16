@@ -1151,6 +1151,16 @@ virProcessRunInFork(virProcessForkCallback cb,
         goto cleanup;
 
     if (child == 0) {
+        struct sigaction waxoff;
+
+        memset(&waxoff, 0, sizeof(waxoff));
+        waxoff.sa_handler = SIG_IGN;
+        sigemptyset(&waxoff.sa_mask);
+        if (sigaction(SIGPIPE, &waxoff, NULL) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("Could not disable SIGPIPE"));
+        }
+
         VIR_FORCE_CLOSE(errfd[0]);
         ret = virProcessRunInForkHelper(errfd[1], parent, cb, opaque);
         VIR_FORCE_CLOSE(errfd[1]);

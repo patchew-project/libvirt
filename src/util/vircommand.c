@@ -653,8 +653,24 @@ virExec(virCommandPtr cmd)
         umask(cmd->mask);
     ret = EXIT_CANCELED;
 
+    memset(&waxoff, 0, sizeof(waxoff));
+    waxoff.sa_handler = SIG_IGN;
+    sigemptyset(&waxoff.sa_mask);
+    memset(&waxon, 0, sizeof(waxon));
+    if (sigaction(SIGPIPE, &waxoff, &waxon) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Could not disable SIGPIPE"));
+        goto fork_error;
+    }
+
     if (virCommandMassClose(cmd, childin, childout, childerr) < 0)
         goto fork_error;
+
+    if (sigaction(SIGPIPE, &waxon, NULL) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Could not re-enable SIGPIPE"));
+        goto fork_error;
+    }
 
     if (prepareStdFd(childin, STDIN_FILENO) < 0) {
         virReportSystemError(errno,
