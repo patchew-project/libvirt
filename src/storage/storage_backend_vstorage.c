@@ -7,6 +7,9 @@
 #include "virlog.h"
 #include "virstring.h"
 #include <mntent.h>
+#ifndef _PATH_MOUNTED
+#include <paths.h>
+#endif
 #include <pwd.h>
 #include <grp.h>
 #include "storage_util.h"
