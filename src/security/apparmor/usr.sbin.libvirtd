@@ -104,6 +104,7 @@ profile libvirtd /usr/sbin/libvirtd flags=(attach_disconnected) {
   /usr/{lib,lib64}/libvirt/libvirt_iohelper ix,
   /etc/libvirt/hooks/** rmix,
   /etc/xen/scripts/** rmix,
+  /usr/{lib,lib64}/xen/scripts/** rmix,
 
   # allow changing to our UUID-based named profiles
   change_profile -> @{LIBVIRT}-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*,
