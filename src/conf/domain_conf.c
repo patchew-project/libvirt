@@ -8306,7 +8306,6 @@ static virNetDevIPAddrPtr
 virDomainNetIPParseXML(xmlNodePtr node)
 {
     /* Parse the prefix in every case */
-    virNetDevIPAddrPtr ret = NULL;
     unsigned int prefixValue = 0;
     int family = AF_UNSPEC;
     g_autofree virNetDevIPAddrPtr ip = NULL;
@@ -8358,8 +8357,7 @@ virDomainNetIPParseXML(xmlNodePtr node)
         return NULL;
     }
 
-    ret = g_steal_pointer(&ip);
-    return ret;
+    return g_steal_pointer(&ip);
 }
 
 

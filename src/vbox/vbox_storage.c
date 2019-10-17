@@ -90,10 +90,9 @@ static int vboxStoragePoolNumOfVolumes(virStoragePoolPtr pool)
     PRUint32 hardDiskAccessible = 0;
     nsresult rc;
     size_t i;
-    int ret = -1;
 
     if (!data->vboxObj)
-        return ret;
+        return -1;
 
     rc = gVBoxAPI.UArray.vboxArrayGet(&hardDisks, data->vboxObj,
                                       gVBoxAPI.UArray.handleGetHardDisks(data->vboxObj));
@@ -101,7 +100,7 @@ static int vboxStoragePoolNumOfVolumes(virStoragePoolPtr pool)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get number of volumes in the pool: %s, rc=%08x"),
                        pool->name, (unsigned)rc);
-        return ret;
+        return -1;
     }
 
     for (i = 0; i < hardDisks.count; ++i) {
@@ -118,9 +117,7 @@ static int vboxStoragePoolNumOfVolumes(virStoragePoolPtr pool)
 
     gVBoxAPI.UArray.vboxArrayRelease(&hardDisks);
 
-    ret = hardDiskAccessible;
-
-    return ret;
+    return hardDiskAccessible;
 }
 
 static int
@@ -131,10 +128,9 @@ vboxStoragePoolListVolumes(virStoragePoolPtr pool, char **const names, int nname
     PRUint32 numActive = 0;
     nsresult rc;
     size_t i;
-    int ret = -1;
 
     if (!data->vboxObj)
-        return ret;
+        return -1;
 
     rc = gVBoxAPI.UArray.vboxArrayGet(&hardDisks, data->vboxObj,
                                       gVBoxAPI.UArray.handleGetHardDisks(data->vboxObj));
@@ -142,7 +138,7 @@ vboxStoragePoolListVolumes(virStoragePoolPtr pool, char **const names, int nname
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get the volume list in the pool: %s, rc=%08x"),
                        pool->name, (unsigned)rc);
-        return ret;
+        return -1;
     }
 
     for (i = 0; i < hardDisks.count && numActive < nnames; ++i) {
@@ -174,9 +170,7 @@ vboxStoragePoolListVolumes(virStoragePoolPtr pool, char **const names, int nname
     }
 
     gVBoxAPI.UArray.vboxArrayRelease(&hardDisks);
-    ret = numActive;
-
-    return ret;
+    return numActive;
 }
 
 static virStorageVolPtr

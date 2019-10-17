@@ -1692,14 +1692,11 @@ virStoragePoolSaveXML(const char *path,
                       const char *xml)
 {
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    int ret = -1;
 
     virUUIDFormat(def->uuid, uuidstr);
-    ret = virXMLSaveFile(path,
-                         virXMLPickShellSafeComment(def->name, uuidstr),
-                         "pool-edit", xml);
-
-    return ret;
+    return virXMLSaveFile(path,
+                          virXMLPickShellSafeComment(def->name, uuidstr),
+                          "pool-edit", xml);
 }
 
 

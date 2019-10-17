@@ -5270,11 +5270,8 @@ static int
 testConnectNumOfNetworks(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    int numActive;
-
-    numActive = virNetworkObjListNumOfNetworks(privconn->networks,
-                                               true, NULL, conn);
-    return numActive;
+    return virNetworkObjListNumOfNetworks(privconn->networks, true, NULL,
+                                          conn);
 }
 
 
@@ -5284,11 +5281,8 @@ testConnectListNetworks(virConnectPtr conn,
                         int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int n;
-
-    n = virNetworkObjListGetNames(privconn->networks,
-                                  true, names, maxnames, NULL, conn);
-    return n;
+    return virNetworkObjListGetNames(privconn->networks, true, names,
+                                     maxnames, NULL, conn);
 }
 
 
@@ -5296,11 +5290,8 @@ static int
 testConnectNumOfDefinedNetworks(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    int numInactive;
-
-    numInactive = virNetworkObjListNumOfNetworks(privconn->networks,
-                                                 false, NULL, conn);
-    return numInactive;
+    return virNetworkObjListNumOfNetworks(privconn->networks, false, NULL,
+                                          conn);
 }
 
 
@@ -5310,11 +5301,8 @@ testConnectListDefinedNetworks(virConnectPtr conn,
                                int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int n;
-
-    n = virNetworkObjListGetNames(privconn->networks,
-                                  false, names, maxnames, NULL, conn);
-    return n;
+    return virNetworkObjListGetNames(privconn->networks, false, names,
+                                     maxnames, NULL, conn);
 }
 
 

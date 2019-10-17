@@ -697,20 +697,16 @@ int
 qemuBuildSecretInfoProps(qemuDomainSecretInfoPtr secinfo,
                          virJSONValuePtr *propsret)
 {
-    int ret = -1;
     g_autofree char *keyid = NULL;
 
     if (!(keyid = qemuDomainGetMasterKeyAlias()))
         return -1;
 
-    ret = qemuMonitorCreateObjectProps(propsret,
-                                       "secret", secinfo->s.aes.alias,
-                                       "s:data", secinfo->s.aes.ciphertext,
-                                       "s:keyid", keyid,
-                                       "s:iv", secinfo->s.aes.iv,
-                                       "s:format", "base64", NULL);
-
-    return ret;
+    return qemuMonitorCreateObjectProps(propsret, "secret",
+                                        secinfo->s.aes.alias, "s:data",
+                                        secinfo->s.aes.ciphertext, "s:keyid",
+                                        keyid, "s:iv", secinfo->s.aes.iv,
+                                        "s:format", "base64", NULL);
 }
 
 

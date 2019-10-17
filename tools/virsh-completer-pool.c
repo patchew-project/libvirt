@@ -76,7 +76,6 @@ virshPoolEventNameCompleter(vshControl *ctl G_GNUC_UNUSED,
                             unsigned int flags)
 {
     size_t i = 0;
-    char **ret = NULL;
     VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
@@ -89,8 +88,7 @@ virshPoolEventNameCompleter(vshControl *ctl G_GNUC_UNUSED,
             return NULL;
     }
 
-    ret = g_steal_pointer(&tmp);
-    return ret;
+    return g_steal_pointer(&tmp);
 }
 
 

@@ -7316,8 +7316,6 @@ qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
 int
 qemuProcessKill(virDomainObjPtr vm, unsigned int flags)
 {
-    int ret;
-
     VIR_DEBUG("vm=%p name=%s pid=%lld flags=0x%x",
               vm, vm->def->name,
               (long long)vm->pid, flags);
@@ -7338,11 +7336,9 @@ qemuProcessKill(virDomainObjPtr vm, unsigned int flags)
 
     /* Request an extra delay of two seconds per current nhostdevs
      * to be safe against stalls by the kernel freeing up the resources */
-    ret = virProcessKillPainfullyDelay(vm->pid,
-                                       !!(flags & VIR_QEMU_PROCESS_KILL_FORCE),
-                                       vm->def->nhostdevs * 2);
-
-    return ret;
+    return virProcessKillPainfullyDelay(vm->pid,
+                                        !!(flags & VIR_QEMU_PROCESS_KILL_FORCE),
+                                        vm->def->nhostdevs * 2);
 }
 
 
@@ -7764,11 +7760,9 @@ int qemuProcessAutoDestroyAdd(virQEMUDriverPtr driver,
 int qemuProcessAutoDestroyRemove(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm)
 {
-    int ret;
     VIR_DEBUG("vm=%s", vm->def->name);
-    ret = virCloseCallbacksUnset(driver->closeCallbacks, vm,
-                                 qemuProcessAutoDestroy);
-    return ret;
+    return virCloseCallbacksUnset(driver->closeCallbacks, vm,
+                                  qemuProcessAutoDestroy);
 }
 
 bool qemuProcessAutoDestroyActive(virQEMUDriverPtr driver,
