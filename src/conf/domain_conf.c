@@ -15364,20 +15364,16 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
 
     def = g_new0(virDomainVideoResolutionDef, 1);
 
-    if (x) {
-        if (virStrToLong_uip(x, NULL, 10, &def->x) < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("cannot parse video x-resolution '%s'"), x);
-            return NULL;
-        }
+    if (virStrToLong_uip(x, NULL, 10, &def->x) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("cannot parse video x-resolution '%s'"), x);
+        return NULL;
     }
 
-    if (y) {
-        if (virStrToLong_uip(y, NULL, 10, &def->y) < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("cannot parse video y-resolution '%s'"), y);
-            return NULL;
-        }
+    if (virStrToLong_uip(y, NULL, 10, &def->y) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("cannot parse video y-resolution '%s'"), y);
+        return NULL;
     }
 
     return g_steal_pointer(&def);
