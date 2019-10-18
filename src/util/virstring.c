@@ -768,6 +768,35 @@ virAsprintfInternal(char **strp,
     return ret;
 }
 
+
+/* Due to a bug in glib, g_strdup_printf() nor g_strdup_vprintf()
+ * abort on OOM.  It's fixed in glib's upstream. Provide our own
+ * implementation until the fix get's distributed. */
+char *
+vir_g_strdup_printf(const char *msg, ...)
+{
+  va_list args;
+  char *ret;
+  va_start(args, msg);
+  ret = g_strdup_vprintf(msg, args);
+  if (!ret)
+    abort();
+  va_end(args);
+  return ret;
+}
+
+
+char *
+vir_g_strdup_vprintf(const char *msg, va_list args)
+{
+  char *ret;
+  ret = g_strdup_vprintf(msg, args);
+  if (!ret)
+    abort();
+  return ret;
+}
+
+
 /**
  * virStrncpy:
  *

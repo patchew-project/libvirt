@@ -253,6 +253,17 @@ size_t virStringListLength(const char * const *strings);
 
 #define virAsprintfQuiet(strp, ...) virAsprintf(strp, __VA_ARGS__)
 
+char *vir_g_strdup_printf(const char *msg, ...)
+    G_GNUC_PRINTF(1, 2);
+char *vir_g_strdup_vprintf(const char *msg, va_list args)
+    G_GNUC_PRINTF(1, 0);
+
+#if !GLIB_CHECK_VERSION(2, 64, 0)
+# define g_strdup_printf vir_g_strdup_printf
+# define g_strdup_vprintf vir_g_strdup_vprintf
+#endif
+
+
 int virStringSortCompare(const void *a, const void *b);
 int virStringSortRevCompare(const void *a, const void *b);
 int virStringToUpper(char **dst, const char *src);
