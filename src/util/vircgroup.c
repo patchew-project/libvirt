@@ -2600,7 +2600,7 @@ virCgroupKillRecursive(virCgroupPtr group, int signum)
     bool backendAvailable = false;
     virCgroupBackendPtr *backends = virCgroupBackendGetAll();
     virHashTablePtr pids = virHashCreateFull(100,
-                                             NULL,
+                                             NULL, NULL,
                                              virCgroupPidCode,
                                              virCgroupPidEqual,
                                              virCgroupPidCopy,
