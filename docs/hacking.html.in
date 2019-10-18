@@ -1500,8 +1500,10 @@ BAD:
 </pre>
 
     <p>
-    Top-level labels should be indented by one space (putting them on
-    the beginning of the line confuses function context detection in git):
+    Top-level labels are indented by one space, since no indentation
+    used to confuse function context detection in git. This rule may
+    be re-evaluated in the future since git handles it correctly now
+    and not all code formatting tools support this setting:
     </p>
 
 <pre>
