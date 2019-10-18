@@ -396,6 +396,10 @@ struct _qemuDomainObjPrivate {
 
     virHashTablePtr dbusVMStates;
     bool disableSlirp;
+
+    /* Running backup jobs. */
+    unsigned long long backupnextid;
+    virDomainBackupDefPtr backup;
 };
 
 #define QEMU_DOMAIN_PRIVATE(vm) \

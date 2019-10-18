@@ -61,6 +61,7 @@
 #include "locking/domain_lock.h"
 #include "virdomainsnapshotobjlist.h"
 #include "virdomaincheckpointobjlist.h"
+#include "backup_conf.h"
 
 #ifdef MAJOR_IN_MKDEV
 # include <sys/mkdev.h>
@@ -2108,6 +2109,8 @@ qemuDomainObjPrivateAlloc(void *opaque)
     priv->migMaxBandwidth = QEMU_DOMAIN_MIG_BANDWIDTH_MAX;
     priv->driver = opaque;
 
+    priv->backupnextid = 1;
+
     return priv;
 
  error:
@@ -2177,6 +2180,10 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     virHashRemoveAll(priv->blockjobs);
     virHashRemoveAll(priv->dbusVMStates);
+
+    virDomainBackupDefFree(priv->backup);
+    priv->backup = NULL;
+    priv->backupnextid = 1;
 }
 
 
@@ -2593,6 +2600,29 @@ qemuDomainObjPrivateXMLFormatBlockjobs(virBufferPtr buf,
 }
 
 
+static int
+qemuDomainObjPrivateXMLFormatBackups(virBufferPtr buf,
+                                     virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_auto(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+    g_auto(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
+
+    virBufferSetChildIndent(&childBuf, buf);
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_INCREMENTAL_BACKUP))
+        return 0;
+
+    virBufferAsprintf(&attrBuf, " nextid='%llu'", priv->backupnextid);
+
+    if (priv->backup &&
+        virDomainBackupDefFormat(&childBuf, priv->backup, true) < 0)
+        return -1;
+
+    return virXMLFormatElement(buf, "backups", &attrBuf, &childBuf);
+}
+
+
 void
 qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
                                          virTristateBool allowReboot)
@@ -2905,6 +2935,9 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
         return -1;
 
     if (qemuDomainObjPrivateXMLFormatSlirp(buf, vm) < 0)
+        return -1;
+
+    if (qemuDomainObjPrivateXMLFormatBackups(buf, vm) < 0)
         return -1;
 
     return 0;
@@ -3267,6 +3300,42 @@ qemuDomainObjPrivateXMLParseBlockjobs(virDomainObjPtr vm,
                 return -1;
         }
     }
+
+    return 0;
+}
+
+
+static int
+qemuDomainObjPrivateXMLParseBackups(qemuDomainObjPrivatePtr priv,
+                                    xmlXPathContextPtr ctxt)
+{
+    g_autofree xmlNodePtr *nodes = NULL;
+    ssize_t nnodes = 0;
+
+    priv->backupnextid = 1;
+    if (virXPathULongLong("string(./backups/@nextid)", ctxt,
+                          &priv->backupnextid) == -2) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("failed to parse next backup job id"));
+        return -1;
+    }
+
+    if ((nnodes = virXPathNodeSet("./backups/domainbackup", ctxt, &nodes)) < 0)
+        return -1;
+
+    if (nnodes > 1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("only one backup job is supported"));
+        return -1;
+    }
+
+    if (nnodes == 0)
+        return 0;
+
+    if (!(priv->backup = virDomainBackupDefParseNode(ctxt->doc, nodes[0],
+                                                     priv->driver->xmlopt,
+                                                     VIR_DOMAIN_BACKUP_PARSE_INTERNAL)))
+        return -1;
 
     return 0;
 }
@@ -3694,6 +3763,9 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     qemuDomainObjPrivateXMLParsePR(ctxt, &priv->prDaemonRunning);
 
     if (qemuDomainObjPrivateXMLParseBlockjobs(vm, priv, ctxt) < 0)
+        goto error;
+
+    if (qemuDomainObjPrivateXMLParseBackups(priv, ctxt) < 0)
         goto error;
 
     qemuDomainStorageIdReset(priv);
