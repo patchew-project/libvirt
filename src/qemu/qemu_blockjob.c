@@ -27,6 +27,7 @@
 #include "qemu_block.h"
 #include "qemu_domain.h"
 #include "qemu_alias.h"
+#include "qemu_backup.h"
 
 #include "conf/domain_conf.h"
 #include "conf/domain_event.h"
@@ -1283,6 +1284,49 @@ qemuBlockJobProcessEventConcludedCreate(virQEMUDriverPtr driver,
 
 
 static void
+qemuBlockJobProcessEventConcludedBackup(virQEMUDriverPtr driver,
+                                        virDomainObjPtr vm,
+                                        qemuBlockJobDataPtr job,
+                                        qemuDomainAsyncJob asyncJob,
+                                        qemuBlockjobState newstate)
+{
+    g_autoptr(qemuBlockStorageSourceAttachData) backend = NULL;
+    g_autoptr(virJSONValue) actions = NULL;
+
+    qemuBackupNotifyBlockjobEnd(vm, job->data.backup.jobid, job->disk, newstate);
+
+    if (job->data.backup.store &&
+        !(backend = qemuBlockStorageSourceDetachPrepare(job->data.backup.store, NULL)))
+        return;
+
+    if (job->data.backup.bitmap) {
+        if (!(actions = virJSONValueNewArray()))
+            return;
+
+        if (qemuMonitorTransactionBitmapRemove(actions,
+                                               job->disk->src->nodeformat,
+                                               job->data.backup.bitmap) < 0)
+            return;
+    }
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return;
+
+    if (backend)
+        qemuBlockStorageSourceAttachRollback(qemuDomainGetMonitor(vm), backend);
+
+    if (actions)
+        qemuMonitorTransaction(qemuDomainGetMonitor(vm), &actions);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        return;
+
+    if (job->data.backup.store)
+        qemuDomainStorageSourceAccessRevoke(driver, vm, job->data.backup.store);
+}
+
+
+static void
 qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
                                             virQEMUDriverPtr driver,
                                             virDomainObjPtr vm,
@@ -1320,6 +1364,7 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
         break;
 
     case QEMU_BLOCKJOB_TYPE_BACKUP:
+        qemuBlockJobProcessEventConcludedBackup(driver, vm, job, asyncJob, job->newstate);
     case QEMU_BLOCKJOB_TYPE_NONE:
     case QEMU_BLOCKJOB_TYPE_INTERNAL:
     case QEMU_BLOCKJOB_TYPE_LAST:
