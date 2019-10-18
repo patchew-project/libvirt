@@ -15276,7 +15276,7 @@ qemuDomainSnapshotDiskPrepareOne(virQEMUDriverPtr driver,
 
     /* modify disk in persistent definition only when the source is the same */
     if (vm->newDef &&
-        (persistdisk = virDomainDiskByName(vm->newDef, dd->disk->dst, false)) &&
+        (persistdisk = virDomainDiskByTarget(vm->newDef, dd->disk->dst)) &&
         virStorageSourceIsSameLocation(dd->disk->src, persistdisk->src)) {
 
         dd->persistdisk = persistdisk;

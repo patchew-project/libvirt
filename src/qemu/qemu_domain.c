@@ -3201,7 +3201,7 @@ qemuDomainObjPrivateXMLParseBlockjobData(virDomainObjPtr vm,
         invalidData = true;
 
     if ((diskdst = virXPathString("string(./disk/@dst)", ctxt)) &&
-        !(disk = virDomainDiskByName(vm->def, diskdst, false)))
+        !(disk = virDomainDiskByTarget(vm->def, diskdst)))
         invalidData = true;
 
     if ((mirror = virXPathString("string(./disk/@mirror)", ctxt)) &&
@@ -3374,7 +3374,7 @@ qemuDomainObjPrivateXMLParseJobNBD(virDomainObjPtr vm,
             virDomainDiskDefPtr disk;
 
             if ((dst = virXMLPropString(nodes[i], "dev")) &&
-                (disk = virDomainDiskByName(vm->def, dst, false))) {
+                (disk = virDomainDiskByTarget(vm->def, dst))) {
                 QEMU_DOMAIN_DISK_PRIVATE(disk)->migrating = true;
 
                 if (qemuDomainObjPrivateXMLParseJobNBDSource(nodes[i], ctxt,
