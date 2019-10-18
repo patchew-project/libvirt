@@ -330,6 +330,7 @@ virDomainDiskBackingStoreParse;
 virDomainDiskBusTypeToString;
 virDomainDiskByAddress;
 virDomainDiskByName;
+virDomainDiskByTarget;
 virDomainDiskCacheTypeFromString;
 virDomainDiskCacheTypeToString;
 virDomainDiskDefAssignAddress;
