@@ -3267,6 +3267,7 @@ typedef enum {
     VIR_DOMAIN_JOB_OPERATION_SNAPSHOT = 6,
     VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_REVERT = 7,
     VIR_DOMAIN_JOB_OPERATION_DUMP = 8,
+    VIR_DOMAIN_JOB_OPERATION_BACKUP = 9,
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_JOB_OPERATION_LAST
@@ -3281,6 +3282,14 @@ typedef enum {
  * virDomainJobOperation enum.
  */
 # define VIR_DOMAIN_JOB_OPERATION                "operation"
+
+/**
+ * VIR_DOMAIN_JOB_ID:
+ *
+ * virDomainGetJobStats field: the id of the job (so far, only for jobs
+ * started by virDomainBackupBegin()), as VIR_TYPED_PARAM_INT.
+ */
+# define VIR_DOMAIN_JOB_ID                       "id"
 
 /**
  * VIR_DOMAIN_JOB_TIME_ELAPSED:
@@ -4106,7 +4115,8 @@ typedef void (*virConnectDomainEventMigrationIterationCallback)(virConnectPtr co
  * @nparams: size of the params array
  * @opaque: application specific data
  *
- * This callback occurs when a job (such as migration) running on the domain
+ * This callback occurs when a job (such as migration or push-model
+ * virDomainBackupBegin()) running on the domain
  * is completed. The params array will contain statistics of the just completed
  * job as virDomainGetJobStats would return. The callback must not free @params
  * (the array will be freed once the callback finishes).
@@ -4915,5 +4925,19 @@ int virDomainGetGuestInfo(virDomainPtr domain,
                           virTypedParameterPtr *params,
                           int *nparams,
                           unsigned int flags);
+
+
+int virDomainBackupBegin(virDomainPtr domain,
+                         const char *backupXML,
+                         const char *checkpointXML,
+                         unsigned int flags);
+
+char *virDomainBackupGetXMLDesc(virDomainPtr domain,
+                                int id,
+                                unsigned int flags);
+
+int virDomainBackupEnd(virDomainPtr domain,
+                       int id,
+                       unsigned int flags);
 
 #endif /* LIBVIRT_DOMAIN_H */

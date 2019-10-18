@@ -12497,3 +12497,194 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
     virDispatchError(domain->conn);
     return -1;
 }
+
+
+/**
+ * virDomainBackupBegin:
+ * @domain: a domain object
+ * @backupXML: description of the requested backup
+ * @checkpointXML: description of a checkpoint to create or NULL
+ * @flags: unused; callers must pass 0
+ *
+ * Start a point-in-time backup job for the specified disks of a
+ * running domain.
+ *
+ * A backup job is mutually exclusive with domain migration
+ * (particularly when the job sets up an NBD export, since it is not
+ * possible to tell any NBD clients about a server migrating between
+ * hosts).  For now, backup jobs are also mutually exclusive with any
+ * other block job on the same device, although this restriction may
+ * be lifted in a future release. Progress of the backup job can be
+ * tracked via virDomainGetJobStats(). The job remains active until a
+ * subsequent call to virDomainBackupEnd(), even if it no longer has
+ * anything to copy.
+ *
+ * There are two fundamental backup approaches. The first, called a
+ * push model, instructs the hypervisor to copy the state of the guest
+ * disk to the designated storage destination (which may be on the
+ * local file system or a network device). In this mode, the
+ * hypervisor writes the content of the guest disk to the destination,
+ * then emits VIR_DOMAIN_EVENT_ID_JOB_COMPLETED when the backup is
+ * either complete or failed (the backup image is invalid if the job
+ * fails or virDomainBackupEnd() is used prior to the event being
+ * emitted).
+ *
+ * The second, called a pull model, instructs the hypervisor to expose
+ * the state of the guest disk over an NBD export. A third-party
+ * client can then connect to this export and read whichever portions
+ * of the disk it desires.  In this mode, there is no event; libvirt
+ * has to be informed via virDomainBackupEnd() when the third-party
+ * NBD client is done and the backup resources can be released.
+ *
+ * The @backupXML parameter contains details about the backup in the top-level
+ * element <domainbackup> , including which backup mode to use, whether the
+ * backup is incremental from a previous checkpoint, which disks
+ * participate in the backup, the destination for a push model backup,
+ * and the temporary storage and NBD server details for a pull model
+ * backup.
+ *
+ * virDomainBackupGetXMLDesc() can be called to learn actual
+ * values selected.  For more information, see
+ * formatcheckpoint.html#BackupAttributes.
+ *
+ * The @checkpointXML parameter is optional; if non-NULL, then libvirt
+ * behaves as if virDomainCheckpointCreateXML() were called to create
+ * a checkpoint atomically covering the same point in time as the
+ * backup.
+ * The creation of a new checkpoint allows for future incremental backups.
+ * Note that some hypervisors may require a particular disk format, such as
+ * qcow2, in order to take advantage of checkpoints, while allowing arbitrary
+ * formats if checkpoints are not involved.
+ *
+ * Returns a non-negative job id on success or negative on failure.
+ * This id is then passed to virDomainBackupGetXMLDesc() and
+ * virDomainBackupEnd().
+ */
+int
+virDomainBackupBegin(virDomainPtr domain,
+                     const char *backupXML,
+                     const char *checkpointXML,
+                     unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "backupXML=%s, checkpointXML=%s, flags=0x%x",
+                     NULLSTR(backupXML), NULLSTR(checkpointXML), flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(backupXML, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainBackupBegin) {
+        int ret;
+        ret = conn->driver->domainBackupBegin(domain, backupXML, checkpointXML,
+                                              flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
+
+
+/**
+ * virDomainBackupGetXMLDesc:
+ * @domain: a domain object
+ * @id: the id of an active backup job
+ * @flags: extra flags; not used yet, so callers should always pass 0
+ *
+ * In some cases, a user can start a backup job without supplying all
+ * details and rely on libvirt to fill in the rest (for example,
+ * selecting the port used for an NBD export). This API can then be
+ * used to learn what default values were chosen.
+ *
+ * @id can either be the return value of a previous virDomainBackupBegin().
+ *
+ * Returns a NUL-terminated UTF-8 encoded XML instance or NULL in
+ * case of error.  The caller must free() the returned value.
+ */
+char *
+virDomainBackupGetXMLDesc(virDomainPtr domain,
+                          int id,
+                          unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "id=%d, flags=0x%x", id, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, NULL);
+    conn = domain->conn;
+
+    virCheckNonNegativeArgGoto(id, error);
+
+    if (conn->driver->domainBackupGetXMLDesc) {
+        char *ret;
+        ret = conn->driver->domainBackupGetXMLDesc(domain, id, flags);
+        if (!ret)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return NULL;
+}
+
+
+/**
+ * virDomainBackupEnd:
+ * @domain: a domain object
+ * @id: the id of an active backup job
+ * @flags: unused; callers must pass 0
+ *
+ * Conclude a point-in-time backup job of the given domain.
+ *
+ * In case of a push model backup the backup is aborted and will be incomplete.
+ *
+ * This API is asynchronous thus a successful return does not indicate that the
+ * job was concluded yet.
+ *
+ * Returns 0 if the backup job termination was requested successfully, or -1 on
+ * failure.
+ */
+int
+virDomainBackupEnd(virDomainPtr domain,
+                   int id,
+                   unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "id=%d, flags=0x%x", id, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckReadOnlyGoto(conn->flags, error);
+    virCheckNonNegativeArgGoto(id, error);
+
+    if (conn->driver->domainBackupEnd) {
+        int ret;
+        ret = conn->driver->domainBackupEnd(domain, id, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
