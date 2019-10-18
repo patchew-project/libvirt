@@ -2556,6 +2556,7 @@ qemuDomainObjPrivateXMLFormatBlockjobIterator(void *payload,
                 virBufferAddLit(&attrBuf, " shallownew='yes'");
             break;
 
+        case QEMU_BLOCKJOB_TYPE_BACKUP:
         case QEMU_BLOCKJOB_TYPE_NONE:
         case QEMU_BLOCKJOB_TYPE_INTERNAL:
         case QEMU_BLOCKJOB_TYPE_LAST:
@@ -3139,6 +3140,7 @@ qemuDomainObjPrivateXMLParseBlockjobDataSpecific(qemuBlockJobDataPtr job,
             }
             break;
 
+        case QEMU_BLOCKJOB_TYPE_BACKUP:
         case QEMU_BLOCKJOB_TYPE_NONE:
         case QEMU_BLOCKJOB_TYPE_INTERNAL:
         case QEMU_BLOCKJOB_TYPE_LAST:
