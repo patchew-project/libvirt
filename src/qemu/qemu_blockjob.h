@@ -106,6 +106,16 @@ struct _qemuBlockJobCopyData {
 };
 
 
+typedef struct _qemuBlockJobBackupData qemuBlockJobBackupData;
+typedef qemuBlockJobBackupData *qemuBlockJobDataBackupPtr;
+
+struct _qemuBlockJobBackupData {
+    virStorageSourcePtr store;
+    char *bitmap;
+    int jobid;
+};
+
+
 typedef struct _qemuBlockJobData qemuBlockJobData;
 typedef qemuBlockJobData *qemuBlockJobDataPtr;
 
@@ -123,6 +133,7 @@ struct _qemuBlockJobData {
         qemuBlockJobCommitData commit;
         qemuBlockJobCreateData create;
         qemuBlockJobCopyData copy;
+        qemuBlockJobBackupData backup;
     } data;
 
     int type; /* qemuBlockJobType */
@@ -180,6 +191,13 @@ qemuBlockJobDiskNewCopy(virDomainObjPtr vm,
                         virStorageSourcePtr mirror,
                         bool shallow,
                         bool reuse);
+
+qemuBlockJobDataPtr
+qemuBlockJobDiskNewBackup(virDomainObjPtr vm,
+                          virDomainDiskDefPtr disk,
+                          virStorageSourcePtr store,
+                          const char *bitmap,
+                          int jobid);
 
 qemuBlockJobDataPtr
 qemuBlockJobDiskGetJob(virDomainDiskDefPtr disk)
