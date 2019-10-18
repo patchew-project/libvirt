@@ -3114,6 +3114,31 @@ struct remote_connect_set_identity_args {
         } params;
         u_int                      flags;
 };
+struct remote_domain_backup_begin_args {
+        remote_nonnull_domain      dom;
+        remote_string              disk_xml;
+        remote_string              checkpoint_xml;
+        u_int                      flags;
+};
+struct remote_domain_backup_begin_ret {
+        int                        id;
+};
+struct remote_domain_backup_get_xml_desc_args {
+        remote_nonnull_domain      dom;
+        int                        id;
+        u_int                      flags;
+};
+struct remote_domain_backup_get_xml_desc_ret {
+        remote_nonnull_string      xml;
+};
+struct remote_domain_backup_end_args {
+        remote_nonnull_domain      dom;
+        int                        id;
+        u_int                      flags;
+};
+struct remote_domain_backup_end_ret {
+        int                        retcode;
+};
 enum remote_procedure {
         REMOTE_PROC_CONNECT_OPEN = 1,
         REMOTE_PROC_CONNECT_CLOSE = 2,
@@ -3534,4 +3559,7 @@ enum remote_procedure {
         REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 417,
         REMOTE_PROC_DOMAIN_GET_GUEST_INFO = 418,
         REMOTE_PROC_CONNECT_SET_IDENTITY = 419,
+        REMOTE_PROC_DOMAIN_BACKUP_BEGIN = 420,
+        REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 421,
+        REMOTE_PROC_DOMAIN_BACKUP_END = 422,
 };
