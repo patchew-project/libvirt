@@ -221,6 +221,8 @@ mymain(void)
                 "lxcxml2xmloutdata", "bhyvexml2argvdata", "genericxml2xmlindata",
                 "genericxml2xmloutdata", "xlconfigdata", "libxlxml2domconfigdata",
                 "qemuhotplugtestdomains");
+    DO_TEST_DIR("domainbackup.rng", "domainbackupxml2xmlin",
+                "domainbackupxml2xmlout");
     DO_TEST_DIR("domaincaps.rng", "domaincapsschemadata");
     DO_TEST_DIR("domaincheckpoint.rng", "qemudomaincheckpointxml2xmlin",
                 "qemudomaincheckpointxml2xmlout");
