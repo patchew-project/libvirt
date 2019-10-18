@@ -15289,7 +15289,7 @@ static virDomainVideoAccelDefPtr
 virDomainVideoAccelDefParseXML(xmlNodePtr node)
 {
     xmlNodePtr cur;
-    virDomainVideoAccelDefPtr def;
+    g_autofree virDomainVideoAccelDefPtr def = NULL;
     int val;
     g_autofree char *accel2d = NULL;
     g_autofree char *accel3d = NULL;
@@ -15311,14 +15311,13 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     if (!accel3d && !accel2d && !rendernode)
         return NULL;
 
-    if (VIR_ALLOC(def) < 0)
-        goto cleanup;
+    def = g_new0(virDomainVideoAccelDef, 1);
 
     if (accel3d) {
         if ((val = virTristateBoolTypeFromString(accel3d)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown accel3d value '%s'"), accel3d);
-            goto cleanup;
+            return NULL;
         }
         def->accel3d = val;
     }
@@ -15327,7 +15326,7 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
         if ((val = virTristateBoolTypeFromString(accel2d)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown accel2d value '%s'"), accel2d);
-            goto cleanup;
+            return NULL;
         }
         def->accel2d = val;
     }
@@ -15335,8 +15334,7 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     if (rendernode)
         def->rendernode = virFileSanitizePath(rendernode);
 
- cleanup:
-    return def;
+    return g_steal_pointer(&def);
 }
 
 static virDomainVideoResolutionDefPtr
