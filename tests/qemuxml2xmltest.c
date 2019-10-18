@@ -374,6 +374,13 @@ mymain(void)
     DO_TEST("graphics-vnc-egl-headless",
             QEMU_CAPS_EGL_HEADLESS);
 
+    DO_TEST_CAPS_ARCH_LATEST("default-video-type-aarch64", "aarch64");
+    DO_TEST_CAPS_ARCH_LATEST("default-video-type-ppc64", "ppc64");
+    DO_TEST_CAPS_ARCH_LATEST("default-video-type-riscv64", "riscv64");
+    DO_TEST_CAPS_ARCH_LATEST("default-video-type-s390x", "s390x");
+    DO_TEST("default-video-type-x86_64-caps-test-0", QEMU_CAPS_DEVICE_VGA);
+    DO_TEST("default-video-type-x86_64-caps-test-1", QEMU_CAPS_DEVICE_CIRRUS_VGA);
+
     DO_TEST("graphics-sdl", NONE);
     DO_TEST("graphics-sdl-fullscreen", NONE);
     DO_TEST("graphics-spice", NONE);
@@ -389,7 +396,8 @@ mymain(void)
 
     DO_TEST("graphics-egl-headless-rendernode",
             QEMU_CAPS_EGL_HEADLESS,
-            QEMU_CAPS_EGL_HEADLESS_RENDERNODE);
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
 
     DO_TEST("input-usbmouse", NONE);
     DO_TEST("input-usbtablet", NONE);
