@@ -15376,6 +15376,12 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
         return NULL;
     }
 
+    if (def->x == 0 || def->y == 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("resolution values must be greater than 0"));
+        return NULL;
+    }
+
     return g_steal_pointer(&def);
 }
 
