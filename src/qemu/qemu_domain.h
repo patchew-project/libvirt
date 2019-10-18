@@ -1167,10 +1167,9 @@ qemuDomainCheckCCWS390AddressSupport(const virDomainDef *def,
                                      virQEMUCapsPtr qemuCaps,
                                      const char *devicename);
 
-int
+void
 qemuDomainPrepareDiskSourceData(virDomainDiskDefPtr disk,
-                                virStorageSourcePtr src)
-    G_GNUC_WARN_UNUSED_RESULT;
+                                virStorageSourcePtr src);
 
 
 int

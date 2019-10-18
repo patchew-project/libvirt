@@ -10383,9 +10383,7 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
             return -1;
 
         qemuDomainPrepareStorageSourceConfig(n, cfg, priv->qemuCaps);
-
-        if (qemuDomainPrepareDiskSourceData(disk, n) < 0)
-            return -1;
+        qemuDomainPrepareDiskSourceData(disk, n);
 
         if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV) &&
             qemuDomainPrepareStorageSourceBlockdev(disk, n, priv, cfg) < 0)
@@ -15093,7 +15091,7 @@ qemuDomainCheckCCWS390AddressSupport(const virDomainDef *def,
  * chain. This function should be also called for detected backing chain
  * members.
  */
-int
+void
 qemuDomainPrepareDiskSourceData(virDomainDiskDefPtr disk,
                                 virStorageSourcePtr src)
 {
@@ -15108,8 +15106,6 @@ qemuDomainPrepareDiskSourceData(virDomainDiskDefPtr disk,
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY)
         src->floppyimg = true;
-
-    return 0;
 }
 
 
@@ -15162,9 +15158,7 @@ qemuDomainPrepareDiskSourceLegacy(virDomainDiskDefPtr disk,
         return -1;
 
     qemuDomainPrepareStorageSourceConfig(disk->src, cfg, priv->qemuCaps);
-
-    if (qemuDomainPrepareDiskSourceData(disk, disk->src) < 0)
-        return -1;
+    qemuDomainPrepareDiskSourceData(disk, disk->src);
 
     if (qemuDomainSecretStorageSourcePrepare(priv, disk->src,
                                              disk->info.alias,
@@ -15198,9 +15192,7 @@ qemuDomainPrepareStorageSourceBlockdev(virDomainDiskDefPtr disk,
         return -1;
 
     qemuDomainPrepareStorageSourceConfig(src, cfg, priv->qemuCaps);
-
-    if (qemuDomainPrepareDiskSourceData(disk, src) < 0)
-        return -1;
+    qemuDomainPrepareDiskSourceData(disk, src);
 
     if (qemuDomainSecretStorageSourcePrepare(priv, src,
                                              src->nodestorage,
