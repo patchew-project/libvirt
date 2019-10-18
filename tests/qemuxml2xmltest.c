@@ -1310,6 +1310,8 @@ mymain(void)
 
     DO_TEST_STATUS("blockjob-blockdev");
 
+    DO_TEST_STATUS("backup-pull");
+
     DO_TEST("vhost-vsock", QEMU_CAPS_DEVICE_VHOST_VSOCK);
     DO_TEST("vhost-vsock-auto", QEMU_CAPS_DEVICE_VHOST_VSOCK);
     DO_TEST("vhost-vsock-ccw", QEMU_CAPS_DEVICE_VHOST_VSOCK,
