@@ -15375,7 +15375,7 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
         if (virStrToLong_uip(x, NULL, 10, &def->x) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("cannot parse video x-resolution '%s'"), x);
-            goto cleanup;
+            goto error;
         }
     }
 
@@ -15383,12 +15383,21 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
         if (virStrToLong_uip(y, NULL, 10, &def->y) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("cannot parse video y-resolution '%s'"), y);
-            goto cleanup;
+            goto error;
         }
     }
 
+    /* QEMU ignores 'xres' or/and 'yres' with value 0. */
+    if (!def->x || !def->y)
+        goto error;
+
  cleanup:
     return def;
+
+ error:
+    VIR_FREE(def);
+    def = NULL;
+    goto cleanup;
 }
 
 static virDomainVideoDriverDefPtr
