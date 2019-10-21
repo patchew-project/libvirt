@@ -160,11 +160,11 @@ mymain(void)
 
     if (virAsprintf(&poolxml, "%s/storagepoolxml2xmlin/pool-sheepdog.xml",
                     abs_srcdir) < 0)
-        goto cleanup;
+        return EXIT_SUCCESS;
 
     if (virAsprintf(&volxml, "%s/storagevolxml2xmlin/vol-sheepdog.xml",
                     abs_srcdir) < 0)
-        goto cleanup;
+        return EXIT_SUCCESS;
 
 #define DO_TEST_NODE(collie) \
     do { \
@@ -202,7 +202,6 @@ mymain(void)
         ++test;
     }
 
- cleanup:
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
