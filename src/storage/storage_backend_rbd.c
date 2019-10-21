@@ -411,17 +411,15 @@ volStorageBackendRBDGetFeatures(rbd_image_t image,
                                 const char *volname,
                                 uint64_t *features)
 {
-    int r, ret = -1;
+    int r;
 
     if ((r = rbd_get_features(image, features)) < 0) {
         virReportSystemError(-r, _("failed to get the features of RBD image "
                                  "%s"), volname);
-        goto cleanup;
+        return -1;
     }
-    ret = 0;
 
- cleanup:
-    return ret;
+    return 0;
 }
 
 #if LIBRBD_VERSION_CODE > 265
@@ -467,7 +465,7 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol,
                                   rbd_image_t *image,
                                   rbd_image_info_t *info)
 {
-    int r, ret = -1;
+    int r;
     size_t allocation = 0;
 
     if ((r = rbd_diff_iterate2(image, NULL, 0, info->size, 0, 1,
@@ -475,17 +473,15 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol,
                                &allocation)) < 0) {
         virReportSystemError(-r, _("failed to iterate RBD image '%s'"),
                              vol->name);
-        goto cleanup;
+        return -1;
     }
 
     VIR_DEBUG("Found %zu bytes allocated for RBD image %s",
               allocation, vol->name);
 
     vol->target.allocation = allocation;
-    ret = 0;
 
- cleanup:
-    return ret;
+    return 0;
 }
 
 #else
@@ -971,14 +967,13 @@ virStorageBackendRBDImageInfo(rbd_image_t image,
                               uint64_t *stripe_unit,
                               uint64_t *stripe_count)
 {
-    int ret = -1;
     int r = 0;
     uint8_t oldformat;
 
     if ((r = rbd_get_old_format(image, &oldformat)) < 0) {
         virReportSystemError(-r, _("failed to get the format of RBD image %s"),
                              volname);
-        goto cleanup;
+        return -1;
     }
 
     if (oldformat != 0) {
@@ -986,28 +981,25 @@ virStorageBackendRBDImageInfo(rbd_image_t image,
                        _("RBD image %s is old format. Does not support "
                          "extended features and striping"),
                        volname);
-        goto cleanup;
+        return -1;
     }
 
     if (volStorageBackendRBDGetFeatures(image, volname, features) < 0)
-        goto cleanup;
+        return -1;
 
     if ((r = rbd_get_stripe_unit(image, stripe_unit)) < 0) {
         virReportSystemError(-r, _("failed to get the stripe unit of RBD image %s"),
                              volname);
-        goto cleanup;
+        return -1;
     }
 
     if ((r = rbd_get_stripe_count(image, stripe_count)) < 0) {
         virReportSystemError(-r, _("failed to get the stripe count of RBD image %s"),
                              volname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 /* Callback function for rbd_diff_iterate() */
@@ -1122,7 +1114,6 @@ virStorageBackendRBDSnapshotCreate(rbd_image_t image,
                                    char *imgname,
                                    char *snapname)
 {
-    int ret = -1;
     int r = -1;
 
     VIR_DEBUG("Creating RBD snapshot %s@%s", imgname, snapname);
@@ -1130,13 +1121,10 @@ virStorageBackendRBDSnapshotCreate(rbd_image_t image,
     if ((r = rbd_snap_create(image, snapname)) < 0) {
         virReportSystemError(-r, _("failed to create RBD snapshot %s@%s"),
                                    imgname, snapname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 static int
@@ -1145,7 +1133,6 @@ virStorageBackendRBDSnapshotProtect(rbd_image_t image,
                                     char *snapname)
 {
     int r = -1;
-    int ret = -1;
     int protected;
 
     VIR_DEBUG("Querying if RBD snapshot %s@%s is protected", imgname, snapname);
@@ -1153,7 +1140,7 @@ virStorageBackendRBDSnapshotProtect(rbd_image_t image,
     if ((r = rbd_snap_is_protected(image, snapname, &protected)) < 0) {
         virReportSystemError(-r, _("failed to verify if RBD snapshot %s@%s "
                                    "is protected"), imgname, snapname);
-        goto cleanup;
+        return -1;
     }
 
     if (protected == 0) {
@@ -1163,16 +1150,13 @@ virStorageBackendRBDSnapshotProtect(rbd_image_t image,
         if ((r = rbd_snap_protect(image, snapname)) < 0) {
             virReportSystemError(-r, _("failed to protect RBD snapshot %s@%s"),
                                        imgname, snapname);
-            goto cleanup;
+            return -1;
         }
     } else {
         VIR_DEBUG("RBD Snapshot %s@%s is already protected", imgname, snapname);
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 static int
@@ -1392,7 +1376,6 @@ virStorageBackendRBDVolWipeDiscard(rbd_image_t image,
                                    uint64_t stripe_count)
 {
     int r = -1;
-    int ret = -1;
     unsigned long long offset = 0;
     unsigned long long length;
 
@@ -1405,7 +1388,7 @@ virStorageBackendRBDVolWipeDiscard(rbd_image_t image,
             virReportSystemError(-r, _("discarding %llu bytes failed on "
                                        "RBD image %s at offset %llu"),
                                      length, imgname, offset);
-            goto cleanup;
+            return -1;
         }
 
         VIR_DEBUG("Discarded %llu bytes of RBD image %s at offset %llu",
@@ -1414,10 +1397,7 @@ virStorageBackendRBDVolWipeDiscard(rbd_image_t image,
         offset += length;
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 static int
