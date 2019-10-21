@@ -32,6 +32,9 @@
 typedef struct _virDomainNuma virDomainNuma;
 typedef virDomainNuma *virDomainNumaPtr;
 
+typedef struct _virDomainAutoPartition virDomainAutoPartition;
+typedef virDomainAutoPartition *virDomainAutoPartitionPtr;
+
 typedef enum {
     VIR_DOMAIN_NUMATUNE_PLACEMENT_DEFAULT = 0,
     VIR_DOMAIN_NUMATUNE_PLACEMENT_STATIC,
@@ -44,6 +47,24 @@ VIR_ENUM_DECL(virDomainNumatunePlacement);
 VIR_ENUM_DECL(virDomainNumatuneMemMode);
 
 typedef enum {
+    VIR_DOMAIN_VNUMA_MODE_HOST = 0,
+    VIR_DOMAIN_VNUMA_MODE_NODE,
+
+    VIR_DOMAIN_VNUMA_MODE_LAST
+} virDomainVnumaMode;
+VIR_ENUM_DECL(virDomainVnumaMode);
+
+typedef enum {
+    VIR_DOMAIN_VNUMA_DISTRIBUTION_CONTIGUOUS = 0,
+    VIR_DOMAIN_VNUMA_DISTRIBUTION_SIBLINGS,
+    VIR_DOMAIN_VNUMA_DISTRIBUTION_ROUNDROBIN,
+    VIR_DOMAIN_VNUMA_DISTRIBUTION_INTERLEAVE,
+
+    VIR_DOMAIN_VNUMA_DISTRIBUTION_LAST
+} virDomainVnumaDistribution;
+VIR_ENUM_DECL(virDomainVnumaDistribution);
+
+typedef enum {
     VIR_DOMAIN_MEMORY_ACCESS_DEFAULT = 0,  /*  No memory access defined */
     VIR_DOMAIN_MEMORY_ACCESS_SHARED,    /* Memory access is set as shared */
     VIR_DOMAIN_MEMORY_ACCESS_PRIVATE,   /* Memory access is set as private */
@@ -52,6 +73,14 @@ typedef enum {
 } virDomainMemoryAccess;
 VIR_ENUM_DECL(virDomainMemoryAccess);
 
+struct _virDomainAutoPartition {
+    bool specified; /* Auto vNUMA active */
+    int mode;       /* Auto vNUMA mode */
+    int distribution; /* Auto vNUMA distribution */
+    unsigned long long mem; /* Auto vNUMA total memory */
+    unsigned int vcell;     /* Auto vNUMA node Cell */
+    virBitmapPtr nodeset;   /* Auto vNUMA host nodes where this guest node resides */
+};
 
 virDomainNumaPtr virDomainNumaNew(void);
 void virDomainNumaFree(virDomainNumaPtr numa);
@@ -67,9 +96,19 @@ int virDomainNumatuneParseXML(virDomainNumaPtr numa,
 int virDomainNumatuneFormatXML(virBufferPtr buf, virDomainNumaPtr numatune)
     ATTRIBUTE_NONNULL(1);
 
+virDomainAutoPartitionPtr virDomainVnumaParseXML(virDomainNumaPtr numa,
+                                                 xmlXPathContextPtr ctxt)
+    ATTRIBUTE_NONNULL(1);
+
+int virDomainVnumaFormatXML(virBufferPtr buf, virDomainNumaPtr numa)
+    ATTRIBUTE_NONNULL(1);
+
 /*
  * Getters
  */
+bool virDomainVnumaIsEnabled(virDomainNumaPtr numa)
+    ATTRIBUTE_NONNULL(1);
+
 int virDomainNumatuneGetMode(virDomainNumaPtr numatune,
                              int cellid,
                              virDomainNumatuneMemMode *mode);
@@ -134,6 +173,19 @@ int virDomainNumatuneSet(virDomainNumaPtr numa,
                          virBitmapPtr nodeset)
     ATTRIBUTE_NONNULL(1);
 
+void virDomainVnumaSetEnabled(virDomainNumaPtr numa,
+                              virDomainAutoPartitionPtr avnuma)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int virDomainVnumaSetMemory(virDomainNumaPtr numa,
+                            unsigned long long size)
+    ATTRIBUTE_NONNULL(1);
+
+int virDomainNumatuneSetmemset(virDomainNumaPtr numa,
+                               size_t cell,
+                               size_t node,
+                               int mode)
+    ATTRIBUTE_NONNULL(1);
+
 size_t virDomainNumaSetNodeCount(virDomainNumaPtr numa,
                                  size_t nmem_nodes)
     ATTRIBUTE_NONNULL(1);
@@ -149,9 +201,9 @@ int virDomainNumaSetNodeDistance(virDomainNumaPtr numa,
                                  unsigned int value)
     ATTRIBUTE_NONNULL(1);
 
-size_t virDomainNumaSetNodeDistanceCount(virDomainNumaPtr numa,
-                                         size_t node,
-                                         size_t ndistances)
+int virDomainNumaSetNodeDistanceCount(virDomainNumaPtr numa,
+                                      size_t node,
+                                      size_t ndistances)
     ATTRIBUTE_NONNULL(1);
 
 virBitmapPtr virDomainNumaSetNodeCpumask(virDomainNumaPtr numa,

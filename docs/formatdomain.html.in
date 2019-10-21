@@ -1294,6 +1294,98 @@
     </dl>
 
 
+    <h3><a id="elementsvNUMAPartitioning">NUMA Host or Node Partitioning</a></h3>
+
+    <p>
+      With the help of the <code>vnuma</code> element, libvirt can
+      dynamically partition a guest domain for vNUMA by rendering its XML
+      into a 'host' or 'node' <a href="#elementsNUMAtopology"><code>NUMA
+      topology</code></a> matching model.
+    </p>
+
+<pre>
+&lt;domain&gt;
+  ...
+  &lt;vnuma mode='host|node' distribution='contiguous|siblings|round-robin|interleave'&gt;
+    &lt;memory unit='KiB'&gt;524288&lt;/memory&gt;
+    &lt;partition nodeset="1-4,^3" cells="8"/&gt;
+  &lt;/vnuma&gt;
+  ...
+&lt;/domain&gt;
+</pre>
+
+    <dl>
+      <dt><code>vnuma</code></dt>
+      <dd>
+        The attribute <code>mode</code> selects a specific rendering
+        method. Its value is either "host" or "node." If <code>mode</code>
+        is set to "host" the guest domain is automatically partitioned
+        to match the host NUMA topology. If <code>mode</code>
+        is "node," the guest domain is partitioned according to the
+        <code>nodeset</code> and <code>cells</code> under the
+        <code>vnuma</code> <code>partition</code> subelement.
+            <span class="since">Since 5.9</span>
+
+        The optional attribute <code>distribution</code> selects the
+        guest <a href="#elementsNUMAtopology"><code>numa</code></a>
+        <code>cell</code> <code>cpus</code> distribution. It allows
+        <span class="since">Since 5.9</span> for:
+        <dl>
+          <dt><code>contiguous</code></dt>
+          <dd> The cpus are enumerate sequentially over the
+            <a href="#elementsNUMAtopology"><code>numa</code></a> defined
+            cells.
+          </dd>
+          <dt><code>siblings</code></dt>
+          <dd> The cpus are distributed over the
+            <a href="#elementsNUMAtopology"><code>numa</code></a>
+            cells matching the host CPU SMT model.
+          </dd>
+          <dt><code>round-robin</code></dt>
+          <dd> The cpus are distributed over the
+            <a href="#elementsNUMAtopology"><code>numa</code></a>
+            cells matching the host CPU topology.
+          </dd>
+          <dt><code>interleave</code></dt>
+          <dd> The cpus are interleaved one at a time over the
+            <a href="#elementsNUMAtopology"><code>numa</code></a> cells.
+          </dd>
+         </dl>
+      </dd>
+
+      <dt><code>memory</code></dt>
+      <dd>
+        The optional subelement <code>memory</code> specifies the
+        memory size reserved for the guest assigned
+        <a href="#elementsNUMAtopology"><code>numa</code></a> cells.
+        <span class="since">Since 1.2.11</span>, one can use an additional
+        <a href="#elementsMemoryAllocation"><code>unit</code></a>
+        attribute to define units in which this <code>memory</code>
+        size is quantified. If no <code>memory</code> is specified, the
+        <a href="#elementsMemoryAllocation">memory</a> setting is
+        acquired to set this subelement documented
+        <a href="#elementsvNUMAPartitioning"><code>vnuma</code></a> value.
+        <span class="since">Since 5.9</span>
+      </dd>
+
+      <dt><code>partition</code></dt>
+      <dd>
+        The optional attribute <code>partition</code> is only active when
+        <a href="#elementsvNUMAPartitioning"><code>vnuma</code></a>
+        <code>mode</code> "node" is selected and allows for defining the
+        active "nodeset" and "cells" to target for under the "guest" domain.
+        For example; the specified <code>nodeset</code> can limit the
+        <a href="#elementsNUMATuning"><code>numatune</code></a> assigned
+        host NUMA nodes in effect under the "guest".   Alternatively,
+        the provided <code>cells</code> attribute can define the number
+        of <a href="#elementsNUMAtopology"><code>numa</code></a> cells
+        to render.
+
+        <span class="since">Since 5.9</span>
+      </dd>
+    </dl>
+
+
     <h3><a id="elementsNUMATuning">NUMA Node Tuning</a></h3>
 
 <pre>
@@ -1754,6 +1846,8 @@
         </dl>
       </dd>
     </dl>
+
+    <h3><a id="elementsNUMAtopology">NUMA topology</a></h3>
 
     <p>
       Guest NUMA topology can be specified using the <code>numa</code> element.

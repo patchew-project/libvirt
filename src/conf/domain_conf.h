@@ -2535,6 +2535,7 @@ struct _virDomainDef {
 
 unsigned long long virDomainDefGetMemoryInitial(const virDomainDef *def);
 void virDomainDefSetMemoryTotal(virDomainDefPtr def, unsigned long long size);
+int virDomainDefSetNUMAMemoryTotal(virDomainDefPtr def, unsigned long long size, virCapsPtr caps);
 unsigned long long virDomainDefGetMemoryTotal(const virDomainDef *def);
 bool virDomainDefHasMemoryHotplug(const virDomainDef *def);
 
@@ -2816,6 +2817,7 @@ int virDomainDefSetVcpusMax(virDomainDefPtr def,
 bool virDomainDefHasVcpusOffline(const virDomainDef *def);
 unsigned int virDomainDefGetVcpusMax(const virDomainDef *def);
 int virDomainDefSetVcpus(virDomainDefPtr def, unsigned int vcpus);
+void virDomainDefSetVcpusVnuma(virDomainDefPtr def, size_t vcpus);
 unsigned int virDomainDefGetVcpus(const virDomainDef *def);
 virBitmapPtr virDomainDefGetOnlineVcpumap(const virDomainDef *def);
 virDomainVcpuDefPtr virDomainDefGetVcpu(virDomainDefPtr def, unsigned int vcpu)

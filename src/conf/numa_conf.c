@@ -45,6 +45,20 @@ VIR_ENUM_IMPL(virDomainNumatuneMemMode,
               "interleave",
 );
 
+VIR_ENUM_IMPL(virDomainVnumaMode,
+              VIR_DOMAIN_VNUMA_MODE_LAST,
+              "host",
+              "node",
+);
+
+VIR_ENUM_IMPL(virDomainVnumaDistribution,
+              VIR_DOMAIN_VNUMA_DISTRIBUTION_LAST,
+              "contiguous",
+              "siblings",
+              "round-robin",
+              "interleave",
+);
+
 VIR_ENUM_IMPL(virDomainNumatunePlacement,
               VIR_DOMAIN_NUMATUNE_PLACEMENT_LAST,
               "default",
@@ -90,6 +104,7 @@ struct _virDomainNuma {
     size_t nmem_nodes;
 
     /* Future NUMA tuning related stuff should go here. */
+    virDomainAutoPartitionPtr avnuma;
 };
 
 
@@ -353,6 +368,156 @@ virDomainNumatuneFormatXML(virBufferPtr buf,
     return 0;
 }
 
+int
+virDomainVnumaFormatXML(virBufferPtr buf,
+                        virDomainNumaPtr numa)
+{
+    char *nodeset = NULL;
+    if (numa && virDomainVnumaIsEnabled(numa)) {
+
+        virBufferAddLit(buf, "<vnuma");
+        virBufferAsprintf(buf, " mode='%s'",
+                          virDomainVnumaModeTypeToString(numa->avnuma->mode));
+        virBufferAsprintf(buf, " distribution='%s'",
+                          virDomainVnumaDistributionTypeToString(numa->avnuma->distribution));
+        virBufferAddLit(buf, ">\n");
+
+        virBufferAdjustIndent(buf, 2);
+        virBufferAsprintf(buf, "<memory unit='KiB'>%llu</memory>\n",
+                          numa->avnuma->mem);
+
+
+        if (numa->avnuma->mode == VIR_DOMAIN_VNUMA_MODE_NODE) {
+                if ((nodeset = virBitmapFormat(numa->avnuma->nodeset))) {
+                    virBufferAsprintf(buf, "<partition nodeset='%s'", nodeset);
+                    VIR_FREE(nodeset);
+                }
+
+                if (numa->avnuma->vcell)
+                    virBufferAsprintf(buf, " cells='%u'", numa->avnuma->vcell);
+                virBufferAddLit(buf, "/>\n");
+        }
+        virBufferAdjustIndent(buf, -2);
+
+        virBufferAddLit(buf, "</vnuma>\n");
+    }
+
+    return 0;
+}
+
+virDomainAutoPartitionPtr
+virDomainVnumaParseXML(virDomainNumaPtr numa,
+                       xmlXPathContextPtr ctxt)
+{
+    int ret = -1;
+    char *tmp = NULL;
+    xmlNodePtr node, oldnode;
+    virDomainAutoPartitionPtr avnuma = NULL;
+
+    if (!numa)
+        return NULL;
+
+    if (!ctxt)
+        return avnuma = numa->avnuma;
+
+    oldnode = ctxt->node;
+    node = virXPathNode("./vnuma[1]", ctxt);
+    if (node) {
+        int mode = -1;
+        int distribution = VIR_DOMAIN_VNUMA_DISTRIBUTION_CONTIGUOUS;
+        unsigned int maxvcell = 0;
+        unsigned long long mem = 0L;
+        virBitmapPtr nodeset = NULL;
+
+        if (!virXMLNodeNameEqual(node, "vnuma")) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("domain definition does not contain expected 'vnuma' element"));
+            goto cleanup;
+        }
+
+        if (VIR_ALLOC(avnuma) < 0)
+            goto cleanup;
+
+        /* There has to be a valid vnuma mode setting */
+        if (!(tmp = virXMLPropString(node, "mode"))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("No vNUMA 'mode' specified for automatic host partitioning"));
+            goto cleanup;
+        }
+
+        if ((mode = virDomainVnumaModeTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unsupported automatic vNUMA partitioning mode '%s'"), tmp);
+            goto cleanup;
+        }
+        VIR_FREE(tmp);
+
+        /* If specified get the vcpu 'distribution' type */
+        if ((tmp = virXMLPropString(node, "distribution")) &&
+            (distribution = virDomainVnumaDistributionTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unsupported automatic vNUMA partitioning distribution '%s'"), tmp);
+            goto cleanup;
+        }
+        VIR_FREE(tmp);
+
+        /* Obtain the designated <vnuma mode='node' attributes */
+        ctxt->node = node;
+        switch (mode) {
+            case VIR_DOMAIN_VNUMA_MODE_NODE:
+                if ((node = virXPathNode("./partition[1]", ctxt))) {
+
+                    /* Get the host <partition> nodeset='#nodeset' for <numatune> */
+                    if ((tmp = virXMLPropString(node, "nodeset"))) {
+                        if (virBitmapParse(tmp, &nodeset, VIR_DOMAIN_CPUMASK_LEN) < 0)
+                            goto cleanup;
+                        VIR_FREE(tmp);
+                    }
+
+                    /* Get the fictitious <partition> cells='#count' attribute */
+                    if ((tmp = virXMLPropString(node, "cells"))) {
+                        if (virStrToLong_ui(tmp, NULL, 10, &maxvcell) < 0) {
+                            virReportError(VIR_ERR_XML_ERROR, "%s",
+                                    _("maximum vcpus count must be an integer"));
+                            goto cleanup;
+                        }
+                        VIR_FREE(tmp);
+                    }
+                }
+                break;
+
+            case VIR_DOMAIN_VNUMA_MODE_HOST:
+            default:
+                break;
+        }
+
+        /* Get the <memory> size to render the <numa> nodes with */
+        if (virDomainParseMemory("./memory[1]", NULL, ctxt,
+                             &mem, false, true) < 0)
+            goto cleanup;
+
+        /* We're set and good to go */
+        avnuma->mode = mode;
+        avnuma->distribution = distribution;
+        avnuma->nodeset = nodeset;
+        avnuma->mem = mem;
+        avnuma->vcell = maxvcell;
+
+        numa->avnuma = avnuma;
+    }
+    ret = 0;
+
+ cleanup:
+    if (ret) {
+        VIR_FREE(tmp);
+        VIR_FREE(avnuma);
+        avnuma = NULL;
+    }
+    ctxt->node = oldnode;
+
+    return avnuma;
+}
+
 void
 virDomainNumaFree(virDomainNumaPtr numa)
 {
@@ -570,6 +735,76 @@ virDomainNumatuneSet(virDomainNumaPtr numa,
 
  cleanup:
     return ret;
+}
+
+int
+virDomainNumatuneSetmemset(virDomainNumaPtr numa,
+                           size_t cell,
+                           size_t node,
+                           int mode)
+{
+    int ret = -1;
+    virDomainNumaNodePtr mem_node = &numa->mem_nodes[cell];
+
+    /* Get out if this is under control of numad! */
+    if (numa->memory.specified)
+        goto cleanup;
+
+    /* Get out if numa does not apply */
+    if (cell > numa->nmem_nodes)
+        goto cleanup;
+
+    /* Get out if mode is out of range */
+    if (mode < 0 || mode >= VIR_DOMAIN_NUMATUNE_MEM_LAST) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unsupported numatune mode '%d'"),
+                       mode);
+        goto cleanup;
+    }
+
+    /* Force the numatune/memset setting */
+    if (!(mem_node->nodeset = virBitmapNew(numa->nmem_nodes)) ||
+        virBitmapSetBitExpand(mem_node->nodeset, node) < 0) {
+        virBitmapFree(mem_node->nodeset);
+        goto cleanup;
+    }
+    mem_node->mode = mode;
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+bool
+virDomainVnumaIsEnabled(virDomainNumaPtr numa)
+{
+    if (numa && numa->avnuma)
+        return numa->avnuma->specified;
+
+    return false;
+}
+
+void
+virDomainVnumaSetEnabled(virDomainNumaPtr numa,
+                         virDomainAutoPartitionPtr avnuma)
+{
+    if (numa && avnuma) {
+        numa->avnuma = avnuma;
+        numa->avnuma->specified = true;
+    }
+}
+
+int
+virDomainVnumaSetMemory(virDomainNumaPtr numa,
+                        unsigned long long size)
+{
+    if (!numa)
+        return -1;
+
+    numa->avnuma->mem = size;
+
+    return 0;
 }
 
 static bool
@@ -1273,7 +1508,7 @@ virDomainNumaSetNodeDistance(virDomainNumaPtr numa,
 }
 
 
-size_t
+int
 virDomainNumaSetNodeDistanceCount(virDomainNumaPtr numa,
                                   size_t node,
                                   size_t ndistances)
@@ -1285,11 +1520,11 @@ virDomainNumaSetNodeDistanceCount(virDomainNumaPtr numa,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot alter an existing nmem_nodes distances set for node: %zu"),
                        node);
-        return 0;
+        return -1;
     }
 
     if (VIR_ALLOC_N(distances, ndistances) < 0)
-        return 0;
+        return -1;
 
     numa->mem_nodes[node].distances = distances;
     numa->mem_nodes[node].ndistances = ndistances;

@@ -311,8 +311,10 @@ virDomainDefParseNode;
 virDomainDefParseString;
 virDomainDefPostParse;
 virDomainDefSetMemoryTotal;
+virDomainDefSetNUMAMemoryTotal;
 virDomainDefSetVcpus;
 virDomainDefSetVcpusMax;
+virDomainDefSetVcpusVnuma;
 virDomainDefValidate;
 virDomainDefVcpuOrderClear;
 virDomainDeleteConfig;
@@ -827,7 +829,13 @@ virDomainNumatuneParseXML;
 virDomainNumatunePlacementTypeFromString;
 virDomainNumatunePlacementTypeToString;
 virDomainNumatuneSet;
+virDomainNumatuneSetmemset;
 virDomainNumatuneSpecifiedMaxNode;
+virDomainVnumaFormatXML;
+virDomainVnumaIsEnabled;
+virDomainVnumaParseXML;
+virDomainVnumaSetEnabled;
+virDomainVnumaSetMemory;
 
 
 # conf/nwfilter_conf.h

@@ -787,6 +787,10 @@
       </optional>
 
       <optional>
+        <ref name="vnuma"/>
+      </optional>
+
+      <optional>
         <ref name="numatune"/>
       </optional>
 
@@ -1060,6 +1064,67 @@
         </attribute>
       </group>
     </choice>
+  </define>
+
+  <!-- All the "host vnuma" related tunables would go in the vnuma -->
+  <define name="vnuma">
+    <element name="vnuma">
+      <optional>
+        <ref name="vnumaMode"/>
+      </optional>
+      <optional>
+        <ref name="vnumaDistribution"/>
+      </optional>
+      <interleave>
+        <optional>
+          <element name="memory">
+            <ref name="scaledInteger"/>
+          </element>
+        </optional>
+        <optional>
+          <element name="partition">
+            <optional>
+              <ref name="vnumaNodeset"/>
+            </optional>
+            <optional>
+              <ref name="vnumaCells"/>
+            </optional>
+          </element>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
+  <define name="vnumaMode">
+    <attribute name="mode">
+      <choice>
+        <value>host</value>
+        <value>node</value>
+      </choice>
+    </attribute>
+  </define>
+
+  <define name="vnumaDistribution">
+    <attribute name="distribution">
+      <choice>
+        <value>contiguous</value>
+        <value>siblings</value>
+        <value>round-robin</value>
+        <value>interleave</value>
+      </choice>
+    </attribute>
+  </define>
+
+  <define name="vnumaNodeset">
+    <attribute name='nodeset'>
+      <ref name='cpuset'/>
+    </attribute>
+  </define>
+
+  <define name="vnumaCells">
+    <attribute name='cells'>
+      <ref name="positiveInteger"/>
+    </attribute>
   </define>
 
   <!-- All the NUMA related tunables would go in the numatune -->
