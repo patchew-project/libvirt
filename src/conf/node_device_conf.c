@@ -2115,7 +2115,6 @@ virNodeDeviceGetWWNs(virNodeDeviceDefPtr def,
                      char **wwpn)
 {
     virNodeDevCapsDefPtr cap = NULL;
-    int ret = -1;
 
     cap = def->caps;
     while (cap != NULL) {
@@ -2132,12 +2131,10 @@ virNodeDeviceGetWWNs(virNodeDeviceDefPtr def,
     if (cap == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("Device is not a fibre channel HBA"));
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -2504,7 +2501,7 @@ virNodeDeviceGetPCISRIOVCaps(const char *sysfsPath,
     ret = virPCIGetPhysicalFunction(sysfsPath,
                                     &pci_dev->physical_function);
     if (ret < 0)
-        goto cleanup;
+        return ret;
 
     if (pci_dev->physical_function)
         pci_dev->flags |= VIR_NODE_DEV_CAP_FLAG_PCI_PHYSICAL_FUNCTION;
@@ -2513,13 +2510,12 @@ virNodeDeviceGetPCISRIOVCaps(const char *sysfsPath,
                                     &pci_dev->num_virtual_functions,
                                     &pci_dev->max_virtual_functions);
     if (ret < 0)
-        goto cleanup;
+        return ret;
 
     if (pci_dev->num_virtual_functions > 0 ||
         pci_dev->max_virtual_functions > 0)
         pci_dev->flags |= VIR_NODE_DEV_CAP_FLAG_PCI_VIRTUAL_FUNCTION;
 
- cleanup:
     return ret;
 }
 
@@ -2528,7 +2524,7 @@ static int
 virNodeDeviceGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
 {
     size_t i;
-    int tmpGroup, ret = -1;
+    int tmpGroup;
     virPCIDeviceAddress addr;
 
     /* this could be a refresh, so clear out the old data */
@@ -2545,23 +2541,19 @@ virNodeDeviceGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
     tmpGroup = virPCIDeviceAddressGetIOMMUGroupNum(&addr);
     if (tmpGroup == -1) {
         /* error was already reported */
-        goto cleanup;
+        return -1;
     }
-    if (tmpGroup == -2) {
+    if (tmpGroup == -2)
         /* -2 return means there is no iommu_group data */
-        ret = 0;
-        goto cleanup;
-    }
+        return 0;
     if (tmpGroup >= 0) {
         if (virPCIDeviceAddressGetIOMMUGroupAddresses(&addr, &pci_dev->iommuGroupDevices,
                                                       &pci_dev->nIommuGroupDevices) < 0)
-            goto cleanup;
+            return -1;
         pci_dev->iommuGroupNumber = tmpGroup;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
