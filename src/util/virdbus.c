@@ -1194,7 +1194,6 @@ int virDBusMessageDecodeArgs(DBusMessage* msg,
                              va_list args)
 {
     DBusMessageIter iter;
-    int ret = -1;
 
     if (!dbus_message_iter_init(msg, &iter)) {
         if (*types != '\0') {
@@ -1202,15 +1201,12 @@ int virDBusMessageDecodeArgs(DBusMessage* msg,
                            _("No args present for signature %s"),
                            types);
         } else {
-            ret = 0;
+            return 0;
         }
-        goto cleanup;
+        return -1;
     }
 
-    ret = virDBusMessageIterDecode(&iter, types, args);
-
- cleanup:
-    return ret;
+    return virDBusMessageIterDecode(&iter, types, args);
 }
 
 
@@ -1399,25 +1395,21 @@ int virDBusCreateMethodV(DBusMessage **call,
                          const char *types,
                          va_list args)
 {
-    int ret = -1;
-
     if (!(*call = dbus_message_new_method_call(destination,
                                                path,
                                                iface,
                                                member))) {
         virReportOOMError();
-        goto cleanup;
+        return -1;
     }
 
     if (virDBusMessageEncodeArgs(*call, types, args) < 0) {
         virDBusMessageUnref(*call);
         *call = NULL;
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -1471,22 +1463,18 @@ int virDBusCreateReplyV(DBusMessage **reply,
                         const char *types,
                         va_list args)
 {
-    int ret = -1;
-
     if (!(*reply = dbus_message_new(DBUS_MESSAGE_TYPE_METHOD_RETURN))) {
         virReportOOMError();
-        goto cleanup;
+        return -1;
     }
 
     if (virDBusMessageEncodeArgs(*reply, types, args) < 0) {
         virDBusMessageUnref(*reply);
         *reply = NULL;
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 

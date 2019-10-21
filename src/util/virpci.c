@@ -1908,18 +1908,15 @@ virPCIDeviceAddressGetIOMMUGroupAddresses(virPCIDeviceAddressPtr devAddr,
                                           virPCIDeviceAddressPtr **iommuGroupDevices,
                                           size_t *nIommuGroupDevices)
 {
-    int ret = -1;
     virPCIDeviceAddressList addrList = { iommuGroupDevices,
                                          nIommuGroupDevices };
 
     if (virPCIDeviceAddressIOMMUGroupIterate(devAddr,
                                              virPCIGetIOMMUGroupAddressesAddOne,
                                              &addrList) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 

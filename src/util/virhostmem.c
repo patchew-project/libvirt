@@ -142,7 +142,6 @@ virHostMemGetStatsLinux(FILE *meminfo,
                         virNodeMemoryStatsPtr params,
                         int *nparams)
 {
-    int ret = -1;
     size_t i = 0, j = 0, k = 0;
     int found = 0;
     int nr_param;
@@ -169,15 +168,14 @@ virHostMemGetStatsLinux(FILE *meminfo,
     if ((*nparams) == 0) {
         /* Current number of memory stats supported by linux */
         *nparams = nr_param;
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     if ((*nparams) != nr_param) {
         virReportInvalidArg(nparams,
                             _("nparams in %s must be %d"),
                             __FUNCTION__, nr_param);
-        goto cleanup;
+        return -1;
     }
 
     while (fgets(line, sizeof(line), meminfo) != NULL) {
@@ -200,7 +198,7 @@ virHostMemGetStatsLinux(FILE *meminfo,
                 if (p == NULL) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    "%s", _("no prefix found"));
-                    goto cleanup;
+                    return -1;
                 }
                 p++;
             }
@@ -219,7 +217,7 @@ virHostMemGetStatsLinux(FILE *meminfo,
                 if (virStrcpyStatic(param->field, convp->field) < 0) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    "%s", _("Field kernel memory too long for destination"));
-                    goto cleanup;
+                    return -1;
                 }
                 param->value = val;
                 found++;
@@ -233,13 +231,10 @@ virHostMemGetStatsLinux(FILE *meminfo,
     if (found == 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("no available memory line found"));
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 #endif
 
@@ -620,14 +615,12 @@ static int
 virHostMemGetInfoFake(unsigned long long *mem,
                       unsigned long long *freeMem)
 {
-    int ret = -1;
-
     if (mem) {
         double total = physmem_total();
         if (!total) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Cannot determine free memory"));
-            goto cleanup;
+            return -1;
         }
 
         *mem = (unsigned long long) total;
@@ -639,15 +632,13 @@ virHostMemGetInfoFake(unsigned long long *mem,
         if (!avail) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Cannot determine free memory"));
-            goto cleanup;
+            return -1;
         }
 
         *freeMem = (unsigned long long) avail;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -658,7 +649,6 @@ virHostMemGetCellsFree(unsigned long long *freeMems,
 {
     unsigned long long mem;
     int n, lastCell, numCells;
-    int ret = -1;
     int maxCell;
 
     if (!virNumaIsAvailable())
@@ -672,7 +662,7 @@ virHostMemGetCellsFree(unsigned long long *freeMems,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("start cell %d out of range (0-%d)"),
                        startCell, maxCell);
-        goto cleanup;
+        return -1;
     }
     lastCell = startCell + maxCells - 1;
     if (lastCell > maxCell)
@@ -683,10 +673,7 @@ virHostMemGetCellsFree(unsigned long long *freeMems,
 
         freeMems[numCells++] = mem;
     }
-    ret = numCells;
-
- cleanup:
-    return ret;
+    return numCells;
 }
 
 int
@@ -734,7 +721,6 @@ virHostMemGetFreePages(unsigned int npages,
                        unsigned int cellCount,
                        unsigned long long *counts)
 {
-    int ret = -1;
     int cell, lastCell;
     size_t i, ncounts = 0;
 
@@ -745,7 +731,7 @@ virHostMemGetFreePages(unsigned int npages,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("start cell %d out of range (0-%d)"),
                        startCell, lastCell);
-        goto cleanup;
+        return -1;
     }
 
     lastCell = MIN(lastCell, startCell + (int) cellCount - 1);
@@ -756,7 +742,7 @@ virHostMemGetFreePages(unsigned int npages,
             unsigned long long page_free;
 
             if (virNumaGetPageInfo(cell, page_size, 0, NULL, &page_free) < 0)
-                goto cleanup;
+                return -1;
 
             counts[ncounts++] = page_free;
         }
@@ -765,12 +751,10 @@ virHostMemGetFreePages(unsigned int npages,
     if (!ncounts) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("no suitable info found"));
-        goto cleanup;
+        return -1;
     }
 
-    ret = ncounts;
- cleanup:
-    return ret;
+    return ncounts;
 }
 
 int
@@ -781,7 +765,6 @@ virHostMemAllocPages(unsigned int npages,
                      unsigned int cellCount,
                      bool add)
 {
-    int ret = -1;
     int cell, lastCell;
     size_t i, ncounts = 0;
 
@@ -792,7 +775,7 @@ virHostMemAllocPages(unsigned int npages,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("start cell %d out of range (0-%d)"),
                        startCell, lastCell);
-        goto cleanup;
+        return -1;
     }
 
     lastCell = MIN(lastCell, startCell + (int) cellCount - 1);
@@ -803,13 +786,11 @@ virHostMemAllocPages(unsigned int npages,
             unsigned long long page_count = pageCounts[i];
 
             if (virNumaSetPagePoolSize(cell, page_size, page_count, add) < 0)
-                goto cleanup;
+                return -1;
 
             ncounts++;
         }
     }
 
-    ret = ncounts;
- cleanup:
-    return ret;
+    return ncounts;
 }

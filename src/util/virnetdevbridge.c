@@ -274,16 +274,13 @@ virNetDevBridgePortGetLearning(const char *brname,
                                const char *ifname,
                                bool *enable)
 {
-    int ret = -1;
     unsigned long value;
 
     if (virNetDevBridgePortGet(brname, ifname, "learning", &value) < 0)
-       goto cleanup;
+       return -1;
 
     *enable = !!value;
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -301,16 +298,13 @@ virNetDevBridgePortGetUnicastFlood(const char *brname,
                                    const char *ifname,
                                    bool *enable)
 {
-    int ret = -1;
     unsigned long value;
 
     if (virNetDevBridgePortGet(brname, ifname, "unicast_flood", &value) < 0)
-       goto cleanup;
+       return -1;
 
     *enable = !!value;
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -863,16 +857,13 @@ int
 virNetDevBridgeGetVlanFiltering(const char *brname,
                                 bool *enable)
 {
-    int ret = -1;
     unsigned long value;
 
     if (virNetDevBridgeGet(brname, "vlan_filtering", &value) < 0)
-        goto cleanup;
+        return -1;
 
     *enable = !!value;
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
