@@ -1264,7 +1264,6 @@ udevSetParent(struct udev_device *device,
     const char *parent_sysfs_path = NULL;
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceDefPtr objdef;
-    int ret = -1;
 
     parent_device = device;
     do {
@@ -1278,7 +1277,7 @@ udevSetParent(struct udev_device *device,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Could not get syspath for parent of '%s'"),
                            udev_device_get_syspath(parent_device));
-            goto cleanup;
+            return -1;
         }
 
         if ((obj = virNodeDeviceObjListFindBySysfsPath(driver->devs,
@@ -1295,10 +1294,7 @@ udevSetParent(struct udev_device *device,
     if (!def->parent)
         def->parent = g_strdup("computer");
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 
