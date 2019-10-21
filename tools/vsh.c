@@ -2537,11 +2537,10 @@ vshTreePrintInternal(vshControl *ctl,
 {
     size_t i;
     int nextlastdev = -1;
-    int ret = -1;
     const char *dev = (lookup)(devid, false, opaque);
 
     if (virBufferError(indent))
-        goto cleanup;
+        return -1;
 
     /* Print this device, with indent if not at root */
     vshPrint(ctl, "%s%s%s\n", virBufferCurrentContent(indent),
@@ -2552,7 +2551,7 @@ vshTreePrintInternal(vshControl *ctl,
         virBufferAddChar(indent, devid == lastdev ? ' ' : '|');
         virBufferAddChar(indent, ' ');
         if (virBufferError(indent))
-            goto cleanup;
+            return -1;
     }
 
     /* Determine the index of the last child device */
@@ -2570,7 +2569,7 @@ vshTreePrintInternal(vshControl *ctl,
     /* Finally print all children */
     virBufferAddLit(indent, "  ");
     if (virBufferError(indent))
-        goto cleanup;
+        return -1;
     for (i = 0; i < num_devices; i++) {
         const char *parent = (lookup)(i, true, opaque);
 
@@ -2578,7 +2577,7 @@ vshTreePrintInternal(vshControl *ctl,
             vshTreePrintInternal(ctl, lookup, opaque,
                                  num_devices, i, nextlastdev,
                                  false, indent) < 0)
-            goto cleanup;
+            return -1;
     }
     virBufferTrim(indent, "  ", -1);
 
@@ -2589,9 +2588,8 @@ vshTreePrintInternal(vshControl *ctl,
 
     if (!root)
         virBufferTrim(indent, NULL, 2);
-    ret = 0;
- cleanup:
-    return ret;
+
+    return 0;
 }
 
 int

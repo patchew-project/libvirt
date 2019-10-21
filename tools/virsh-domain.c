@@ -2583,7 +2583,6 @@ virshBlockJobInfo(vshControl *ctl,
     virshControlPtr priv = ctl->privData;
     unsigned long long speed;
     unsigned int flags = 0;
-    bool ret = false;
     int rc = -1;
 
     /* If bytes were requested, or if raw mode is not forcing a MiB/s
@@ -2605,7 +2604,7 @@ virshBlockJobInfo(vshControl *ctl,
                 }
                 G_GNUC_FALLTHROUGH;
             default:
-                goto cleanup;
+                return false;
             }
         }
         speed = info.bandwidth;
@@ -2614,7 +2613,7 @@ virshBlockJobInfo(vshControl *ctl,
     if (rc < 0) {
         flags &= ~VIR_DOMAIN_BLOCK_JOB_INFO_BANDWIDTH_BYTES;
         if ((rc = virDomainGetBlockJobInfo(dom, path, &info, flags)) < 0)
-            goto cleanup;
+            return false;
         speed = info.bandwidth;
         /* Scale to bytes/s unless in raw mode */
         if (!raw) {
@@ -2622,7 +2621,7 @@ virshBlockJobInfo(vshControl *ctl,
             if (speed >> 20 != info.bandwidth) {
                 vshError(ctl, _("overflow in converting %ld MiB/s to bytes\n"),
                          info.bandwidth);
-                goto cleanup;
+                return false;
             }
         }
     }
@@ -2630,8 +2629,7 @@ virshBlockJobInfo(vshControl *ctl,
     if (rc == 0) {
         if (!raw)
             vshPrintExtra(ctl, _("No current block job for %s"), path);
-        ret = true;
-        goto cleanup;
+        return true;
     }
 
     if (raw) {
@@ -2650,10 +2648,7 @@ virshBlockJobInfo(vshControl *ctl,
         vshPrint(ctl, "\n");
     }
 
-    ret = true;
-
- cleanup:
-    return ret;
+    return true;
 }
 
 
@@ -2994,34 +2989,31 @@ cmdRunConsole(vshControl *ctl, virDomainPtr dom,
               const char *name,
               unsigned int flags)
 {
-    bool ret = false;
     int state;
     virshControlPtr priv = ctl->privData;
 
     if ((state = virshDomainState(ctl, dom, NULL)) < 0) {
         vshError(ctl, "%s", _("Unable to get domain status"));
-        goto cleanup;
+        return false;
     }
 
     if (state == VIR_DOMAIN_SHUTOFF) {
         vshError(ctl, "%s", _("The domain is not running"));
-        goto cleanup;
+        return false;
     }
 
     if (!isatty(STDIN_FILENO)) {
         vshError(ctl, "%s", _("Cannot run interactive console without a controlling TTY"));
-        goto cleanup;
+        return false;
     }
 
     vshPrintExtra(ctl, _("Connected to domain %s\n"), virDomainGetName(dom));
     vshPrintExtra(ctl, _("Escape character is %s\n"), priv->escapeChar);
     fflush(stdout);
     if (virshRunConsole(ctl, dom, name, flags) == 0)
-        ret = true;
+        return true;
 
- cleanup:
-
-    return ret;
+    return false;
 }
 
 static bool
@@ -5056,7 +5048,7 @@ cmdSchedInfoUpdateOne(vshControl *ctl,
                                         field, param->type,
                                         value) < 0) {
             vshSaveLibvirtError();
-            goto cleanup;
+            return ret;
         }
         ret = 0;
         break;
@@ -5065,7 +5057,6 @@ cmdSchedInfoUpdateOne(vshControl *ctl,
     if (ret < 0)
         vshError(ctl, _("invalid scheduler option: %s"), field);
 
- cleanup:
     return ret;
 }
 
@@ -9733,26 +9724,22 @@ static bool
 cmdQemuAttach(vshControl *ctl, const vshCmd *cmd)
 {
     virDomainPtr dom = NULL;
-    bool ret = false;
     unsigned int flags = 0;
     unsigned int pid_value; /* API uses unsigned int, not pid_t */
     virshControlPtr priv = ctl->privData;
 
     if (vshCommandOptUInt(ctl, cmd, "pid", &pid_value) <= 0)
-        goto cleanup;
+        return false;
 
     if (!(dom = virDomainQemuAttach(priv->conn, pid_value, flags))) {
         vshError(ctl, _("Failed to attach to pid %u"), pid_value);
-        goto cleanup;
+        return false;
     }
 
     vshPrintExtra(ctl, _("Domain %s attached to pid %u\n"),
                   virDomainGetName(dom), pid_value);
     virshDomainFree(dom);
-    ret = true;
-
- cleanup:
-    return ret;
+    return true;
 }
 
 /*
