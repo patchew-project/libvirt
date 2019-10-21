@@ -2348,9 +2348,12 @@ static int qemuDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
         }
 
         if (persistentDef) {
-            /* resizing memory with NUMA nodes specified doesn't work as there
-             * is no way to change the individual node sizes with this API */
-            if (virDomainNumaGetNodeCount(persistentDef->numa) > 0) {
+            /* Resizing memory with NUMA nodes specified doesn't work, as there
+             * is no way to change the individual node sizes with this API, but
+             * when vNUMA automatic partitioning is in effect resizing is possible.
+             */
+            if (!virDomainVnumaIsEnabled(persistentDef->numa) &&
+                virDomainNumaGetNodeCount(persistentDef->numa) > 0) {
                 virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                                _("initial memory size of a domain with NUMA "
                                  "nodes cannot be modified with this API"));
@@ -2365,7 +2368,12 @@ static int qemuDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
                 goto endjob;
             }
 
-            virDomainDefSetMemoryTotal(persistentDef, newmem);
+            if (virDomainDefSetNUMAMemoryTotal(persistentDef, newmem, driver->caps) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("failed to distribute newly configured "
+                                 "memory across NUMA nodes"));
+                goto endjob;
+            }
 
             if (persistentDef->mem.cur_balloon > newmem)
                 persistentDef->mem.cur_balloon = newmem;
@@ -2377,6 +2385,18 @@ static int qemuDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
     } else {
         /* resize the current memory */
         unsigned long oldmax = 0;
+
+        if ((def &&
+                    virDomainVnumaIsEnabled(def->numa) &&
+                    virDomainNumaGetNodeCount(def->numa)) ||
+            (persistentDef &&
+                    virDomainVnumaIsEnabled(persistentDef->numa) &&
+                    virDomainNumaGetNodeCount(persistentDef->numa)) > 0) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("the current memory size of a domain with NUMA "
+                             "nodes cannot be modified with this API"));
+                goto endjob;
+        }
 
         if (def)
             oldmax = virDomainDefGetMemoryTotal(def);
@@ -7820,6 +7840,7 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
 {
     int ret = -1;
     const char *alias = NULL;
+    virDomainMemoryDefPtr mem;
 
     switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
@@ -7895,8 +7916,34 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
     case VIR_DOMAIN_DEVICE_MEMORY:
         /* note that qemuDomainAttachMemory always consumes dev->data.memory
          * and dispatches DeviceAdded event on success */
-        ret = qemuDomainAttachMemory(driver, vm,
-                                     dev->data.memory);
+
+        mem = dev->data.memory;
+        if (mem->targetNode >= 0) {
+            ret = qemuDomainAttachMemory(driver, vm,
+                                         dev->data.memory);
+        } else {
+            size_t i, ncells = virDomainNumaGetNodeCount(vm->def->numa);
+            unsigned long long memsizeCell = dev->data.memory->size / ncells;
+
+            for (i = 0; i < ncells; i++) {
+
+                if (VIR_ALLOC(mem) < 0) {
+                    ret = -1;
+                    break;
+                }
+
+                memcpy(mem, dev->data.memory, sizeof(virDomainMemoryDef));
+
+                if (dev->data.memory->sourceNodes)
+                    virBitmapCopy(mem->sourceNodes, dev->data.memory->sourceNodes);
+
+                mem->size = memsizeCell;
+                mem->targetNode = i;
+
+                ret = qemuDomainAttachMemory(driver, vm, mem);
+            }
+            virDomainMemoryDefFree(dev->data.memory);
+        }
         dev->data.memory = NULL;
         break;
 
