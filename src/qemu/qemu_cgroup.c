@@ -1077,7 +1077,6 @@ qemuSetupCgroup(virDomainObjPtr vm,
                 int *nicindexes)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    int ret = -1;
 
     if (!vm->pid) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1092,23 +1091,21 @@ qemuSetupCgroup(virDomainObjPtr vm,
         return 0;
 
     if (qemuSetupDevicesCgroup(vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuSetupBlkioCgroup(vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuSetupMemoryCgroup(vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuSetupCpuCgroup(vm) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuSetupCpusetCgroup(vm) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 int
