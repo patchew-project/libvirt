@@ -46,3 +46,7 @@ int
 virLXCTeardownHostUSBDeviceCgroup(virUSBDevicePtr dev,
                                   const char *path,
                                   void *opaque);
+
+int
+virLXCCgroupResetBlkioDeviceThrottle(virCgroupPtr cgroup,
+                                     const char *path);

@@ -302,6 +302,24 @@ virLXCTeardownHostUSBDeviceCgroup(virUSBDevicePtr dev G_GNUC_UNUSED,
     return 0;
 }
 
+int
+virLXCCgroupResetBlkioDeviceThrottle(virCgroupPtr cgroup,
+                                     const char *path)
+{
+    if (virCgroupSetBlkioDeviceReadBps(cgroup, path, 0) < 0)
+        return -1;
+
+    if (virCgroupSetBlkioDeviceWriteBps(cgroup, path, 0) < 0)
+        return -1;
+
+    if (virCgroupSetBlkioDeviceReadIops(cgroup, path, 0) < 0)
+        return -1;
+
+    if (virCgroupSetBlkioDeviceWriteIops(cgroup, path, 0) < 0)
+        return -1;
+
+    return 0;
+}
 
 static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
                                       virCgroupPtr cgroup)
@@ -309,6 +327,7 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
     int capMknod = def->caps_features[VIR_DOMAIN_CAPS_FEATURE_MKNOD];
     int ret = -1;
     size_t i;
+    const char *src_path = NULL;
     static virLXCCgroupDevicePolicy devices[] = {
         {'c', LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_NULL},
         {'c', LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_ZERO},
@@ -346,8 +365,16 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
             !virStorageSourceIsBlockLocal(def->disks[i]->src))
             continue;
 
+        /* Workaround to include disks into blkio.throttle.
+         * To include it, we need to reset any feature of
+         * blkio.throttle.* */
+        src_path = virDomainDiskGetSource(def->disks[i]);
+        if (virLXCCgroupResetBlkioDeviceThrottle(cgroup,
+                                                 src_path) < 0)
+            goto cleanup;
+
         if (virCgroupAllowDevicePath(cgroup,
-                                     virDomainDiskGetSource(def->disks[i]),
+                                     src_path,
                                      (def->disks[i]->src->readonly ?
                                       VIR_CGROUP_DEVICE_READ :
                                       VIR_CGROUP_DEVICE_RW) |

@@ -2339,14 +2339,14 @@ lxcDomainBlockStats(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!disk->info.alias) {
+    if (!disk->src->path) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("missing disk device alias name for %s"), disk->dst);
         goto endjob;
     }
 
     ret = virCgroupGetBlkioIoDeviceServiced(priv->cgroup,
-                                            disk->info.alias,
+                                            disk->src->path,
                                             &stats->rd_bytes,
                                             &stats->wr_bytes,
                                             &stats->rd_req,
@@ -2424,14 +2424,14 @@ lxcDomainBlockStatsFlags(virDomainPtr dom,
             goto endjob;
         }
 
-        if (!disk->info.alias) {
+        if (!disk->src->path) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("missing disk device alias name for %s"), disk->dst);
             goto endjob;
         }
 
         if (virCgroupGetBlkioIoDeviceServiced(priv->cgroup,
-                                              disk->info.alias,
+                                              disk->src->path,
                                               &rd_bytes,
                                               &wr_bytes,
                                               &rd_req,
