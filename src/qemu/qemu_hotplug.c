@@ -6082,6 +6082,60 @@ qemuDomainHotplugAddVcpu(virQEMUDriverPtr driver,
 
 
 /**
+ * qemuDomainGetNumaMappedVcpuEntry:
+ *
+ * In case of vNUMA guest description we need the node
+ * mapped vcpu to ensure that guest vcpus are hot-plugged
+ * or hot-unplugged in a round-robin fashion with whole
+ * cores on the same NUMA node so they get sibling host
+ * CPUs.
+ *
+ * 2 NUMA node system, 2 threads/core:
+ *      +---+---+---+---+---+---+---+---+---+---+--//
+ * vcpu | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |...
+ *      +---+---+---+---+---+---+---+---+---+---+--//
+ * NUMA \------/ \-----/ \-----/ \-----/ \-----/ \-//
+ * node     0       1       0       1       0      ...
+ *
+ * bit    0   1   0   1   2   3   2   3   4   5  ...
+ *
+ * 4 NUMA node system, 2 threads/core:
+ *      +---+---+---+---+---+---+---+---+---+---+--//
+ * vcpu | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |...
+ *      +---+---+---+---+---+---+---+---+---+---+--//
+ * NUMA \------/ \-----/ \-----/ \-----/ \-----/ \-//
+ * node     0       1       2       3       0      ...
+ *
+ * bit    0   1   0   1   0   1   0   1   2   3  ...
+ *
+ */
+static ssize_t
+qemuDomainGetNumaMappedVcpuEntry(virDomainDefPtr def,
+                                 ssize_t vcpu)
+{
+    virBitmapPtr nodecpumask = NULL;
+    size_t ncells = virDomainNumaGetNodeCount(def->numa);
+    size_t threads = def->cpu->threads ? def->cpu->threads : 1;
+    ssize_t node, bit, pcpu = -1;
+
+    if (!ncells)
+        return vcpu;
+
+    node = (vcpu / threads) % ncells;
+    nodecpumask = virDomainNumaGetNodeCpumask(def->numa, node);
+
+    bit = ((vcpu / (threads * ncells)) * threads) + (vcpu % threads);
+
+    while (((pcpu = virBitmapNextSetBit(nodecpumask, pcpu)) >= 0) && bit--);
+
+    /* GIGO: Garbage In?  Garbage Out! */
+    pcpu = (pcpu < 0) ? vcpu : pcpu;
+
+    return pcpu;
+}
+
+
+/**
  * qemuDomainSelectHotplugVcpuEntities:
  *
  * @def: domain definition
@@ -6104,7 +6158,27 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
     qemuDomainVcpuPrivatePtr vcpupriv;
     unsigned int maxvcpus = virDomainDefGetVcpusMax(def);
     unsigned int curvcpus = virDomainDefGetVcpus(def);
-    ssize_t i;
+    ssize_t i, target;
+    size_t threads = def->cpu->threads;
+    size_t nnumaCell = virDomainNumaGetNodeCount(def->numa);
+    size_t minvcpus = nnumaCell * threads;
+    bool HasAutonuma = virDomainVnumaIsEnabled(def->numa);
+
+    /* If SMT topology is in place, check that the number of vcpus meets
+     * the following constraints:
+     * - at least one fully used core is assigned on each NUMA node
+     * - cores must be used fully, i.e. all threads of a core are assigned to
+     *   the same guest
+     */
+    if (HasAutonuma && threads &&
+        (nvcpus < minvcpus || (nvcpus - minvcpus) % threads)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("vNUMA: guest %s configured %d vcpus setting "
+                         "does not fit the vNUMA topology for at "
+                         "least one whole core per vNUMA node."),
+                       def->name, nvcpus);
+        goto error;
+    }
 
     if (!(ret = virBitmapNew(maxvcpus)))
         return NULL;
@@ -6113,7 +6187,9 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
         *enable = true;
 
         for (i = 0; i < maxvcpus && curvcpus < nvcpus; i++) {
-            vcpu = virDomainDefGetVcpu(def, i);
+
+            target = qemuDomainGetNumaMappedVcpuEntry(def, i);
+            vcpu = virDomainDefGetVcpu(def, target);
             vcpupriv =  QEMU_DOMAIN_VCPU_PRIVATE(vcpu);
 
             if (vcpu->online)
@@ -6130,14 +6206,17 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
                                  "desired vcpu count"));
                 goto error;
             }
+            VIR_DEBUG("guest %s hotplug target vcpu = %zd\n", def->name, target);
 
-            ignore_value(virBitmapSetBit(ret, i));
+            ignore_value(virBitmapSetBit(ret, target));
         }
     } else {
         *enable = false;
 
         for (i = maxvcpus - 1; i >= 0 && curvcpus > nvcpus; i--) {
-            vcpu = virDomainDefGetVcpu(def, i);
+
+            target = qemuDomainGetNumaMappedVcpuEntry(def, i);
+            vcpu = virDomainDefGetVcpu(def, target);
             vcpupriv =  QEMU_DOMAIN_VCPU_PRIVATE(vcpu);
 
             if (!vcpu->online)
@@ -6157,8 +6236,9 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
                                  "desired vcpu count"));
                 goto error;
             }
+            VIR_DEBUG("guest %s hotunplug target vcpu = %zd\n", def->name, target);
 
-            ignore_value(virBitmapSetBit(ret, i));
+            ignore_value(virBitmapSetBit(ret, target));
         }
     }
 
@@ -6240,6 +6320,11 @@ qemuDomainSetVcpusConfig(virDomainDefPtr def,
 
     if (curvcpus == nvcpus)
         return;
+
+    if (virDomainVnumaIsEnabled(def->numa)) {
+        virDomainDefSetVcpusVnuma(def, nvcpus);
+        return;
+    }
 
     if (curvcpus < nvcpus) {
         for (i = 0; i < maxvcpus; i++) {

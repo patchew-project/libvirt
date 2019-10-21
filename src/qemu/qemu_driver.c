@@ -4965,14 +4965,16 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
         return -1;
     }
 
-    if (virDomainNumaGetCPUCountTotal(persistentDef->numa) > nvcpus) {
+    if (!virDomainVnumaIsEnabled(persistentDef->numa) &&
+        virDomainNumaGetCPUCountTotal(persistentDef->numa) > nvcpus) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Number of CPUs in <numa> exceeds the desired "
                          "maximum vcpu count"));
         return -1;
     }
 
-    if (virDomainDefGetVcpusTopology(persistentDef, &topologycpus) == 0 &&
+    if (!virDomainVnumaIsEnabled(persistentDef->numa) &&
+        virDomainDefGetVcpusTopology(persistentDef, &topologycpus) == 0 &&
         nvcpus != topologycpus) {
         /* allow setting a valid vcpu count for the topology so an invalid
          * setting may be corrected via this API */
