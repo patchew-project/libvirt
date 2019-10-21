@@ -873,12 +873,11 @@ openvzLocateConfDir(void)
     while (conf_dir_list[i]) {
         if (virFileExists(conf_dir_list[i])) {
             ret = g_strdup(conf_dir_list[i]);
-            goto cleanup;
+            return ret;
         }
         i++;
     }
 
- cleanup:
     return ret;
 }
 
