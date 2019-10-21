@@ -146,12 +146,12 @@ src/qemu/qemu_monitor_json.c
 src/qemu/qemu_monitor_text.c
 src/qemu/qemu_process.c
 src/qemu/qemu_qapi.c
+src/remote/qemu_daemon_dispatch_stubs.h
 src/remote/remote_client_bodies.h
 src/remote/remote_daemon.c
 src/remote/remote_daemon_config.c
 src/remote/remote_daemon_dispatch.c
 src/remote/remote_daemon_dispatch_stubs.h
-src/remote/remote_daemon_dispatch_qemu_stubs.h
 src/remote/remote_daemon_stream.c
 src/remote/remote_driver.c
 src/rpc/virkeepalive.c

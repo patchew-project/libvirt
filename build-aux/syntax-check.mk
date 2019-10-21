@@ -2163,14 +2163,14 @@ group-qemu-caps:
 # sc_po_check can fail if generated files are not built first
 sc_po_check: \
 		$(srcdir)/src/remote/remote_daemon_dispatch_stubs.h \
-		$(srcdir)/src/remote/remote_daemon_dispatch_qemu_stubs.h \
+		$(srcdir)/src/remote/qemu_daemon_dispatch_stubs.h \
 		$(srcdir)/src/remote/remote_client_bodies.h \
 		$(srcdir)/src/admin/admin_server_dispatch_stubs.h \
 		$(srcdir)/src/admin/admin_client.h
 $(srcdir)/src/remote/remote_daemon_dispatch_stubs.h: $(srcdir)/src/remote/remote_protocol.x
 	$(MAKE) -C src remote/remote_daemon_dispatch_stubs.h
-$(srcdir)/src/remote/remote_daemon_dispatch_qemu_stubs.h: $(srcdir)/src/remote/qemu_protocol.x
-	$(MAKE) -C src remote/remote_daemon_dispatch_qemu_stubs.h
+$(srcdir)/src/remote/qemu_daemon_dispatch_stubs.h: $(srcdir)/src/remote/qemu_protocol.x
+	$(MAKE) -C src remote/qemu_daemon_dispatch_stubs.h
 $(srcdir)/src/remote/remote_client_bodies.h: $(srcdir)/src/remote/remote_protocol.x
 	$(MAKE) -C src remote/remote_client_bodies.h
 $(srcdir)/src/admin/admin_server_dispatch_stubs.h: $(srcdir)/src/admin/admin_protocol.x
