@@ -1,0 +1,125 @@
+LC_ALL=C \
+PATH=/bin \
+HOME=/tmp/lib/domain--1-QEMUGuest1 \
+USER=test \
+LOGNAME=test \
+XDG_DATA_HOME=/tmp/lib/domain--1-QEMUGuest1/.local/share \
+XDG_CACHE_HOME=/tmp/lib/domain--1-QEMUGuest1/.cache \
+XDG_CONFIG_HOME=/tmp/lib/domain--1-QEMUGuest1/.config \
+QEMU_AUDIO_DRV=none \
+/usr/bin/qemu-system-x86_64 \
+-name QEMUGuest1 \
+-S \
+-machine pc,accel=kvm,usb=off,dump-guest-core=off \
+-cpu host \
+-m 2097152 \
+-realtime mlock=off \
+-smp 1,maxcpus=128,sockets=32,cores=4,threads=1 \
+-object memory-backend-ram,id=ram-node0,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=0,cpus=0,cpus=32,cpus=64,cpus=96,memdev=ram-node0 \
+-object memory-backend-ram,id=ram-node1,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=1,cpus=1,cpus=33,cpus=65,cpus=97,memdev=ram-node1 \
+-object memory-backend-ram,id=ram-node2,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=2,cpus=2,cpus=34,cpus=66,cpus=98,memdev=ram-node2 \
+-object memory-backend-ram,id=ram-node3,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=3,cpus=3,cpus=35,cpus=67,cpus=99,memdev=ram-node3 \
+-object memory-backend-ram,id=ram-node4,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=4,cpus=4,cpus=36,cpus=68,cpus=100,memdev=ram-node4 \
+-object memory-backend-ram,id=ram-node5,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=5,cpus=5,cpus=37,cpus=69,cpus=101,memdev=ram-node5 \
+-object memory-backend-ram,id=ram-node6,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=6,cpus=6,cpus=38,cpus=70,cpus=102,memdev=ram-node6 \
+-object memory-backend-ram,id=ram-node7,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=7,cpus=7,cpus=39,cpus=71,cpus=103,memdev=ram-node7 \
+-object memory-backend-ram,id=ram-node8,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=8,cpus=8,cpus=40,cpus=72,cpus=104,memdev=ram-node8 \
+-object memory-backend-ram,id=ram-node9,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=9,cpus=9,cpus=41,cpus=73,cpus=105,memdev=ram-node9 \
+-object memory-backend-ram,id=ram-node10,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=10,cpus=10,cpus=42,cpus=74,cpus=106,memdev=ram-node10 \
+-object memory-backend-ram,id=ram-node11,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=11,cpus=11,cpus=43,cpus=75,cpus=107,memdev=ram-node11 \
+-object memory-backend-ram,id=ram-node12,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=12,cpus=12,cpus=44,cpus=76,cpus=108,memdev=ram-node12 \
+-object memory-backend-ram,id=ram-node13,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=13,cpus=13,cpus=45,cpus=77,cpus=109,memdev=ram-node13 \
+-object memory-backend-ram,id=ram-node14,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=14,cpus=14,cpus=46,cpus=78,cpus=110,memdev=ram-node14 \
+-object memory-backend-ram,id=ram-node15,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=15,cpus=15,cpus=47,cpus=79,cpus=111,memdev=ram-node15 \
+-object memory-backend-ram,id=ram-node16,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=16,cpus=16,cpus=48,cpus=80,cpus=112,memdev=ram-node16 \
+-object memory-backend-ram,id=ram-node17,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=17,cpus=17,cpus=49,cpus=81,cpus=113,memdev=ram-node17 \
+-object memory-backend-ram,id=ram-node18,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=18,cpus=18,cpus=50,cpus=82,cpus=114,memdev=ram-node18 \
+-object memory-backend-ram,id=ram-node19,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=19,cpus=19,cpus=51,cpus=83,cpus=115,memdev=ram-node19 \
+-object memory-backend-ram,id=ram-node20,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=20,cpus=20,cpus=52,cpus=84,cpus=116,memdev=ram-node20 \
+-object memory-backend-ram,id=ram-node21,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=21,cpus=21,cpus=53,cpus=85,cpus=117,memdev=ram-node21 \
+-object memory-backend-ram,id=ram-node22,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=22,cpus=22,cpus=54,cpus=86,cpus=118,memdev=ram-node22 \
+-object memory-backend-ram,id=ram-node23,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=23,cpus=23,cpus=55,cpus=87,cpus=119,memdev=ram-node23 \
+-object memory-backend-ram,id=ram-node24,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=24,cpus=24,cpus=56,cpus=88,cpus=120,memdev=ram-node24 \
+-object memory-backend-ram,id=ram-node25,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=25,cpus=25,cpus=57,cpus=89,cpus=121,memdev=ram-node25 \
+-object memory-backend-ram,id=ram-node26,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=26,cpus=26,cpus=58,cpus=90,cpus=122,memdev=ram-node26 \
+-object memory-backend-ram,id=ram-node27,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=27,cpus=27,cpus=59,cpus=91,cpus=123,memdev=ram-node27 \
+-object memory-backend-ram,id=ram-node28,size=68719476736,host-nodes=0,\
+policy=bind \
+-numa node,nodeid=28,cpus=28,cpus=60,cpus=92,cpus=124,memdev=ram-node28 \
+-object memory-backend-ram,id=ram-node29,size=68719476736,host-nodes=1,\
+policy=bind \
+-numa node,nodeid=29,cpus=29,cpus=61,cpus=93,cpus=125,memdev=ram-node29 \
+-object memory-backend-ram,id=ram-node30,size=68719476736,host-nodes=2,\
+policy=bind \
+-numa node,nodeid=30,cpus=30,cpus=62,cpus=94,cpus=126,memdev=ram-node30 \
+-object memory-backend-ram,id=ram-node31,size=68719476736,host-nodes=3,\
+policy=bind \
+-numa node,nodeid=31,cpus=31,cpus=63,cpus=95,cpus=127,memdev=ram-node31 \
+-uuid c7a5fdbd-edaf-9455-926a-d65c16db1809 \
+-display none \
+-no-user-config \
+-nodefaults \
+-chardev socket,id=charmonitor,path=/tmp/lib/domain--1-QEMUGuest1/monitor.sock,\
+server,nowait \
+-mon chardev=charmonitor,id=monitor,mode=control \
+-rtc base=utc \
+-no-shutdown \
+-no-acpi \
+-usb \
+-device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x3

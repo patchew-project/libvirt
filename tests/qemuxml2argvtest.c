@@ -1733,6 +1733,16 @@ mymain(void)
                  ARG_FLAGS, FLAG_SKIP_LEGACY_CPUS | FLAG_EXPECT_FAILURE,
                  ARG_QEMU_CAPS, NONE);
     DO_TEST("cpu-host-passthrough", QEMU_CAPS_KVM);
+    DO_TEST("cpu-host-passthrough-numa", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-contiguous", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-node-contiguous", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-siblings", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-node-siblings", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-round-robin", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-node-round-robin", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-interleave", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-numa-node-interleave", QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM);
+    DO_TEST("cpu-host-passthrough-nonuma", QEMU_CAPS_NUMA);
     DO_TEST_FAILURE("cpu-qemu-host-passthrough", QEMU_CAPS_KVM);
 
     qemuTestSetHostArch(driver.caps, VIR_ARCH_S390X);
