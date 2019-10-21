@@ -5195,7 +5195,7 @@ int qemuMonitorJSONOpenGraphics(qemuMonitorPtr mon,
                        _("block_io_throttle field '%s' missing " \
                          "in qemu's output"), \
                        #STORE); \
-        goto cleanup; \
+        return -1; \
     }
 static int
 qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
@@ -5203,7 +5203,6 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
                                    const char *qdevid,
                                    virDomainBlockIoTuneInfoPtr reply)
 {
-    int ret = -1;
     size_t i;
     bool found = false;
 
@@ -5217,7 +5216,7 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("block_io_throttle device entry "
                              "was not in expected format"));
-            goto cleanup;
+            return -1;
         }
 
         current_qdev = virJSONValueObjectGetString(temp_dev, "qdev");
@@ -5227,7 +5226,7 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("block_io_throttle device entry "
                              "was not in expected format"));
-            goto cleanup;
+            return -1;
         }
 
         if ((drivealias && current_drive && STRNEQ(current_drive, drivealias)) ||
@@ -5239,7 +5238,7 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("block_io_throttle inserted entry "
                              "was not in expected format"));
-            goto cleanup;
+            return -1;
         }
         GET_THROTTLE_STATS("bps", total_bytes_sec);
         GET_THROTTLE_STATS("bps_rd", read_bytes_sec);
@@ -5271,12 +5270,10 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr io_throttle,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("cannot find throttling info for device '%s'"),
                        drivealias ? drivealias : qdevid);
-        goto cleanup;
+        return -1;
     }
-    ret = 0;
 
- cleanup:
-    return ret;
+    return 0;
 }
 #undef GET_THROTTLE_STATS
 #undef GET_THROTTLE_STATS_OPTIONAL
