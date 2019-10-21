@@ -1027,7 +1027,7 @@ I<bandwidth> specifies copying bandwidth limit in MiB/s. For further information
 on the I<bandwidth> argument see the corresponding section for the B<blockjob>
 command.
 
-=item B<blockresize> I<domain> I<path> I<size>
+=item B<blockresize> I<domain> I<path> I<size> [I<--force>]
 
 Resize a block device of domain while the domain is running, I<path>
 specifies the absolute path of the block device; it corresponds
@@ -1039,6 +1039,10 @@ I<size> is a scaled integer (see B<NOTES> above) which defaults to KiB
 (blocks of 1024 bytes) if there is no suffix.  You must use a suffix of
 "B" to get bytes (note that for historical reasons, this differs from
 B<vol-resize> which defaults to bytes without a suffix).
+
+The I<--force> flag is needed when specified I<size> is less than the current
+capacity of the device, ie. when shrinking a device. Always exercise caution
+when shrinking a block device.
 
 =item B<console> I<domain> [I<devname>] [I<--safe>] [I<--force>]
 

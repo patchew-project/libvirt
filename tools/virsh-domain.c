@@ -2920,6 +2920,10 @@ static const vshCmdOptDef opts_blockresize[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("New size of the block device, as scaled integer (default KiB)")
     },
+    {.name = "force",
+     .type = VSH_OT_BOOL,
+     .help = N_("Allow the resize to shrink the blockdevice")
+    },
     {.name = NULL}
 };
 
@@ -2927,10 +2931,12 @@ static bool
 cmdBlockresize(vshControl *ctl, const vshCmd *cmd)
 {
     virDomainPtr dom;
+    virDomainBlockInfo info;
     const char *path = NULL;
     unsigned long long size = 0;
     unsigned int flags = 0;
     bool ret = false;
+    bool force = vshCommandOptBool(cmd, "force");
 
     if (vshCommandOptStringReq(ctl, cmd, "path", (const char **) &path) < 0)
         return false;
@@ -2938,24 +2944,46 @@ cmdBlockresize(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptScaledInt(ctl, cmd, "size", &size, 1024, ULLONG_MAX) < 0)
         return false;
 
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if (virDomainGetBlockInfo(dom, path, &info, 0) < 0)
+        goto cleanup;
+
+    /* Make sure to not shrink device if it's already given size */
+    if (size == info.capacity) {
+        vshPrintExtra(ctl, _("Given size (%llu bytes) is the same as the "
+                             "current capacity of '%s', not doing anything"),
+                             size, path);
+        goto cleanup;
+    }
+
+    /* Make sure to only allow shrink of device if --force is specified */
+    if (size < info.capacity && !force) {
+        vshError(ctl, _("Can't shrink the size of '%s' below current capacity, "
+                        "unless --force is explicity specified"), path);
+        goto cleanup;
+    }
+
     /* Prefer the older interface of KiB.  */
     if (size % 1024 == 0)
         size /= 1024;
     else
         flags |= VIR_DOMAIN_BLOCK_RESIZE_BYTES;
 
-    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
-        return false;
-
     if (virDomainBlockResize(dom, path, size, flags) < 0) {
         vshError(ctl, _("Failed to resize block device '%s'"), path);
+        goto cleanup;
     } else {
         vshPrintExtra(ctl, _("Block device '%s' is resized"), path);
         ret = true;
+        goto cleanup;
     }
 
+ cleanup:
     virshDomainFree(dom);
     return ret;
+
 }
 
 #ifndef WIN32

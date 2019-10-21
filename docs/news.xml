@@ -61,6 +61,19 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          virsh: Add --force to the blockresize command
+        </summary>
+        <description>
+          To prevent accidental shrinking of a block device the --force flag
+          is introduced for the blockresize command, similar to the --shrink
+          flag for the vol-resize command. If you intend to shrink a block
+          device with <code> virsh blockresize</code>, you must now include
+          --force, otherwise the command will fail with an error. This change
+          is only in virsh, not in the API.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
