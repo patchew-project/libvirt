@@ -3440,7 +3440,7 @@ lxcDomainAttachDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_NET:
         net = dev->data.net;
         if (virDomainNetInsert(vmdef, net) < 0)
-            goto cleanup;
+            return ret;
         dev->data.net = NULL;
         ret = 0;
         break;
@@ -3464,7 +3464,6 @@ lxcDomainAttachDeviceConfig(virDomainDefPtr vmdef,
          break;
     }
 
- cleanup:
     return ret;
 }
 
@@ -3482,7 +3481,7 @@ lxcDomainUpdateDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_NET:
         net = dev->data.net;
         if ((idx = virDomainNetFindIdx(vmdef, net)) < 0)
-            goto cleanup;
+            return -1;
 
         oldDev.data.net = vmdef->nets[idx];
         if (virDomainDefCompatibleDevice(vmdef, dev, &oldDev,
@@ -3505,7 +3504,6 @@ lxcDomainUpdateDeviceConfig(virDomainDefPtr vmdef,
         break;
     }
 
- cleanup:
     return ret;
 }
 
@@ -3535,7 +3533,7 @@ lxcDomainDetachDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_NET:
         net = dev->data.net;
         if ((idx = virDomainNetFindIdx(vmdef, net)) < 0)
-            goto cleanup;
+            return ret;
 
         /* this is guaranteed to succeed */
         virDomainNetDefFree(virDomainNetRemove(vmdef, idx));
@@ -3561,7 +3559,6 @@ lxcDomainDetachDeviceConfig(virDomainDefPtr vmdef,
         break;
     }
 
- cleanup:
     return ret;
 }
 
@@ -4499,12 +4496,12 @@ lxcDomainDetachDeviceHostdevStorageLive(virDomainObjPtr vm,
 {
     virLXCDomainObjPrivatePtr priv = vm->privateData;
     virDomainHostdevDefPtr def = NULL;
-    int idx, ret = -1;
+    int idx;
 
     if (!priv->initpid) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("Cannot attach disk until init PID is known"));
-        goto cleanup;
+        return -1;
     }
 
     if ((idx = virDomainHostdevFind(vm->def,
@@ -4513,18 +4510,18 @@ lxcDomainDetachDeviceHostdevStorageLive(virDomainObjPtr vm,
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("hostdev %s not found"),
                        dev->data.hostdev->source.caps.u.storage.block);
-        goto cleanup;
+        return -1;
     }
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("devices cgroup isn't mounted"));
-        goto cleanup;
+        return -1;
     }
 
     if (lxcDomainAttachDeviceUnlink(vm, def->source.caps.u.storage.block) < 0) {
         virDomainAuditHostdev(vm, def, "detach", false);
-        goto cleanup;
+        return -1;
     }
     virDomainAuditHostdev(vm, def, "detach", true);
 
@@ -4536,10 +4533,7 @@ lxcDomainDetachDeviceHostdevStorageLive(virDomainObjPtr vm,
     virDomainHostdevRemove(vm->def, idx);
     virDomainHostdevDefFree(def);
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -4549,12 +4543,12 @@ lxcDomainDetachDeviceHostdevMiscLive(virDomainObjPtr vm,
 {
     virLXCDomainObjPrivatePtr priv = vm->privateData;
     virDomainHostdevDefPtr def = NULL;
-    int idx, ret = -1;
+    int idx;
 
     if (!priv->initpid) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("Cannot attach disk until init PID is known"));
-        goto cleanup;
+        return -1;
     }
 
     if ((idx = virDomainHostdevFind(vm->def,
@@ -4563,18 +4557,18 @@ lxcDomainDetachDeviceHostdevMiscLive(virDomainObjPtr vm,
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("hostdev %s not found"),
                        dev->data.hostdev->source.caps.u.misc.chardev);
-        goto cleanup;
+        return -1;
     }
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("devices cgroup isn't mounted"));
-        goto cleanup;
+        return -1;
     }
 
     if (lxcDomainAttachDeviceUnlink(vm, def->source.caps.u.misc.chardev) < 0) {
         virDomainAuditHostdev(vm, def, "detach", false);
-        goto cleanup;
+        return -1;
     }
     virDomainAuditHostdev(vm, def, "detach", true);
 
@@ -4586,10 +4580,7 @@ lxcDomainDetachDeviceHostdevMiscLive(virDomainObjPtr vm,
     virDomainHostdevRemove(vm->def, idx);
     virDomainHostdevDefFree(def);
 
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 
