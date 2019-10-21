@@ -653,13 +653,13 @@ endif WITH_LIBVIRTD
 		< $< > $@-t && \
 	mv $@-t $@
 
-CLEANFILES += $(man8_MANS)
-MAINTAINERCLEANFILES += $(MANINFILES)
+CLEANFILES += \
+	$(man8_MANS) \
+	$(MANINFILES)
 
 EXTRA_DIST += \
         $(SYSTEMD_UNIT_FILES_IN) \
         $(PODFILES) \
-        $(MANINFILES) \
         $(NULL)
 
 

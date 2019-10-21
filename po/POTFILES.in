@@ -4,7 +4,7 @@
 @SRCDIR@/src/access/viraccessmanager.c
 @SRCDIR@/src/admin/admin_server.c
 @SRCDIR@/src/admin/admin_server_dispatch.c
-@SRCDIR@/src/admin/admin_server_dispatch_stubs.h
+@BUILDDIR@/src/admin/admin_server_dispatch_stubs.h
 @SRCDIR@/src/admin/libvirt-admin.c
 @SRCDIR@/src/bhyve/bhyve_capabilities.c
 @SRCDIR@/src/bhyve/bhyve_command.c
@@ -146,12 +146,12 @@
 @SRCDIR@/src/qemu/qemu_monitor_text.c
 @SRCDIR@/src/qemu/qemu_process.c
 @SRCDIR@/src/qemu/qemu_qapi.c
-@SRCDIR@/src/remote/qemu_daemon_dispatch_stubs.h
-@SRCDIR@/src/remote/remote_client_bodies.h
+@BUILDDIR@/src/remote/qemu_daemon_dispatch_stubs.h
+@BUILDDIR@/src/remote/remote_client_bodies.h
 @SRCDIR@/src/remote/remote_daemon.c
 @SRCDIR@/src/remote/remote_daemon_config.c
 @SRCDIR@/src/remote/remote_daemon_dispatch.c
-@SRCDIR@/src/remote/remote_daemon_dispatch_stubs.h
+@BUILDDIR@/src/remote/remote_daemon_dispatch_stubs.h
 @SRCDIR@/src/remote/remote_daemon_stream.c
 @SRCDIR@/src/remote/remote_driver.c
 @SRCDIR@/src/rpc/virkeepalive.c
