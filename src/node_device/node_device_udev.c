@@ -1028,7 +1028,7 @@ udevProcessMediatedDevice(struct udev_device *dev,
      * it by waiting for the attributes to become available.
      */
 
-    virAsprintf(&linkpath, "%s/mdev_type", udev_device_get_syspath(dev));
+    linkpath = g_strdup_printf("%s/mdev_type", udev_device_get_syspath(dev));
 
     if (virFileWaitForExists(linkpath, 1, 100) < 0) {
         virReportSystemError(errno,
@@ -1810,13 +1810,13 @@ nodeStateInitialize(bool privileged,
     driver->privileged = privileged;
 
     if (privileged) {
-        virAsprintf(&driver->stateDir, "%s/libvirt/nodedev", RUNSTATEDIR);
+        driver->stateDir = g_strdup_printf("%s/libvirt/nodedev", RUNSTATEDIR);
     } else {
         g_autofree char *rundir = NULL;
 
         if (!(rundir = virGetUserRuntimeDirectory()))
             goto cleanup;
-        virAsprintf(&driver->stateDir, "%s/nodedev/run", rundir);
+        driver->stateDir = g_strdup_printf("%s/nodedev/run", rundir);
     }
 
     if (virFileMakePathWithMode(driver->stateDir, S_IRWXU) < 0) {

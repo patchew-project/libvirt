@@ -113,7 +113,7 @@ nodeDeviceUpdateDriverName(virNodeDeviceDefPtr def)
 
     VIR_FREE(def->driver);
 
-    virAsprintf(&driver_link, "%s/driver", def->sysfs_path);
+    driver_link = g_strdup_printf("%s/driver", def->sysfs_path);
 
     /* Some devices don't have an explicit driver, so just return
        without a name */
