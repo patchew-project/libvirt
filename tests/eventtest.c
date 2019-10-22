@@ -89,8 +89,8 @@ testEventReport(const char *name, bool failed, const char *msg, ...)
     char *str = NULL;
     struct testEventResultData data;
 
-    if (msg && virVasprintf(&str, msg, vargs) != 0)
-        failed = true;
+    if (msg)
+        virVasprintf(&str, msg, vargs);
 
     data.failed = failed;
     data.msg = str;

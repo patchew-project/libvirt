@@ -1324,11 +1324,7 @@ virCommandAddEnvFormat(virCommandPtr cmd, const char *format, ...)
         return;
 
     va_start(list, format);
-    if (virVasprintf(&env, format, list) < 0) {
-        cmd->has_error = ENOMEM;
-        va_end(list);
-        return;
-    }
+    virVasprintf(&env, format, list);
     va_end(list);
 
     virCommandAddEnv(cmd, env);
@@ -1557,11 +1553,7 @@ virCommandAddArgFormat(virCommandPtr cmd, const char *format, ...)
         return;
 
     va_start(list, format);
-    if (virVasprintf(&arg, format, list) < 0) {
-        cmd->has_error = ENOMEM;
-        va_end(list);
-        return;
-    }
+    virVasprintf(&arg, format, list);
     va_end(list);
 
     /* Arg plus trailing NULL. */

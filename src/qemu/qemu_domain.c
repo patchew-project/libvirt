@@ -9396,8 +9396,7 @@ int qemuDomainLogContextWrite(qemuDomainLogContextPtr ctxt,
 
     va_start(argptr, fmt);
 
-    if (virVasprintf(&message, fmt, argptr) < 0)
-        goto cleanup;
+    virVasprintf(&message, fmt, argptr);
     if (!ctxt->manager &&
         lseek(ctxt->writefd, 0, SEEK_END) < 0) {
         virReportSystemError(errno, "%s",
@@ -9490,8 +9489,7 @@ qemuDomainLogAppendMessage(virQEMUDriverPtr driver,
 
     va_start(ap, fmt);
 
-    if (virVasprintf(&message, fmt, ap) < 0)
-        goto cleanup;
+    virVasprintf(&message, fmt, ap);
 
     VIR_DEBUG("Append log message (vm='%s' message='%s) stdioLogD=%d",
               vm->def->name, message, cfg->stdioLogD);
