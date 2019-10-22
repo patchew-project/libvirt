@@ -722,15 +722,14 @@ virDoubleToStr(char **strp, double number)
 }
 
 
-int
+void
 virVasprintfInternal(char **strp,
                      const char *fmt,
                      va_list list)
 {
     char *str = NULL;
-    int ret;
 
-    ret = g_vasprintf(&str, fmt, list);
+    g_vasprintf(&str, fmt, list);
 
     /* GLib is supposed to abort() on OOM, but a mistake meant
      * it did not. Delete this once our min glib is at 2.64.0
@@ -742,8 +741,6 @@ virVasprintfInternal(char **strp,
         abort();
 #endif
     *strp = str;
-
-    return ret;
 }
 
 /**
