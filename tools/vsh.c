@@ -1875,7 +1875,7 @@ vshPrintExtra(vshControl *ctl, const char *format, ...)
         return;
 
     va_start(ap, format);
-    if (virVasprintfQuiet(&str, format, ap) < 0)
+    if (virVasprintf(&str, format, ap) < 0)
         vshErrorOOM();
     va_end(ap);
     fputs(str, stdout);
@@ -1890,7 +1890,7 @@ vshPrint(vshControl *ctl G_GNUC_UNUSED, const char *format, ...)
     char *str;
 
     va_start(ap, format);
-    if (virVasprintfQuiet(&str, format, ap) < 0)
+    if (virVasprintf(&str, format, ap) < 0)
         vshErrorOOM();
     va_end(ap);
     fputs(str, stdout);

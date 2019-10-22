@@ -830,7 +830,7 @@ virRaiseErrorFull(const char *filename,
     } else {
         va_list ap;
         va_start(ap, fmt);
-        ignore_value(virVasprintfQuiet(&str, fmt, ap));
+        ignore_value(virVasprintf(&str, fmt, ap));
         va_end(ap);
     }
 
@@ -1485,7 +1485,7 @@ virLastErrorPrefixMessage(const char *fmt, ...)
 
     va_start(args, fmt);
 
-    if (virVasprintfQuiet(&fmtmsg, fmt, args) < 0)
+    if (virVasprintf(&fmtmsg, fmt, args) < 0)
         goto cleanup;
 
     newmsg = g_strdup_printf("%s: %s", fmtmsg, err->message);
