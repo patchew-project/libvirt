@@ -115,10 +115,10 @@ testCompareHelper(const void *data)
     char *xml = NULL;
     char *vmx = NULL;
 
-    virAsprintf(&xml, "%s/xml2vmxdata/xml2vmx-%s.xml", abs_srcdir,
-                info->input);
-    virAsprintf(&vmx, "%s/xml2vmxdata/xml2vmx-%s.vmx", abs_srcdir,
-                info->output);
+    xml = g_strdup_printf("%s/xml2vmxdata/xml2vmx-%s.xml", abs_srcdir,
+                          info->input);
+    vmx = g_strdup_printf("%s/xml2vmxdata/xml2vmx-%s.vmx", abs_srcdir,
+                          info->output);
 
     result = testCompareFiles(xml, vmx, info->virtualHW_version);
 
@@ -166,8 +166,8 @@ testFormatVMXFileName(const char *src, void *opaque G_GNUC_UNUSED)
             directoryAndFileName += strspn(directoryAndFileName, " ");
         }
 
-        virAsprintf(&absolutePath, "/vmfs/volumes/%s/%s", datastoreName,
-                    directoryAndFileName);
+        absolutePath = g_strdup_printf("/vmfs/volumes/%s/%s", datastoreName,
+                                       directoryAndFileName);
     } else if (STRPREFIX(src, "/")) {
         /* Found absolute path */
         absolutePath = g_strdup(src);

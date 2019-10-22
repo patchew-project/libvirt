@@ -88,7 +88,7 @@ fillQemuCaps(virDomainCapsPtr domCaps,
         fakeHostCPU(caps, domCaps->arch) < 0)
         goto cleanup;
 
-    virAsprintf(&path, "%s/%s.%s.xml", TEST_QEMU_CAPS_PATH, name, arch);
+    path = g_strdup_printf("%s/%s.%s.xml", TEST_QEMU_CAPS_PATH, name, arch);
     if (!(qemuCaps = qemuTestParseCapabilities(caps, path)))
         goto cleanup;
 
@@ -216,8 +216,8 @@ test_virDomainCapsFormat(const void *opaque)
     char *domCapsXML = NULL;
     int ret = -1;
 
-    virAsprintf(&path, "%s/domaincapsschemadata/%s.xml", abs_srcdir,
-                data->name);
+    path = g_strdup_printf("%s/domaincapsschemadata/%s.xml", abs_srcdir,
+                           data->name);
 
     if (!(domCaps = virDomainCapsNew(data->emulator, data->machine,
                                      virArchFromString(data->arch),
@@ -297,10 +297,10 @@ mymain(void)
 #define DO_TEST_QEMU(Name, CapsName, Emulator, Machine, Arch, Type) \
     do { \
         char *name = NULL; \
-        virAsprintf(&name, "qemu_%s%s%s.%s", \
-                    Name, \
-                    Machine ? "-" : "", Machine ? Machine : "", \
-                    Arch); \
+        name = g_strdup_printf("qemu_%s%s%s.%s", \
+                               Name, \
+                               Machine ? "-" : "", Machine ? Machine : "", \
+                               Arch); \
         struct testData data = { \
             .name = name, \
             .emulator = Emulator, \
@@ -333,7 +333,7 @@ mymain(void)
 #define DO_TEST_BHYVE(Name, Emulator, BhyveCaps, Type) \
     do { \
         char *name = NULL; \
-        virAsprintf(&name, "bhyve_%s.x86_64", Name); \
+        name = g_strdup_printf("bhyve_%s.x86_64", Name); \
         struct testData data = { \
             .name = name, \
             .emulator = Emulator, \

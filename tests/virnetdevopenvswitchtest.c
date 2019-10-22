@@ -38,8 +38,8 @@ testInterfaceParseStats(const void *opaque)
     g_autofree char *buf = NULL;
     virDomainInterfaceStatsStruct actual;
 
-    virAsprintf(&filename, "%s/virnetdevopenvswitchdata/%s", abs_srcdir,
-                data->filename);
+    filename = g_strdup_printf("%s/virnetdevopenvswitchdata/%s", abs_srcdir,
+                               data->filename);
 
     if (virFileReadAll(filename, 1024, &buf) < 0)
         return -1;

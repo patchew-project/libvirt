@@ -87,9 +87,9 @@ testSchemaDir(const char *schema,
         if (ent->d_name[0] == '.')
             continue;
 
-        virAsprintf(&xml_path, "%s/%s", dir_path, ent->d_name);
+        xml_path = g_strdup_printf("%s/%s", dir_path, ent->d_name);
 
-        virAsprintf(&test_name, "Checking %s against %s", ent->d_name, schema);
+        test_name = g_strdup_printf("Checking %s against %s", ent->d_name, schema);
 
         data.xml_path = xml_path;
         if (virTestRun(test_name, testSchemaFile, &data) < 0)
@@ -120,7 +120,7 @@ testSchemaDirs(const char *schema, virXMLValidatorPtr validator, ...)
     va_start(args, validator);
 
     while ((dir = va_arg(args, char *))) {
-        virAsprintf(&dir_path, "%s/%s", abs_srcdir, dir);
+        dir_path = g_strdup_printf("%s/%s", abs_srcdir, dir);
         if (testSchemaDir(schema, validator, dir_path) < 0)
             ret = -1;
         VIR_FREE(dir_path);
@@ -139,8 +139,8 @@ testSchemaGrammar(const void *opaque)
     char *schema_path;
     int ret = -1;
 
-    virAsprintf(&schema_path, "%s/docs/schemas/%s", abs_top_srcdir,
-                data->schema);
+    schema_path = g_strdup_printf("%s/docs/schemas/%s", abs_top_srcdir,
+                                  data->schema);
 
     if (!(data->validator = virXMLValidatorInit(schema_path)))
         goto cleanup;

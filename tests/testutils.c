@@ -404,7 +404,7 @@ virTestRewrapFile(const char *filename)
         return -1;
     }
 
-    virAsprintf(&script, "%s/test-wrap-argv.pl", abs_srcdir);
+    script = g_strdup_printf("%s/test-wrap-argv.pl", abs_srcdir);
 
     cmd = virCommandNewArgList(perl, script, "--in-place", filename, NULL);
     if (virCommandRun(cmd, NULL) < 0)
@@ -663,7 +663,7 @@ virTestCompareToFile(const char *actual,
         if (filecontentLen > 0 &&
             filecontent[filecontentLen - 1] == '\n' &&
             (cmpcontentLen == 0 || cmpcontent[cmpcontentLen - 1] != '\n')) {
-            virAsprintf(&fixedcontent, "%s\n", cmpcontent);
+            fixedcontent = g_strdup_printf("%s\n", cmpcontent);
             cmpcontent = fixedcontent;
         }
     }
@@ -689,9 +689,9 @@ virTestCompareToULL(unsigned long long expect,
     g_autofree char *expectStr = NULL;
     g_autofree char *actualStr = NULL;
 
-    virAsprintf(&expectStr, "%llu", expect);
+    expectStr = g_strdup_printf("%llu", expect);
 
-    virAsprintf(&actualStr, "%llu", actual);
+    actualStr = g_strdup_printf("%llu", actual);
 
     return virTestCompareToString(expectStr, actualStr);
 }
@@ -809,7 +809,7 @@ virTestSetEnvPath(void)
 
     if (path) {
         if (strstr(path, abs_builddir) != path)
-            virAsprintf(&new_path, "%s:%s", abs_builddir, path);
+            new_path = g_strdup_printf("%s:%s", abs_builddir, path);
     } else {
         new_path = g_strdup(abs_builddir);
     }

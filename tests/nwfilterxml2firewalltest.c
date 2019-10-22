@@ -243,8 +243,8 @@ virNWFilterIncludeDefToRuleInst(virNWFilterIncludeDefPtr inc,
     int ret = -1;
     char *xml;
 
-    virAsprintf(&xml, "%s/nwfilterxml2firewalldata/%s.xml", abs_srcdir,
-                inc->filterref);
+    xml = g_strdup_printf("%s/nwfilterxml2firewalldata/%s.xml", abs_srcdir,
+                          inc->filterref);
 
     /* create a temporary hashmap for depth-first tree traversal */
     if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params,
@@ -428,10 +428,10 @@ testCompareXMLToIPTablesHelper(const void *data)
     char *xml = NULL;
     char *args = NULL;
 
-    virAsprintf(&xml, "%s/nwfilterxml2firewalldata/%s.xml",
-                abs_srcdir, info->name);
-    virAsprintf(&args, "%s/nwfilterxml2firewalldata/%s-%s.args",
-                abs_srcdir, info->name, RULESTYPE);
+    xml = g_strdup_printf("%s/nwfilterxml2firewalldata/%s.xml",
+                          abs_srcdir, info->name);
+    args = g_strdup_printf("%s/nwfilterxml2firewalldata/%s-%s.args",
+                           abs_srcdir, info->name, RULESTYPE);
 
     result = testCompareXMLToArgvFiles(xml, args);
 

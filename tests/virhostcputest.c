@@ -55,12 +55,12 @@ linuxTestCompareFiles(const char *cpuinfofile,
     }
     VIR_FORCE_FCLOSE(cpuinfo);
 
-    virAsprintf(&actualData,
-                "CPUs: %u/%u, MHz: %u, Nodes: %u, Sockets: %u, "
-                "Cores: %u, Threads: %u\n",
-                nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo),
-                nodeinfo.mhz, nodeinfo.nodes, nodeinfo.sockets,
-                nodeinfo.cores, nodeinfo.threads);
+    actualData = g_strdup_printf(
+                                 "CPUs: %u/%u, MHz: %u, Nodes: %u, Sockets: %u, "
+                                 "Cores: %u, Threads: %u\n",
+                                 nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo),
+                                 nodeinfo.mhz, nodeinfo.nodes, nodeinfo.sockets,
+                                 nodeinfo.cores, nodeinfo.threads);
 
     if (virTestCompareToFile(actualData, outputfile) < 0)
         goto fail;
@@ -176,12 +176,12 @@ linuxTestHostCPU(const void *opaque)
     struct linuxTestHostCPUData *data = (struct linuxTestHostCPUData *) opaque;
     const char *archStr = virArchToString(data->arch);
 
-    virAsprintf(&sysfs_prefix, "%s/virhostcpudata/linux-%s",
-                abs_srcdir, data->testName);
-    virAsprintf(&cpuinfo, "%s/virhostcpudata/linux-%s-%s.cpuinfo",
-                abs_srcdir, archStr, data->testName);
-    virAsprintf(&output, "%s/virhostcpudata/linux-%s-%s.expected",
-                abs_srcdir, archStr, data->testName);
+    sysfs_prefix = g_strdup_printf("%s/virhostcpudata/linux-%s",
+                                   abs_srcdir, data->testName);
+    cpuinfo = g_strdup_printf("%s/virhostcpudata/linux-%s-%s.cpuinfo",
+                              abs_srcdir, archStr, data->testName);
+    output = g_strdup_printf("%s/virhostcpudata/linux-%s-%s.expected",
+                             abs_srcdir, archStr, data->testName);
 
     virFileWrapperAddPrefix(SYSFS_SYSTEM_PATH, sysfs_prefix);
     result = linuxTestCompareFiles(cpuinfo, data->arch, output);
@@ -207,10 +207,10 @@ linuxTestNodeCPUStats(const void *data)
     char *cpustatfile = NULL;
     char *outfile = NULL;
 
-    virAsprintf(&cpustatfile, "%s/virhostcpudata/linux-cpustat-%s.stat",
-                abs_srcdir, testData->name);
-    virAsprintf(&outfile, "%s/virhostcpudata/linux-cpustat-%s.out",
-                abs_srcdir, testData->name);
+    cpustatfile = g_strdup_printf("%s/virhostcpudata/linux-cpustat-%s.stat",
+                                  abs_srcdir, testData->name);
+    outfile = g_strdup_printf("%s/virhostcpudata/linux-cpustat-%s.out",
+                              abs_srcdir, testData->name);
 
     result = linuxCPUStatsCompareFiles(cpustatfile,
                                        testData->ncpus,

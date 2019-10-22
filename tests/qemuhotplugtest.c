@@ -245,14 +245,14 @@ testQemuHotplug(const void *data)
     qemuMonitorTestPtr test_mon = NULL;
     qemuDomainObjPrivatePtr priv = NULL;
 
-    virAsprintf(&domain_filename, "%s/qemuhotplugtestdomains/qemuhotplug-%s.xml",
-                abs_srcdir, test->domain_filename);
-    virAsprintf(&device_filename, "%s/qemuhotplugtestdevices/qemuhotplug-%s.xml",
-                abs_srcdir, test->device_filename);
-    virAsprintf(&result_filename,
-                "%s/qemuhotplugtestdomains/qemuhotplug-%s+%s.xml",
-                abs_srcdir, test->domain_filename,
-                test->device_filename);
+    domain_filename = g_strdup_printf("%s/qemuhotplugtestdomains/qemuhotplug-%s.xml",
+                                      abs_srcdir, test->domain_filename);
+    device_filename = g_strdup_printf("%s/qemuhotplugtestdevices/qemuhotplug-%s.xml",
+                                      abs_srcdir, test->device_filename);
+    result_filename = g_strdup_printf(
+                                      "%s/qemuhotplugtestdomains/qemuhotplug-%s+%s.xml",
+                                      abs_srcdir, test->domain_filename,
+                                      test->device_filename);
 
     if (virTestLoadFile(domain_filename, &domain_xml) < 0 ||
         virTestLoadFile(device_filename, &device_xml) < 0)
@@ -408,17 +408,17 @@ testQemuHotplugCpuPrepare(const char *test,
     char *prefix = NULL;
     struct testQemuHotplugCpuData *data = NULL;
 
-    virAsprintf(&prefix, "%s/qemuhotplugtestcpus/%s", abs_srcdir, test);
+    prefix = g_strdup_printf("%s/qemuhotplugtestcpus/%s", abs_srcdir, test);
 
     if (VIR_ALLOC(data) < 0)
         goto error;
 
     data->modern = modern;
 
-    virAsprintf(&data->file_xml_dom, "%s-domain.xml", prefix);
-    virAsprintf(&data->file_xml_res_live, "%s-result-live.xml", prefix);
-    virAsprintf(&data->file_xml_res_conf, "%s-result-conf.xml", prefix);
-    virAsprintf(&data->file_json_monitor, "%s-monitor.json", prefix);
+    data->file_xml_dom = g_strdup_printf("%s-domain.xml", prefix);
+    data->file_xml_res_live = g_strdup_printf("%s-result-live.xml", prefix);
+    data->file_xml_res_conf = g_strdup_printf("%s-result-conf.xml", prefix);
+    data->file_json_monitor = g_strdup_printf("%s-monitor.json", prefix);
 
     if (virTestLoadFile(data->file_xml_dom, &data->xml_dom) < 0)
         goto error;

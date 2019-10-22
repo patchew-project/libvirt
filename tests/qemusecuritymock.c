@@ -117,7 +117,7 @@ get_key(const char *path,
 {
     char *ret;
 
-    virAsprintf(&ret, "%s:%s", path, name);
+    ret = g_strdup_printf("%s:%s", path, name);
 
     return ret;
 }

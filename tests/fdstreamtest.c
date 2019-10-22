@@ -62,7 +62,7 @@ static int testFDStreamReadCommon(const char *scratchdir, bool blocking)
     for (i = 0; i < PATTERN_LEN; i++)
         pattern[i] = i;
 
-    virAsprintf(&file, "%s/input.data", scratchdir);
+    file = g_strdup_printf("%s/input.data", scratchdir);
 
     if ((fd = open(file, O_CREAT|O_WRONLY|O_EXCL, 0600)) < 0)
         goto cleanup;
@@ -193,7 +193,7 @@ static int testFDStreamWriteCommon(const char *scratchdir, bool blocking)
     for (i = 0; i < PATTERN_LEN; i++)
         pattern[i] = i;
 
-    virAsprintf(&file, "%s/input.data", scratchdir);
+    file = g_strdup_printf("%s/input.data", scratchdir);
 
     if (!(st = virStreamNew(conn, flags)))
         goto cleanup;

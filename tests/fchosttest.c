@@ -343,7 +343,7 @@ mymain(void)
 {
     int ret = 0;
 
-    virAsprintf(&fchost_prefix, "%s/%s", abs_srcdir, "fchostdata/fc_host/");
+    fchost_prefix = g_strdup_printf("%s/%s", abs_srcdir, "fchostdata/fc_host/");
 
     if (virTestRun("virVHBAPathExists", test1, NULL) < 0)
         ret = -1;

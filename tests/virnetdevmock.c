@@ -30,8 +30,8 @@ virNetDevSysfsFile(char **pf_sysfs_device_link,
                    const char *ifname,
                    const char *file)
 {
-    virAsprintf(pf_sysfs_device_link, "%s/%s/%s",
-                NET_DEV_TEST_DATA_PREFIX, ifname, file);
+    *pf_sysfs_device_link = g_strdup_printf("%s/%s/%s",
+                                            NET_DEV_TEST_DATA_PREFIX, ifname, file);
     return 0;
 }
 #else

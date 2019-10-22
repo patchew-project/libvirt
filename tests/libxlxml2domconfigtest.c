@@ -151,8 +151,8 @@ testCompareXMLToDomConfigHelper(const void *data)
     char *xmlfile = NULL;
     char *jsonfile = NULL;
 
-    virAsprintf(&xmlfile, "%s/libxlxml2domconfigdata/%s.xml", abs_srcdir, info->name);
-    virAsprintf(&jsonfile, "%s/libxlxml2domconfigdata/%s.json", abs_srcdir, info->name);
+    xmlfile = g_strdup_printf("%s/libxlxml2domconfigdata/%s.xml", abs_srcdir, info->name);
+    jsonfile = g_strdup_printf("%s/libxlxml2domconfigdata/%s.json", abs_srcdir, info->name);
 
     ret = testCompareXMLToDomConfig(xmlfile, jsonfile);
 

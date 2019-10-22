@@ -325,7 +325,7 @@ testFileIsSharedFSType(const void *opaque G_GNUC_UNUSED)
     bool actual;
     int ret = -1;
 
-    virAsprintf(&mtabFile, abs_srcdir "/virfiledata/%s", data->mtabFile);
+    mtabFile = g_strdup_printf(abs_srcdir "/virfiledata/%s", data->mtabFile);
 
     if (setenv("LIBVIRT_MTAB", mtabFile, 1) < 0) {
         fprintf(stderr, "Unable to set env variable\n");

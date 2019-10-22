@@ -82,12 +82,12 @@ testCompareXMLToXMLHelper(const void *data)
     char *updatexml = NULL;
     char *outxml = NULL;
 
-    virAsprintf(&netxml, "%s/networkxml2xmlin/%s.xml",
-                abs_srcdir, info->netxml);
-    virAsprintf(&updatexml, "%s/networkxml2xmlupdatein/%s.xml",
-                abs_srcdir, info->updatexml);
-    virAsprintf(&outxml, "%s/networkxml2xmlupdateout/%s.xml",
-                abs_srcdir, info->outxml);
+    netxml = g_strdup_printf("%s/networkxml2xmlin/%s.xml",
+                             abs_srcdir, info->netxml);
+    updatexml = g_strdup_printf("%s/networkxml2xmlupdatein/%s.xml",
+                                abs_srcdir, info->updatexml);
+    outxml = g_strdup_printf("%s/networkxml2xmlupdateout/%s.xml",
+                             abs_srcdir, info->outxml);
 
     result = testCompareXMLToXMLFiles(netxml, updatexml, outxml, info->flags,
                                       info->command, info->section,

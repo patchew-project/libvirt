@@ -66,8 +66,8 @@ testCompareXMLToXMLHelper(const void *data)
     int ret = -1;
     char *xml = NULL;
 
-    virAsprintf(&xml, "%s/virnetworkportxml2xmldata/%s.xml", abs_srcdir,
-                info->name);
+    xml = g_strdup_printf("%s/virnetworkportxml2xmldata/%s.xml", abs_srcdir,
+                          info->name);
 
     ret = testCompareXMLToXMLFiles(xml);
 

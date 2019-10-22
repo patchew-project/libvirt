@@ -24,7 +24,7 @@ testParseFormatVU(const void *opaque)
     g_autofree char *expected = NULL;
     g_autofree char *actual = NULL;
 
-    virAsprintf(&path, "%s/qemuvhostuserdata/%s", abs_srcdir, filename);
+    path = g_strdup_printf("%s/qemuvhostuserdata/%s", abs_srcdir, filename);
 
     if (!(vu = qemuVhostUserParse(path)))
         return -1;

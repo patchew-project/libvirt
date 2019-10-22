@@ -131,8 +131,8 @@ testCompareHelper(const void *data)
     char *cfg = NULL;
     char *cfgout = NULL;
 
-    virAsprintf(&xml, "%s/xmconfigdata/test-%s.xml", abs_srcdir, info->name);
-    virAsprintf(&cfg, "%s/xmconfigdata/test-%s.cfg", abs_srcdir, info->name);
+    xml = g_strdup_printf("%s/xmconfigdata/test-%s.xml", abs_srcdir, info->name);
+    cfg = g_strdup_printf("%s/xmconfigdata/test-%s.cfg", abs_srcdir, info->name);
 
     if (info->mode == 0)
         result = testCompareParseXML(cfg, xml);

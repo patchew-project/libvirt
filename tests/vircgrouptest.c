@@ -189,7 +189,7 @@ testCgroupDetectMounts(const void *args)
 
     setenv("VIR_CGROUP_MOCK_FILENAME", data->file, 1);
 
-    virAsprintf(&parsed, "%s/vircgroupdata/%s.parsed", abs_srcdir, data->file);
+    parsed = g_strdup_printf("%s/vircgroupdata/%s.parsed", abs_srcdir, data->file);
 
     if (virCgroupNewSelf(&group) < 0) {
         if (data->fail)

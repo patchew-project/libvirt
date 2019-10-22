@@ -252,8 +252,8 @@ mymain(void)
 {
     int ret = 0;
 
-    virAsprintf(&custom_uri, "test://%s/../examples/xml/test/testnode.xml",
-                abs_srcdir);
+    custom_uri = g_strdup_printf("test://%s/../examples/xml/test/testnode.xml",
+                                 abs_srcdir);
 
     if (virTestRun("virsh list (default)",
                    testCompareListDefault, NULL) != 0)

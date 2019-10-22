@@ -44,11 +44,11 @@ testCompareXMLToXMLHelper(const void *data)
     char *outxml = NULL;
     const struct testInfo *info = data;
 
-    virAsprintf(&inxml, "%s/secretxml2xmlin/%s.xml", abs_srcdir, info->name);
-    virAsprintf(&outxml, "%s/secretxml2xml%s/%s.xml",
-                abs_srcdir,
-                info->different ? "out" : "in",
-                info->name);
+    inxml = g_strdup_printf("%s/secretxml2xmlin/%s.xml", abs_srcdir, info->name);
+    outxml = g_strdup_printf("%s/secretxml2xml%s/%s.xml",
+                             abs_srcdir,
+                             info->different ? "out" : "in",
+                             info->name);
 
     result = testCompareXMLToXMLFiles(inxml, outxml);
 

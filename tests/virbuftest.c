@@ -31,7 +31,7 @@ static int testBufInfiniteLoop(const void *data)
      * This test is a bit fragile, since it relies on virBuffer internals.
      */
     len = buf->size - buf->use - 1;
-    virAsprintf(&addstr, "%*s", len, "a");
+    addstr = g_strdup_printf("%*s", len, "a");
 
     if (info->doEscape)
         virBufferEscapeString(buf, "%s", addstr);

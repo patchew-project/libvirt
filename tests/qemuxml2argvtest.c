@@ -106,8 +106,8 @@ fakeStoragePoolLookupByName(virConnectPtr conn,
     virStoragePoolPtr ret = NULL;
 
     if (STRNEQ(name, "inactive")) {
-        virAsprintf(&xmlpath, "%s/%s%s.xml", abs_srcdir,
-                    STORAGE_POOL_XML_PATH, name);
+        xmlpath = g_strdup_printf("%s/%s%s.xml", abs_srcdir,
+                                  STORAGE_POOL_XML_PATH, name);
 
         if (!virFileExists(xmlpath)) {
             virReportError(VIR_ERR_NO_STORAGE_POOL,
@@ -187,7 +187,7 @@ fakeStorageVolGetPath(virStorageVolPtr vol)
 {
     char *ret = NULL;
 
-    virAsprintf(&ret, "/some/%s/device/%s", vol->key, vol->name);
+    ret = g_strdup_printf("/some/%s/device/%s", vol->key, vol->name);
 
     return ret;
 }
@@ -205,8 +205,8 @@ fakeStoragePoolGetXMLDesc(virStoragePoolPtr pool,
         return NULL;
     }
 
-    virAsprintf(&xmlpath, "%s/%s%s.xml", abs_srcdir, STORAGE_POOL_XML_PATH,
-                pool->name);
+    xmlpath = g_strdup_printf("%s/%s%s.xml", abs_srcdir, STORAGE_POOL_XML_PATH,
+                              pool->name);
 
     if (virTestLoadFile(xmlpath, &xmlbuf) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -592,10 +592,10 @@ static void
 testInfoSetPaths(struct testQemuInfo *info,
                  const char *suffix)
 {
-    virAsprintf(&info->infile, "%s/qemuxml2argvdata/%s.xml",
-                abs_srcdir, info->name);
-    virAsprintf(&info->outfile, "%s/qemuxml2argvdata/%s%s.args",
-                abs_srcdir, info->name, suffix ? suffix : "");
+    info->infile = g_strdup_printf("%s/qemuxml2argvdata/%s.xml",
+                                   abs_srcdir, info->name);
+    info->outfile = g_strdup_printf("%s/qemuxml2argvdata/%s%s.args",
+                                    abs_srcdir, info->name, suffix ? suffix : "");
 }
 
 # define FAKEROOTDIRTEMPLATE abs_builddir "/fakerootdir-XXXXXX"

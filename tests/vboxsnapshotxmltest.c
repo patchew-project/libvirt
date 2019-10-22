@@ -104,8 +104,8 @@ testCompareXMLToXMLHelper(const void *data)
     int result = -1;
     char *xml = NULL;
 
-    virAsprintf(&xml, "%s/vboxsnapshotxmldata/%s.vbox", abs_srcdir,
-                (const char *)data);
+    xml = g_strdup_printf("%s/vboxsnapshotxmldata/%s.vbox", abs_srcdir,
+                          (const char *)data);
 
     result = testCompareXMLtoXMLFiles(xml);
 

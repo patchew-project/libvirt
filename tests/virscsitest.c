@@ -167,9 +167,9 @@ create_symlink(const char *tmpdir, const char *src_name, const char *dst_name)
     char *src_path = NULL;
     char *dst_path = NULL;
 
-    virAsprintf(&src_path, "%s/%s", virscsi_prefix, src_name);
+    src_path = g_strdup_printf("%s/%s", virscsi_prefix, src_name);
 
-    virAsprintf(&dst_path, "%s/%s", tmpdir, dst_name);
+    dst_path = g_strdup_printf("%s/%s", tmpdir, dst_name);
 
     if (symlink(src_path, dst_path) < 0) {
         VIR_WARN("Failed to create symlink '%s' to '%s'", src_path, dst_path);
@@ -192,7 +192,7 @@ mymain(void)
     char *tmpdir = NULL;
     char template[] = "/tmp/libvirt_XXXXXX";
 
-    virAsprintf(&virscsi_prefix, "%s" VIR_SCSI_DATA, abs_srcdir);
+    virscsi_prefix = g_strdup_printf("%s" VIR_SCSI_DATA, abs_srcdir);
 
     tmpdir = mkdtemp(template);
 

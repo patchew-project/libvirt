@@ -145,8 +145,8 @@ qemuMonitorTestAddErrorResponse(qemuMonitorTestPtr test,
     }
 
     /* format the JSON error message */
-    virAsprintf(&jsonmsg, "{ \"error\": " " { \"desc\": \"%s\", "
-                "   \"class\": \"UnexpectedCommand\" } }", escapemsg);
+    jsonmsg = g_strdup_printf("{ \"error\": " " { \"desc\": \"%s\", "
+                              "   \"class\": \"UnexpectedCommand\" } }", escapemsg);
 
     return qemuMonitorTestAddResponse(test, jsonmsg);
 }
@@ -158,7 +158,7 @@ qemuMonitorTestAddUnexpectedErrorResponse(qemuMonitorTestPtr test,
 {
     g_autofree char *msg = NULL;
 
-    virAsprintf(&msg, "unexpected command: '%s'", command);
+    msg = g_strdup_printf("unexpected command: '%s'", command);
 
     return qemuMonitorTestAddErrorResponse(test, msg);
 }
@@ -171,8 +171,8 @@ qemuMonitorTestAddInvalidCommandResponse(qemuMonitorTestPtr test,
 {
     g_autofree char *msg = NULL;
 
-    virAsprintf(&msg, "expected command '%s' got '%s'", expectedcommand,
-                actualcommand);
+    msg = g_strdup_printf("expected command '%s' got '%s'", expectedcommand,
+                          actualcommand);
 
     return qemuMonitorTestAddErrorResponse(test, msg);
 }
@@ -191,8 +191,8 @@ qemuMonitorReportError(qemuMonitorTestPtr test, const char *errmsg, ...)
     if (virVasprintf(&msg, errmsg, msgargs) < 0)
         goto cleanup;
 
-    virAsprintf(&jsonmsg, "{ \"error\": " " { \"desc\": \"%s\", "
-                "   \"class\": \"UnexpectedCommand\" } }", msg);
+    jsonmsg = g_strdup_printf("{ \"error\": " " { \"desc\": \"%s\", "
+                              "   \"class\": \"UnexpectedCommand\" } }", msg);
 
     ret = qemuMonitorTestAddResponse(test, jsonmsg);
 
@@ -522,7 +522,7 @@ qemuMonitorTestProcessCommandDefaultValidate(qemuMonitorTestPtr test,
     if (STREQ(cmdname, "device_add"))
         return 0;
 
-    virAsprintf(&schemapath, "%s/arg-type", cmdname);
+    schemapath = g_strdup_printf("%s/arg-type", cmdname);
 
     if (virQEMUQAPISchemaPathGet(schemapath, test->qapischema, &schemaroot) < 0 ||
         !schemaroot) {
@@ -640,7 +640,7 @@ qemuMonitorTestProcessCommandVerbatim(qemuMonitorTestPtr test,
         ret = qemuMonitorTestAddResponse(test, data->response);
     } else {
         if (data->cmderr) {
-            virAsprintf(&errmsg, "%s: %s", data->cmderr, cmdstr);
+            errmsg = g_strdup_printf("%s: %s", data->cmderr, cmdstr);
 
             ret = qemuMonitorTestAddErrorResponse(test, errmsg);
         } else {
@@ -731,7 +731,7 @@ qemuMonitorTestProcessGuestAgentSync(qemuMonitorTestPtr test,
         goto cleanup;
     }
 
-    virAsprintf(&retmsg, "{\"return\":%llu}", id);
+    retmsg = g_strdup_printf("{\"return\":%llu}", id);
 
 
     ret = qemuMonitorTestAddResponse(test, retmsg);
@@ -1057,7 +1057,7 @@ qemuMonitorCommonTestNew(virDomainXMLOptionPtr xmlopt,
 
     tmpdir_template = NULL;
 
-    virAsprintf(&path, "%s/qemumonitorjsontest.sock", test->tmpdir);
+    path = g_strdup_printf("%s/qemumonitorjsontest.sock", test->tmpdir);
 
     if (vm) {
         test->vm = virObjectRef(vm);
@@ -1285,7 +1285,7 @@ qemuMonitorTestFullAddItem(qemuMonitorTestPtr test,
     char *cmderr;
     int ret;
 
-    virAsprintf(&cmderr, "wrong expected command in %s:%zu: ", filename, line);
+    cmderr = g_strdup_printf("wrong expected command in %s:%zu: ", filename, line);
 
     ret = qemuMonitorTestAddItemVerbatim(test, command, cmderr, response);
 

@@ -43,7 +43,7 @@ virNumaIsAvailable(void)
     if (numa_avail < 0) {
         char *sysfs_node_path = NULL;
 
-        virAsprintf(&sysfs_node_path, "%s/node", SYSFS_SYSTEM_PATH);
+        sysfs_node_path = g_strdup_printf("%s/node", SYSFS_SYSTEM_PATH);
 
         numa_avail = virFileExists(sysfs_node_path);
 

@@ -809,7 +809,7 @@ testQemuGetLatestCapsForArch(const char *arch,
     const char *maxname = NULL;
     char *ret = NULL;
 
-    virAsprintf(&fullsuffix, "%s.%s", arch, suffix);
+    fullsuffix = g_strdup_printf("%s.%s", arch, suffix);
 
     if (virDirOpen(&dir, TEST_QEMU_CAPS_PATH) < 0)
         goto cleanup;
@@ -845,7 +845,7 @@ testQemuGetLatestCapsForArch(const char *arch,
         goto cleanup;
     }
 
-    virAsprintf(&ret, "%s/%s", TEST_QEMU_CAPS_PATH, maxname);
+    ret = g_strdup_printf("%s/%s", TEST_QEMU_CAPS_PATH, maxname);
 
  cleanup:
     VIR_FREE(tmp);
@@ -1042,8 +1042,8 @@ testQemuInfoSetArgs(struct testQemuInfo *info,
         if (STREQ(capsver, "latest")) {
             capsfile = g_strdup(virHashLookup(capslatest, capsarch));
             stripmachinealiases = true;
-        } else virAsprintf(&capsfile, "%s/caps_%s.%s.xml",
-                           TEST_QEMU_CAPS_PATH, capsver, capsarch);
+        } else capsfile = g_strdup_printf("%s/caps_%s.%s.xml",
+                                          TEST_QEMU_CAPS_PATH, capsver, capsarch);
 
         if (!(qemuCaps = qemuTestParseCapabilitiesArch(virArchFromString(capsarch),
                                                        capsfile))) {

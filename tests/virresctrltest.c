@@ -26,14 +26,14 @@ test_virResctrlGetUnused(const void *opaque)
     char *schemata_file;
     virCapsPtr caps = NULL;
 
-    virAsprintf(&system_dir, "%s/vircaps2xmldata/linux-%s/system", abs_srcdir,
-                data->filename);
+    system_dir = g_strdup_printf("%s/vircaps2xmldata/linux-%s/system", abs_srcdir,
+                                 data->filename);
 
-    virAsprintf(&resctrl_dir, "%s/vircaps2xmldata/linux-%s/resctrl",
-                abs_srcdir, data->filename);
+    resctrl_dir = g_strdup_printf("%s/vircaps2xmldata/linux-%s/resctrl",
+                                  abs_srcdir, data->filename);
 
-    virAsprintf(&schemata_file, "%s/virresctrldata/%s.schemata", abs_srcdir,
-                data->filename);
+    schemata_file = g_strdup_printf("%s/virresctrldata/%s.schemata", abs_srcdir,
+                                    data->filename);
 
     virFileWrapperAddPrefix("/sys/devices/system", system_dir);
     virFileWrapperAddPrefix("/sys/fs/resctrl", resctrl_dir);

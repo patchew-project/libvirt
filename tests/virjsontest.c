@@ -26,10 +26,10 @@ testJSONFromFile(const void *data)
     g_autofree char *outfile = NULL;
     g_autofree char *actual = NULL;
 
-    virAsprintf(&infile, "%s/virjsondata/parse-%s-in.json",
-                abs_srcdir, info->name);
-    virAsprintf(&outfile, "%s/virjsondata/parse-%s-out.json",
-                abs_srcdir, info->name);
+    infile = g_strdup_printf("%s/virjsondata/parse-%s-in.json",
+                             abs_srcdir, info->name);
+    outfile = g_strdup_printf("%s/virjsondata/parse-%s-out.json",
+                              abs_srcdir, info->name);
 
     if (virTestLoadFile(infile, &indata) < 0)
         return -1;
@@ -113,10 +113,10 @@ testJSONAddRemove(const void *data)
     g_autofree char *outfile = NULL;
     g_autofree char *actual = NULL;
 
-    virAsprintf(&infile, "%s/virjsondata/add-remove-%s-in.json",
-                abs_srcdir, info->name);
-    virAsprintf(&outfile, "%s/virjsondata/add-remove-%s-out.json",
-                abs_srcdir, info->name);
+    infile = g_strdup_printf("%s/virjsondata/add-remove-%s-in.json",
+                             abs_srcdir, info->name);
+    outfile = g_strdup_printf("%s/virjsondata/add-remove-%s-out.json",
+                              abs_srcdir, info->name);
 
     if (virTestLoadFile(infile, &indata) < 0)
         return -1;
@@ -348,10 +348,10 @@ testJSONDeflatten(const void *data)
     g_autofree char *outfile = NULL;
     g_autofree char *actual = NULL;
 
-    virAsprintf(&infile, "%s/virjsondata/deflatten-%s-in.json",
-                abs_srcdir, info->name);
-    virAsprintf(&outfile, "%s/virjsondata/deflatten-%s-out.json",
-                abs_srcdir, info->name);
+    infile = g_strdup_printf("%s/virjsondata/deflatten-%s-in.json",
+                             abs_srcdir, info->name);
+    outfile = g_strdup_printf("%s/virjsondata/deflatten-%s-out.json",
+                              abs_srcdir, info->name);
 
     if (virTestLoadFile(infile, &indata) < 0)
         return -1;

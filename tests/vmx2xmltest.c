@@ -114,10 +114,10 @@ testCompareHelper(const void *data)
     char *vmx = NULL;
     char *xml = NULL;
 
-    virAsprintf(&vmx, "%s/vmx2xmldata/vmx2xml-%s.vmx", abs_srcdir,
-                info->input);
-    virAsprintf(&xml, "%s/vmx2xmldata/vmx2xml-%s.xml", abs_srcdir,
-                info->output);
+    vmx = g_strdup_printf("%s/vmx2xmldata/vmx2xml-%s.vmx", abs_srcdir,
+                          info->input);
+    xml = g_strdup_printf("%s/vmx2xmldata/vmx2xml-%s.xml", abs_srcdir,
+                          info->output);
 
     ret = testCompareFiles(vmx, xml);
 
@@ -148,7 +148,7 @@ testParseVMXFileName(const char *fileName, void *opaque G_GNUC_UNUSED)
             goto cleanup;
         }
 
-        virAsprintf(&src, "[%s] %s", datastoreName, directoryAndFileName);
+        src = g_strdup_printf("[%s] %s", datastoreName, directoryAndFileName);
     } else if (STRPREFIX(fileName, "/")) {
         /* Found absolute path referencing a file outside a datastore */
         src = g_strdup(fileName);
@@ -157,7 +157,7 @@ testParseVMXFileName(const char *fileName, void *opaque G_GNUC_UNUSED)
         src = NULL;
     } else {
         /* Found single file name referencing a file inside a datastore */
-        virAsprintf(&src, "[datastore] directory/%s", fileName);
+        src = g_strdup_printf("[datastore] directory/%s", fileName);
     }
 
  cleanup:

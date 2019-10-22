@@ -121,7 +121,7 @@ testCheckpointPostParse(virDomainMomentDefPtr def)
         return -1;
     def->creationTime = mocktime;
     if (!def->name)
-        virAsprintf(&def->name, "%lld", def->creationTime);
+        def->name = g_strdup_printf("%lld", def->creationTime);
     return 0;
 }
 

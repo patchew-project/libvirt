@@ -158,11 +158,11 @@ mymain(void)
 
     collie_test *test = node_info_tests;
 
-    virAsprintf(&poolxml, "%s/storagepoolxml2xmlin/pool-sheepdog.xml",
-                abs_srcdir);
+    poolxml = g_strdup_printf("%s/storagepoolxml2xmlin/pool-sheepdog.xml",
+                              abs_srcdir);
 
-    virAsprintf(&volxml, "%s/storagevolxml2xmlin/vol-sheepdog.xml",
-                abs_srcdir);
+    volxml = g_strdup_printf("%s/storagevolxml2xmlin/vol-sheepdog.xml",
+                             abs_srcdir);
 
 #define DO_TEST_NODE(collie) \
     do { \

@@ -41,7 +41,7 @@ testMACLookup(const void *opaque)
     char *file = NULL;
     int ret = -1;
 
-    virAsprintf(&file, "%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
+    file = g_strdup_printf("%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
 
     if (!(mgr = virMacMapNew(file)))
         goto cleanup;
@@ -92,7 +92,7 @@ testMACRemove(const void *opaque)
     char *file = NULL;
     int ret = -1;
 
-    virAsprintf(&file, "%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
+    file = g_strdup_printf("%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
 
     if (!(mgr = virMacMapNew(file)))
         goto cleanup;
@@ -127,7 +127,7 @@ testMACFlush(const void *opaque)
     char *str = NULL;
     int ret = -1;
 
-    virAsprintf(&file, "%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
+    file = g_strdup_printf("%s/virmacmaptestdata/%s.json", abs_srcdir, data->file);
 
     if (virMacMapDumpStr(data->mgr, &str) < 0)
         goto cleanup;

@@ -138,12 +138,12 @@ testPrepImages(void)
         compat = true;
     VIR_FREE(buf);
 
-    virAsprintf(&absraw, "%s/raw", datadir);
-    virAsprintf(&absqcow2, "%s/qcow2", datadir);
-    virAsprintf(&abswrap, "%s/wrap", datadir);
-    virAsprintf(&absqed, "%s/qed", datadir);
-    virAsprintf(&absdir, "%s/dir", datadir);
-    virAsprintf(&abslink2, "%s/sub/link2", datadir);
+    absraw = g_strdup_printf("%s/raw", datadir);
+    absqcow2 = g_strdup_printf("%s/qcow2", datadir);
+    abswrap = g_strdup_printf("%s/wrap", datadir);
+    absqed = g_strdup_printf("%s/qed", datadir);
+    absdir = g_strdup_printf("%s/dir", datadir);
+    abslink2 = g_strdup_printf("%s/sub/link2", datadir);
 
     if (virFileMakePath(datadir "/sub") < 0) {
         fprintf(stderr, "unable to create directory %s\n", datadir "/sub");
@@ -159,7 +159,7 @@ testPrepImages(void)
         goto cleanup;
     }
 
-    virAsprintf(&buf, "%1024d", 0);
+    buf = g_strdup_printf("%1024d", 0);
     if (virFileWriteStr("raw", buf, 0600) < 0) {
         fprintf(stderr, "unable to create raw file\n");
         goto cleanup;
@@ -321,28 +321,28 @@ testStorageChain(const void *args)
             return -1;
         }
 
-        virAsprintf(&expect,
-                    testStorageChainFormat, i,
-                    NULLSTR(data->files[i]->path),
-                    NULLSTR(data->files[i]->expBackingStoreRaw),
-                    data->files[i]->expCapacity,
-                    data->files[i]->expEncrypted,
-                    NULLSTR(data->files[i]->pathRel),
-                    data->files[i]->type,
-                    data->files[i]->format,
-                    virStorageNetProtocolTypeToString(data->files[i]->protocol),
-                    NULLSTR(data->files[i]->hostname));
-        virAsprintf(&actual,
-                    testStorageChainFormat, i,
-                    NULLSTR(elt->path),
-                    NULLSTR(elt->backingStoreRaw),
-                    elt->capacity,
-                    !!elt->encryption,
-                    NULLSTR(elt->relPath),
-                    elt->type,
-                    elt->format,
-                    virStorageNetProtocolTypeToString(elt->protocol),
-                    NULLSTR(elt->nhosts ? elt->hosts[0].name : NULL));
+        expect = g_strdup_printf(
+                                 testStorageChainFormat, i,
+                                 NULLSTR(data->files[i]->path),
+                                 NULLSTR(data->files[i]->expBackingStoreRaw),
+                                 data->files[i]->expCapacity,
+                                 data->files[i]->expEncrypted,
+                                 NULLSTR(data->files[i]->pathRel),
+                                 data->files[i]->type,
+                                 data->files[i]->format,
+                                 virStorageNetProtocolTypeToString(data->files[i]->protocol),
+                                 NULLSTR(data->files[i]->hostname));
+        actual = g_strdup_printf(
+                                 testStorageChainFormat, i,
+                                 NULLSTR(elt->path),
+                                 NULLSTR(elt->backingStoreRaw),
+                                 elt->capacity,
+                                 !!elt->encryption,
+                                 NULLSTR(elt->relPath),
+                                 elt->type,
+                                 elt->format,
+                                 virStorageNetProtocolTypeToString(elt->protocol),
+                                 NULLSTR(elt->nhosts ? elt->hosts[0].name : NULL));
         if (STRNEQ(expect, actual)) {
             virTestDifference(stderr, expect, actual);
             return -1;

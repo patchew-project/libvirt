@@ -67,8 +67,8 @@ static int checkoutput(const char *testname,
     char *actualname = NULL;
     char *actuallog = NULL;
 
-    virAsprintf(&expectname, "%s/commanddata/%s.log", abs_srcdir, testname);
-    virAsprintf(&actualname, "%s/commandhelper.log", abs_builddir);
+    expectname = g_strdup_printf("%s/commanddata/%s.log", abs_srcdir, testname);
+    actualname = g_strdup_printf("%s/commandhelper.log", abs_builddir);
 
     if (virFileReadAll(expectname, 1024*64, &expectlog) < 0) {
         fprintf(stderr, "cannot read %s\n", expectname);
@@ -83,7 +83,7 @@ static int checkoutput(const char *testname,
     if (prefix) {
         char *tmp = NULL;
 
-        virAsprintf(&tmp, "%s%s", prefix, expectlog);
+        tmp = g_strdup_printf("%s%s", prefix, expectlog);
 
         VIR_FREE(expectlog);
         expectlog = tmp;
@@ -591,7 +591,7 @@ static int test15(const void *unused G_GNUC_UNUSED)
     char *cwd = NULL;
     int ret = -1;
 
-    virAsprintf(&cwd, "%s/commanddata", abs_srcdir);
+    cwd = g_strdup_printf("%s/commanddata", abs_srcdir);
     virCommandSetWorkingDirectory(cmd, cwd);
     virCommandSetUmask(cmd, 002);
 
@@ -810,7 +810,7 @@ static int test20(const void *unused G_GNUC_UNUSED)
 
     sigaction(SIGPIPE, &sig_action, NULL);
 
-    virAsprintf(&buf, "1\n%100000d\n", 2);
+    buf = g_strdup_printf("1\n%100000d\n", 2);
     virCommandSetInputBuffer(cmd, buf);
 
     if (virCommandRun(cmd, NULL) < 0) {
@@ -1168,10 +1168,10 @@ static int test27(const void *unused G_GNUC_UNUSED)
     buffer2[buflen - 2] = '\n';
     buffer2[buflen - 1] = 0;
 
-    virAsprintf(&outexpect, TEST27_OUTEXPECT_TEMP,
-                buffer0, buffer1, buffer2);
-    virAsprintf(&errexpect, TEST27_ERREXPECT_TEMP,
-                buffer0, buffer1, buffer2);
+    outexpect = g_strdup_printf(TEST27_OUTEXPECT_TEMP,
+                                buffer0, buffer1, buffer2);
+    errexpect = g_strdup_printf(TEST27_ERREXPECT_TEMP,
+                                buffer0, buffer1, buffer2);
 
     if (pipe(pipe1) < 0 || pipe(pipe2) < 0) {
         printf("Could not create pipe: %s\n", g_strerror(errno));

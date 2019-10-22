@@ -62,8 +62,8 @@ testCompareXMLToXMLHelper(const void *data)
     char *inxml = NULL;
     char *outxml = NULL;
 
-    virAsprintf(&inxml, "%s/nwfilterxml2xmlin/%s.xml", abs_srcdir, tp->name);
-    virAsprintf(&outxml, "%s/nwfilterxml2xmlout/%s.xml", abs_srcdir, tp->name);
+    inxml = g_strdup_printf("%s/nwfilterxml2xmlin/%s.xml", abs_srcdir, tp->name);
+    outxml = g_strdup_printf("%s/nwfilterxml2xmlout/%s.xml", abs_srcdir, tp->name);
 
     result = testCompareXMLToXMLFiles(inxml, outxml, tp->expect_warning);
 

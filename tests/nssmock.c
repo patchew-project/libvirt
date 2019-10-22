@@ -55,9 +55,9 @@ getrealpath(char **newpath,
             const char *path)
 {
     if (STRPREFIX(path, LEASEDIR)) {
-        virAsprintf(newpath, "%s/nssdata/%s",
-                    abs_srcdir,
-                    path + strlen(LEASEDIR));
+        *newpath = g_strdup_printf("%s/nssdata/%s",
+                                   abs_srcdir,
+                                   path + strlen(LEASEDIR));
     } else {
         *newpath = g_strdup(path);
     }

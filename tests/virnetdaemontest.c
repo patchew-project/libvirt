@@ -295,11 +295,11 @@ static int testExecRestart(const void *opaque)
         goto cleanup;
     }
 
-    virAsprintf(&infile, "%s/virnetdaemondata/input-data-%s.json", abs_srcdir,
-                data->jsonfile);
+    infile = g_strdup_printf("%s/virnetdaemondata/input-data-%s.json", abs_srcdir,
+                             data->jsonfile);
 
-    virAsprintf(&outfile, "%s/virnetdaemondata/output-data-%s.json",
-                abs_srcdir, data->jsonfile);
+    outfile = g_strdup_printf("%s/virnetdaemondata/output-data-%s.json",
+                              abs_srcdir, data->jsonfile);
 
     if (virFileReadAll(infile, 8192, &injsonstr) < 0)
         goto cleanup;

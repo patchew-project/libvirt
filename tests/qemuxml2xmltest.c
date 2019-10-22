@@ -98,18 +98,18 @@ testInfoSetPaths(struct testQemuInfo *info,
     VIR_FREE(info->infile);
     VIR_FREE(info->outfile);
 
-    virAsprintf(&info->infile, "%s/qemuxml2argvdata/%s.xml", abs_srcdir,
-                info->name);
+    info->infile = g_strdup_printf("%s/qemuxml2argvdata/%s.xml", abs_srcdir,
+                                   info->name);
 
-    virAsprintf(&info->outfile, "%s/qemuxml2xmloutdata/%s-%s%s.xml",
-                abs_srcdir, info->name,
-                when == WHEN_ACTIVE ? "active" : "inactive", suffix);
+    info->outfile = g_strdup_printf("%s/qemuxml2xmloutdata/%s-%s%s.xml",
+                                    abs_srcdir, info->name,
+                                    when == WHEN_ACTIVE ? "active" : "inactive", suffix);
 
     if (!virFileExists(info->outfile)) {
         VIR_FREE(info->outfile);
 
-        virAsprintf(&info->outfile, "%s/qemuxml2xmloutdata/%s%s.xml",
-                    abs_srcdir, info->name, suffix);
+        info->outfile = g_strdup_printf("%s/qemuxml2xmloutdata/%s%s.xml",
+                                        abs_srcdir, info->name, suffix);
     }
 
     return 0;
@@ -121,8 +121,8 @@ static const char *statusPath = abs_srcdir "/qemustatusxml2xmldata/";
 static void
 testInfoSetStatusPaths(struct testQemuInfo *info)
 {
-    virAsprintf(&info->infile, "%s%s-in.xml", statusPath, info->name);
-    virAsprintf(&info->outfile, "%s%s-out.xml", statusPath, info->name);
+    info->infile = g_strdup_printf("%s%s-in.xml", statusPath, info->name);
+    info->outfile = g_strdup_printf("%s%s-out.xml", statusPath, info->name);
 }
 
 

@@ -72,10 +72,10 @@ create_scsihost(const char *fakesysfsdir, const char *devicepath,
     int ret = -1;
     int fd = -1;
 
-    virAsprintf(&unique_id_path, "%s/devices/pci0000:00/%s/unique_id",
-                fakesysfsdir, devicepath);
-    virAsprintf(&link_path, "%s/class/scsi_host/%s",
-                fakesysfsdir, hostname);
+    unique_id_path = g_strdup_printf("%s/devices/pci0000:00/%s/unique_id",
+                                     fakesysfsdir, devicepath);
+    link_path = g_strdup_printf("%s/class/scsi_host/%s",
+                                fakesysfsdir, hostname);
 
     /* Rather than create path & file, temporarily snip off the file to
      * create the path
@@ -205,7 +205,7 @@ testVirFindSCSIHostByPCI(const void *data G_GNUC_UNUSED)
     char *ret_host = NULL;
     int ret = -1;
 
-    virAsprintf(&path_addr, "%s/%s", abs_srcdir, "sysfs/class/scsi_host");
+    path_addr = g_strdup_printf("%s/%s", abs_srcdir, "sysfs/class/scsi_host");
 
     if (!(ret_host = virSCSIHostFindByPCI(TEST_SCSIHOST_CLASS_PATH,
                                           pci_addr1, unique_id1)) ||
@@ -255,14 +255,14 @@ mymain(void)
         goto cleanup;
     }
 
-    virAsprintf(&fakesysfsdir, "%s/sys", fakerootdir);
+    fakesysfsdir = g_strdup_printf("%s/sys", fakerootdir);
 
     if (init_scsihost_sysfs(fakesysfsdir) < 0) {
         fprintf(stderr, "Failed to create fakesysfs='%s'\n", fakesysfsdir);
         goto cleanup;
     }
 
-    virAsprintf(&scsihost_class_path, "%s/class/scsi_host", fakesysfsdir);
+    scsihost_class_path = g_strdup_printf("%s/class/scsi_host", fakesysfsdir);
     VIR_DEBUG("Reading from '%s'", scsihost_class_path);
 
     if (virTestRun("testVirReadSCSIUniqueId",

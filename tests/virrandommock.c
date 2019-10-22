@@ -53,8 +53,8 @@ uint64_t virRandomBits(int nbits)
 int virRandomGenerateWWN(char **wwn,
                          const char *virt_type G_GNUC_UNUSED)
 {
-    virAsprintf(wwn, "5100000%09llx",
-                (unsigned long long)virRandomBits(36));
+    *wwn = g_strdup_printf("5100000%09llx",
+                           (unsigned long long)virRandomBits(36));
     return 0;
 }
 

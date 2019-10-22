@@ -54,7 +54,7 @@ static char *get_fake_path(const char *real_path)
     char *path = NULL;
 
     if ((p = STRSKIP(real_path, USB_SYSFS)))
-        virAsprintf(&path, "%s/%s/%s", abs_srcdir, FAKE_USB_SYSFS, p);
+        path = g_strdup_printf("%s/%s/%s", abs_srcdir, FAKE_USB_SYSFS, p);
     else if (!p)
         path = g_strdup(real_path);
 

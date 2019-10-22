@@ -91,13 +91,13 @@ sysinfotest_run(const char *test,
     testdata.func = func;
 
     if (decoder)
-        virAsprintf(&testdata.decoder, "%s/%s", abs_srcdir, decoder);
+        testdata.decoder = g_strdup_printf("%s/%s", abs_srcdir, decoder);
     if (sysinfo)
-        virAsprintf(&testdata.sysinfo, "%s/%s", abs_srcdir, sysinfo);
+        testdata.sysinfo = g_strdup_printf("%s/%s", abs_srcdir, sysinfo);
     if (cpuinfo)
-        virAsprintf(&testdata.cpuinfo, "%s/%s", abs_srcdir, cpuinfo);
+        testdata.cpuinfo = g_strdup_printf("%s/%s", abs_srcdir, cpuinfo);
     if (expected)
-        virAsprintf(&testdata.expected, "%s/%s", abs_srcdir, expected);
+        testdata.expected = g_strdup_printf("%s/%s", abs_srcdir, expected);
 
     if (virTestRun(test, testSysinfo, &testdata) < 0)
         goto error;
