@@ -1378,9 +1378,9 @@ hypervDomainSendKey(virDomainPtr domain, unsigned int codeset,
         }
     }
 
-    virAsprintf(&selector, "CreationClassName=Msvm_Keyboard&DeviceID=%s&"
-                "SystemCreationClassName=Msvm_ComputerSystem&"
-                "SystemName=%s", keyboard->data.common->DeviceID, uuid_string);
+    selector = g_strdup_printf("CreationClassName=Msvm_Keyboard&DeviceID=%s&"
+                               "SystemCreationClassName=Msvm_ComputerSystem&"
+                               "SystemName=%s", keyboard->data.common->DeviceID, uuid_string);
 
     /* press the keys */
     for (i = 0; i < nkeycodes; i++) {
@@ -1462,7 +1462,7 @@ hypervDomainSetMemoryFlags(virDomainPtr domain, unsigned long memory,
 
     virCheckFlags(0, -1);
 
-    virAsprintf(&memory_str, "%lu", memory_mb);
+    memory_str = g_strdup_printf("%lu", memory_mb);
 
     virUUIDFormat(domain->uuid, uuid_string);
 
