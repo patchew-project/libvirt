@@ -3788,7 +3788,7 @@ lxcDomainAttachDeviceDiskLive(virLXCDriverPtr driver,
     if (VIR_REALLOC_N(vm->def->disks, vm->def->ndisks + 1) < 0)
         goto cleanup;
 
-    virAsprintf(&file, "/dev/%s", def->dst);
+    file = g_strdup_printf("/dev/%s", def->dst);
 
     if (lxcDomainAttachDeviceMknod(driver,
                                    0700 | S_IFBLK,
@@ -3973,7 +3973,7 @@ lxcDomainAttachDeviceHostdevSubsysUSBLive(virLXCDriverPtr driver,
     }
 
     usbsrc = &def->source.subsys.u.usb;
-    virAsprintf(&src, "/dev/bus/usb/%03d/%03d", usbsrc->bus, usbsrc->device);
+    src = g_strdup_printf("/dev/bus/usb/%03d/%03d", usbsrc->bus, usbsrc->device);
 
     if (!(usb = virUSBDeviceNew(usbsrc->bus, usbsrc->device, NULL)))
         goto cleanup;
@@ -4309,7 +4309,7 @@ lxcDomainDetachDeviceDiskLive(virDomainObjPtr vm,
     def = vm->def->disks[idx];
     src = virDomainDiskGetSource(def);
 
-    virAsprintf(&dst, "/dev/%s", def->dst);
+    dst = g_strdup_printf("/dev/%s", def->dst);
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -4447,7 +4447,7 @@ lxcDomainDetachDeviceHostdevUSBLive(virLXCDriverPtr driver,
     }
 
     usbsrc = &def->source.subsys.u.usb;
-    virAsprintf(&dst, "/dev/bus/usb/%03d/%03d", usbsrc->bus, usbsrc->device);
+    dst = g_strdup_printf("/dev/bus/usb/%03d/%03d", usbsrc->bus, usbsrc->device);
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",

@@ -265,7 +265,7 @@ lxcAddFstabLine(virDomainDefPtr def, lxcFstabPtr fstab)
         return -1;
 
     if (fstab->dst[0] != '/') {
-        virAsprintf(&dst, "/%s", fstab->dst);
+        dst = g_strdup_printf("/%s", fstab->dst);
     } else {
         dst = g_strdup(fstab->dst);
     }
@@ -491,8 +491,8 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
          * on the host */
         if (isVlan && data->vlanid) {
             VIR_FREE(hostdev->source.caps.u.net.ifname);
-            virAsprintf(&hostdev->source.caps.u.net.ifname, "%s.%s",
-                        data->link, data->vlanid);
+            hostdev->source.caps.u.net.ifname = g_strdup_printf("%s.%s",
+                                                                data->link, data->vlanid);
         }
 
         hostdev->source.caps.u.net.ip.ips = data->ips;
@@ -948,7 +948,7 @@ lxcBlkioDeviceWalkCallback(const char *name, virConfValuePtr value, void *data)
         goto cleanup;
     }
 
-    virAsprintf(&path, "/dev/block/%s", parts[0]);
+    path = g_strdup_printf("/dev/block/%s", parts[0]);
 
     /* Do we already have a device definition for this path?
      * Get that device or create a new one */

@@ -568,7 +568,7 @@ static int virLXCControllerAppendNBDPids(virLXCControllerPtr ctrl,
     if (!STRPREFIX(dev, "/dev/"))
         goto cleanup;
 
-    virAsprintf(&pidpath, "/sys/devices/virtual/block/%s/pid", dev + 5);
+    pidpath = g_strdup_printf("/sys/devices/virtual/block/%s/pid", dev + 5);
 
     /* Wait for the pid file to appear */
     while (!virFileExists(pidpath)) {
@@ -946,7 +946,7 @@ static int virLXCControllerSetupServer(virLXCControllerPtr ctrl)
     virNetServerServicePtr svc = NULL;
     char *sockpath;
 
-    virAsprintf(&sockpath, "%s/%s.sock", LXC_STATE_DIR, ctrl->name);
+    sockpath = g_strdup_printf("%s/%s.sock", LXC_STATE_DIR, ctrl->name);
 
     if (!(srv = virNetServerNew("LXC", 1,
                                 0, 0, 0, 1,
@@ -1434,14 +1434,14 @@ static int virLXCControllerSetupUserns(virLXCControllerPtr ctrl)
     }
 
     VIR_DEBUG("Setting up userns maps");
-    virAsprintf(&uid_map, "/proc/%d/uid_map", ctrl->initpid);
+    uid_map = g_strdup_printf("/proc/%d/uid_map", ctrl->initpid);
 
     if (virLXCControllerSetupUsernsMap(ctrl->def->idmap.uidmap,
                                        ctrl->def->idmap.nuidmap,
                                        uid_map) < 0)
         goto cleanup;
 
-    virAsprintf(&gid_map, "/proc/%d/gid_map", ctrl->initpid);
+    gid_map = g_strdup_printf("/proc/%d/gid_map", ctrl->initpid);
 
     if (virLXCControllerSetupUsernsMap(ctrl->def->idmap.gidmap,
                                        ctrl->def->idmap.ngidmap,
@@ -1467,14 +1467,14 @@ static int virLXCControllerSetupDev(virLXCControllerPtr ctrl)
     mount_options = virSecurityManagerGetMountOptions(ctrl->securityManager,
                                                       ctrl->def);
 
-    virAsprintf(&dev, "/%s/%s.dev", LXC_STATE_DIR, ctrl->def->name);
+    dev = g_strdup_printf("/%s/%s.dev", LXC_STATE_DIR, ctrl->def->name);
 
     /*
      * tmpfs is limited to 64kb, since we only have device nodes in there
      * and don't want to DOS the entire OS RAM usage
      */
 
-    virAsprintf(&opts, "mode=755,size=65536%s", mount_options);
+    opts = g_strdup_printf("mode=755,size=65536%s", mount_options);
 
     if (virFileSetupDev(dev, opts) < 0)
         goto cleanup;
@@ -1514,8 +1514,8 @@ static int virLXCControllerPopulateDevices(virLXCControllerPtr ctrl)
 
     /* Populate /dev/ with a few important bits */
     for (i = 0; i < G_N_ELEMENTS(devs); i++) {
-        virAsprintf(&path, "/%s/%s.dev/%s", LXC_STATE_DIR, ctrl->def->name,
-                    devs[i].path);
+        path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR, ctrl->def->name,
+                               devs[i].path);
 
         dev_t dev = makedev(devs[i].maj, devs[i].min);
         if (mknod(path, S_IFCHR, dev) < 0 ||
@@ -1553,13 +1553,13 @@ virLXCControllerSetupHostdevSubsysUSB(virDomainDefPtr vmDef,
     mode_t mode;
     virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
 
-    virAsprintf(&src, USB_DEVFS "/%03d/%03d", usbsrc->bus, usbsrc->device);
+    src = g_strdup_printf(USB_DEVFS "/%03d/%03d", usbsrc->bus, usbsrc->device);
 
-    virAsprintf(&vroot, "/%s/%s.dev/bus/usb/", LXC_STATE_DIR, vmDef->name);
+    vroot = g_strdup_printf("/%s/%s.dev/bus/usb/", LXC_STATE_DIR, vmDef->name);
 
-    virAsprintf(&dstdir, "%s/%03d/", vroot, usbsrc->bus);
+    dstdir = g_strdup_printf("%s/%03d/", vroot, usbsrc->bus);
 
-    virAsprintf(&dstfile, "%s/%03d", dstdir, usbsrc->device);
+    dstfile = g_strdup_printf("%s/%03d", dstdir, usbsrc->device);
 
     if (stat(src, &sb) < 0) {
         virReportSystemError(errno,
@@ -1633,7 +1633,7 @@ virLXCControllerSetupHostdevCapsStorage(virDomainDefPtr vmDef,
     while (*(path + len) == '/')
         len++;
 
-    virAsprintf(&dst, "/%s/%s.dev/%s", LXC_STATE_DIR, vmDef->name,
+    dst = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR, vmDef->name,
                 strchr(path + len, '/'));
 
     if (stat(dev, &sb) < 0) {
@@ -1709,8 +1709,8 @@ virLXCControllerSetupHostdevCapsMisc(virDomainDefPtr vmDef,
     while (*(path + len) == '/')
         len++;
 
-    virAsprintf(&dst, "/%s/%s.dev/%s", LXC_STATE_DIR, vmDef->name,
-                strchr(path + len, '/'));
+    dst = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR, vmDef->name,
+                          strchr(path + len, '/'));
 
     if (stat(dev, &sb) < 0) {
         virReportSystemError(errno,
@@ -1865,8 +1865,8 @@ static int virLXCControllerSetupDisk(virLXCControllerPtr ctrl,
         goto cleanup;
     }
 
-    virAsprintf(&dst, "/%s/%s.dev/%s", LXC_STATE_DIR, ctrl->def->name,
-                def->dst);
+    dst = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR, ctrl->def->name,
+                          def->dst);
 
     if (stat(def->src->path, &sb) < 0) {
         virReportSystemError(errno,
@@ -2055,8 +2055,8 @@ lxcCreateTty(virLXCControllerPtr ctrl, int *ttymaster,
      * while glibc has to fstat(), fchmod(), and fchown() for older
      * kernels, we can skip those steps.  ptyno shouldn't currently be
      * anything other than 0, but let's play it safe.  */
-    virAsprintf(ttyName, "/dev/pts/%d", ptyno);
-    virAsprintf(ttyHostPath, "/%s/%s.devpts/%d", LXC_STATE_DIR, ctrl->def->name, ptyno);
+    *ttyName = g_strdup_printf("/dev/pts/%d", ptyno);
+    *ttyHostPath = g_strdup_printf("/%s/%s.devpts/%d", LXC_STATE_DIR, ctrl->def->name, ptyno);
 
     ret = 0;
 
@@ -2112,8 +2112,8 @@ virLXCControllerSetupDevPTS(virLXCControllerPtr ctrl)
     mount_options = virSecurityManagerGetMountOptions(ctrl->securityManager,
                                                       ctrl->def);
 
-    virAsprintf(&devpts, "%s/%s.devpts", LXC_STATE_DIR, ctrl->def->name);
-    virAsprintf(&ctrl->devptmx, "%s/%s.devpts/ptmx", LXC_STATE_DIR, ctrl->def->name);
+    devpts = g_strdup_printf("%s/%s.devpts", LXC_STATE_DIR, ctrl->def->name);
+    ctrl->devptmx = g_strdup_printf("%s/%s.devpts/ptmx", LXC_STATE_DIR, ctrl->def->name);
 
     if (virFileMakePath(devpts) < 0) {
         virReportSystemError(errno,
@@ -2129,8 +2129,8 @@ virLXCControllerSetupDevPTS(virLXCControllerPtr ctrl)
 
     /* XXX should we support gid=X for X!=5 for distros which use
      * a different gid for tty?  */
-    virAsprintf(&opts, "newinstance,ptmxmode=0666,mode=0620,gid=%u%s", ptsgid,
-                NULLSTR_EMPTY(mount_options));
+    opts = g_strdup_printf("newinstance,ptmxmode=0666,mode=0620,gid=%u%s", ptsgid,
+                           NULLSTR_EMPTY(mount_options));
 
     VIR_DEBUG("Mount devpts on %s type=tmpfs flags=0x%x, opts=%s",
               devpts, MS_NOSUID, opts);

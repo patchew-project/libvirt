@@ -151,7 +151,7 @@ virLXCMonitorPtr virLXCMonitorNew(virDomainObjPtr vm,
     if (!(mon = virObjectLockableNew(virLXCMonitorClass)))
         return NULL;
 
-    virAsprintf(&sockpath, "%s/%s.sock", socketdir, vm->def->name);
+    sockpath = g_strdup_printf("%s/%s.sock", socketdir, vm->def->name);
 
     if (!(mon->client = virNetClientNewUNIX(sockpath, false, NULL)))
         goto error;

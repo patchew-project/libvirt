@@ -682,7 +682,7 @@ static int lxcContainerPrepareRoot(virDomainDefPtr def,
     if (lxcContainerResolveSymlinks(root, false) < 0)
         return -1;
 
-    virAsprintf(&dst, "%s/%s.root", LXC_STATE_DIR, def->name);
+    dst = g_strdup_printf("%s/%s.root", LXC_STATE_DIR, def->name);
 
     tmp = root->dst;
     root->dst = dst;
@@ -717,7 +717,7 @@ static int lxcContainerPivotRoot(virDomainFSDefPtr root)
         goto err;
     }
 
-    virAsprintf(&oldroot, "%s/.oldroot", root->src->path);
+    oldroot = g_strdup_printf("%s/.oldroot", root->src->path);
 
     if (virFileMakePath(oldroot) < 0) {
         virReportSystemError(errno,
@@ -736,7 +736,7 @@ static int lxcContainerPivotRoot(virDomainFSDefPtr root)
     }
 
     /* Create a directory called 'new' in tmpfs */
-    virAsprintf(&newroot, "%s/new", oldroot);
+    newroot = g_strdup_printf("%s/new", oldroot);
 
     if (virFileMakePath(newroot) < 0) {
         virReportSystemError(errno,
@@ -921,7 +921,7 @@ static int lxcContainerMountBasicFS(bool userns_enabled,
             char *hostdir;
             int ret;
 
-            virAsprintf(&hostdir, "/.oldroot%s", mnt->dst);
+            hostdir = g_strdup_printf("/.oldroot%s", mnt->dst);
 
             ret = virFileIsMountPoint(hostdir);
             VIR_FREE(hostdir);
@@ -1012,10 +1012,9 @@ static int lxcContainerMountProcFuse(virDomainDefPtr def,
 
     VIR_DEBUG("Mount /proc/meminfo stateDir=%s", stateDir);
 
-    virAsprintf(&meminfo_path,
-                "/.oldroot/%s/%s.fuse/meminfo",
-                stateDir,
-                def->name);
+    meminfo_path = g_strdup_printf("/.oldroot/%s/%s.fuse/meminfo",
+                                   stateDir,
+                                   def->name);
 
     if ((ret = mount(meminfo_path, "/proc/meminfo",
                      NULL, MS_BIND, NULL)) < 0) {
@@ -1044,7 +1043,7 @@ static int lxcContainerMountFSDev(virDomainDefPtr def,
 
     VIR_DEBUG("Mount /dev/ stateDir=%s", stateDir);
 
-    virAsprintf(&path, "/.oldroot/%s/%s.dev", stateDir, def->name);
+    path = g_strdup_printf("/.oldroot/%s/%s.dev", stateDir, def->name);
 
     if (virFileMakePath("/dev") < 0) {
         virReportSystemError(errno, "%s",
@@ -1078,7 +1077,7 @@ static int lxcContainerMountFSDevPTS(virDomainDefPtr def,
 
     VIR_DEBUG("Mount /dev/pts stateDir=%s", stateDir);
 
-    virAsprintf(&path, "/.oldroot/%s/%s.devpts", stateDir, def->name);
+    path = g_strdup_printf("/.oldroot/%s/%s.devpts", stateDir, def->name);
 
     if (virFileMakePath("/dev/pts") < 0) {
         virReportSystemError(errno, "%s",
@@ -1130,7 +1129,7 @@ static int lxcContainerSetupDevices(char **ttyPaths, size_t nttyPaths)
 
     for (i = 0; i < nttyPaths; i++) {
         char *tty;
-        virAsprintf(&tty, "/dev/tty%zu", i + 1);
+        tty = g_strdup_printf("/dev/tty%zu", i + 1);
 
         if (virFileBindMountDevice(ttyPaths[i], tty) < 0) {
             VIR_FREE(tty);
@@ -1156,7 +1155,7 @@ static int lxcContainerMountFSBind(virDomainFSDefPtr fs,
 
     VIR_DEBUG("src=%s dst=%s", fs->src->path, fs->dst);
 
-    virAsprintf(&src, "%s%s", srcprefix, fs->src->path);
+    src = g_strdup_printf("%s%s", srcprefix, fs->src->path);
 
     if (stat(fs->dst, &st) < 0) {
         if (errno != ENOENT) {
@@ -1326,8 +1325,8 @@ static int lxcContainerMountFSBlockAuto(virDomainFSDefPtr fs,
 
     /* First time around we use /etc/filesystems */
  retry:
-    virAsprintf(&fslist, "%s%s", srcprefix,
-                tryProc ? "/proc/filesystems" : "/etc/filesystems");
+    fslist = g_strdup_printf("%s%s", srcprefix,
+                             tryProc ? "/proc/filesystems" : "/etc/filesystems");
 
     VIR_DEBUG("Open fslist %s", fslist);
     if (!(fp = fopen(fslist, "r"))) {
@@ -1488,7 +1487,7 @@ static int lxcContainerMountFSBlock(virDomainFSDefPtr fs,
 
     VIR_DEBUG("src=%s dst=%s", fs->src->path, fs->dst);
 
-    virAsprintf(&src, "%s%s", srcprefix, fs->src->path);
+    src = g_strdup_printf("%s%s", srcprefix, fs->src->path);
 
     ret = lxcContainerMountFSBlockHelper(fs, src, srcprefix, sec_mount_options);
 
@@ -1507,7 +1506,7 @@ static int lxcContainerMountFSTmpfs(virDomainFSDefPtr fs,
 
     VIR_DEBUG("usage=%lld sec=%s", fs->usage, sec_mount_options);
 
-    virAsprintf(&data, "size=%lld%s", fs->usage, sec_mount_options);
+    data = g_strdup_printf("size=%lld%s", fs->usage, sec_mount_options);
 
     if (virFileMakePath(fs->dst) < 0) {
         virReportSystemError(errno,
@@ -1655,20 +1654,20 @@ static int lxcContainerUnmountForSharedRoot(const char *stateDir,
 
     /* These filesystems are created by libvirt temporarily, they
      * shouldn't appear in container. */
-    virAsprintf(&tmp, "%s/%s.dev", stateDir, domain);
+    tmp = g_strdup_printf("%s/%s.dev", stateDir, domain);
 
     if (lxcContainerUnmountSubtree(tmp, false) < 0)
         goto cleanup;
 
     VIR_FREE(tmp);
-    virAsprintf(&tmp, "%s/%s.devpts", stateDir, domain);
+    tmp = g_strdup_printf("%s/%s.devpts", stateDir, domain);
 
     if (lxcContainerUnmountSubtree(tmp, false) < 0)
         goto cleanup;
 
 #if WITH_FUSE
     VIR_FREE(tmp);
-    virAsprintf(&tmp, "%s/%s.fuse", stateDir, domain);
+    tmp = g_strdup_printf("%s/%s.fuse", stateDir, domain);
 
     if (lxcContainerUnmountSubtree(tmp, false) < 0)
         goto cleanup;
@@ -2232,8 +2231,8 @@ static int lxcContainerChild(void *data)
         const char *tty = argv->ttyPaths[0];
         if (STRPREFIX(tty, "/dev/pts/"))
             tty += strlen("/dev/pts/");
-        virAsprintf(&ttyPath, "%s/%s.devpts/%s", LXC_STATE_DIR, vmDef->name,
-                    tty);
+        ttyPath = g_strdup_printf("%s/%s.devpts/%s", LXC_STATE_DIR, vmDef->name,
+                                  tty);
     } else {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("At least one tty is required"));
