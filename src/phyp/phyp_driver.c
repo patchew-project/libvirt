@@ -504,9 +504,8 @@ phypUUIDTable_Push(virConnectPtr conn)
     char *remote_file = NULL;
     int ret = -1;
 
-    if (virAsprintf(&remote_file, "/home/%s/libvirt_uuid_table",
-                    NULLSTR(conn->uri->user)) < 0)
-        goto cleanup;
+    virAsprintf(&remote_file, "/home/%s/libvirt_uuid_table",
+                NULLSTR(conn->uri->user));
 
     if (stat(local_file, &local_fileinfo) == -1) {
         VIR_WARN("Unable to stat local file.");
@@ -692,9 +691,8 @@ phypUUIDTable_Pull(virConnectPtr conn)
     char *remote_file = NULL;
     int ret = -1;
 
-    if (virAsprintf(&remote_file, "/home/%s/libvirt_uuid_table",
-                    NULLSTR(conn->uri->user)) < 0)
-        goto cleanup;
+    virAsprintf(&remote_file, "/home/%s/libvirt_uuid_table",
+                NULLSTR(conn->uri->user));
 
     /* Trying to stat the remote file. */
     do {
@@ -939,11 +937,9 @@ openSSHSession(virConnectPtr conn, virConnectAuthPtr auth,
     if (userhome == NULL)
         goto err;
 
-    if (virAsprintf(&pubkey, "%s/.ssh/id_rsa.pub", userhome) < 0)
-        goto err;
+    virAsprintf(&pubkey, "%s/.ssh/id_rsa.pub", userhome);
 
-    if (virAsprintf(&pvtkey, "%s/.ssh/id_rsa", userhome) < 0)
-        goto err;
+    virAsprintf(&pvtkey, "%s/.ssh/id_rsa", userhome);
 
     if (conn->uri->user != NULL) {
         username = g_strdup(conn->uri->user);
@@ -2281,8 +2277,7 @@ phypStorageVolGetPath(virStorageVolPtr vol)
     if (!pv)
         goto cleanup;
 
-    if (virAsprintf(&path, "/%s/%s/%s", pv, ret, vol->name) < 0)
-        goto cleanup;
+    virAsprintf(&path, "/%s/%s/%s", pv, ret, vol->name);
 
  cleanup:
     VIR_FREE(ret);
