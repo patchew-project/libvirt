@@ -856,7 +856,7 @@ udevGetIfaceDefBridge(struct udev *udev,
     }
 
     /* Members of the bridge */
-    virAsprintf(&member_path, "%s/%s", udev_device_get_syspath(dev), "brif");
+    member_path = g_strdup_printf("%s/%s", udev_device_get_syspath(dev), "brif");
 
     /* Get each member of the bridge */
     member_count = scandir(member_path, &member_list,
@@ -918,7 +918,7 @@ udevGetIfaceDefVlan(struct udev *udev G_GNUC_UNUSED,
     const char *dev_prefix = "\nDevice: ";
     int ret = -1;
 
-    virAsprintf(&procpath, "/proc/net/vlan/%s", name);
+    procpath = g_strdup_printf("/proc/net/vlan/%s", name);
 
     if (virFileReadAll(procpath, BUFSIZ, &buf) < 0)
         goto cleanup;
@@ -1161,13 +1161,13 @@ udevStateInitialize(bool privileged,
     driver->lockFD = -1;
 
     if (privileged) {
-        virAsprintf(&driver->stateDir, "%s/libvirt/interface", RUNSTATEDIR);
+        driver->stateDir = g_strdup_printf("%s/libvirt/interface", RUNSTATEDIR);
     } else {
         g_autofree char *rundir = NULL;
 
         if (!(rundir = virGetUserRuntimeDirectory()))
             goto cleanup;
-        virAsprintf(&driver->stateDir, "%s/interface/run", rundir);
+        driver->stateDir = g_strdup_printf("%s/interface/run", rundir);
     }
 
     if (virFileMakePathWithMode(driver->stateDir, S_IRWXU) < 0) {
