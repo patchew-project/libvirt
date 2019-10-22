@@ -142,7 +142,7 @@ virNWFilterBindingObjConfigFile(const char *dir,
 {
     char *ret;
 
-    ignore_value(virAsprintf(&ret, "%s/%s.xml", dir, name));
+    virAsprintf(&ret, "%s/%s.xml", dir, name);
     return ret;
 }
 

@@ -953,11 +953,9 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
      * path and permissions */
     if (!(options->flags & VIR_STORAGE_POOL_SOURCE_NETWORK)) {
         if (def->type == VIR_STORAGE_POOL_LOGICAL) {
-            if (virAsprintf(&target_path, "/dev/%s", def->source.name) < 0)
-                return NULL;
+            virAsprintf(&target_path, "/dev/%s", def->source.name);
         } else if (def->type == VIR_STORAGE_POOL_ZFS) {
-            if (virAsprintf(&target_path, "/dev/zvol/%s", def->source.name) < 0)
-                return NULL;
+            virAsprintf(&target_path, "/dev/zvol/%s", def->source.name);
         } else {
             target_path = virXPathString("string(./target/path)", ctxt);
             if (!target_path) {
