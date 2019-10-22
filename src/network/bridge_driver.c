@@ -371,8 +371,7 @@ networkDnsmasqLeaseFileNameDefault(virNetworkDriverStatePtr driver,
 {
     char *leasefile;
 
-    ignore_value(virAsprintf(&leasefile, "%s/%s.leases",
-                             driver->dnsmasqStateDir, netname));
+    virAsprintf(&leasefile, "%s/%s.leases", driver->dnsmasqStateDir, netname);
     return leasefile;
 }
 
@@ -383,8 +382,7 @@ networkDnsmasqLeaseFileNameCustom(virNetworkDriverStatePtr driver,
 {
     char *leasefile;
 
-    ignore_value(virAsprintf(&leasefile, "%s/%s.status",
-                             driver->dnsmasqStateDir, bridge));
+    virAsprintf(&leasefile, "%s/%s.status", driver->dnsmasqStateDir, bridge);
     return leasefile;
 }
 
@@ -395,8 +393,7 @@ networkDnsmasqConfigFileName(virNetworkDriverStatePtr driver,
 {
     char *conffile;
 
-    ignore_value(virAsprintf(&conffile, "%s/%s.conf",
-                             driver->dnsmasqStateDir, netname));
+    virAsprintf(&conffile, "%s/%s.conf", driver->dnsmasqStateDir, netname);
     return conffile;
 }
 
@@ -407,7 +404,7 @@ networkRadvdPidfileBasename(const char *netname)
     /* this is simple but we want to be sure it's consistently done */
     char *pidfilebase;
 
-    ignore_value(virAsprintf(&pidfilebase, "%s-radvd", netname));
+    virAsprintf(&pidfilebase, "%s-radvd", netname);
     return pidfilebase;
 }
 
@@ -418,8 +415,7 @@ networkRadvdConfigFileName(virNetworkDriverStatePtr driver,
 {
     char *configfile;
 
-    ignore_value(virAsprintf(&configfile, "%s/%s-radvd.conf",
-                             driver->radvdStateDir, netname));
+    virAsprintf(&configfile, "%s/%s-radvd.conf", driver->radvdStateDir, netname);
     return configfile;
 }
 
@@ -515,13 +511,13 @@ networkBridgeDummyNicName(const char *brname)
          * a possible numeric ending (eg virbr0, virbr1, etc), we grab
          * the first 8 and last 3 characters of the string.
          */
-        ignore_value(virAsprintf(&nicname, "%.*s%s%s",
-                                 /* space for last 3 chars + "-nic" + NULL */
-                                 (int)(IFNAMSIZ - (3 + sizeof(dummyNicSuffix))),
-                                 brname, brname + strlen(brname) - 3,
-                                 dummyNicSuffix));
+        virAsprintf(&nicname, "%.*s%s%s",
+                    /* space for last 3 chars + "-nic" + NULL */
+                    (int)(IFNAMSIZ - (3 + sizeof(dummyNicSuffix))),
+                    brname, brname + strlen(brname) - 3,
+                    dummyNicSuffix);
     } else {
-        ignore_value(virAsprintf(&nicname, "%s%s", brname, dummyNicSuffix));
+        virAsprintf(&nicname, "%s%s", brname, dummyNicSuffix);
     }
     return nicname;
 }
@@ -751,20 +747,18 @@ networkStateInitialize(bool privileged,
         if (!(configdir && rundir))
             goto error;
 
-        if ((virAsprintf(&network_driver->networkConfigDir,
-                         "%s/qemu/networks", configdir) < 0) ||
-            (virAsprintf(&network_driver->networkAutostartDir,
-                         "%s/qemu/networks/autostart", configdir) < 0) ||
-            (virAsprintf(&network_driver->stateDir,
-                         "%s/network/lib", rundir) < 0) ||
-            (virAsprintf(&network_driver->pidDir,
-                         "%s/network/run", rundir) < 0) ||
-            (virAsprintf(&network_driver->dnsmasqStateDir,
-                         "%s/dnsmasq/lib", rundir) < 0) ||
-            (virAsprintf(&network_driver->radvdStateDir,
-                         "%s/radvd/lib", rundir) < 0)) {
-            goto error;
-        }
+        virAsprintf(&network_driver->networkConfigDir,
+                    "%s/qemu/networks", configdir);
+        virAsprintf(&network_driver->networkAutostartDir,
+                    "%s/qemu/networks/autostart", configdir);
+        virAsprintf(&network_driver->stateDir,
+                    "%s/network/lib", rundir);
+        virAsprintf(&network_driver->pidDir,
+                    "%s/network/run", rundir);
+        virAsprintf(&network_driver->dnsmasqStateDir,
+                    "%s/dnsmasq/lib", rundir);
+        virAsprintf(&network_driver->radvdStateDir,
+                    "%s/radvd/lib", rundir);
     }
 
     if (virFileMakePath(network_driver->stateDir) < 0) {
@@ -2300,9 +2294,8 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
      * network. But also unset it if there *are* ipv6 addresses, as we
      * can't be sure of its default value.
      */
-    if (virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/disable_ipv6",
-                    def->bridge) < 0)
-       goto cleanup;
+    virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/disable_ipv6",
+                def->bridge);
 
     if (access(field, W_OK) < 0 && errno == ENOENT) {
         if (!enableIPv6)
@@ -2327,9 +2320,8 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
     /* Prevent guests from hijacking the host network by sending out
      * their own router advertisements.
      */
-    if (virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/accept_ra",
-                    def->bridge) < 0)
-        goto cleanup;
+    virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/accept_ra",
+                def->bridge);
 
     if (virFileWriteStr(field, "0", 0) < 0) {
         virReportSystemError(errno,
@@ -2341,9 +2333,7 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
     /* All interfaces used as a gateway (which is what this is, by
      * definition), must always have autoconf=0.
      */
-    if (virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/autoconf",
-                    def->bridge) < 0)
-        goto cleanup;
+    virAsprintf(&field, SYSCTL_PATH "/net/ipv6/conf/%s/autoconf", def->bridge);
 
     if (virFileWriteStr(field, "0", 0) < 0) {
         virReportSystemError(errno,
@@ -3328,8 +3318,7 @@ networkFindUnusedBridgeName(virNetworkObjListPtr nets,
         templ = def->bridge;
 
     do {
-        if (virAsprintf(&newname, templ, id) < 0)
-            goto cleanup;
+        virAsprintf(&newname, templ, id);
         /* check if this name is used in another libvirt network or
          * there is an existing device with that name. ignore errors
          * from virNetDevExists(), just in case it isn't implemented
