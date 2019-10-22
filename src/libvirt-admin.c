@@ -141,16 +141,16 @@ getSocketPath(virURIPtr uri)
         if (legacy) {
             sockbase = g_strdup("libvirt-admin-sock");
         } else {
-            virAsprintf(&sockbase, "%s-admin-sock", uri->scheme);
+            sockbase = g_strdup_printf("%s-admin-sock", uri->scheme);
         }
 
         if (STREQ_NULLABLE(uri->path, "/system")) {
-            virAsprintf(&sock_path, RUNSTATEDIR "/libvirt/%s", sockbase);
+            sock_path = g_strdup_printf(RUNSTATEDIR "/libvirt/%s", sockbase);
         } else if (STREQ_NULLABLE(uri->path, "/session")) {
             if (!rundir)
                 goto error;
 
-            virAsprintf(&sock_path, "%s/%s", rundir, sockbase);
+            sock_path = g_strdup_printf("%s/%s", rundir, sockbase);
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Invalid URI path '%s', try '/system'"),
