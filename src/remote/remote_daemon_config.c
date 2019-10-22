@@ -84,7 +84,7 @@ daemonConfigFilePath(bool privileged, char **configfile)
         if (!(configdir = virGetUserConfigDirectory()))
             goto error;
 
-        virAsprintf(configfile, "%s/%s.conf", configdir, DAEMON_NAME);
+        *configfile = g_strdup_printf("%s/%s.conf", configdir, DAEMON_NAME);
         VIR_FREE(configdir);
     }
 

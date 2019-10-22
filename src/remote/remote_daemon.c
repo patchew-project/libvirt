@@ -225,23 +225,23 @@ daemonUnixSocketPaths(struct daemonConfig *config,
     char *rundir = NULL;
 
     if (config->unix_sock_dir) {
-        virAsprintf(sockfile, "%s/%s-sock", config->unix_sock_dir,
-                    SOCK_PREFIX);
+        *sockfile = g_strdup_printf("%s/%s-sock", config->unix_sock_dir,
+                                    SOCK_PREFIX);
 
         if (privileged) {
-            virAsprintf(rosockfile, "%s/%s-sock-ro",
-                        config->unix_sock_dir, SOCK_PREFIX);
-            virAsprintf(admsockfile, "%s/%s-admin-sock",
-                        config->unix_sock_dir, SOCK_PREFIX);
+            *rosockfile = g_strdup_printf("%s/%s-sock-ro",
+                                          config->unix_sock_dir, SOCK_PREFIX);
+            *admsockfile = g_strdup_printf("%s/%s-admin-sock",
+                                           config->unix_sock_dir, SOCK_PREFIX);
         }
     } else {
         if (privileged) {
-            virAsprintf(sockfile, "%s/libvirt/%s-sock",
-                        RUNSTATEDIR, SOCK_PREFIX);
-            virAsprintf(rosockfile, "%s/libvirt/%s-sock-ro",
-                        RUNSTATEDIR, SOCK_PREFIX);
-            virAsprintf(admsockfile, "%s/libvirt/%s-admin-sock",
-                        RUNSTATEDIR, SOCK_PREFIX);
+            *sockfile = g_strdup_printf("%s/libvirt/%s-sock",
+                                        RUNSTATEDIR, SOCK_PREFIX);
+            *rosockfile = g_strdup_printf("%s/libvirt/%s-sock-ro",
+                                          RUNSTATEDIR, SOCK_PREFIX);
+            *admsockfile = g_strdup_printf("%s/libvirt/%s-admin-sock",
+                                           RUNSTATEDIR, SOCK_PREFIX);
         } else {
             mode_t old_umask;
 
@@ -255,8 +255,8 @@ daemonUnixSocketPaths(struct daemonConfig *config,
             }
             umask(old_umask);
 
-            virAsprintf(sockfile, "%s/%s-sock", rundir, SOCK_PREFIX);
-            virAsprintf(admsockfile, "%s/%s-admin-sock", rundir, SOCK_PREFIX);
+            *sockfile = g_strdup_printf("%s/%s-sock", rundir, SOCK_PREFIX);
+            *admsockfile = g_strdup_printf("%s/%s-admin-sock", rundir, SOCK_PREFIX);
         }
     }
 
