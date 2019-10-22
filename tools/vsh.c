@@ -1799,23 +1799,23 @@ vshGetTypedParamValue(vshControl *ctl, virTypedParameterPtr item)
 
     switch (item->type) {
     case VIR_TYPED_PARAM_INT:
-        virAsprintf(&str, "%d", item->value.i);
+        str = g_strdup_printf("%d", item->value.i);
         break;
 
     case VIR_TYPED_PARAM_UINT:
-        virAsprintf(&str, "%u", item->value.ui);
+        str = g_strdup_printf("%u", item->value.ui);
         break;
 
     case VIR_TYPED_PARAM_LLONG:
-        virAsprintf(&str, "%lld", item->value.l);
+        str = g_strdup_printf("%lld", item->value.l);
         break;
 
     case VIR_TYPED_PARAM_ULLONG:
-        virAsprintf(&str, "%llu", item->value.ul);
+        str = g_strdup_printf("%llu", item->value.ul);
         break;
 
     case VIR_TYPED_PARAM_DOUBLE:
-        virAsprintf(&str, "%f", item->value.d);
+        str = g_strdup_printf("%f", item->value.d);
         break;
 
     case VIR_TYPED_PARAM_BOOLEAN:
@@ -2418,7 +2418,7 @@ vshEditWriteToTempFile(vshControl *ctl, const char *doc)
 
     tmpdir = getenv("TMPDIR");
     if (!tmpdir) tmpdir = "/tmp";
-    virAsprintf(&ret, "%s/virshXXXXXX.xml", tmpdir);
+    ret = g_strdup_printf("%s/virshXXXXXX.xml", tmpdir);
     fd = mkostemps(ret, 4, O_CLOEXEC);
     if (fd == -1) {
         vshError(ctl, _("mkostemps: failed to create temporary file: %s"),
@@ -2936,7 +2936,7 @@ vshReadlineInit(vshControl *ctl)
     rl_completer_quote_characters = quote_characters;
     rl_char_is_quoted_p = vshReadlineCharIsQuoted;
 
-    virAsprintf(&histsize_env, "%s_HISTSIZE", ctl->env_prefix);
+    histsize_env = g_strdup_printf("%s_HISTSIZE", ctl->env_prefix);
 
     /* Limit the total size of the history buffer */
     if ((histsize_str = getenv(histsize_env))) {
@@ -2962,9 +2962,9 @@ vshReadlineInit(vshControl *ctl)
         goto cleanup;
     }
 
-    virAsprintf(&ctl->historydir, "%s/%s", userdir, ctl->name);
+    ctl->historydir = g_strdup_printf("%s/%s", userdir, ctl->name);
 
-    virAsprintf(&ctl->historyfile, "%s/history", ctl->historydir);
+    ctl->historyfile = g_strdup_printf("%s/history", ctl->historydir);
 
     read_history(ctl->historyfile);
     ret = 0;
@@ -3046,7 +3046,7 @@ vshInitDebug(vshControl *ctl)
     char *env = NULL;
 
     if (ctl->debug == VSH_DEBUG_DEFAULT) {
-        virAsprintf(&env, "%s_DEBUG", ctl->env_prefix);
+        env = g_strdup_printf("%s_DEBUG", ctl->env_prefix);
 
         /* log level not set from commandline, check env variable */
         debugEnv = getenv(env);
@@ -3064,7 +3064,7 @@ vshInitDebug(vshControl *ctl)
     }
 
     if (ctl->logfile == NULL) {
-        virAsprintf(&env, "%s_LOG_FILE", ctl->env_prefix);
+        env = g_strdup_printf("%s_LOG_FILE", ctl->env_prefix);
 
         /* log file not set from cmdline */
         debugEnv = getenv(env);

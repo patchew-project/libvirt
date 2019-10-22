@@ -394,7 +394,7 @@ cmdSrvList(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
 
     for (i = 0; i < nsrvs; i++) {
         g_autofree char *idStr = NULL;
-        virAsprintf(&idStr, "%zu", i);
+        idStr = g_strdup_printf("%zu", i);
 
         if (vshTableRowAppend(table,
                               idStr,
@@ -655,7 +655,7 @@ cmdSrvClientsList(vshControl *ctl, const vshCmd *cmd)
                              &timestr) < 0)
             goto cleanup;
 
-        virAsprintf(&idStr, "%llu", id);
+        idStr = g_strdup_printf("%llu", id);
         if (vshTableRowAppend(table, idStr,
                               vshAdmClientTransportToString(transport),
                               timestr, NULL) < 0)

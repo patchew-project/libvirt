@@ -431,9 +431,9 @@ cmdDomblkinfoGet(const virDomainBlockInfo *info,
         *alloc = g_strdup("-");
         *phy = g_strdup("-");
     } else if (!human) {
-        virAsprintf(cap, "%llu", info->capacity);
-        virAsprintf(alloc, "%llu", info->allocation);
-        virAsprintf(phy, "%llu", info->physical);
+        *cap = g_strdup_printf("%llu", info->capacity);
+        *alloc = g_strdup_printf("%llu", info->allocation);
+        *phy = g_strdup_printf("%llu", info->physical);
     } else {
         double val_cap, val_alloc, val_phy;
         const char *unit_cap, *unit_alloc, *unit_phy;
@@ -442,9 +442,9 @@ cmdDomblkinfoGet(const virDomainBlockInfo *info,
         val_alloc = vshPrettyCapacity(info->allocation, &unit_alloc);
         val_phy = vshPrettyCapacity(info->physical, &unit_phy);
 
-        virAsprintf(cap, "%.3lf %s", val_cap, unit_cap);
-        virAsprintf(alloc, "%.3lf %s", val_alloc, unit_alloc);
-        virAsprintf(phy, "%.3lf %s", val_phy, unit_phy);
+        *cap = g_strdup_printf("%.3lf %s", val_cap, unit_cap);
+        *alloc = g_strdup_printf("%.3lf %s", val_alloc, unit_alloc);
+        *phy = g_strdup_printf("%.3lf %s", val_phy, unit_phy);
     }
 
     return true;
@@ -826,9 +826,9 @@ cmdDomIfGetLink(vshControl *ctl, const vshCmd *cmd)
     if (virMacAddrParse(iface, &macaddr) == 0)
         virMacAddrFormat(&macaddr, macstr);
 
-    virAsprintf(&xpath, "/domain/devices/interface[(mac/@address = '%s') or "
-                "                          (target/@dev = '%s')]", macstr,
-                iface);
+    xpath = g_strdup_printf("/domain/devices/interface[(mac/@address = '%s') or "
+                            "                          (target/@dev = '%s')]", macstr,
+                            iface);
 
     if ((ninterfaces = virXPathNodeSet(xpath, ctxt, &interfaces)) < 0) {
         vshError(ctl, _("Failed to extract interface information"));

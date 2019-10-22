@@ -5535,8 +5535,8 @@ virshGenFileName(vshControl *ctl, virDomainPtr dom, const char *mime)
     localtime_r(&cur_time, &time_info);
     strftime(timestr, sizeof(timestr), "%Y-%m-%d-%H:%M:%S", &time_info);
 
-    virAsprintf(&ret, "%s-%s%s", virDomainGetName(dom), timestr,
-                NULLSTR_EMPTY(ext));
+    ret = g_strdup_printf("%s-%s%s", virDomainGetName(dom), timestr,
+                          NULLSTR_EMPTY(ext));
 
     return ret;
 }
@@ -6966,7 +6966,7 @@ virshVcpuPinQuery(vshControl *ctl,
                                                 cpumaplen)))
                 goto cleanup;
 
-            virAsprintf(&vcpuStr, "%zu", i);
+            vcpuStr = g_strdup_printf("%zu", i);
 
             if (vshTableRowAppend(table, vcpuStr, pinInfo, NULL) < 0)
                 goto cleanup;
@@ -7582,7 +7582,7 @@ cmdIOThreadInfo(vshControl *ctl, const vshCmd *cmd)
         g_autofree char *pinInfo = NULL;
         g_autofree char *iothreadIdStr = NULL;
 
-        virAsprintf(&iothreadIdStr, "%u", info[i]->iothread_id);
+        iothreadIdStr = g_strdup_printf("%u", info[i]->iothread_id);
 
         ignore_value(pinInfo = virBitmapDataFormat(info[i]->cpumap, info[i]->cpumaplen));
 
@@ -11386,7 +11386,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
 
         /* Create our XPATH lookup for the current display's port */
         VIR_FREE(xpath);
-        virAsprintf(&xpath, xpath_fmt, scheme[iter], "@port");
+        xpath = g_strdup_printf(xpath_fmt, scheme[iter], "@port");
 
         /* Attempt to get the port number for the current graphics scheme */
         tmp = virXPathInt(xpath, ctxt, &port);
@@ -11399,7 +11399,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
 
         /* Create our XPATH lookup for TLS Port (automatically skipped
          * for unsupported schemes */
-        virAsprintf(&xpath, xpath_fmt, scheme[iter], "@tlsPort");
+        xpath = g_strdup_printf(xpath_fmt, scheme[iter], "@tlsPort");
 
         /* Attempt to get the TLS port number */
         tmp = virXPathInt(xpath, ctxt, &tls_port);
@@ -11408,7 +11408,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
             tls_port = 0;
 
         /* Create our XPATH lookup for the current display's address */
-        virAsprintf(&xpath, xpath_fmt, scheme[iter], "@listen");
+        xpath = g_strdup_printf(xpath_fmt, scheme[iter], "@listen");
 
         /* Attempt to get the listening addr if set for the current
          * graphics scheme */
@@ -11417,7 +11417,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
         VIR_FREE(xpath);
 
         /* Create our XPATH lookup for the current spice type. */
-        virAsprintf(&xpath, xpath_fmt, scheme[iter], "listen/@type");
+        xpath = g_strdup_printf(xpath_fmt, scheme[iter], "listen/@type");
 
         /* Attempt to get the type of spice connection */
         VIR_FREE(type_conn);
@@ -11426,7 +11426,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
 
         if (STREQ_NULLABLE(type_conn, "socket")) {
             if (!sockpath) {
-                virAsprintf(&xpath, xpath_fmt, scheme[iter], "listen/@socket");
+                xpath = g_strdup_printf(xpath_fmt, scheme[iter], "listen/@socket");
 
                 sockpath = virXPathString(xpath, ctxt);
 
@@ -11446,7 +11446,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
              * subelement (which, by the way, doesn't exist on libvirt
              * < 0.9.4, so we really do need to check both places)
              */
-            virAsprintf(&xpath, xpath_fmt, scheme[iter], "listen/@address");
+            xpath = g_strdup_printf(xpath_fmt, scheme[iter], "listen/@address");
 
             listen_addr = virXPathString(xpath, ctxt);
             VIR_FREE(xpath);
@@ -11482,7 +11482,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
          * care of when getting the XML */
 
         /* Create our XPATH lookup for the password */
-        virAsprintf(&xpath, xpath_fmt, scheme[iter], "@passwd");
+        xpath = g_strdup_printf(xpath_fmt, scheme[iter], "@passwd");
 
         /* Attempt to get the password */
         VIR_FREE(passwd);

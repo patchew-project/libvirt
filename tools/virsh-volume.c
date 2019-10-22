@@ -1430,11 +1430,11 @@ cmdVolList(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
                 volInfoTexts[i].type = g_strdup(virshVolumeTypeToString(volumeInfo.type));
 
                 val = vshPrettyCapacity(volumeInfo.capacity, &unit);
-                virAsprintf(&volInfoTexts[i].capacity, "%.2lf %s", val, unit);
+                volInfoTexts[i].capacity = g_strdup_printf("%.2lf %s", val, unit);
 
                 val = vshPrettyCapacity(volumeInfo.allocation, &unit);
-                virAsprintf(&volInfoTexts[i].allocation, "%.2lf %s", val,
-                            unit);
+                volInfoTexts[i].allocation = g_strdup_printf("%.2lf %s", val,
+                                                             unit);
             }
         }
     }

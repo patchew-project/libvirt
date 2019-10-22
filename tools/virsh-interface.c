@@ -894,7 +894,7 @@ cmdInterfaceBridge(vshControl *ctl, const vshCmd *cmd)
     }
 
     if (stp) {
-        virAsprintf(&delay_str, "%d", delay);
+        delay_str = g_strdup_printf("%d", delay);
         if (!xmlSetProp(br_node, BAD_CAST "delay", BAD_CAST delay_str)) {
             vshError(ctl, _("Failed to set bridge delay %d in xml document"), delay);
             goto cleanup;

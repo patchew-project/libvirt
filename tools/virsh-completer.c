@@ -119,7 +119,7 @@ virshCommaStringListComplete(const char *input,
             continue;
 
         if (inputCopy)
-            virAsprintf(&ret[nret], "%s,%s", inputCopy, options[i]);
+            ret[nret] = g_strdup_printf("%s,%s", inputCopy, options[i]);
         else
             ret[nret] = g_strdup(options[i]);
 
