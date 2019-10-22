@@ -156,7 +156,7 @@ qemuSlirpCreatePidFilename(virQEMUDriverConfigPtr cfg,
     if (!(shortName = virDomainDefGetShortName(def)))
         return NULL;
 
-    virAsprintf(&name, "%s-%s-slirp", shortName, alias);
+    name = g_strdup_printf("%s-%s-slirp", shortName, alias);
 
     return virPidFileBuildPath(cfg->slirpStateDir, name);
 }
@@ -210,7 +210,7 @@ qemuSlirpGetDBusVMStateId(virDomainNetDefPtr net)
     char *id = NULL;
 
     /* can't use alias, because it's not stable across restarts */
-    virAsprintf(&id, "slirp-%s", virMacAddrFormat(&net->mac, macstr));
+    id = g_strdup_printf("slirp-%s", virMacAddrFormat(&net->mac, macstr));
 
     return id;
 }
@@ -227,8 +227,8 @@ qemuSlirpGetDBusPath(virQEMUDriverConfigPtr cfg,
     if (!(shortName = virDomainDefGetShortName(def)))
         return NULL;
 
-    virAsprintf(&path, "%s/%s-%s-slirp",
-                cfg->slirpStateDir, shortName, alias);
+    path = g_strdup_printf("%s/%s-%s-slirp",
+                           cfg->slirpStateDir, shortName, alias);
 
     return path;
 }
@@ -380,7 +380,7 @@ qemuSlirpStart(qemuSlirpPtr slirp,
             return -1;
         }
 
-        virAsprintf(&dbus_addr, "unix:path=%s", dbus_path);
+        dbus_addr = g_strdup_printf("unix:path=%s", dbus_path);
 
         virCommandAddArgFormat(cmd, "--dbus-id=%s", id);
 

@@ -423,17 +423,17 @@ qemuBlockStorageSourceGetURI(virStorageSourcePtr src)
 
         uri->scheme = g_strdup(virStorageNetProtocolTypeToString(src->protocol));
     } else {
-        virAsprintf(&uri->scheme, "%s+%s",
-                    virStorageNetProtocolTypeToString(src->protocol),
-                    virStorageNetHostTransportTypeToString(src->hosts->transport));
+        uri->scheme = g_strdup_printf("%s+%s",
+                                      virStorageNetProtocolTypeToString(src->protocol),
+                                      virStorageNetHostTransportTypeToString(src->hosts->transport));
     }
 
     if (src->path) {
         if (src->volume) {
-            virAsprintf(&uri->path, "/%s/%s", src->volume, src->path);
+            uri->path = g_strdup_printf("/%s/%s", src->volume, src->path);
         } else {
-            virAsprintf(&uri->path, "%s%s", src->path[0] == '/' ? "" : "/",
-                        src->path);
+            uri->path = g_strdup_printf("%s%s", src->path[0] == '/' ? "" : "/",
+                                        src->path);
         }
     }
 
@@ -472,7 +472,7 @@ qemuBlockStorageSourceBuildJSONSocketAddress(virStorageNetHostDefPtr host,
         else
             transport = "inet";
 
-        virAsprintf(&port, "%u", host->port);
+        port = g_strdup_printf("%u", host->port);
 
         if (virJSONValueObjectCreate(&server,
                                      "s:type", transport,
@@ -564,7 +564,7 @@ qemuBlockStorageSourceBuildJSONInetSocketAddress(virStorageNetHostDefPtr host)
         return NULL;
     }
 
-    virAsprintf(&port, "%u", host->port);
+    port = g_strdup_printf("%u", host->port);
 
     ignore_value(virJSONValueObjectCreate(&ret,
                                           "s:host", host->name,
@@ -760,10 +760,10 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
 
     /* combine host and port into portal */
     if (virSocketAddrNumericFamily(src->hosts[0].name) == AF_INET6) {
-        virAsprintf(&portal, "[%s]:%u", src->hosts[0].name,
-                    src->hosts[0].port);
+        portal = g_strdup_printf("[%s]:%u", src->hosts[0].name,
+                                 src->hosts[0].port);
     } else {
-        virAsprintf(&portal, "%s:%u", src->hosts[0].name, src->hosts[0].port);
+        portal = g_strdup_printf("%s:%u", src->hosts[0].name, src->hosts[0].port);
     }
 
     if (!onlytarget && src->auth) {
@@ -1955,7 +1955,7 @@ qemuBlockGetBackingStoreString(virStorageSourcePtr src)
     if (!(backingJSON = virJSONValueToString(backingProps, false)))
         return NULL;
 
-    virAsprintf(&ret, "json:%s", backingJSON);
+    ret = g_strdup_printf("json:%s", backingJSON);
 
     return ret;
 }
@@ -2038,9 +2038,9 @@ qemuBlockStorageSourceCreateGetEncryptionLUKS(virStorageSourcePtr src,
 
     if (src->encryption) {
         if (src->encryption->encinfo.cipher_name) {
-            virAsprintf(&cipheralg, "%s-%u",
-                        src->encryption->encinfo.cipher_name,
-                        src->encryption->encinfo.cipher_size);
+            cipheralg = g_strdup_printf("%s-%u",
+                                        src->encryption->encinfo.cipher_name,
+                                        src->encryption->encinfo.cipher_size);
         }
 
         if (virJSONValueObjectAdd(props,

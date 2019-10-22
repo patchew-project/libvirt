@@ -227,7 +227,7 @@ qemuBlockJobDiskNewPull(virDomainObjPtr vm,
     g_autofree char *jobname = NULL;
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV)) {
-        virAsprintf(&jobname, "pull-%s-%s", disk->dst, disk->src->nodeformat);
+        jobname = g_strdup_printf("pull-%s-%s", disk->dst, disk->src->nodeformat);
     } else {
         if (!(jobname = qemuAliasDiskDriveFromDisk(disk)))
             return NULL;
@@ -261,7 +261,7 @@ qemuBlockJobDiskNewCommit(virDomainObjPtr vm,
         jobtype = QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT;
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV)) {
-        virAsprintf(&jobname, "commit-%s-%s", disk->dst, top->nodeformat);
+        jobname = g_strdup_printf("commit-%s-%s", disk->dst, top->nodeformat);
     } else {
         if (!(jobname = qemuAliasDiskDriveFromDisk(disk)))
             return NULL;
@@ -294,7 +294,7 @@ qemuBlockJobNewCreate(virDomainObjPtr vm,
     if (storage)
         nodename = src->nodestorage;
 
-    virAsprintf(&jobname, "create-%s", nodename);
+    jobname = g_strdup_printf("create-%s", nodename);
 
     if (!(job = qemuBlockJobDataNew(QEMU_BLOCKJOB_TYPE_CREATE, jobname)))
         return NULL;
@@ -323,7 +323,7 @@ qemuBlockJobDiskNewCopy(virDomainObjPtr vm,
     g_autofree char *jobname = NULL;
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV)) {
-        virAsprintf(&jobname, "copy-%s-%s", disk->dst, disk->src->nodeformat);
+        jobname = g_strdup_printf("copy-%s-%s", disk->dst, disk->src->nodeformat);
     } else {
         if (!(jobname = qemuAliasDiskDriveFromDisk(disk)))
             return NULL;

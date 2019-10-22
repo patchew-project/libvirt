@@ -154,7 +154,7 @@ qemuDomainDetachZPCIDevice(qemuMonitorPtr mon,
 {
     g_autofree char *zpciAlias = NULL;
 
-    virAsprintf(&zpciAlias, "zpci%d", info->addr.pci.zpci.uid);
+    zpciAlias = g_strdup_printf("zpci%d", info->addr.pci.zpci.uid);
 
     if (qemuMonitorDelDevice(mon, zpciAlias) < 0)
         return -1;
@@ -1307,7 +1307,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
             }
 
             slirpfd = qemuSlirpGetFD(slirp);
-            virAsprintf(&slirpfdName, "slirpfd-%s", net->info.alias);
+            slirpfdName = g_strdup_printf("slirpfd-%s", net->info.alias);
         }
         break;
 
@@ -1356,10 +1356,10 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     for (i = 0; i < tapfdSize; i++)
-        virAsprintf(&tapfdName[i], "fd-%s%zu", net->info.alias, i);
+        tapfdName[i] = g_strdup_printf("fd-%s%zu", net->info.alias, i);
 
     for (i = 0; i < vhostfdSize; i++)
-        virAsprintf(&vhostfdName[i], "vhostfd-%s%zu", net->info.alias, i);
+        vhostfdName[i] = g_strdup_printf("vhostfd-%s%zu", net->info.alias, i);
 
     if (!(netstr = qemuBuildHostNetStr(net,
                                        tapfdName, tapfdSize,
@@ -1502,7 +1502,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     virErrorPreserveLast(&originalError);
-    virAsprintf(&netdev_name, "host%s", net->info.alias);
+    netdev_name = g_strdup_printf("host%s", net->info.alias);
     if (QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp)
         qemuSlirpStop(QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp, vm, driver, net, true);
     qemuDomainObjEnterMonitor(driver, vm);
@@ -2353,7 +2353,7 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuAssignDeviceMemoryAlias(vm->def, mem, priv->memAliasOrderMismatch) < 0)
         goto cleanup;
 
-    virAsprintf(&objalias, "mem%s", mem->info.alias);
+    objalias = g_strdup_printf("mem%s", mem->info.alias);
 
     if (!(devstr = qemuBuildMemoryDeviceStr(mem, priv)))
         goto cleanup;
@@ -2699,7 +2699,7 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
     if (virSCSIVHostOpenVhostSCSI(&vhostfd) < 0)
         goto cleanup;
 
-    virAsprintf(&vhostfdName, "vhostfd-%d", vhostfd);
+    vhostfdName = g_strdup_printf("vhostfd-%d", vhostfd);
 
     if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
         if (qemuDomainIsS390CCW(vm->def) &&
@@ -2970,7 +2970,7 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (shmem->server.enabled) {
-        virAsprintf(&charAlias, "char%s", shmem->info.alias);
+        charAlias = g_strdup_printf("char%s", shmem->info.alias);
     } else {
         if (!(props = qemuBuildShmemBackendMemProps(shmem)))
             goto cleanup;
@@ -3242,7 +3242,7 @@ qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
     if (qemuProcessOpenVhostVsock(vsock) < 0)
         goto cleanup;
 
-    virAsprintf(&fdname, "%s%u", fdprefix, vsockPriv->vhostfd);
+    fdname = g_strdup_printf("%s%u", fdprefix, vsockPriv->vhostfd);
 
     if (!(devstr = qemuBuildVsockDevStr(vm->def, vsock, priv->qemuCaps, fdprefix)))
         goto cleanup;
@@ -3975,7 +3975,7 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
         (auth->expires && auth->validTo <= now)) {
         expire = "now";
     } else if (auth->expires) {
-        virAsprintf(&validTo, "%lu", (unsigned long)auth->validTo);
+        validTo = g_strdup_printf("%lu", (unsigned long)auth->validTo);
         expire = validTo;
     } else {
         expire = "never";
@@ -4330,7 +4330,7 @@ qemuDomainRemoveMemoryDevice(virQEMUDriverPtr driver,
     VIR_DEBUG("Removing memory device %s from domain %p %s",
               mem->info.alias, vm, vm->def->name);
 
-    virAsprintf(&backendAlias, "mem%s", mem->info.alias);
+    backendAlias = g_strdup_printf("mem%s", mem->info.alias);
 
     qemuDomainObjEnterMonitor(driver, vm);
     rc = qemuMonitorDelObject(priv->mon, backendAlias);
@@ -4548,7 +4548,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
     VIR_DEBUG("Removing network interface %s from domain %p %s",
               net->info.alias, vm, vm->def->name);
 
-    virAsprintf(&hostnet_name, "host%s", net->info.alias);
+    hostnet_name = g_strdup_printf("host%s", net->info.alias);
     if (!(charDevAlias = qemuAliasChardevFromDevAlias(net->info.alias)))
         return -1;
 
@@ -4703,7 +4703,7 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
               rng->info.alias, vm, vm->def->name);
 
 
-    virAsprintf(&objAlias, "obj%s", rng->info.alias);
+    objAlias = g_strdup_printf("obj%s", rng->info.alias);
 
     if (!(charAlias = qemuAliasChardevFromDevAlias(rng->info.alias)))
         return -1;
@@ -4762,9 +4762,9 @@ qemuDomainRemoveShmemDevice(virQEMUDriverPtr driver,
               shmem->info.alias, vm, vm->def->name);
 
     if (shmem->server.enabled) {
-        virAsprintf(&charAlias, "char%s", shmem->info.alias);
+        charAlias = g_strdup_printf("char%s", shmem->info.alias);
     } else {
-        virAsprintf(&memAlias, "shmmem-%s", shmem->info.alias);
+        memAlias = g_strdup_printf("shmmem-%s", shmem->info.alias);
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
@@ -6005,7 +6005,7 @@ qemuDomainHotplugAddVcpu(virQEMUDriverPtr driver,
     size_t i;
 
     if (newhotplug) {
-        virAsprintf(&vcpupriv->alias, "vcpu%u", vcpu);
+        vcpupriv->alias = g_strdup_printf("vcpu%u", vcpu);
 
         if (!(vcpuprops = qemuBuildHotpluggableCPUProps(vcpuinfo)))
             goto cleanup;

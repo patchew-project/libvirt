@@ -2025,11 +2025,11 @@ qemuDomainSetPrivatePathsOld(virQEMUDriverPtr driver,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
     if (!priv->libDir)
-        virAsprintf(&priv->libDir, "%s/domain-%s", cfg->libDir, vm->def->name);
+        priv->libDir = g_strdup_printf("%s/domain-%s", cfg->libDir, vm->def->name);
 
     if (!priv->channelTargetDir)
-        virAsprintf(&priv->channelTargetDir, "%s/domain-%s",
-                    cfg->channelTargetDir, vm->def->name);
+        priv->channelTargetDir = g_strdup_printf("%s/domain-%s",
+                                                 cfg->channelTargetDir, vm->def->name);
 
     virObjectUnref(cfg);
 }
@@ -2048,11 +2048,11 @@ qemuDomainSetPrivatePaths(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (!priv->libDir)
-        virAsprintf(&priv->libDir, "%s/domain-%s", cfg->libDir, domname);
+        priv->libDir = g_strdup_printf("%s/domain-%s", cfg->libDir, domname);
 
     if (!priv->channelTargetDir)
-        virAsprintf(&priv->channelTargetDir, "%s/domain-%s",
-                    cfg->channelTargetDir, domname);
+        priv->channelTargetDir = g_strdup_printf("%s/domain-%s",
+                                                 cfg->channelTargetDir, domname);
 
     ret = 0;
  cleanup:
@@ -9316,7 +9316,7 @@ qemuDomainLogContextPtr qemuDomainLogContextNew(virQEMUDriverPtr driver,
     ctxt->writefd = -1;
     ctxt->readfd = -1;
 
-    virAsprintf(&ctxt->path, "%s/%s.log", cfg->logDir, vm->def->name);
+    ctxt->path = g_strdup_printf("%s/%s.log", cfg->logDir, vm->def->name);
 
     if (cfg->stdioLogD) {
         ctxt->manager = virLogManagerNew(virQEMUDriverIsPrivileged(driver));
@@ -9496,7 +9496,7 @@ qemuDomainLogAppendMessage(virQEMUDriverPtr driver,
     VIR_DEBUG("Append log message (vm='%s' message='%s) stdioLogD=%d",
               vm->def->name, message, cfg->stdioLogD);
 
-    virAsprintf(&path, "%s/%s.log", cfg->logDir, vm->def->name);
+    path = g_strdup_printf("%s/%s.log", cfg->logDir, vm->def->name);
 
     if (cfg->stdioLogD) {
         if (!(manager = virLogManagerNew(virQEMUDriverIsPrivileged(driver))))
@@ -9589,14 +9589,14 @@ qemuDomainSnapshotWriteMetadata(virDomainObjPtr vm,
     if (newxml == NULL)
         return -1;
 
-    virAsprintf(&snapDir, "%s/%s", snapshotDir, vm->def->name);
+    snapDir = g_strdup_printf("%s/%s", snapshotDir, vm->def->name);
     if (virFileMakePath(snapDir) < 0) {
         virReportSystemError(errno, _("cannot create snapshot directory '%s'"),
                              snapDir);
         goto cleanup;
     }
 
-    virAsprintf(&snapFile, "%s/%s.xml", snapDir, def->parent.name);
+    snapFile = g_strdup_printf("%s/%s.xml", snapDir, def->parent.name);
 
     ret = virXMLSaveFile(snapFile, NULL, "snapshot-edit", newxml);
 
@@ -9729,8 +9729,8 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
         }
     }
 
-    virAsprintf(&snapFile, "%s/%s/%s.xml", cfg->snapshotDir, vm->def->name,
-                snap->def->name);
+    snapFile = g_strdup_printf("%s/%s/%s.xml", cfg->snapshotDir, vm->def->name,
+                               snap->def->name);
 
     if (snap == virDomainSnapshotGetCurrent(vm->snapshots)) {
         virDomainSnapshotSetCurrent(vm->snapshots, NULL);
@@ -9818,7 +9818,7 @@ qemuDomainRemoveInactiveCommon(virQEMUDriverPtr driver,
         VIR_WARN("unable to remove all snapshots for domain %s",
                  vm->def->name);
     } else {
-        virAsprintf(&snapDir, "%s/%s", cfg->snapshotDir, vm->def->name);
+        snapDir = g_strdup_printf("%s/%s", cfg->snapshotDir, vm->def->name);
 
         if (rmdir(snapDir) < 0 && errno != ENOENT)
             VIR_WARN("unable to remove snapshot directory %s", snapDir);
@@ -9828,8 +9828,8 @@ qemuDomainRemoveInactiveCommon(virQEMUDriverPtr driver,
         VIR_WARN("unable to remove all checkpoints for domain %s",
                  vm->def->name);
     } else {
-        virAsprintf(&chkDir, "%s/%s", cfg->checkpointDir,
-                    vm->def->name);
+        chkDir = g_strdup_printf("%s/%s", cfg->checkpointDir,
+                                 vm->def->name);
         if (rmdir(chkDir) < 0 && errno != ENOENT)
             VIR_WARN("unable to remove checkpoint directory %s", chkDir);
     }
@@ -10177,7 +10177,7 @@ qemuDomainStorageAlias(const char *device, int depth)
     if (!depth)
         alias = g_strdup(device);
     else
-        virAsprintf(&alias, "%s.%d", device, depth);
+        alias = g_strdup_printf("%s.%d", device, depth);
     return alias;
 }
 
@@ -11726,8 +11726,8 @@ ppc64VFIODeviceIsNV2Bridge(const char *device)
     for (i = 0; i < G_N_ELEMENTS(nvlink2Files); i++) {
         g_autofree char *file = NULL;
 
-        virAsprintf(&file, "/sys/bus/pci/devices/%s/of_node/%s",
-                    device, nvlink2Files[i]);
+        file = g_strdup_printf("/sys/bus/pci/devices/%s/of_node/%s",
+                               device, nvlink2Files[i]);
 
         if (!virFileExists(file))
             return false;
@@ -12406,15 +12406,15 @@ qemuDomainPrepareChannel(virDomainChrDefPtr channel,
         return 0;
 
     if (channel->target.name) {
-        virAsprintf(&channel->source->data.nix.path, "%s/%s",
-                    domainChannelTargetDir, channel->target.name);
+        channel->source->data.nix.path = g_strdup_printf("%s/%s",
+                                                         domainChannelTargetDir, channel->target.name);
     } else {
         /* Generate a unique name */
-        virAsprintf(&channel->source->data.nix.path,
-                    "%s/vioser-%02d-%02d-%02d.sock", domainChannelTargetDir,
-                    channel->info.addr.vioserial.controller,
-                    channel->info.addr.vioserial.bus,
-                    channel->info.addr.vioserial.port);
+        channel->source->data.nix.path = g_strdup_printf(
+                                                         "%s/vioser-%02d-%02d-%02d.sock", domainChannelTargetDir,
+                                                         channel->info.addr.vioserial.controller,
+                                                         channel->info.addr.vioserial.bus,
+                                                         channel->info.addr.vioserial.port);
     }
 
     return 0;
@@ -12604,9 +12604,9 @@ qemuDomainPrepareShmemChardev(virDomainShmemDefPtr shmem)
         shmem->server.chr.data.nix.path)
         return;
 
-    virAsprintf(&shmem->server.chr.data.nix.path,
-                "/var/lib/libvirt/shmem-%s-sock",
-                shmem->name);
+    shmem->server.chr.data.nix.path = g_strdup_printf(
+                                                      "/var/lib/libvirt/shmem-%s-sock",
+                                                      shmem->name);
 }
 
 
@@ -12932,7 +12932,7 @@ qemuDomainGetPreservedMountPath(virQEMUDriverConfigPtr cfg,
     if (STREQ(mountpoint, "/dev"))
         suffix = "dev";
 
-    virAsprintf(&path, "%s/%s.%s", cfg->stateDir, domname, suffix);
+    path = g_strdup_printf("%s/%s.%s", cfg->stateDir, domname, suffix);
 
     /* Now consider that @mountpoint is "/dev/blah/blah2".
      * @suffix then points to "blah/blah2". However, caller
@@ -13112,8 +13112,8 @@ qemuDomainCreateDeviceRecursive(const char *device,
         if (i == data->ndevMountsPath) {
             /* Okay, @device is in /dev but not in any mount point under /dev.
              * Create it. */
-            virAsprintf(&devicePath, "%s/%s", data->path,
-                        device + strlen(QEMU_DEVPREFIX));
+            devicePath = g_strdup_printf("%s/%s", data->path,
+                                         device + strlen(QEMU_DEVPREFIX));
 
             if (virFileMakeParentPath(devicePath) < 0) {
                 virReportSystemError(errno,
@@ -13167,7 +13167,7 @@ qemuDomainCreateDeviceRecursive(const char *device,
             if ((c = strrchr(devTmp, '/')))
                 *(c + 1) = '\0';
 
-            virAsprintf(&tmp, "%s%s", devTmp, target);
+            tmp = g_strdup_printf("%s%s", devTmp, target);
             VIR_FREE(devTmp);
             VIR_FREE(target);
             target = g_steal_pointer(&tmp);
@@ -13330,7 +13330,7 @@ qemuDomainSetupDev(virQEMUDriverConfigPtr cfg,
      * tmpfs is limited to 64kb, since we only have device nodes in there
      * and don't want to DOS the entire OS RAM usage
      */
-    virAsprintf(&opts, "mode=755,size=65536%s", mount_options);
+    opts = g_strdup_printf("mode=755,size=65536%s", mount_options);
 
     if (virFileSetupDev(data->path, opts) < 0)
         goto cleanup;
@@ -14139,7 +14139,7 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
             if ((c = strrchr(fileTmp, '/')))
                 *(c + 1) = '\0';
 
-            virAsprintf(&tmp, "%s%s", fileTmp, target);
+            tmp = g_strdup_printf("%s%s", fileTmp, target);
             VIR_FREE(fileTmp);
             VIR_FREE(target);
             target = g_steal_pointer(&tmp);
@@ -14695,7 +14695,7 @@ qemuDomainDiskBackingStoreGetName(virDomainDiskDefPtr disk,
     char *ret = NULL;
 
     if (idx)
-        virAsprintf(&ret, "%s[%d]", disk->dst, idx);
+        ret = g_strdup_printf("%s[%d]", disk->dst, idx);
     else
         ret = g_strdup(disk->dst);
 
@@ -15138,8 +15138,8 @@ qemuDomainPrepareStorageSourceBlockdev(virDomainDiskDefPtr disk,
 {
     src->id = qemuDomainStorageIdNew(priv);
 
-    virAsprintf(&src->nodestorage, "libvirt-%u-storage", src->id);
-    virAsprintf(&src->nodeformat, "libvirt-%u-format", src->id);
+    src->nodestorage = g_strdup_printf("libvirt-%u-storage", src->id);
+    src->nodeformat = g_strdup_printf("libvirt-%u-format", src->id);
 
     if (qemuDomainValidateStorageSource(src, priv->qemuCaps) < 0)
         return -1;
@@ -15173,7 +15173,7 @@ qemuDomainPrepareDiskSourceBlockdev(virDomainDiskDefPtr disk,
 
     if (disk->copy_on_read == VIR_TRISTATE_SWITCH_ON &&
         !diskPriv->nodeCopyOnRead)
-        virAsprintf(&diskPriv->nodeCopyOnRead, "libvirt-CoR-%s", disk->dst);
+        diskPriv->nodeCopyOnRead = g_strdup_printf("libvirt-CoR-%s", disk->dst);
 
     for (n = disk->src; virStorageSourceIsBacking(n); n = n->backingStore) {
         if (qemuDomainPrepareStorageSourceBlockdev(disk, n, priv, cfg) < 0)
@@ -15326,7 +15326,7 @@ qemuDomainGetManagedPRSocketPath(qemuDomainObjPrivatePtr priv)
 {
     char *ret = NULL;
 
-    virAsprintf(&ret, "%s/%s.sock", priv->libDir, qemuDomainGetManagedPRAlias());
+    ret = g_strdup_printf("%s/%s.sock", priv->libDir, qemuDomainGetManagedPRAlias());
 
     return ret;
 }
@@ -15418,7 +15418,7 @@ qemuDomainNVRAMPathFormat(virQEMUDriverConfigPtr cfg,
                             virDomainDefPtr def,
                             char **path)
 {
-    virAsprintf(path, "%s/%s_VARS.fd", cfg->nvramDir, def->name);
+    *path = g_strdup_printf("%s/%s_VARS.fd", cfg->nvramDir, def->name);
 }
 
 

@@ -734,7 +734,7 @@ virQEMUCapsFindBinary(const char *format,
     char *ret = NULL;
     char *binary = NULL;
 
-    virAsprintf(&binary, format, archstr);
+    binary = g_strdup_printf(format, archstr);
 
     ret = virFindFileInPath(binary);
     VIR_FREE(binary);
@@ -2411,7 +2411,7 @@ virQEMUCapsProbeQMPMachineProps(virQEMUCapsPtr qemuCaps,
 
         /* The QOM type for machine types is the machine type name
          * followed by the -machine suffix */
-        virAsprintf(&type, "%s-machine", canon);
+        type = g_strdup_printf("%s-machine", canon);
 
         if ((nvalues = qemuMonitorGetObjectProps(mon, type, &values)) < 0)
             return -1;
@@ -4847,7 +4847,7 @@ virQEMUCapsCacheNew(const char *libDir,
     virQEMUCapsCachePrivPtr priv = NULL;
     struct utsname uts;
 
-    virAsprintf(&capsCacheDir, "%s/capabilities", cacheDir);
+    capsCacheDir = g_strdup_printf("%s/capabilities", cacheDir);
 
     if (!(cache = virFileCacheNew(capsCacheDir, "xml", &qemuCapsCacheHandlers)))
         goto error;
@@ -4865,7 +4865,7 @@ virQEMUCapsCacheNew(const char *libDir,
     priv->kvmUsable = VIR_TRISTATE_BOOL_ABSENT;
 
     if (uname(&uts) == 0)
-        virAsprintf(&priv->kernelVersion, "%s %s", uts.release, uts.version);
+        priv->kernelVersion = g_strdup_printf("%s %s", uts.release, uts.version);
 
  cleanup:
     VIR_FREE(capsCacheDir);
