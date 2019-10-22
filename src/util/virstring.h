@@ -133,9 +133,8 @@ int virStrdup(char **dest, const char *src)
 
 int virStrndup(char **dest, const char *src, ssize_t n)
     G_GNUC_WARN_UNUSED_RESULT ATTRIBUTE_NONNULL(1);
-int virAsprintfInternal(char **strp, const char *fmt, ...)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_PRINTF(2, 3)
-    G_GNUC_WARN_UNUSED_RESULT;
+void virAsprintfInternal(char **strp, const char *fmt, ...)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_PRINTF(2, 3);
 int virVasprintfInternal(char **strp, const char *fmt, va_list list)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_PRINTF(2, 0)
     G_GNUC_WARN_UNUSED_RESULT;
