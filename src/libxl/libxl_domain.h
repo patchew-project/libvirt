@@ -131,7 +131,7 @@ void
 libxlDomainEventHandler(void *data,
                         VIR_LIBXL_EVENT_CONST libxl_event *event);
 
-int
+void
 libxlDomainAutoCoreDump(libxlDriverPrivatePtr driver,
                         virDomainObjPtr vm);
 

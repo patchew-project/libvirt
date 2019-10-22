@@ -714,7 +714,7 @@ libxlDomainManagedSavePath(libxlDriverPrivatePtr driver, virDomainObjPtr vm)
     char *ret;
     g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
 
-    ignore_value(virAsprintf(&ret, "%s/%s.save", cfg->saveDir, vm->def->name));
+    virAsprintf(&ret, "%s/%s.save", cfg->saveDir, vm->def->name);
     return ret;
 }
 
@@ -905,11 +905,11 @@ libxlDomainCleanup(libxlDriverPrivatePtr driver,
         }
     }
 
-    if (virAsprintf(&file, "%s/%s.xml", cfg->stateDir, vm->def->name) > 0) {
-        if (unlink(file) < 0 && errno != ENOENT && errno != ENOTDIR)
-            VIR_DEBUG("Failed to remove domain XML for %s", vm->def->name);
-        VIR_FREE(file);
-    }
+    virAsprintf(&file, "%s/%s.xml", cfg->stateDir, vm->def->name);
+
+    if (unlink(file) < 0 && errno != ENOENT && errno != ENOTDIR)
+        VIR_DEBUG("Failed to remove domain XML for %s", vm->def->name);
+    VIR_FREE(file);
 
     /* The "release" hook cleans up additional resources */
     if (virHookPresent(VIR_HOOK_DRIVER_LIBXL)) {
@@ -931,7 +931,7 @@ libxlDomainCleanup(libxlDriverPrivatePtr driver,
  *
  * virDomainObjPtr must be locked on invocation
  */
-int
+void
 libxlDomainAutoCoreDump(libxlDriverPrivatePtr driver,
                         virDomainObjPtr vm)
 {
@@ -940,28 +940,19 @@ libxlDomainAutoCoreDump(libxlDriverPrivatePtr driver,
     char timestr[100];
     struct tm time_info;
     char *dumpfile = NULL;
-    int ret = -1;
 
     localtime_r(&curtime, &time_info);
     strftime(timestr, sizeof(timestr), "%Y-%m-%d-%H:%M:%S", &time_info);
 
-    if (virAsprintf(&dumpfile, "%s/%s-%s",
-                    cfg->autoDumpDir,
-                    vm->def->name,
-                    timestr) < 0)
-        goto cleanup;
+    virAsprintf(&dumpfile, "%s/%s-%s", cfg->autoDumpDir, vm->def->name,
+                timestr);
 
     /* Unlock virDomainObj while dumping core */
     virObjectUnlock(vm);
     libxl_domain_core_dump(cfg->ctx, vm->def->id, dumpfile, NULL);
     virObjectLock(vm);
 
-    ret = 0;
-
- cleanup:
     VIR_FREE(dumpfile);
-
-    return ret;
 }
 
 int
@@ -1130,7 +1121,7 @@ libxlConsoleCallback(libxl_ctx *ctx, libxl_event *ev, void *for_callback)
     for (i = 0; i < vm->def->nserials; i++) {
         chr = vm->def->serials[i];
 
-        ignore_value(virAsprintf(&chr->info.alias, "serial%zd", i));
+        virAsprintf(&chr->info.alias, "serial%zd", i);
         if (chr->source->type == VIR_DOMAIN_CHR_TYPE_PTY) {
             if (chr->source->data.file.path)
                 continue;
@@ -1170,9 +1161,9 @@ libxlDomainCreateIfaceNames(virDomainDefPtr def, libxl_domain_config *d_config)
         if (net->ifname)
             continue;
 
-        ignore_value(virAsprintf(&net->ifname,
-                                 LIBXL_GENERATED_PREFIX_XEN "%d.%d%s",
-                                 def->id, x_nic->devid, suffix));
+        virAsprintf(&net->ifname,
+                    LIBXL_GENERATED_PREFIX_XEN "%d.%d%s",
+                    def->id, x_nic->devid, suffix);
     }
 }
 

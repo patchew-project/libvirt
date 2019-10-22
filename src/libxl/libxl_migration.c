@@ -709,14 +709,12 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
             goto endjob;
 
         priv->migrationPort = port;
-        if (virAsprintf(uri_out, "tcp://%s:%d", hostname, port) < 0)
-            goto endjob;
+        virAsprintf(uri_out, "tcp://%s:%d", hostname, port);
     } else {
         if (!(STRPREFIX(uri_in, "tcp://"))) {
             /* not full URI, add prefix tcp:// */
             char *tmp;
-            if (virAsprintf(&tmp, "tcp://%s", uri_in) < 0)
-                goto endjob;
+            virAsprintf(&tmp, "tcp://%s", uri_in);
             uri = virURIParse(tmp);
             VIR_FREE(tmp);
         } else {
@@ -747,8 +745,7 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
             port = uri->port;
         }
 
-        if (virAsprintf(uri_out, "tcp://%s:%d", hostname, port) < 0)
-            goto endjob;
+        virAsprintf(uri_out, "tcp://%s:%d", hostname, port);
     }
 
     snprintf(portstr, sizeof(portstr), "%d", port);
