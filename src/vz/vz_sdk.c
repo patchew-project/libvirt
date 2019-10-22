@@ -1213,27 +1213,22 @@ prlsdkGetSerialInfo(PRL_HANDLE serialPort, virDomainChrDefPtr chr)
         break;
     case PDT_USE_TCP:
         chr->source->type = VIR_DOMAIN_CHR_TYPE_TCP;
-        if (virAsprintf(&uristr, "tcp://%s", friendlyName) < 0)
-            goto cleanup;
+        virAsprintf(&uristr, "tcp://%s", friendlyName);
         if (!(uri = virURIParse(uristr)))
             goto cleanup;
         chr->source->data.tcp.host = g_strdup(uri->server);
-        if (virAsprintf(&chr->source->data.tcp.service, "%d", uri->port) < 0)
-            goto cleanup;
+        virAsprintf(&chr->source->data.tcp.service, "%d", uri->port);
         chr->source->data.tcp.listen = socket_mode == PSP_SERIAL_SOCKET_SERVER;
         break;
     case PDT_USE_UDP:
         chr->source->type = VIR_DOMAIN_CHR_TYPE_UDP;
-        if (virAsprintf(&uristr, "udp://%s", friendlyName) < 0)
-            goto cleanup;
+        virAsprintf(&uristr, "udp://%s", friendlyName);
         if (!(uri = virURIParse(uristr)))
             goto cleanup;
         chr->source->data.udp.bindHost = g_strdup(uri->server);
-        if (virAsprintf(&chr->source->data.udp.bindService, "%d", uri->port) < 0)
-            goto cleanup;
+        virAsprintf(&chr->source->data.udp.bindService, "%d", uri->port);
         chr->source->data.udp.connectHost = g_strdup(uri->server);
-        if (virAsprintf(&chr->source->data.udp.connectService, "%d", uri->port) < 0)
-            goto cleanup;
+        virAsprintf(&chr->source->data.udp.connectService, "%d", uri->port);
         break;
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -3128,20 +3123,16 @@ static int prlsdkAddSerial(PRL_HANDLE sdkdom, virDomainChrDefPtr chr)
         break;
     case VIR_DOMAIN_CHR_TYPE_TCP:
         emutype = PDT_USE_TCP;
-        if (virAsprintf(&url, "%s:%s",
-                        chr->source->data.tcp.host,
-                        chr->source->data.tcp.service) < 0)
-            goto cleanup;
+        virAsprintf(&url, "%s:%s", chr->source->data.tcp.host,
+                    chr->source->data.tcp.service);
         if (!chr->source->data.tcp.listen)
             socket_mode = PSP_SERIAL_SOCKET_CLIENT;
         path = url;
         break;
     case VIR_DOMAIN_CHR_TYPE_UDP:
         emutype = PDT_USE_UDP;
-        if (virAsprintf(&url, "%s:%s",
-                        chr->source->data.udp.bindHost,
-                        chr->source->data.udp.bindService) < 0)
-            goto cleanup;
+        virAsprintf(&url, "%s:%s", chr->source->data.udp.bindHost,
+                    chr->source->data.udp.bindService);
         path = url;
         break;
     default:
@@ -3333,10 +3324,7 @@ static int prlsdkConfigureNet(vzDriverPtr driver G_GNUC_UNUSED,
         if (!(tmpstr = virSocketAddrFormat(&net->guestIP.ips[i]->address)))
             goto cleanup;
 
-        if (virAsprintf(&addrstr, "%s/%d", tmpstr, net->guestIP.ips[i]->prefix) < 0) {
-            VIR_FREE(tmpstr);
-            goto cleanup;
-        }
+        virAsprintf(&addrstr, "%s/%d", tmpstr, net->guestIP.ips[i]->prefix);
 
         VIR_FREE(tmpstr);
         pret = PrlStrList_AddItem(addrlist, addrstr);
@@ -3791,9 +3779,8 @@ prlsdkAddFS(PRL_HANDLE sdkdom, virDomainFSDefPtr fs)
     prlsdkCheckRetGoto(pret, cleanup);
 
     if (fs->type == VIR_DOMAIN_FS_TYPE_VOLUME) {
-        if (virAsprintf(&storage, "libvirt://localhost/%s/%s", fs->src->srcpool->pool,
-                        fs->src->srcpool->volume) < 0)
-            goto cleanup;
+        virAsprintf(&storage, "libvirt://localhost/%s/%s",
+                    fs->src->srcpool->pool, fs->src->srcpool->volume);
         pret = PrlVmDevHd_SetStorageURL(sdkdisk, storage);
         prlsdkCheckRetGoto(pret, cleanup);
     }
@@ -4519,8 +4506,7 @@ prlsdkGetVcpuStats(PRL_HANDLE sdkstats, int idx, unsigned long long *vtime)
     long long ptime = 0;
     int ret = -1;
 
-    if (virAsprintf(&name, "guest.vcpu%u.time", (unsigned int)idx) < 0)
-        goto cleanup;
+    virAsprintf(&name, "guest.vcpu%u.time", (unsigned int)idx);
     if (prlsdkExtractStatsParam(sdkstats, name, &ptime) < 0)
         goto cleanup;
     *vtime = ptime == -1 ? 0 : ptime;
