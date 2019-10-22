@@ -7120,8 +7120,7 @@ qemuMonitorJSONNBDServerStart(qemuMonitorPtr mon,
 
     switch ((virStorageNetHostTransport)server->transport) {
     case VIR_STORAGE_NET_HOST_TRANS_TCP:
-        if (virAsprintf(&port_str, "%u", server->port) < 0)
-            return ret;
+        virAsprintf(&port_str, "%u", server->port);
         addr = qemuMonitorJSONBuildInetSocketAddress(server->name, port_str);
         break;
     case VIR_STORAGE_NET_HOST_TRANS_UNIX:
@@ -8052,9 +8051,7 @@ qemuMonitorJSONSetIOThread(qemuMonitorPtr mon,
     char *path = NULL;
     qemuMonitorJSONObjectProperty prop;
 
-    if (virAsprintf(&path, "/objects/iothread%u",
-                    iothreadInfo->iothread_id) < 0)
-        goto cleanup;
+    virAsprintf(&path, "/objects/iothread%u", iothreadInfo->iothread_id);
 
 #define VIR_IOTHREAD_SET_PROP(propName, propVal) \
     if (iothreadInfo->set_##propVal) { \
@@ -8212,13 +8209,11 @@ qemuMonitorJSONFindObjectPathByAlias(qemuMonitorPtr mon,
     if (npaths < 0)
         return -1;
 
-    if (virAsprintf(&child, "child<%s>", name) < 0)
-        goto cleanup;
+    virAsprintf(&child, "child<%s>", name);
 
     for (i = 0; i < npaths; i++) {
         if (STREQ(paths[i]->name, alias) && STREQ(paths[i]->type, child)) {
-            if (virAsprintf(path, "/machine/peripheral/%s", alias) < 0)
-                goto cleanup;
+            virAsprintf(path, "/machine/peripheral/%s", alias);
 
             ret = 0;
             goto cleanup;
@@ -8270,10 +8265,7 @@ qemuMonitorJSONFindObjectPathByName(qemuMonitorPtr mon,
         if (STREQ_NULLABLE(paths[i]->type, name)) {
             VIR_DEBUG("Path to '%s' is '%s/%s'", name, curpath, paths[i]->name);
             ret = 0;
-            if (virAsprintf(path, "%s/%s", curpath, paths[i]->name) < 0) {
-                *path = NULL;
-                ret = -1;
-            }
+            virAsprintf(path, "%s/%s", curpath, paths[i]->name);
             goto cleanup;
         }
 
@@ -8281,10 +8273,7 @@ qemuMonitorJSONFindObjectPathByName(qemuMonitorPtr mon,
          * traversed looking for more entries
          */
         if (paths[i]->type && STRPREFIX(paths[i]->type, "child<")) {
-            if (virAsprintf(&nextpath, "%s/%s", curpath, paths[i]->name) < 0) {
-                ret = -1;
-                goto cleanup;
-            }
+            virAsprintf(&nextpath, "%s/%s", curpath, paths[i]->name);
 
             ret = qemuMonitorJSONFindObjectPathByName(mon, nextpath, name, path);
             VIR_FREE(nextpath);
@@ -8327,8 +8316,7 @@ qemuMonitorJSONFindLinkPath(qemuMonitorPtr mon,
             return ret;
     }
 
-    if (virAsprintf(&linkname, "link<%s>", name) < 0)
-        return -1;
+    virAsprintf(&linkname, "link<%s>", name);
 
     ret = qemuMonitorJSONFindObjectPathByName(mon, "/", linkname, path);
     VIR_FREE(linkname);

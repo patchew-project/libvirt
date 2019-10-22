@@ -130,49 +130,29 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->cgroupControllers = -1; /* -1 == auto-detect */
 
     if (privileged) {
-        if (virAsprintf(&cfg->logDir,
-                        "%s/log/libvirt/qemu", LOCALSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->logDir, "%s/log/libvirt/qemu", LOCALSTATEDIR);
 
-        if (virAsprintf(&cfg->swtpmLogDir,
-                        "%s/log/swtpm/libvirt/qemu", LOCALSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->swtpmLogDir, "%s/log/swtpm/libvirt/qemu",
+                    LOCALSTATEDIR);
 
         cfg->configBaseDir = g_strdup(SYSCONFDIR "/libvirt");
 
-        if (virAsprintf(&cfg->stateDir,
-                      "%s/libvirt/qemu", RUNSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->stateDir, "%s/libvirt/qemu", RUNSTATEDIR);
 
-        if (virAsprintf(&cfg->swtpmStateDir,
-                       "%s/libvirt/qemu/swtpm", RUNSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->swtpmStateDir, "%s/libvirt/qemu/swtpm", RUNSTATEDIR);
 
-        if (virAsprintf(&cfg->cacheDir,
-                      "%s/cache/libvirt/qemu", LOCALSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->cacheDir, "%s/cache/libvirt/qemu", LOCALSTATEDIR);
 
-        if (virAsprintf(&cfg->libDir,
-                      "%s/lib/libvirt/qemu", LOCALSTATEDIR) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->saveDir, "%s/save", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->snapshotDir, "%s/snapshot", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->checkpointDir, "%s/checkpoint", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->autoDumpPath, "%s/dump", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->channelTargetDir,
-                        "%s/channel/target", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->nvramDir, "%s/nvram", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->memoryBackingDir, "%s/ram", cfg->libDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->swtpmStorageDir, "%s/lib/libvirt/swtpm",
-                        LOCALSTATEDIR) < 0)
-            return NULL;
+        virAsprintf(&cfg->libDir, "%s/lib/libvirt/qemu", LOCALSTATEDIR);
+        virAsprintf(&cfg->saveDir, "%s/save", cfg->libDir);
+        virAsprintf(&cfg->snapshotDir, "%s/snapshot", cfg->libDir);
+        virAsprintf(&cfg->checkpointDir, "%s/checkpoint", cfg->libDir);
+        virAsprintf(&cfg->autoDumpPath, "%s/dump", cfg->libDir);
+        virAsprintf(&cfg->channelTargetDir, "%s/channel/target", cfg->libDir);
+        virAsprintf(&cfg->nvramDir, "%s/nvram", cfg->libDir);
+        virAsprintf(&cfg->memoryBackingDir, "%s/ram", cfg->libDir);
+        virAsprintf(&cfg->swtpmStorageDir, "%s/lib/libvirt/swtpm",
+                    LOCALSTATEDIR);
         if (!virDoesUserExist("tss") ||
             virGetUserID("tss", &cfg->swtpm_user) < 0)
             cfg->swtpm_user = 0; /* fall back to root */
@@ -187,55 +167,39 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         if (!cachedir)
             return NULL;
 
-        if (virAsprintf(&cfg->logDir, "%s/qemu/log", cachedir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->swtpmLogDir, "%s/qemu/log", cachedir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->cacheDir, "%s/qemu/cache", cachedir) < 0)
-            return NULL;
+        virAsprintf(&cfg->logDir, "%s/qemu/log", cachedir);
+        virAsprintf(&cfg->swtpmLogDir, "%s/qemu/log", cachedir);
+        virAsprintf(&cfg->cacheDir, "%s/qemu/cache", cachedir);
 
         rundir = virGetUserRuntimeDirectory();
         if (!rundir)
             return NULL;
-        if (virAsprintf(&cfg->stateDir, "%s/qemu/run", rundir) < 0)
-            return NULL;
+        virAsprintf(&cfg->stateDir, "%s/qemu/run", rundir);
 
-        if (virAsprintf(&cfg->swtpmStateDir, "%s/swtpm", cfg->stateDir) < 0)
-            return NULL;
+        virAsprintf(&cfg->swtpmStateDir, "%s/swtpm", cfg->stateDir);
 
         if (!(cfg->configBaseDir = virGetUserConfigDirectory()))
             return NULL;
 
-        if (virAsprintf(&cfg->libDir, "%s/qemu/lib", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->saveDir, "%s/qemu/save", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->snapshotDir, "%s/qemu/snapshot", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->checkpointDir, "%s/qemu/checkpoint", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->autoDumpPath, "%s/qemu/dump", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->channelTargetDir,
-                        "%s/qemu/channel/target", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->nvramDir,
-                        "%s/qemu/nvram", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->memoryBackingDir, "%s/qemu/ram", cfg->configBaseDir) < 0)
-            return NULL;
-        if (virAsprintf(&cfg->swtpmStorageDir, "%s/qemu/swtpm", cfg->configBaseDir) < 0)
-            return NULL;
+        virAsprintf(&cfg->libDir, "%s/qemu/lib", cfg->configBaseDir);
+        virAsprintf(&cfg->saveDir, "%s/qemu/save", cfg->configBaseDir);
+        virAsprintf(&cfg->snapshotDir, "%s/qemu/snapshot", cfg->configBaseDir);
+        virAsprintf(&cfg->checkpointDir, "%s/qemu/checkpoint",
+                    cfg->configBaseDir);
+        virAsprintf(&cfg->autoDumpPath, "%s/qemu/dump", cfg->configBaseDir);
+        virAsprintf(&cfg->channelTargetDir, "%s/qemu/channel/target",
+                    cfg->configBaseDir);
+        virAsprintf(&cfg->nvramDir, "%s/qemu/nvram", cfg->configBaseDir);
+        virAsprintf(&cfg->memoryBackingDir, "%s/qemu/ram", cfg->configBaseDir);
+        virAsprintf(&cfg->swtpmStorageDir, "%s/qemu/swtpm",
+                    cfg->configBaseDir);
         cfg->swtpm_user = (uid_t)-1;
         cfg->swtpm_group = (gid_t)-1;
     }
 
-    if (virAsprintf(&cfg->configDir, "%s/qemu", cfg->configBaseDir) < 0)
-        return NULL;
-    if (virAsprintf(&cfg->autostartDir, "%s/qemu/autostart", cfg->configBaseDir) < 0)
-        return NULL;
-    if (virAsprintf(&cfg->slirpStateDir, "%s/slirp", cfg->stateDir) < 0)
-        return NULL;
+    virAsprintf(&cfg->configDir, "%s/qemu", cfg->configBaseDir);
+    virAsprintf(&cfg->autostartDir, "%s/qemu/autostart", cfg->configBaseDir);
+    virAsprintf(&cfg->slirpStateDir, "%s/slirp", cfg->stateDir);
 
     /* Set the default directory to find TLS X.509 certificates.
      * This will then be used as a fallback if the service specific
@@ -1390,12 +1354,8 @@ virQEMUDriverGetDomainCapabilities(virQEMUDriverPtr driver,
                                       cfg->firmwares, cfg->nfirmwares) < 0)
             return NULL;
 
-        if (virAsprintf(&key, "%d:%d:%s:%s",
-                        data.arch,
-                        data.virttype,
-                        NULLSTR(data.machine),
-                        NULLSTR(data.path)) < 0)
-            return NULL;
+        virAsprintf(&key, "%d:%d:%s:%s", data.arch, data.virttype,
+                    NULLSTR(data.machine), NULLSTR(data.path));
 
         if (virHashAddEntry(domCapsCache, key, domCaps) < 0)
             return NULL;
@@ -1426,8 +1386,7 @@ qemuGetSharedDeviceKey(const char *device_path)
         return NULL;
     }
 
-    if (virAsprintf(&key, "%d:%d", maj, min) < 0)
-        return NULL;
+    virAsprintf(&key, "%d:%d", maj, min);
 
     return key;
 }
@@ -1703,7 +1662,7 @@ qemuGetHostdevPath(virDomainHostdevDefPtr hostdev)
                                              scsihostsrc->unit)))
         return NULL;
 
-    ignore_value(virAsprintf(&dev_path, "/dev/%s", dev_name));
+    virAsprintf(&dev_path, "/dev/%s", dev_name);
     return dev_path;
 }
 
@@ -1880,8 +1839,7 @@ qemuGetBaseHugepagePath(virHugeTLBFSPtr hugepage)
 {
     char *ret;
 
-    if (virAsprintf(&ret, "%s/libvirt/qemu", hugepage->mnt_dir) < 0)
-        return NULL;
+    virAsprintf(&ret, "%s/libvirt/qemu", hugepage->mnt_dir);
 
     return ret;
 }
@@ -1896,7 +1854,7 @@ qemuGetDomainHugepagePath(const virDomainDef *def,
     char *ret = NULL;
 
     if (base && domPath)
-        ignore_value(virAsprintf(&ret, "%s/%s", base, domPath));
+        virAsprintf(&ret, "%s/%s", base, domPath);
     return ret;
 }
 
@@ -1944,11 +1902,11 @@ qemuGetDomainHupageMemPath(const virDomainDef *def,
 }
 
 
-int
+void
 qemuGetMemoryBackingBasePath(virQEMUDriverConfigPtr cfg,
                              char **path)
 {
-    return virAsprintf(path, "%s/libvirt/qemu", cfg->memoryBackingDir);
+    virAsprintf(path, "%s/libvirt/qemu", cfg->memoryBackingDir);
 }
 
 
@@ -1960,10 +1918,11 @@ qemuGetMemoryBackingDomainPath(const virDomainDef *def,
     g_autofree char *shortName = NULL;
     g_autofree char *base = NULL;
 
-    if (!(shortName = virDomainDefGetShortName(def)) ||
-        qemuGetMemoryBackingBasePath(cfg, &base) < 0 ||
-        virAsprintf(path, "%s/%s", base, shortName) < 0)
+    if (!(shortName = virDomainDefGetShortName(def)))
         return -1;
+
+    qemuGetMemoryBackingBasePath(cfg, &base);
+    virAsprintf(path, "%s/%s", base, shortName);
 
     return 0;
 }
@@ -1996,9 +1955,9 @@ qemuGetMemoryBackingPath(const virDomainDef *def,
         return -1;
     }
 
-    if (qemuGetMemoryBackingDomainPath(def, cfg, &domainPath) < 0 ||
-        virAsprintf(memPath, "%s/%s", domainPath, alias) < 0)
+    if (qemuGetMemoryBackingDomainPath(def, cfg, &domainPath) < 0)
         return -1;
 
+    virAsprintf(memPath, "%s/%s", domainPath, alias);
     return 0;
 }
