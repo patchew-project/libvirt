@@ -213,7 +213,7 @@ virPCIDriverDir(const char *driver)
 {
     char *buffer;
 
-    ignore_value(virAsprintf(&buffer, PCI_SYSFS "drivers/%s", driver));
+    virAsprintf(&buffer, PCI_SYSFS "drivers/%s", driver);
     return buffer;
 }
 
@@ -223,7 +223,7 @@ virPCIFile(const char *device, const char *file)
 {
     char *buffer;
 
-    ignore_value(virAsprintf(&buffer, PCI_SYSFS "devices/%s/%s", device, file));
+    virAsprintf(&buffer, PCI_SYSFS "devices/%s/%s", device, file);
     return buffer;
 }
 
@@ -604,8 +604,7 @@ virPCIDeviceDetectFunctionLevelReset(virPCIDevicePtr dev, int cfgfd)
      * device is a VF, we just assume FLR works
      */
 
-    if (virAsprintf(&path, PCI_SYSFS "devices/%s/physfn", dev->name) < 0)
-        return -1;
+    virAsprintf(&path, PCI_SYSFS "devices/%s/physfn", dev->name);
 
     found = virFileExists(path);
     if (found) {
@@ -1354,12 +1353,12 @@ virPCIDeviceAddressAsString(const virPCIDeviceAddress *addr)
 {
     char *str;
 
-    ignore_value(virAsprintf(&str,
-                             VIR_PCI_DEVICE_ADDRESS_FMT,
-                             addr->domain,
-                             addr->bus,
-                             addr->slot,
-                             addr->function));
+    virAsprintf(&str,
+                VIR_PCI_DEVICE_ADDRESS_FMT,
+                addr->domain,
+                addr->bus,
+                addr->slot,
+                addr->function);
     return str;
 }
 
@@ -1381,14 +1380,10 @@ virPCIDeviceNew(unsigned int domain,
     dev->address.slot = slot;
     dev->address.function = function;
 
-    if (virAsprintf(&dev->name,
-                    VIR_PCI_DEVICE_ADDRESS_FMT,
-                    domain, bus, slot, function) < 0)
-        return NULL;
+    virAsprintf(&dev->name, VIR_PCI_DEVICE_ADDRESS_FMT, domain, bus, slot,
+                function);
 
-    if (virAsprintf(&dev->path, PCI_SYSFS "devices/%s/config",
-                    dev->name) < 0)
-        return NULL;
+    virAsprintf(&dev->path, PCI_SYSFS "devices/%s/config", dev->name);
 
     if (!virFileExists(dev->path)) {
         virReportSystemError(errno,
@@ -1733,10 +1728,9 @@ int virPCIDeviceFileIterate(virPCIDevicePtr dev,
     struct dirent *ent;
     int direrr;
 
-    if (virAsprintf(&pcidir, "/sys/bus/pci/devices/" VIR_PCI_DEVICE_ADDRESS_FMT,
-                    dev->address.domain, dev->address.bus,
-                    dev->address.slot, dev->address.function) < 0)
-        goto cleanup;
+    virAsprintf(&pcidir, "/sys/bus/pci/devices/" VIR_PCI_DEVICE_ADDRESS_FMT,
+                dev->address.domain, dev->address.bus, dev->address.slot,
+                dev->address.function);
 
     if (virDirOpen(&dir, pcidir) < 0)
         goto cleanup;
@@ -1753,8 +1747,7 @@ int virPCIDeviceFileIterate(virPCIDevicePtr dev,
             STREQ(ent->d_name, "vendor") ||
             STREQ(ent->d_name, "device") ||
             STREQ(ent->d_name, "reset")) {
-            if (virAsprintf(&file, "%s/%s", pcidir, ent->d_name) < 0)
-                goto cleanup;
+            virAsprintf(&file, "%s/%s", pcidir, ent->d_name);
             if ((actor)(dev, file, opaque) < 0)
                 goto cleanup;
         }
@@ -1786,10 +1779,9 @@ virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
     struct dirent *ent;
     int direrr;
 
-    if (virAsprintf(&groupPath,
-                    PCI_SYSFS "devices/" VIR_PCI_DEVICE_ADDRESS_FMT "/iommu_group/devices",
-                    orig->domain, orig->bus, orig->slot, orig->function) < 0)
-        goto cleanup;
+    virAsprintf(&groupPath,
+                PCI_SYSFS "devices/" VIR_PCI_DEVICE_ADDRESS_FMT "/iommu_group/devices",
+                orig->domain, orig->bus, orig->slot, orig->function);
 
     if (virDirOpenQuiet(&groupDir, groupPath) < 0) {
         /* just process the original device, nothing more */
@@ -1936,10 +1928,8 @@ virPCIDeviceAddressGetIOMMUGroupNum(virPCIDeviceAddressPtr addr)
     const char *groupNumStr;
     unsigned int groupNum;
 
-    if (virAsprintf(&devName,
-                    VIR_PCI_DEVICE_ADDRESS_FMT,
-                    addr->domain, addr->bus, addr->slot, addr->function) < 0)
-        return -1;
+    virAsprintf(&devName, VIR_PCI_DEVICE_ADDRESS_FMT, addr->domain, addr->bus,
+                addr->slot, addr->function);
 
     if (!(devPath = virPCIFile(devName, "iommu_group")))
         return -1;
@@ -1989,9 +1979,7 @@ virPCIDeviceGetIOMMUGroupDev(virPCIDevicePtr dev)
                        dev->name, devPath);
         return NULL;
     }
-    if (virAsprintf(&groupDev, "/dev/vfio/%s",
-                    last_component(groupPath)) < 0)
-        return NULL;
+    virAsprintf(&groupDev, "/dev/vfio/%s", last_component(groupPath));
 
     return groupDev;
 }
@@ -2290,8 +2278,7 @@ virPCIGetVirtualFunctions(const char *sysfs_path,
     *num_virtual_functions = 0;
     *max_virtual_functions = 0;
 
-    if (virAsprintf(&totalvfs_file, "%s/sriov_totalvfs", sysfs_path) < 0)
-       goto error;
+    virAsprintf(&totalvfs_file, "%s/sriov_totalvfs", sysfs_path);
     if (virFileExists(totalvfs_file)) {
         char *end = NULL; /* so that terminating \n doesn't create error */
 
@@ -2308,8 +2295,8 @@ virPCIGetVirtualFunctions(const char *sysfs_path,
     do {
         g_autofree char *device_link = NULL;
         /* look for virtfn%d links until one isn't found */
-        if (virAsprintf(&device_link, "%s/virtfn%zu", sysfs_path, *num_virtual_functions) < 0)
-            goto error;
+        virAsprintf(&device_link, "%s/virtfn%zu", sysfs_path,
+                    *num_virtual_functions);
 
         if (!virFileExists(device_link))
             break;
@@ -2350,9 +2337,7 @@ virPCIIsVirtualFunction(const char *vf_sysfs_device_link)
 {
     g_autofree char *vf_sysfs_physfn_link = NULL;
 
-    if (virAsprintf(&vf_sysfs_physfn_link, "%s/physfn",
-                    vf_sysfs_device_link) < 0)
-        return -1;
+    virAsprintf(&vf_sysfs_physfn_link, "%s/physfn", vf_sysfs_device_link);
 
     return virFileExists(vf_sysfs_physfn_link);
 }
@@ -2410,9 +2395,8 @@ virPCIGetVirtualFunctionIndex(const char *pf_sysfs_device_link,
 int
 virPCIGetSysfsFile(char *virPCIDeviceName, char **pci_sysfs_device_link)
 {
-    if (virAsprintf(pci_sysfs_device_link, PCI_SYSFS "devices/%s",
-                    virPCIDeviceName) < 0)
-        return -1;
+    virAsprintf(pci_sysfs_device_link, PCI_SYSFS "devices/%s",
+                virPCIDeviceName);
     return 0;
 }
 
@@ -2420,11 +2404,9 @@ int
 virPCIDeviceAddressGetSysfsFile(virPCIDeviceAddressPtr addr,
                                 char **pci_sysfs_device_link)
 {
-    if (virAsprintf(pci_sysfs_device_link,
-                    PCI_SYSFS "devices/" VIR_PCI_DEVICE_ADDRESS_FMT,
-                    addr->domain, addr->bus,
-                    addr->slot, addr->function) < 0)
-        return -1;
+    virAsprintf(pci_sysfs_device_link,
+                PCI_SYSFS "devices/" VIR_PCI_DEVICE_ADDRESS_FMT, addr->domain,
+                addr->bus, addr->slot, addr->function);
     return 0;
 }
 
@@ -2609,8 +2591,7 @@ virPCIGetMdevTypes(const char *sysfspath,
     size_t ntypes = 0;
     size_t i;
 
-    if (virAsprintf(&types_path, "%s/mdev_supported_types", sysfspath) < 0)
-        return -1;
+    virAsprintf(&types_path, "%s/mdev_supported_types", sysfspath);
 
     if ((dirret = virDirOpenIfExists(&dir, types_path)) < 0)
         goto cleanup;
@@ -2623,8 +2604,7 @@ virPCIGetMdevTypes(const char *sysfspath,
     while ((dirret = virDirRead(dir, &entry, types_path)) > 0) {
         g_autofree char *tmppath = NULL;
         /* append the type id to the path and read the attributes from there */
-        if (virAsprintf(&tmppath, "%s/%s", types_path, entry->d_name) < 0)
-            goto cleanup;
+        virAsprintf(&tmppath, "%s/%s", types_path, entry->d_name);
 
         if (virMediatedDeviceTypeReadAttrs(tmppath, &mdev_type) < 0)
             goto cleanup;

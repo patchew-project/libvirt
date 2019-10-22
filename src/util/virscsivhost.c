@@ -256,9 +256,7 @@ virSCSIVHostDeviceNew(const char *name)
 
     dev->name = g_strdup(name);
 
-    if (virAsprintf(&dev->path, "%s/%s",
-                    SYSFS_VHOST_SCSI_DEVICES, name) < 0)
-        return NULL;
+    virAsprintf(&dev->path, "%s/%s", SYSFS_VHOST_SCSI_DEVICES, name);
 
     VIR_DEBUG("%s: initialized", dev->name);
 

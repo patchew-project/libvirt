@@ -206,8 +206,7 @@ virCgroupPartitionEscape(char **path)
     if ((rc = virCgroupPartitionNeedsEscaping(*path)) <= 0)
         return rc;
 
-    if (virAsprintf(&newstr, "_%s", *path) < 0)
-        return -1;
+    virAsprintf(&newstr, "_%s", *path);
 
     VIR_FREE(*path);
     *path = newstr;
@@ -291,9 +290,7 @@ virCgroupDetectPlacement(virCgroupPtr group,
     if (pid == -1) {
         procfile = g_strdup("/proc/self/cgroup");
     } else {
-        if (virAsprintf(&procfile, "/proc/%lld/cgroup",
-                        (long long) pid) < 0)
-            goto cleanup;
+        virAsprintf(&procfile, "/proc/%lld/cgroup", (long long)pid);
     }
 
     mapping = fopen(procfile, "r");
@@ -446,8 +443,7 @@ virCgroupGetBlockDevString(const char *path)
 
     /* Automatically append space after the string since all callers
      * use it anyway */
-    if (virAsprintf(&ret, "%d:%d ", major(sb.st_rdev), minor(sb.st_rdev)) < 0)
-        return NULL;
+    virAsprintf(&ret, "%d:%d ", major(sb.st_rdev), minor(sb.st_rdev));
 
     return ret;
 }
@@ -563,8 +559,7 @@ virCgroupSetValueU64(virCgroupPtr group,
 {
     g_autofree char *strval = NULL;
 
-    if (virAsprintf(&strval, "%llu", value) < 0)
-        return -1;
+    virAsprintf(&strval, "%llu", value);
 
     return virCgroupSetValueStr(group, controller, key, strval);
 }
@@ -578,8 +573,7 @@ virCgroupSetValueI64(virCgroupPtr group,
 {
     g_autofree char *strval = NULL;
 
-    if (virAsprintf(&strval, "%lld", value) < 0)
-        return -1;
+    virAsprintf(&strval, "%lld", value);
 
     return virCgroupSetValueStr(group, controller, key, strval);
 }
@@ -682,11 +676,8 @@ virCgroupNew(pid_t pid,
     if (path[0] == '/' || !parent) {
         (*group)->path = g_strdup(path);
     } else {
-        if (virAsprintf(&(*group)->path, "%s%s%s",
-                        parent->path,
-                        STREQ(parent->path, "") ? "" : "/",
-                        path) < 0)
-            goto error;
+        virAsprintf(&(*group)->path, "%s%s%s", parent->path,
+                    STREQ(parent->path, "") ? "" : "/", path);
     }
 
     if (virCgroupDetect(*group, pid, controllers, path, parent) < 0)
@@ -918,9 +909,7 @@ virCgroupNewDomainPartition(virCgroupPtr partition,
 {
     g_autofree char *grpname = NULL;
 
-    if (virAsprintf(&grpname, "%s.libvirt-%s",
-                    name, driver) < 0)
-        return -1;
+    virAsprintf(&grpname, "%s.libvirt-%s", name, driver);
 
     if (virCgroupPartitionEscape(&grpname) < 0)
         return -1;
@@ -971,15 +960,13 @@ virCgroupNewThread(virCgroupPtr domain,
 
     switch (nameval) {
     case VIR_CGROUP_THREAD_VCPU:
-        if (virAsprintf(&name, "vcpu%d", id) < 0)
-            return -1;
+        virAsprintf(&name, "vcpu%d", id);
         break;
     case VIR_CGROUP_THREAD_EMULATOR:
         name = g_strdup("emulator");
         break;
     case VIR_CGROUP_THREAD_IOTHREAD:
-        if (virAsprintf(&name, "iothread%d", id) < 0)
-            return -1;
+        virAsprintf(&name, "iothread%d", id);
         break;
     case VIR_CGROUP_THREAD_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -2356,10 +2343,8 @@ virCgroupRemoveRecursively(char *grppath)
 
         if (ent->d_type != DT_DIR) continue;
 
-        if (virAsprintf(&path, "%s/%s", grppath, ent->d_name) == -1) {
-            rc = -ENOMEM;
-            break;
-        }
+        virAsprintf(&path, "%s/%s", grppath, ent->d_name);
+
         rc = virCgroupRemoveRecursively(path);
         if (rc != 0)
             break;

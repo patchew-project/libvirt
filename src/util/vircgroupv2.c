@@ -75,8 +75,7 @@ virCgroupV2Available(void)
         /* Systemd uses cgroup v2 for process tracking but no controller is
          * available. We should consider this configuration as cgroup v2 is
          * not available. */
-        if (virAsprintf(&contFile, "%s/cgroup.controllers", entry.mnt_dir) < 0)
-            goto cleanup;
+        virAsprintf(&contFile, "%s/cgroup.controllers", entry.mnt_dir);
 
         if (virFileReadAll(contFile, 1024 * 1024, &contStr) < 0)
             goto cleanup;
@@ -104,10 +103,7 @@ virCgroupV2ValidateMachineGroup(virCgroupPtr group,
     g_autofree char *scopename = NULL;
     char *tmp;
 
-    if (virAsprintf(&partmachinename, "%s.libvirt-%s", machinename,
-                    drivername) < 0) {
-        return false;
-    }
+    virAsprintf(&partmachinename, "%s.libvirt-%s", machinename, drivername);
 
     if (virCgroupPartitionEscape(&partmachinename) < 0)
         return false;
@@ -166,12 +162,10 @@ virCgroupV2CopyPlacement(virCgroupPtr group,
          * parent == "/libvirt.service" + path == "" => "/libvirt.service"
          * parent == "/libvirt.service" + path == "foo" => "/libvirt.service/foo"
          */
-        if (virAsprintf(&group->unified.placement, "%s%s%s",
-                        parent->unified.placement,
-                        (STREQ(parent->unified.placement, "/") ||
-                         STREQ(path, "") ? "" : "/"),
-                        path) < 0)
-            return -1;
+        virAsprintf(&group->unified.placement, "%s%s%s",
+                    parent->unified.placement,
+                    (STREQ(parent->unified.placement, "/") || STREQ(path, "") ? "" : "/"),
+                    path);
     }
 
     return 0;
@@ -215,12 +209,8 @@ virCgroupV2DetectPlacement(virCgroupPtr group,
      * selfpath == "/libvirt.service" + path == "" -> "/libvirt.service"
      * selfpath == "/libvirt.service" + path == "foo" -> "/libvirt.service/foo"
      */
-    if (virAsprintf(&group->unified.placement,
-                    "%s%s%s", selfpath,
-                    (STREQ(selfpath, "/") ||
-                     STREQ(path, "") ? "" : "/"),
-                    path) < 0)
-        return -1;
+    virAsprintf(&group->unified.placement, "%s%s%s", selfpath,
+                (STREQ(selfpath, "/") || STREQ(path, "") ? "" : "/"), path);
 
     return 0;
 }
@@ -262,15 +252,13 @@ virCgroupV2ParseControllersFile(virCgroupPtr group,
     char **tmp;
 
     if (parent) {
-        if (virAsprintf(&contFile, "%s%s/cgroup.subtree_control",
-                        parent->unified.mountPoint,
-                        NULLSTR_EMPTY(parent->unified.placement)) < 0)
-            return -1;
+        virAsprintf(&contFile, "%s%s/cgroup.subtree_control",
+                    parent->unified.mountPoint,
+                    NULLSTR_EMPTY(parent->unified.placement));
     } else {
-        if (virAsprintf(&contFile, "%s%s/cgroup.controllers",
-                        group->unified.mountPoint,
-                        NULLSTR_EMPTY(group->unified.placement)) < 0)
-            return -1;
+        virAsprintf(&contFile, "%s%s/cgroup.controllers",
+                    group->unified.mountPoint,
+                    NULLSTR_EMPTY(group->unified.placement));
     }
 
     rc = virFileReadAll(contFile, 1024 * 1024, &contStr);
@@ -357,11 +345,8 @@ virCgroupV2PathOfController(virCgroupPtr group,
         return -1;
     }
 
-    if (virAsprintf(path, "%s%s/%s",
-                    group->unified.mountPoint,
-                    group->unified.placement,
-                    NULLSTR_EMPTY(key)) < 0)
-        return -1;
+    virAsprintf(path, "%s%s/%s", group->unified.mountPoint,
+                group->unified.placement, NULLSTR_EMPTY(key));
 
     return 0;
 }
@@ -383,10 +368,7 @@ virCgroupV2EnableController(virCgroupPtr group,
     g_autofree char *val = NULL;
     g_autofree char *path = NULL;
 
-    if (virAsprintf(&val, "+%s",
-                    virCgroupV2ControllerTypeToString(controller)) < 0) {
-        return -1;
-    }
+    virAsprintf(&val, "+%s", virCgroupV2ControllerTypeToString(controller));
 
     if (virCgroupPathOfController(parent, controller,
                                   "cgroup.subtree_control", &path) < 0) {
@@ -568,11 +550,9 @@ virCgroupV2BindMount(virCgroupPtr group,
         return -1;
     }
 
-    if (virAsprintf(&opts, "mode=755,size=65536%s", mountopts) < 0)
-        return -1;
+    virAsprintf(&opts, "mode=755,size=65536%s", mountopts);
 
-    if (virAsprintf(&src, "%s%s", oldroot, group->unified.mountPoint) < 0)
-        return -1;
+    virAsprintf(&src, "%s%s", oldroot, group->unified.mountPoint);
 
     if (mount(src, group->unified.mountPoint, "none", MS_BIND, NULL) < 0) {
         virReportSystemError(errno, _("Failed to bind cgroup '%s' on '%s'"),
@@ -592,10 +572,8 @@ virCgroupV2SetOwner(virCgroupPtr cgroup,
 {
     g_autofree char *base = NULL;
 
-    if (virAsprintf(&base, "%s%s", cgroup->unified.mountPoint,
-                    cgroup->unified.placement) < 0) {
-        return -1;
-    }
+    virAsprintf(&base, "%s%s", cgroup->unified.mountPoint,
+                cgroup->unified.placement);
 
     if (virFileChownFiles(base, uid, gid) < 0)
         return -1;
@@ -639,8 +617,7 @@ virCgroupV2SetBlkioWeight(virCgroupPtr group,
         return -1;
     }
 
-    if (virAsprintf(&value, format, weight) < 0)
-        return -1;
+    virAsprintf(&value, format, weight);
 
     return virCgroupSetValueRaw(path, value);
 }
@@ -833,8 +810,7 @@ virCgroupV2SetBlkioDeviceWeight(virCgroupPtr group,
     if (!(blkstr = virCgroupGetBlockDevString(devPath)))
         return -1;
 
-    if (virAsprintf(&str, "%s%d", blkstr, weight) < 0)
-        return -1;
+    virAsprintf(&str, "%s%d", blkstr, weight);
 
     if (virCgroupV2PathOfController(group, VIR_CGROUP_CONTROLLER_BLKIO,
                                     "io.weight", &path) < 0) {
@@ -903,11 +879,9 @@ virCgroupV2SetBlkioDeviceReadIops(virCgroupPtr group,
         return -1;
 
     if (riops == 0) {
-        if (virAsprintf(&str, "%sriops=max", blkstr) < 0)
-            return -1;
+        virAsprintf(&str, "%sriops=max", blkstr);
     } else {
-        if (virAsprintf(&str, "%sriops=%u", blkstr, riops) < 0)
-            return -1;
+        virAsprintf(&str, "%sriops=%u", blkstr, riops);
     }
 
     return virCgroupSetValueStr(group,
@@ -974,11 +948,9 @@ virCgroupV2SetBlkioDeviceWriteIops(virCgroupPtr group,
         return -1;
 
     if (wiops == 0) {
-        if (virAsprintf(&str, "%swiops=max", blkstr) < 0)
-            return -1;
+        virAsprintf(&str, "%swiops=max", blkstr);
     } else {
-        if (virAsprintf(&str, "%swiops=%u", blkstr, wiops) < 0)
-            return -1;
+        virAsprintf(&str, "%swiops=%u", blkstr, wiops);
     }
 
     return virCgroupSetValueStr(group,
@@ -1045,11 +1017,9 @@ virCgroupV2SetBlkioDeviceReadBps(virCgroupPtr group,
         return -1;
 
     if (rbps == 0) {
-        if (virAsprintf(&str, "%srbps=max", blkstr) < 0)
-            return -1;
+        virAsprintf(&str, "%srbps=max", blkstr);
     } else {
-        if (virAsprintf(&str, "%srbps=%llu", blkstr, rbps) < 0)
-            return -1;
+        virAsprintf(&str, "%srbps=%llu", blkstr, rbps);
     }
 
     return virCgroupSetValueStr(group,
@@ -1116,11 +1086,9 @@ virCgroupV2SetBlkioDeviceWriteBps(virCgroupPtr group,
         return -1;
 
     if (wbps == 0) {
-        if (virAsprintf(&str, "%swbps=max", blkstr) < 0)
-            return -1;
+        virAsprintf(&str, "%swbps=max", blkstr);
     } else {
-        if (virAsprintf(&str, "%swbps=%llu", blkstr, wbps) < 0)
-            return -1;
+        virAsprintf(&str, "%swbps=%llu", blkstr, wbps);
     }
 
     return virCgroupSetValueStr(group,
@@ -1520,8 +1488,7 @@ virCgroupV2SetCpuCfsPeriod(virCgroupPtr group,
     }
     *tmp = '\0';
 
-    if (virAsprintf(&value, "%s %llu", str, cfs_period) < 0)
-        return -1;
+    virAsprintf(&value, "%s %llu", str, cfs_period);
 
     return virCgroupSetValueStr(group, VIR_CGROUP_CONTROLLER_CPU,
                                 "cpu.max", value);

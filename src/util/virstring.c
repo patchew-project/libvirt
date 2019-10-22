@@ -709,18 +709,15 @@ int
 virDoubleToStr(char **strp, double number)
 {
     virLocale oldlocale;
-    int rc = -1;
 
     if (virLocaleSetRaw(&oldlocale) < 0)
         return -1;
 
-    rc = virAsprintf(strp, "%lf", number);
+    virAsprintf(strp, "%lf", number);
 
     virLocaleRevert(&oldlocale);
     virLocaleFixupRadix(strp);
 
-    if (rc < 0)
-        return -1;
     return 0;
 }
 

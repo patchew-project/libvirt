@@ -151,19 +151,13 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
     virUUIDFormat(ovsport->interfaceID, ifuuidstr);
     virUUIDFormat(vmuuid, vmuuidstr);
 
-    if (virAsprintf(&attachedmac_ex_id, "external-ids:attached-mac=\"%s\"",
-                    macaddrstr) < 0)
-        return -1;
-    if (virAsprintf(&ifaceid_ex_id, "external-ids:iface-id=\"%s\"",
-                    ifuuidstr) < 0)
-        return -1;
-    if (virAsprintf(&vmid_ex_id, "external-ids:vm-id=\"%s\"",
-                    vmuuidstr) < 0)
-        return -1;
+    virAsprintf(&attachedmac_ex_id, "external-ids:attached-mac=\"%s\"",
+                macaddrstr);
+    virAsprintf(&ifaceid_ex_id, "external-ids:iface-id=\"%s\"", ifuuidstr);
+    virAsprintf(&vmid_ex_id, "external-ids:vm-id=\"%s\"", vmuuidstr);
     if (ovsport->profileID[0] != '\0') {
-        if (virAsprintf(&profile_ex_id, "external-ids:port-profile=\"%s\"",
-                        ovsport->profileID) < 0)
-            return -1;
+        virAsprintf(&profile_ex_id, "external-ids:port-profile=\"%s\"",
+                    ovsport->profileID);
     }
 
     cmd = virCommandNew(OVSVSCTL);

@@ -180,8 +180,7 @@ addnhostsWrite(const char *path,
      * for runtime addition.
      */
 
-    if (virAsprintf(&tmp, "%s.new", path) < 0)
-        return -ENOMEM;
+    virAsprintf(&tmp, "%s.new", path);
 
     if (!(f = fopen(tmp, "w"))) {
         istmp = false;
@@ -312,30 +311,24 @@ hostsfileAdd(dnsmasqHostsfile *hostsfile,
     /* the first test determines if it is a dhcpv6 host */
     if (ipv6) {
         if (name && id) {
-            if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host,
-                            "id:%s,%s,[%s]", id, name, ipstr) < 0)
-                goto error;
+            virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host,
+                        "id:%s,%s,[%s]", id, name, ipstr);
         } else if (name && !id) {
-            if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host,
-                            "%s,[%s]", name, ipstr) < 0)
-                goto error;
+            virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,[%s]",
+                        name, ipstr);
         } else if (!name && id) {
-            if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host,
-                            "id:%s,[%s]", id, ipstr) < 0)
-                goto error;
+            virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host,
+                        "id:%s,[%s]", id, ipstr);
         }
     } else if (name && mac) {
-        if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s,%s",
-                        mac, ipstr, name) < 0)
-            goto error;
+        virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s,%s",
+                    mac, ipstr, name);
     } else if (name && !mac) {
-        if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s",
-                        name, ipstr) < 0)
-            goto error;
+        virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s", name,
+                    ipstr);
     } else {
-        if (virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s",
-                        mac, ipstr) < 0)
-            goto error;
+        virAsprintf(&hostsfile->hosts[hostsfile->nhosts].host, "%s,%s", mac,
+                    ipstr);
     }
     VIR_FREE(ipstr);
 
@@ -393,8 +386,7 @@ hostsfileWrite(const char *path,
      * for runtime addition.
      */
 
-    if (virAsprintf(&tmp, "%s.new", path) < 0)
-        return -ENOMEM;
+    virAsprintf(&tmp, "%s.new", path);
 
     if (!(f = fopen(tmp, "w"))) {
         istmp = false;
@@ -758,8 +750,7 @@ dnsmasqCapsRefreshInternal(dnsmasqCapsPtr caps, bool force)
     if (virCommandRun(cmd, NULL) < 0)
         goto cleanup;
 
-    if (virAsprintf(&complete, "%s\n%s", version, help) < 0)
-        goto cleanup;
+    virAsprintf(&complete, "%s\n%s", version, help);
 
     ret = dnsmasqCapsSetFromBuffer(caps, complete);
 
