@@ -103,7 +103,7 @@ virLockManagerSanlockError(int err,
 #if HAVE_SANLOCK_STRERROR
         *message = g_strdup(sanlock_strerror(err));
 #else
-        virAsprintf(message, _("sanlock error %d"), err);
+        message = g_strdup_printf(_("sanlock error %d"), err);
 #endif
         return true;
     } else {
@@ -211,8 +211,8 @@ virLockManagerSanlockSetupLockspace(virLockManagerSanlockDriverPtr driver)
     char *dir = NULL;
     int retries = LOCKSPACE_RETRIES;
 
-    virAsprintf(&path, "%s/%s", driver->autoDiskLeasePath,
-                VIR_LOCK_MANAGER_SANLOCK_AUTO_DISK_LOCKSPACE);
+    path = g_strdup_printf("%s/%s", driver->autoDiskLeasePath,
+                           VIR_LOCK_MANAGER_SANLOCK_AUTO_DISK_LOCKSPACE);
 
     if (virStrcpyStatic(ls.name,
                         VIR_LOCK_MANAGER_SANLOCK_AUTO_DISK_LOCKSPACE) < 0) {
@@ -643,7 +643,7 @@ virLockManagerSanlockAddDisk(virLockManagerSanlockDriverPtr driver,
         goto cleanup;
     }
 
-    virAsprintf(&path, "%s/%s", driver->autoDiskLeasePath, res->name);
+    path = g_strdup_printf("%s/%s", driver->autoDiskLeasePath, res->name);
     if (virStrcpy(res->disks[0].path, path, SANLK_PATH_LEN) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Lease path '%s' exceeds %d characters"),

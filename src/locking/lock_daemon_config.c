@@ -46,7 +46,7 @@ virLockDaemonConfigFilePath(bool privileged, char **configfile)
         if (!(configdir = virGetUserConfigDirectory()))
             goto error;
 
-        virAsprintf(configfile, "%s/virtlockd.conf", configdir);
+        *configfile = g_strdup_printf("%s/virtlockd.conf", configdir);
         VIR_FREE(configdir);
     }
 

@@ -127,7 +127,7 @@ static char *virLockManagerLockDaemonPath(bool privileged)
         if (!(rundir = virGetUserRuntimeDirectory()))
             return NULL;
 
-        virAsprintf(&path, "%s/virtlockd-sock", rundir);
+        path = g_strdup_printf("%s/virtlockd-sock", rundir);
 
         VIR_FREE(rundir);
     }
@@ -574,7 +574,7 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
                            _("Missing path or lockspace for lease resource"));
             goto cleanup;
         }
-        virAsprintf(&newLockspace, "%s/%s", path, lockspace);
+        newLockspace = g_strdup_printf("%s/%s", path, lockspace);
         newName = g_strdup(name);
 
     }   break;

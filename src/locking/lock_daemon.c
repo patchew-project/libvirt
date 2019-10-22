@@ -464,8 +464,8 @@ virLockDaemonUnixSocketPaths(bool privileged,
         }
         umask(old_umask);
 
-        virAsprintf(sockfile, "%s/virtlockd-sock", rundir);
-        virAsprintf(adminSockfile, "%s/virtlockd-admin-sock", rundir);
+        *sockfile = g_strdup_printf("%s/virtlockd-sock", rundir);
+        *adminSockfile = g_strdup_printf("%s/virtlockd-admin-sock", rundir);
 
         VIR_FREE(rundir);
     }
@@ -841,7 +841,7 @@ virLockDaemonExecRestartStatePath(bool privileged,
         }
         umask(old_umask);
 
-        virAsprintf(state_file, "%s/virtlockd-restart-exec.json", rundir);
+        *state_file = g_strdup_printf("%s/virtlockd-restart-exec.json", rundir);
 
         VIR_FREE(rundir);
     }
@@ -858,7 +858,7 @@ virLockDaemonGetExecRestartMagic(void)
 {
     char *ret;
 
-    virAsprintf(&ret, "%lld", (long long int)getpid());
+    ret = g_strdup_printf("%lld", (long long int)getpid());
     return ret;
 }
 

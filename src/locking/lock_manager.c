@@ -131,7 +131,7 @@ virLockManagerPluginPtr virLockManagerPluginNew(const char *name,
     VIR_DEBUG("name=%s driverName=%s configDir=%s flags=0x%x",
               name, driverName, configDir, flags);
 
-    virAsprintf(&configFile, "%s/%s-%s.conf", configDir, driverName, name);
+    configFile = g_strdup_printf("%s/%s-%s.conf", configDir, driverName, name);
 
     if (STREQ(name, "nop")) {
         driver = &virLockDriverNop;
