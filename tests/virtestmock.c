@@ -110,7 +110,7 @@ checkPath(const char *path,
     char *crippledPath = NULL;
 
     if (path[0] != '/')
-        virAsprintfQuiet(&relPath, "./%s", path);
+        virAsprintf(&relPath, "./%s", path);
 
     /* Le sigh. virFileCanonicalizePath() expects @path to exist, otherwise
      * it will return an error. So if we are called over an non-existent

@@ -1488,7 +1488,7 @@ virLastErrorPrefixMessage(const char *fmt, ...)
     if (virVasprintfQuiet(&fmtmsg, fmt, args) < 0)
         goto cleanup;
 
-    virAsprintfQuiet(&newmsg, "%s: %s", fmtmsg, err->message);
+    virAsprintf(&newmsg, "%s: %s", fmtmsg, err->message);
 
     VIR_FREE(err->message);
     err->message = g_steal_pointer(&newmsg);

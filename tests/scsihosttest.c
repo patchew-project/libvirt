@@ -72,10 +72,10 @@ create_scsihost(const char *fakesysfsdir, const char *devicepath,
     int ret = -1;
     int fd = -1;
 
-    virAsprintfQuiet(&unique_id_path, "%s/devices/pci0000:00/%s/unique_id",
-                     fakesysfsdir, devicepath);
-    virAsprintfQuiet(&link_path, "%s/class/scsi_host/%s",
-                     fakesysfsdir, hostname);
+    virAsprintf(&unique_id_path, "%s/devices/pci0000:00/%s/unique_id",
+                fakesysfsdir, devicepath);
+    virAsprintf(&link_path, "%s/class/scsi_host/%s",
+                fakesysfsdir, hostname);
 
     /* Rather than create path & file, temporarily snip off the file to
      * create the path
@@ -255,14 +255,14 @@ mymain(void)
         goto cleanup;
     }
 
-    virAsprintfQuiet(&fakesysfsdir, "%s/sys", fakerootdir);
+    virAsprintf(&fakesysfsdir, "%s/sys", fakerootdir);
 
     if (init_scsihost_sysfs(fakesysfsdir) < 0) {
         fprintf(stderr, "Failed to create fakesysfs='%s'\n", fakesysfsdir);
         goto cleanup;
     }
 
-    virAsprintfQuiet(&scsihost_class_path, "%s/class/scsi_host", fakesysfsdir);
+    virAsprintf(&scsihost_class_path, "%s/class/scsi_host", fakesysfsdir);
     VIR_DEBUG("Reading from '%s'", scsihost_class_path);
 
     if (virTestRun("testVirReadSCSIUniqueId",

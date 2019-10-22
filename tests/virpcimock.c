@@ -186,7 +186,7 @@ make_file(const char *path,
     if (value && len == -1)
         len = strlen(value);
 
-    virAsprintfQuiet(&filepath, "%s/%s", path, name);
+    virAsprintf(&filepath, "%s/%s", path, name);
 
     if ((fd = real_open(filepath, O_CREAT|O_WRONLY, 0666)) < 0)
         ABORT("Unable to open: %s", filepath);
@@ -203,7 +203,7 @@ make_dir(const char *path,
 {
     g_autofree char *dirpath = NULL;
 
-    virAsprintfQuiet(&dirpath, "%s/%s", path, name);
+    virAsprintf(&dirpath, "%s/%s", path, name);
 
     if (virFileMakePath(dirpath) < 0)
         ABORT("Unable to create: %s", dirpath);
@@ -216,7 +216,7 @@ make_symlink(const char *path,
 {
     g_autofree char *filepath = NULL;
 
-    virAsprintfQuiet(&filepath, "%s/%s", path, name);
+    virAsprintf(&filepath, "%s/%s", path, name);
 
     if (symlink(target, filepath) < 0)
         ABORT("Unable to create symlink filepath -> target");
@@ -232,7 +232,7 @@ pci_read_file(const char *path,
     int fd = -1;
     g_autofree char *newpath = NULL;
 
-    virAsprintfQuiet(&newpath, "%s/%s", fakerootdir, path);
+    virAsprintf(&newpath, "%s/%s", fakerootdir, path);
 
     if ((fd = real_open(newpath, O_RDWR)) < 0)
         goto cleanup;
@@ -269,13 +269,13 @@ getrealpath(char **newpath,
         init_env();
 
     if (STRPREFIX(path, SYSFS_PCI_PREFIX)) {
-        virAsprintfQuiet(newpath, "%s/sys/bus/pci/%s",
-                         fakerootdir,
-                         path + strlen(SYSFS_PCI_PREFIX));
+        virAsprintf(newpath, "%s/sys/bus/pci/%s",
+                    fakerootdir,
+                    path + strlen(SYSFS_PCI_PREFIX));
     } else if (pathPrefixIsMocked(path)) {
-        virAsprintfQuiet(newpath, "%s/%s",
-                         fakerootdir,
-                         path);
+        virAsprintf(newpath, "%s/%s",
+                    fakerootdir,
+                    path);
     } else {
         *newpath = g_strdup(path);
     }
@@ -356,9 +356,9 @@ pci_address_format(struct pciDeviceAddress const *addr)
 {
     char *ret;
 
-    virAsprintfQuiet(&ret, ADDR_STR_FMT,
-                     addr->domain, addr->bus,
-                     addr->device, addr->function);
+    virAsprintf(&ret, ADDR_STR_FMT,
+                addr->domain, addr->bus,
+                addr->device, addr->function);
     return ret;
 }
 
@@ -393,13 +393,13 @@ pci_device_get_path(const struct pciDevice *dev,
      * and then they are just symlinked to /sys/bus/pci/devices/
      */
     if (file) {
-        virAsprintfQuiet(&ret, "%s/sys/devices/pci%04x:%02x/%s/%s",
-                         prefix, dev->addr.domain, dev->addr.bus,
-                         devid, file);
+        virAsprintf(&ret, "%s/sys/devices/pci%04x:%02x/%s/%s",
+                    prefix, dev->addr.domain, dev->addr.bus,
+                    devid, file);
     } else {
-        virAsprintfQuiet(&ret, "%s/sys/devices/pci%04x:%02x/%s",
-                         prefix, dev->addr.domain, dev->addr.bus,
-                         devid);
+        virAsprintf(&ret, "%s/sys/devices/pci%04x:%02x/%s",
+                    prefix, dev->addr.domain, dev->addr.bus,
+                    devid);
     }
 
     return ret;
@@ -415,8 +415,8 @@ pci_device_create_iommu(const struct pciDevice *dev,
     char tmp[256];
     size_t i;
 
-    virAsprintfQuiet(&iommuPath, "%s/sys/kernel/iommu_groups/%d/devices/",
-                     fakerootdir, dev->iommuGroup);
+    virAsprintf(&iommuPath, "%s/sys/kernel/iommu_groups/%d/devices/",
+                fakerootdir, dev->iommuGroup);
 
     if (virFileMakePath(iommuPath) < 0)
         ABORT("Unable to create: %s", iommuPath);
@@ -482,7 +482,7 @@ pci_device_new_from_stub(const struct pciDevice *data)
     if (VIR_ALLOC_QUIET(dev) < 0)
         ABORT_OOM();
 
-    virAsprintfQuiet(&configSrc, "%s/virpcitestdata/%s.config", abs_srcdir, id);
+    virAsprintf(&configSrc, "%s/virpcitestdata/%s.config", abs_srcdir, id);
 
     memcpy(dev, data, sizeof(*dev));
 
@@ -544,7 +544,7 @@ pci_device_new_from_stub(const struct pciDevice *data)
         ABORT("@tmp overflow");
     }
 
-    virAsprintfQuiet(&devsympath, "%s" SYSFS_PCI_PREFIX "devices", fakerootdir);
+    virAsprintf(&devsympath, "%s" SYSFS_PCI_PREFIX "devices", fakerootdir);
 
     make_symlink(devsympath, devid, tmp);
 
@@ -625,9 +625,9 @@ pci_vfio_release_iommu(struct pciDevice *device)
         pciIommuGroups[i]->nDevicesBoundToVFIO--;
 
         if (!pciIommuGroups[i]->nDevicesBoundToVFIO) {
-            virAsprintfQuiet(&vfiopath, "%s/dev/vfio/%d",
-                             fakerootdir,
-                             device->iommuGroup);
+            virAsprintf(&vfiopath, "%s/dev/vfio/%d",
+                        fakerootdir,
+                        device->iommuGroup);
 
             if (unlink(vfiopath) < 0)
                 return -1;
@@ -651,9 +651,9 @@ pci_vfio_lock_iommu(struct pciDevice *device)
             continue;
 
         if (pciIommuGroups[i]->nDevicesBoundToVFIO == 0) {
-            virAsprintfQuiet(&vfiopath, "%s/dev/vfio/%d",
-                             fakerootdir,
-                             device->iommuGroup);
+            virAsprintf(&vfiopath, "%s/dev/vfio/%d",
+                        fakerootdir,
+                        device->iommuGroup);
             if ((fd = real_open(vfiopath, O_CREAT)) < 0)
                 goto cleanup;
 
@@ -685,11 +685,11 @@ pci_driver_get_path(const struct pciDriver *driver,
         prefix = fakerootdir;
 
     if (file) {
-        virAsprintfQuiet(&ret, "%s" SYSFS_PCI_PREFIX "drivers/%s/%s",
-                         prefix, driver->name, file);
+        virAsprintf(&ret, "%s" SYSFS_PCI_PREFIX "drivers/%s/%s",
+                    prefix, driver->name, file);
     } else {
-        virAsprintfQuiet(&ret, "%s" SYSFS_PCI_PREFIX "drivers/%s",
-                         prefix, driver->name);
+        virAsprintf(&ret, "%s" SYSFS_PCI_PREFIX "drivers/%s",
+                    prefix, driver->name);
     }
 
     return ret;
@@ -971,7 +971,7 @@ init_env(void)
     if (!(fakerootdir = getenv("LIBVIRT_FAKE_ROOT_DIR")))
         ABORT("Missing LIBVIRT_FAKE_ROOT_DIR env variable\n");
 
-    virAsprintfQuiet(&tmp, "%s%s", fakerootdir, SYSFS_PCI_PREFIX);
+    virAsprintf(&tmp, "%s%s", fakerootdir, SYSFS_PCI_PREFIX);
 
     if (virFileMakePath(tmp) < 0)
         ABORT("Unable to create: %s", tmp);
@@ -982,7 +982,7 @@ init_env(void)
 
     /* Create /dev/vfio/ dir and /dev/vfio/vfio file */
     VIR_FREE(tmp);
-    virAsprintfQuiet(&tmp, "%s/dev/vfio", fakerootdir);
+    virAsprintf(&tmp, "%s/dev/vfio", fakerootdir);
 
     if (virFileMakePath(tmp) < 0)
         ABORT("Unable to create: %s", tmp);

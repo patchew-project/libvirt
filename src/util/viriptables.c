@@ -918,10 +918,10 @@ iptablesForwardMasquerade(virFirewallPtr fw,
     if (addrStartStr && addrStartStr[0]) {
         if (addrEndStr && addrEndStr[0]) {
             virAsprintf(&natRangeStr, "%s-%s%s", addrStartStr, addrEndStr,
-                            portRangeStr ? portRangeStr : "");
+                        portRangeStr ? portRangeStr : "");
         } else {
             virAsprintf(&natRangeStr, "%s%s", addrStartStr,
-                            portRangeStr ? portRangeStr : "");
+                        portRangeStr ? portRangeStr : "");
         }
 
         virFirewallRuleAddArgList(fw, rule,

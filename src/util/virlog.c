@@ -453,13 +453,13 @@ virLogFormatString(char **msg,
      * to just grep for it to find the right place.
      */
     if ((funcname != NULL)) {
-        virAsprintfQuiet(msg, "%llu: %s : %s:%d : %s\n",
-                         virThreadSelfID(), virLogPriorityString(priority),
-                         funcname, linenr, str);
+        virAsprintf(msg, "%llu: %s : %s:%d : %s\n",
+                    virThreadSelfID(), virLogPriorityString(priority),
+                    funcname, linenr, str);
     } else {
-        virAsprintfQuiet(msg, "%llu: %s : %s\n",
-                         virThreadSelfID(), virLogPriorityString(priority),
-                         str);
+        virAsprintf(msg, "%llu: %s : %s\n",
+                    virThreadSelfID(), virLogPriorityString(priority),
+                    str);
     }
 }
 
@@ -481,7 +481,7 @@ virLogHostnameString(char **rawmsg,
 {
     char *hoststr;
 
-    virAsprintfQuiet(&hoststr, "hostname: %s", virLogHostname);
+    virAsprintf(&hoststr, "hostname: %s", virLogHostname);
 
     virLogFormatString(msg, 0, NULL, VIR_LOG_INFO, hoststr);
     *rawmsg = hoststr;
@@ -689,7 +689,7 @@ virLogOutputToFd(virLogSourcePtr source G_GNUC_UNUSED,
     if (fd < 0)
         return;
 
-    virAsprintfQuiet(&msg, "%s: %s", timestamp, str);
+    virAsprintf(&msg, "%s: %s", timestamp, str);
     ignore_value(safewrite(fd, msg, strlen(msg)));
     VIR_FREE(msg);
 }

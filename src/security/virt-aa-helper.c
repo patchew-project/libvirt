@@ -157,7 +157,7 @@ parserCommand(const char *profile_name, const char cmd)
 
     snprintf(flag, 3, "-%c", cmd);
 
-    virAsprintfQuiet(&profile, "%s/%s", APPARMOR_DIR "/libvirt", profile_name);
+    virAsprintf(&profile, "%s/%s", APPARMOR_DIR "/libvirt", profile_name);
 
     if (!virFileExists(profile)) {
         vah_error(NULL, 0, _("profile does not exist"));
@@ -214,9 +214,9 @@ update_include_file(const char *include_file, const char *included_files,
     }
 
     if (append && virFileExists(include_file))
-        virAsprintfQuiet(&pcontent, "%s%s", existing, included_files);
+        virAsprintf(&pcontent, "%s%s", existing, included_files);
     else
-        virAsprintfQuiet(&pcontent, "%s%s", warning, included_files);
+        virAsprintf(&pcontent, "%s%s", warning, included_files);
 
     plen = strlen(pcontent);
     if (plen > MAX_FILE_LEN) {
@@ -290,8 +290,7 @@ create_profile(const char *profile, const char *profile_name,
         driver_name = virDomainVirtTypeToString(virtType);
     }
 
-    virAsprintfQuiet(&template, "%s/TEMPLATE.%s", APPARMOR_DIR "/libvirt",
-                     driver_name);
+    virAsprintf(&template, "%s/TEMPLATE.%s", APPARMOR_DIR "/libvirt", driver_name);
 
     if (!virFileExists(template)) {
         vah_error(NULL, 0, _("template does not exist"));
@@ -314,11 +313,11 @@ create_profile(const char *profile, const char *profile_name,
     }
 
     /* '\nprofile <profile_name>\0' */
-    virAsprintfQuiet(&replace_name, "\nprofile %s", profile_name);
+    virAsprintf(&replace_name, "\nprofile %s", profile_name);
 
     /* '\n<profile_files>\n}\0' */
     if (virtType != VIR_DOMAIN_VIRT_LXC)
-        virAsprintfQuiet(&replace_files, "\n%s\n}", profile_files);
+        virAsprintf(&replace_files, "\n%s\n}", profile_files);
 
     plen = tlen + strlen(replace_name) - strlen(template_name) + 1;
 
@@ -769,7 +768,7 @@ vah_add_path(virBufferPtr buf, const char *path, const char *perms, bool recursi
             vah_error(NULL, 0, _("could not find realpath"));
             goto cleanup;
         }
-        virAsprintfQuiet(&tmp, "%s%s", pathreal, pathtmp);
+        virAsprintf(&tmp, "%s%s", pathreal, pathtmp);
     }
 
     perms_new = g_strdup(perms);
@@ -836,13 +835,13 @@ vah_add_file_chardev(virBufferPtr buf,
 
     if (type == VIR_DOMAIN_CHR_TYPE_PIPE) {
         /* add the pipe input */
-        virAsprintfQuiet(&pipe_in, "%s.in", path);
+        virAsprintf(&pipe_in, "%s.in", path);
 
         if (vah_add_file(buf, pipe_in, perms) != 0)
             goto clean_pipe_in;
 
         /* add the pipe output */
-        virAsprintfQuiet(&pipe_out, "%s.out", path);
+        virAsprintf(&pipe_out, "%s.out", path);
 
         if (vah_add_file(buf, pipe_out, perms) != 0)
             goto clean_pipe_out;
@@ -935,7 +934,7 @@ get_files(vahControl * ctl)
 
     /* verify uuid is same as what we were given on the command line */
     virUUIDFormat(ctl->def->uuid, uuidstr);
-    virAsprintfQuiet(&uuid, "%s%s", AA_PREFIX, uuidstr);
+    virAsprintf(&uuid, "%s%s", AA_PREFIX, uuidstr);
 
     if (STRNEQ(uuid, ctl->uuid)) {
         vah_error(ctl, 0, _("given uuid does not match XML uuid"));
@@ -1432,8 +1431,8 @@ main(int argc, char **argv)
     if (vahParseArgv(ctl, argc, argv) != 0)
         vah_error(ctl, 1, _("could not parse arguments"));
 
-    virAsprintfQuiet(&profile, "%s/%s", APPARMOR_DIR "/libvirt", ctl->uuid);
-    virAsprintfQuiet(&include_file, "%s/%s.files", APPARMOR_DIR "/libvirt", ctl->uuid);
+    virAsprintf(&profile, "%s/%s", APPARMOR_DIR "/libvirt", ctl->uuid);
+    virAsprintf(&include_file, "%s/%s.files", APPARMOR_DIR "/libvirt", ctl->uuid);
 
     if (ctl->cmd == 'a') {
         rc = parserLoad(ctl->uuid);
@@ -1495,7 +1494,7 @@ main(int argc, char **argv)
         /* create the profile from TEMPLATE */
         if (ctl->cmd == 'c') {
             char *tmp = NULL;
-            virAsprintfQuiet(&tmp, "  #include <libvirt/%s.files>\n", ctl->uuid);
+            virAsprintf(&tmp, "  #include <libvirt/%s.files>\n", ctl->uuid);
 
             if (ctl->dryrun) {
                 vah_info(profile);

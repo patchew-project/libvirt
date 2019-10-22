@@ -103,7 +103,7 @@ virLockManagerSanlockError(int err,
 #if HAVE_SANLOCK_STRERROR
         *message = g_strdup(sanlock_strerror(err));
 #else
-        virAsprintfQuiet(message, _("sanlock error %d"), err);
+        virAsprintf(message, _("sanlock error %d"), err);
 #endif
         return true;
     } else {

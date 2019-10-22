@@ -129,13 +129,13 @@ virProcessTranslateStatus(int status)
 {
     char *buf;
     if (WIFEXITED(status)) {
-        virAsprintfQuiet(&buf, _("exit status %d"),
+        virAsprintf(&buf, _("exit status %d"),
                          WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
-        virAsprintfQuiet(&buf, _("fatal signal %d"),
+        virAsprintf(&buf, _("fatal signal %d"),
                          WTERMSIG(status));
     } else {
-        virAsprintfQuiet(&buf, _("invalid value %d"), status);
+        virAsprintf(&buf, _("invalid value %d"), status);
     }
     return buf;
 }
