@@ -1229,7 +1229,7 @@ matchFCHostToSCSIHost(virStorageAdapterFCHostPtr fchost,
          */
         if (!fchost->parent &&
             (conn = virGetConnectNodeDev())) {
-            virAsprintf(&scsi_host_name, "scsi_%s", name);
+            scsi_host_name = g_strdup_printf("scsi_%s", name);
             if ((parent_name = virNodeDeviceGetParentName(conn,
                                                           scsi_host_name))) {
                 if (virStorageIsSameHostnum(parent_name, scsi_hostnum)) {

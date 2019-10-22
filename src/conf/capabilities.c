@@ -1869,7 +1869,7 @@ virCapabilitiesInitCaches(virCapsPtr caps)
         int rv = -1;
 
         VIR_FREE(path);
-        virAsprintf(&path, "%s/cpu/cpu%zd/cache/", SYSFS_SYSTEM_PATH, pos);
+        path = g_strdup_printf("%s/cpu/cpu%zd/cache/", SYSFS_SYSTEM_PATH, pos);
 
         VIR_DIR_CLOSE(dirp);
 

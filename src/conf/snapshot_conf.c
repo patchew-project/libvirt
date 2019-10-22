@@ -618,7 +618,7 @@ virDomainSnapshotDefAssignExternalNames(virDomainSnapshotDefPtr def)
         if ((tmp = strrchr(tmppath, '.')) && !strchr(tmp, '/'))
             *tmp = '\0';
 
-        virAsprintf(&disk->src->path, "%s.%s", tmppath, def->parent.name);
+        disk->src->path = g_strdup_printf("%s.%s", tmppath, def->parent.name);
 
         VIR_FREE(tmppath);
 

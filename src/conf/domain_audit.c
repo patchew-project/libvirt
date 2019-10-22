@@ -53,7 +53,7 @@ virDomainAuditGetRdev(const char *path)
         (S_ISCHR(sb.st_mode) || S_ISBLK(sb.st_mode))) {
         int maj = major(sb.st_rdev);
         int min = minor(sb.st_rdev);
-        virAsprintf(&ret, "%02X:%02X", maj, min);
+        ret = g_strdup_printf("%02X:%02X", maj, min);
     }
     return ret;
 }
@@ -101,8 +101,8 @@ virDomainAuditGenericDev(virDomainObjPtr vm,
     if (!newsrcpath && !oldsrcpath)
         return;
 
-    virAsprintf(&newdev, "new-%s", type);
-    virAsprintf(&olddev, "old-%s", type);
+    newdev = g_strdup_printf("new-%s", type);
+    olddev = g_strdup_printf("old-%s", type);
 
     virUUIDFormat(vm->def->uuid, uuidstr);
 
@@ -373,15 +373,15 @@ virDomainAuditHostdev(virDomainObjPtr vm, virDomainHostdevDefPtr hostdev,
     case VIR_DOMAIN_HOSTDEV_MODE_SUBSYS:
         switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
-            virAsprintf(&address,
-                        VIR_PCI_DEVICE_ADDRESS_FMT,
-                        pcisrc->addr.domain,
-                        pcisrc->addr.bus,
-                        pcisrc->addr.slot,
-                        pcisrc->addr.function);
+            address = g_strdup_printf(
+                                      VIR_PCI_DEVICE_ADDRESS_FMT,
+                                      pcisrc->addr.domain,
+                                      pcisrc->addr.bus,
+                                      pcisrc->addr.slot,
+                                      pcisrc->addr.function);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
-            virAsprintf(&address, "%.3d.%.3d", usbsrc->bus, usbsrc->device);
+            address = g_strdup_printf("%.3d.%.3d", usbsrc->bus, usbsrc->device);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI: {
             if (scsisrc->protocol ==
@@ -393,10 +393,10 @@ virDomainAuditHostdev(virDomainObjPtr vm, virDomainHostdevDefPtr hostdev,
             } else {
                 virDomainHostdevSubsysSCSIHostPtr scsihostsrc =
                     &scsisrc->u.host;
-                virAsprintf(&address, "%s:%u:%u:%llu",
-                            scsihostsrc->adapter, scsihostsrc->bus,
-                            scsihostsrc->target,
-                            scsihostsrc->unit);
+                address = g_strdup_printf("%s:%u:%u:%llu",
+                                          scsihostsrc->adapter, scsihostsrc->bus,
+                                          scsihostsrc->target,
+                                          scsihostsrc->unit);
             }
             break;
         }
@@ -648,8 +648,8 @@ virDomainAuditCgroupMajor(virDomainObjPtr vm, virCgroupPtr cgroup,
 {
     char *extra;
 
-    virAsprintf(&extra, "major category=%s maj=%02X acl=%s",
-                name, maj, perms);
+    extra = g_strdup_printf("major category=%s maj=%02X acl=%s",
+                            name, maj, perms);
 
     virDomainAuditCgroup(vm, cgroup, reason, extra, success);
 
@@ -688,8 +688,8 @@ virDomainAuditCgroupPath(virDomainObjPtr vm, virCgroupPtr cgroup,
         goto cleanup;
     }
 
-    virAsprintf(&extra, "path %s rdev=%s acl=%s",
-                detail, VIR_AUDIT_STR(rdev), perms);
+    extra = g_strdup_printf("path %s rdev=%s acl=%s",
+                            detail, VIR_AUDIT_STR(rdev), perms);
 
     virDomainAuditCgroup(vm, cgroup, reason, extra, rc == 0);
 
@@ -926,7 +926,7 @@ virDomainAuditShmem(virDomainObjPtr vm,
         goto cleanup;
     }
 
-    virAsprintf(&shmpath, "/dev/shm/%s", def->name);
+    shmpath = g_strdup_printf("/dev/shm/%s", def->name);
 
     if (!virt) {
         VIR_WARN("Unexpected virt type %d while encoding audit message",

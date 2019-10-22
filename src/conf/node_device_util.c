@@ -182,7 +182,7 @@ virNodeDeviceDeleteVport(virConnectPtr conn,
         goto cleanup;
     }
 
-    virAsprintf(&scsi_host_name, "scsi_%s", name);
+    scsi_host_name = g_strdup_printf("scsi_%s", name);
 
     /* If at startup time we provided a parent, then use that to
      * get the parent_host value; otherwise, we have to determine

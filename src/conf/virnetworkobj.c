@@ -1627,7 +1627,7 @@ virNetworkObjGetPortStatusDir(virNetworkObjPtr net,
                               const char *stateDir)
 {
     char *ret;
-    virAsprintf(&ret, "%s/%s/ports", stateDir, net->def->name);
+    ret = g_strdup_printf("%s/%s/ports", stateDir, net->def->name);
     return ret;
 }
 
@@ -1739,7 +1739,7 @@ virNetworkObjDeleteAllPorts(virNetworkObjPtr net,
         if (!virStringStripSuffix(de->d_name, ".xml"))
             continue;
 
-        virAsprintf(&file, "%s/%s.xml", dir, de->d_name);
+        file = g_strdup_printf("%s/%s.xml", dir, de->d_name);
 
         if (unlink(file) < 0 && errno != ENOENT)
             VIR_WARN("Unable to delete %s", file);
@@ -1899,7 +1899,7 @@ virNetworkObjLoadAllPorts(virNetworkObjPtr net,
         if (!virStringStripSuffix(de->d_name, ".xml"))
             continue;
 
-        virAsprintf(&file, "%s/%s.xml", dir, de->d_name);
+        file = g_strdup_printf("%s/%s.xml", dir, de->d_name);
 
         portdef = virNetworkPortDefParseFile(file);
         VIR_FREE(file);

@@ -88,7 +88,7 @@ static char *virChrdevLockFilePath(const char *dev)
         ++p;
     }
 
-    virAsprintf(&path, "%s/LCK..%s", VIR_CHRDEV_LOCK_FILE_PATH, filename);
+    path = g_strdup_printf("%s/LCK..%s", VIR_CHRDEV_LOCK_FILE_PATH, filename);
 
     sanitizedPath = virFileSanitizePath(path);
 
@@ -133,7 +133,7 @@ static int virChrdevLockFileCreate(const char *dev)
 
     /* ensure correct format according to filesystem hierarchy standard */
     /* http://www.pathname.com/fhs/pub/fhs-2.3.html#VARLOCKLOCKFILES */
-    virAsprintf(&pidStr, "%10lld\n", (long long)getpid());
+    pidStr = g_strdup_printf("%10lld\n", (long long)getpid());
 
     /* create the lock file */
     if ((lockfd = open(path, O_WRONLY | O_CREAT | O_EXCL, 00644)) < 0) {
