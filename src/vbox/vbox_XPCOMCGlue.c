@@ -85,8 +85,7 @@ tryLoadOne(const char *dir, bool setAppHome, bool ignoreMissing,
     PFNVBOXGETXPCOMCFUNCTIONS pfnGetFunctions;
 
     if (dir != NULL) {
-        if (virAsprintf(&name, "%s/%s", dir, DYNLIB_NAME) < 0)
-            return -1;
+        virAsprintf(&name, "%s/%s", dir, DYNLIB_NAME);
 
         if (!virFileExists(name)) {
             if (!ignoreMissing)
