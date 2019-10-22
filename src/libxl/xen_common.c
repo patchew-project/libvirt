@@ -1838,11 +1838,11 @@ xenFormatPCI(virConfPtr conf, virDomainDefPtr def)
             virConfValuePtr val, tmp;
             char *buf;
 
-            virAsprintf(&buf, "%04x:%02x:%02x.%x",
-                        def->hostdevs[i]->source.subsys.u.pci.addr.domain,
-                        def->hostdevs[i]->source.subsys.u.pci.addr.bus,
-                        def->hostdevs[i]->source.subsys.u.pci.addr.slot,
-                        def->hostdevs[i]->source.subsys.u.pci.addr.function);
+            buf = g_strdup_printf("%04x:%02x:%02x.%x",
+                                  def->hostdevs[i]->source.subsys.u.pci.addr.domain,
+                                  def->hostdevs[i]->source.subsys.u.pci.addr.bus,
+                                  def->hostdevs[i]->source.subsys.u.pci.addr.slot,
+                                  def->hostdevs[i]->source.subsys.u.pci.addr.function);
 
             if (VIR_ALLOC(val) < 0) {
                 VIR_FREE(buf);

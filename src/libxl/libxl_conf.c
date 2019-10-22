@@ -212,7 +212,7 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
 
     case VIR_DOMAIN_CHR_TYPE_FILE:
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virAsprintf(buf, "%s:%s", type, srcdef->data.file.path);
+        *buf = g_strdup_printf("%s:%s", type, srcdef->data.file.path);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_DEV:
@@ -231,8 +231,8 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
         if (bindService == NULL)
             bindService = "0";
 
-        virAsprintf(buf, "udp:%s:%s@%s:%s", connectHost,
-                    srcdef->data.udp.connectService, bindHost, bindService);
+        *buf = g_strdup_printf("udp:%s:%s@%s:%s", connectHost,
+                              srcdef->data.udp.connectService, bindHost, bindService);
         break;
     }
 
@@ -244,15 +244,15 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
         else
             prefix = "tcp";
 
-        virAsprintf(buf, "%s:%s:%s%s", prefix, srcdef->data.tcp.host,
-                    srcdef->data.tcp.service,
-                    srcdef->data.tcp.listen ? ",server,nowait" : "");
+        *buf = g_strdup_printf("%s:%s:%s%s", prefix, srcdef->data.tcp.host,
+                              srcdef->data.tcp.service,
+                              srcdef->data.tcp.listen ? ",server,nowait" : "");
         break;
     }
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
-        virAsprintf(buf, "unix:%s%s", srcdef->data.nix.path,
-                    srcdef->data.nix.listen ? ",server,nowait" : "");
+        *buf = g_strdup_printf("unix:%s%s", srcdef->data.nix.path,
+                              srcdef->data.nix.listen ? ",server,nowait" : "");
         break;
 
     default:
@@ -1927,9 +1927,9 @@ libxlPrepareChannel(virDomainChrDefPtr channel,
     if (channel->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN &&
         channel->source->type == VIR_DOMAIN_CHR_TYPE_UNIX &&
         !channel->source->data.nix.path) {
-        virAsprintf(&channel->source->data.nix.path, "%s/%s-%s", channelDir,
-                    domainName,
-                    channel->target.name ? channel->target.name : "unknown.sock");
+        channel->source->data.nix.path = g_strdup_printf("%s/%s-%s", channelDir,
+                                                         domainName,
+                                                         channel->target.name ? channel->target.name : "unknown.sock");
 
         channel->source->data.nix.listen = true;
     }

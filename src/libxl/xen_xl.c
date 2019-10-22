@@ -83,9 +83,9 @@ static int xenParseCmdline(virConfPtr conf, char **r_cmdline)
             VIR_WARN("ignoring root= and extra= in favour of cmdline=");
     } else {
         if (root && extra) {
-            virAsprintf(&cmdline, "root=%s %s", root, extra);
+            cmdline = g_strdup_printf("root=%s %s", root, extra);
         } else if (root) {
-            virAsprintf(&cmdline, "root=%s", root);
+            cmdline = g_strdup_printf("root=%s", root);
         } else if (extra) {
             cmdline = g_strdup(extra);
         }
@@ -1394,7 +1394,7 @@ xenFormatXLCPUID(virConfPtr conf, virDomainDefPtr def)
                 policy = "0";
                 break;
         }
-        virAsprintf(&cpuid_pairs[j++], "%s=%s", feature_name, policy);
+        cpuid_pairs[j++] = g_strdup_printf("%s=%s", feature_name, policy);
     }
     cpuid_pairs[j] = NULL;
 
@@ -2068,9 +2068,9 @@ xenFormatXLUSB(virConfPtr conf,
             virConfValuePtr val, tmp;
             char *buf;
 
-            virAsprintf(&buf, "hostbus=%x,hostaddr=%x",
-                        def->hostdevs[i]->source.subsys.u.usb.bus,
-                        def->hostdevs[i]->source.subsys.u.usb.device);
+            buf = g_strdup_printf("hostbus=%x,hostaddr=%x",
+                                  def->hostdevs[i]->source.subsys.u.usb.bus,
+                                  def->hostdevs[i]->source.subsys.u.usb.device);
 
             if (VIR_ALLOC(val) < 0) {
                 VIR_FREE(buf);

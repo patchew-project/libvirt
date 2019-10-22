@@ -90,9 +90,9 @@ xenParseXMOS(virConfPtr conf, virDomainDefPtr def)
             return -1;
 
         if (root && extra) {
-            virAsprintf(&def->os.cmdline, "root=%s %s", root, extra);
+            def->os.cmdline = g_strdup_printf("root=%s %s", root, extra);
         } else if (root) {
-            virAsprintf(&def->os.cmdline, "root=%s", root);
+            def->os.cmdline = g_strdup_printf("root=%s", root);
         } else if (extra) {
             def->os.cmdline = g_strdup(extra);
         }
