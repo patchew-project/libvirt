@@ -2955,7 +2955,7 @@ vzMigrationCreateURI(void)
         goto cleanup;
     }
 
-    virAsprintf(&uri, "vzmigr://%s", hostname);
+    uri = g_strdup_printf("vzmigr://%s", hostname);
 
  cleanup:
     VIR_FREE(hostname);
