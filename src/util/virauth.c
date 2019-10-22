@@ -69,7 +69,7 @@ virAuthGetConfigFilePathURI(virURIPtr uri,
     if (!(userdir = virGetUserConfigDirectory()))
         return -1;
 
-    virAsprintf(path, "%s/auth.conf", userdir);
+    *path = g_strdup_printf("%s/auth.conf", userdir);
 
     VIR_DEBUG("Checking for readability of '%s'", *path);
     if (access(*path, R_OK) == 0)
@@ -157,10 +157,10 @@ virAuthGetUsernamePath(const char *path,
     memset(&cred, 0, sizeof(virConnectCredential));
 
     if (defaultUsername != NULL) {
-        virAsprintf(&prompt, _("Enter username for %s [%s]"), hostname,
-                    defaultUsername);
+        prompt = g_strdup_printf(_("Enter username for %s [%s]"), hostname,
+                                 defaultUsername);
     } else {
-        virAsprintf(&prompt, _("Enter username for %s"), hostname);
+        prompt = g_strdup_printf(_("Enter username for %s"), hostname);
     }
 
     for (ncred = 0; ncred < auth->ncredtype; ncred++) {
@@ -237,7 +237,7 @@ virAuthGetPasswordPath(const char *path,
 
     memset(&cred, 0, sizeof(virConnectCredential));
 
-    virAsprintf(&prompt, _("Enter %s's password for %s"), username, hostname);
+    prompt = g_strdup_printf(_("Enter %s's password for %s"), username, hostname);
 
     for (ncred = 0; ncred < auth->ncredtype; ncred++) {
         if (auth->credtype[ncred] != VIR_CRED_PASSPHRASE &&

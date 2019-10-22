@@ -184,7 +184,7 @@ virHostdevManagerNew(void)
         if (!(rundir = virGetUserRuntimeDirectory()))
             return NULL;
 
-        virAsprintf(&hostdevMgr->stateDir, "%s/hostdevmgr", rundir);
+        hostdevMgr->stateDir = g_strdup_printf("%s/hostdevmgr", rundir);
 
         old_umask = umask(077);
 

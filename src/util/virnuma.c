@@ -540,15 +540,13 @@ virNumaGetHugePageInfoPath(char **path,
 {
     if (node == -1) {
         /* We are aiming at overall system info */
-        virAsprintf(path,
-                    HUGEPAGES_SYSTEM_PREFIX HUGEPAGES_PREFIX "%ukB/%s",
-                    page_size, NULLSTR_EMPTY(suffix));
+        *path = g_strdup_printf(HUGEPAGES_SYSTEM_PREFIX HUGEPAGES_PREFIX "%ukB/%s",
+                                page_size, NULLSTR_EMPTY(suffix));
     } else {
         /* We are aiming on specific NUMA node */
-        virAsprintf(path,
-                    HUGEPAGES_NUMA_PREFIX "node%d/hugepages/"
-                    HUGEPAGES_PREFIX "%ukB/%s",
-                    node, page_size, NULLSTR_EMPTY(suffix));
+        *path = g_strdup_printf(HUGEPAGES_NUMA_PREFIX "node%d/hugepages/"
+                                HUGEPAGES_PREFIX "%ukB/%s",
+                                node, page_size, NULLSTR_EMPTY(suffix));
     }
 
     if (!virFileExists(*path)) {
@@ -580,9 +578,8 @@ virNumaGetHugePageInfoDir(char **path, int node)
         *path = g_strdup(HUGEPAGES_SYSTEM_PREFIX);
         return 0;
     } else {
-        virAsprintf(path,
-                    HUGEPAGES_NUMA_PREFIX "node%d/hugepages/",
-                    node);
+        *path = g_strdup_printf(HUGEPAGES_NUMA_PREFIX "node%d/hugepages/",
+                                node);
         return 0;
     }
 }
@@ -929,7 +926,7 @@ virNumaSetPagePoolSize(int node,
      * all the pages we wanted. So do the second read to check.
      */
     VIR_FREE(nr_buf);
-    virAsprintf(&nr_buf, "%llu", page_count);
+    nr_buf = g_strdup_printf("%llu", page_count);
 
     if (virFileWriteStr(nr_path, nr_buf, 0) < 0) {
         virReportSystemError(errno,

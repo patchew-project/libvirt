@@ -256,7 +256,7 @@ virSCSIVHostDeviceNew(const char *name)
 
     dev->name = g_strdup(name);
 
-    virAsprintf(&dev->path, "%s/%s", SYSFS_VHOST_SCSI_DEVICES, name);
+    dev->path = g_strdup_printf("%s/%s", SYSFS_VHOST_SCSI_DEVICES, name);
 
     VIR_DEBUG("%s: initialized", dev->name);
 

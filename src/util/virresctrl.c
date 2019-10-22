@@ -2319,7 +2319,7 @@ virResctrlDeterminePath(const char *parentpath,
         return NULL;
     }
 
-    virAsprintf(&path, "%s/%s-%s", parentpath, prefix, id);
+    path = g_strdup_printf("%s/%s-%s", parentpath, prefix, id);
 
     return path;
 }
@@ -2415,7 +2415,7 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     if (!alloc_str)
         goto cleanup;
 
-    virAsprintf(&schemata_path, "%s/schemata", alloc->path);
+    schemata_path = g_strdup_printf("%s/schemata", alloc->path);
 
     VIR_DEBUG("Writing resctrl schemata '%s' into '%s'", alloc_str, schemata_path);
     if (virFileWriteStr(schemata_path, alloc_str, 0) < 0) {
@@ -2449,9 +2449,9 @@ virResctrlAddPID(const char *path,
         return -1;
     }
 
-    virAsprintf(&tasks, "%s/tasks", path);
+    tasks = g_strdup_printf("%s/tasks", path);
 
-    virAsprintf(&pidstr, "%lld", (long long int)pid);
+    pidstr = g_strdup_printf("%lld", (long long int)pid);
 
     if (virFileWriteStr(tasks, pidstr, 0) < 0) {
         virReportSystemError(errno,
@@ -2562,7 +2562,7 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
         return 0;
     }
 
-    virAsprintf(&parentpath, "%s/mon_groups", monitor->alloc->path);
+    parentpath = g_strdup_printf("%s/mon_groups", monitor->alloc->path);
 
     monitor->path = virResctrlDeterminePath(parentpath, machinename,
                                             monitor->id);
@@ -2694,7 +2694,7 @@ virResctrlMonitorGetStats(virResctrlMonitorPtr monitor,
         return -1;
     }
 
-    virAsprintf(&datapath, "%s/mon_data", monitor->path);
+    datapath = g_strdup_printf("%s/mon_data", monitor->path);
 
     if (virDirOpen(&dirp, datapath) < 0)
         goto cleanup;
@@ -2711,7 +2711,7 @@ virResctrlMonitorGetStats(virResctrlMonitorPtr monitor,
          * "mon_L3_01" are two target directories for a two nodes system
          * with resource utilization data file for each node respectively.
          */
-        virAsprintf(&filepath, "%s/%s", datapath, ent->d_name);
+        filepath = g_strdup_printf("%s/%s", datapath, ent->d_name);
 
         if (!virFileIsDir(filepath))
             continue;

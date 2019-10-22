@@ -117,8 +117,8 @@ virSCSIDeviceGetSgName(const char *sysfs_prefix,
     if (virSCSIDeviceGetAdapterId(adapter, &adapter_id) < 0)
         return NULL;
 
-    virAsprintf(&path, "%s/%d:%u:%u:%llu/scsi_generic", prefix, adapter_id,
-                bus, target, unit);
+    path = g_strdup_printf("%s/%d:%u:%u:%llu/scsi_generic", prefix, adapter_id,
+                           bus, target, unit);
 
     if (virDirOpen(&dir, path) < 0)
         goto cleanup;
@@ -154,8 +154,8 @@ virSCSIDeviceGetDevName(const char *sysfs_prefix,
     if (virSCSIDeviceGetAdapterId(adapter, &adapter_id) < 0)
         return NULL;
 
-    virAsprintf(&path, "%s/%d:%u:%u:%llu/block", prefix, adapter_id, bus,
-                target, unit);
+    path = g_strdup_printf("%s/%d:%u:%u:%llu/block", prefix, adapter_id, bus,
+                           target, unit);
 
     if (virDirOpen(&dir, path) < 0)
         goto cleanup;
@@ -203,10 +203,10 @@ virSCSIDeviceNew(const char *sysfs_prefix,
     if (virSCSIDeviceGetAdapterId(adapter, &dev->adapter) < 0)
         return NULL;
 
-    virAsprintf(&dev->name, "%d:%u:%u:%llu", dev->adapter,
-                dev->bus, dev->target, dev->unit);
-    virAsprintf(&dev->sg_path, "%s/%s",
-                sysfs_prefix ? sysfs_prefix : "/dev", sg);
+    dev->name = g_strdup_printf("%d:%u:%u:%llu", dev->adapter,
+                                dev->bus, dev->target, dev->unit);
+    dev->sg_path = g_strdup_printf("%s/%s",
+                                   sysfs_prefix ? sysfs_prefix : "/dev", sg);
 
     if (!virFileExists(dev->sg_path)) {
         virReportSystemError(errno,
@@ -215,8 +215,8 @@ virSCSIDeviceNew(const char *sysfs_prefix,
         return NULL;
     }
 
-    virAsprintf(&vendor_path, "%s/%s/vendor", prefix, dev->name);
-    virAsprintf(&model_path, "%s/%s/model", prefix, dev->name);
+    vendor_path = g_strdup_printf("%s/%s/vendor", prefix, dev->name);
+    model_path = g_strdup_printf("%s/%s/model", prefix, dev->name);
 
     if (virFileReadAll(vendor_path, 1024, &vendor) < 0)
         return NULL;
@@ -227,7 +227,7 @@ virSCSIDeviceNew(const char *sysfs_prefix,
     virTrimSpaces(vendor, NULL);
     virTrimSpaces(model, NULL);
 
-    virAsprintf(&dev->id, "%s:%s", vendor, model);
+    dev->id = g_strdup_printf("%s:%s", vendor, model);
 
     ret = g_steal_pointer(&dev);
     return ret;

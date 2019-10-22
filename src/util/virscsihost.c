@@ -52,8 +52,8 @@ virSCSIHostGetUniqueId(const char *sysfs_prefix,
     char *buf = NULL;
     int unique_id;
 
-    virAsprintf(&sysfs_path, "%s/host%d/unique_id",
-                sysfs_prefix ? sysfs_prefix : SYSFS_SCSI_HOST_PATH, host);
+    sysfs_path = g_strdup_printf("%s/host%d/unique_id",
+                                 sysfs_prefix ? sysfs_prefix : SYSFS_SCSI_HOST_PATH, host);
 
     if (virFileReadAll(sysfs_path, 1024, &buf) < 0)
         goto cleanup;
@@ -116,7 +116,7 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
         if (!virFileIsLink(entry->d_name))
             continue;
 
-        virAsprintf(&host_link, "%s/%s", prefix, entry->d_name);
+        host_link = g_strdup_printf("%s/%s", prefix, entry->d_name);
 
         if (virFileResolveLink(host_link, &host_path) < 0)
             goto cleanup;
@@ -129,7 +129,7 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
         VIR_FREE(host_link);
         VIR_FREE(host_path);
 
-        virAsprintf(&unique_path, "%s/%s/unique_id", prefix, entry->d_name);
+        unique_path = g_strdup_printf("%s/%s/unique_id", prefix, entry->d_name);
 
         if (!virFileExists(unique_path)) {
             VIR_FREE(unique_path);
@@ -235,8 +235,8 @@ virSCSIHostGetNameByParentaddr(unsigned int domain,
     char *name = NULL;
     char *parentaddr = NULL;
 
-    virAsprintf(&parentaddr, "%04x:%02x:%02x.%01x", domain, bus, slot,
-                function);
+    parentaddr = g_strdup_printf("%04x:%02x:%02x.%01x", domain, bus, slot,
+                                 function);
     if (!(name = virSCSIHostFindByPCI(NULL, parentaddr, unique_id))) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Failed to find scsi_host using PCI '%s' "

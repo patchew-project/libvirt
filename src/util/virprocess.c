@@ -129,13 +129,13 @@ virProcessTranslateStatus(int status)
 {
     char *buf;
     if (WIFEXITED(status)) {
-        virAsprintf(&buf, _("exit status %d"),
-                         WEXITSTATUS(status));
+        buf = g_strdup_printf(_("exit status %d"),
+                              WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
-        virAsprintf(&buf, _("fatal signal %d"),
-                         WTERMSIG(status));
+        buf = g_strdup_printf(_("fatal signal %d"),
+                              WTERMSIG(status));
     } else {
-        virAsprintf(&buf, _("invalid value %d"), status);
+        buf = g_strdup_printf(_("invalid value %d"), status);
     }
     return buf;
 }
@@ -586,7 +586,7 @@ int virProcessGetPids(pid_t pid, size_t *npids, pid_t **pids)
     *npids = 0;
     *pids = NULL;
 
-    virAsprintf(&taskPath, "/proc/%llu/task", (long long)pid);
+    taskPath = g_strdup_printf("/proc/%llu/task", (long long)pid);
 
     if (virDirOpen(&dir, taskPath) < 0)
         goto cleanup;
@@ -631,7 +631,7 @@ int virProcessGetNamespaces(pid_t pid,
         int fd;
         g_autofree char *nsfile = NULL;
 
-        virAsprintf(&nsfile, "/proc/%llu/ns/%s", (long long)pid, ns[i]);
+        nsfile = g_strdup_printf("/proc/%llu/ns/%s", (long long)pid, ns[i]);
 
         if ((fd = open(nsfile, O_RDONLY)) >= 0) {
             if (VIR_EXPAND_N(*fdlist, *nfdlist, 1) < 0) {
@@ -950,7 +950,7 @@ int virProcessGetStartTime(pid_t pid,
     g_autofree char *buf = NULL;
     VIR_AUTOSTRINGLIST tokens = NULL;
 
-    virAsprintf(&filename, "/proc/%llu/stat", (long long)pid);
+    filename = g_strdup_printf("/proc/%llu/stat", (long long)pid);
 
     if ((len = virFileReadAll(filename, 1024, &buf)) < 0)
         return -1;
@@ -1049,7 +1049,7 @@ static int virProcessNamespaceHelper(pid_t pid G_GNUC_UNUSED,
     int ret = -1;
     g_autofree char *path = NULL;
 
-    virAsprintf(&path, "/proc/%lld/ns/mnt", (long long)data->pid);
+    path = g_strdup_printf("/proc/%lld/ns/mnt", (long long)data->pid);
 
     if ((fd = open(path, O_RDONLY)) < 0) {
         virReportSystemError(errno, "%s",

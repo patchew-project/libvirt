@@ -122,7 +122,7 @@ static int virNetDevBridgeSet(const char *brname,
 {
     g_autofree char *path = NULL;
 
-    virAsprintf(&path, SYSFS_NET_DIR "%s/bridge/%s", brname, paramname);
+    path = g_strdup_printf(SYSFS_NET_DIR "%s/bridge/%s", brname, paramname);
 
     if (virFileExists(path)) {
         char valuestr[INT_BUFSIZE_BOUND(value)];
@@ -164,7 +164,7 @@ static int virNetDevBridgeGet(const char *brname,
     g_autofree char *path = NULL;
     VIR_AUTOCLOSE fd = -1;
 
-    virAsprintf(&path, SYSFS_NET_DIR "%s/bridge/%s", brname, paramname);
+    path = g_strdup_printf(SYSFS_NET_DIR "%s/bridge/%s", brname, paramname);
 
     if (virFileExists(path)) {
         g_autofree char *valuestr = NULL;
@@ -221,8 +221,8 @@ virNetDevBridgePortSet(const char *brname,
 
     snprintf(valuestr, sizeof(valuestr), "%lu", value);
 
-    virAsprintf(&path, SYSFS_NET_DIR "%s/brif/%s/%s", brname, ifname,
-                paramname);
+    path = g_strdup_printf(SYSFS_NET_DIR "%s/brif/%s/%s", brname, ifname,
+                           paramname);
 
     if (!virFileExists(path))
         errno = EINVAL;
@@ -248,8 +248,8 @@ virNetDevBridgePortGet(const char *brname,
     g_autofree char *path = NULL;
     g_autofree char *valuestr = NULL;
 
-    virAsprintf(&path, SYSFS_NET_DIR "%s/brif/%s/%s", brname, ifname,
-                paramname);
+    path = g_strdup_printf(SYSFS_NET_DIR "%s/brif/%s/%s", brname, ifname,
+                           paramname);
 
     if (virFileReadAll(path, INT_BUFSIZE_BOUND(unsigned long), &valuestr) < 0)
         return -1;

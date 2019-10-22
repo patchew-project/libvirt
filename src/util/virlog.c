@@ -152,8 +152,8 @@ virLogUnlock(void)
 static void
 virLogSetDefaultOutputToStderr(void)
 {
-    virAsprintf(&virLogDefaultOutput, "%d:stderr",
-                virLogDefaultPriority);
+    virLogDefaultOutput = g_strdup_printf("%d:stderr",
+                                          virLogDefaultPriority);
 }
 
 
@@ -167,7 +167,7 @@ virLogSetDefaultOutputToJournald(void)
     if (priority == VIR_LOG_DEBUG)
         priority = VIR_LOG_INFO;
 
-    virAsprintf(&virLogDefaultOutput, "%d:journald", priority);
+    virLogDefaultOutput = g_strdup_printf("%d:journald", priority);
 }
 
 
@@ -179,8 +179,8 @@ virLogSetDefaultOutputToFile(const char *binary, bool privileged)
     mode_t old_umask;
 
     if (privileged) {
-        virAsprintf(&virLogDefaultOutput, "%d:file:%s/log/libvirt/%s.log",
-                    virLogDefaultPriority, LOCALSTATEDIR, binary);
+        virLogDefaultOutput = g_strdup_printf("%d:file:%s/log/libvirt/%s.log",
+                                              virLogDefaultPriority, LOCALSTATEDIR, binary);
     } else {
         if (!(logdir = virGetUserCacheDirectory()))
             goto cleanup;
@@ -192,8 +192,8 @@ virLogSetDefaultOutputToFile(const char *binary, bool privileged)
         }
         umask(old_umask);
 
-        virAsprintf(&virLogDefaultOutput, "%d:file:%s/%s.log",
-                    virLogDefaultPriority, logdir, binary);
+        virLogDefaultOutput = g_strdup_printf("%d:file:%s/%s.log",
+                                              virLogDefaultPriority, logdir, binary);
     }
 
     ret = 0;
@@ -453,13 +453,13 @@ virLogFormatString(char **msg,
      * to just grep for it to find the right place.
      */
     if ((funcname != NULL)) {
-        virAsprintf(msg, "%llu: %s : %s:%d : %s\n",
-                    virThreadSelfID(), virLogPriorityString(priority),
-                    funcname, linenr, str);
+        *msg = g_strdup_printf("%llu: %s : %s:%d : %s\n",
+                               virThreadSelfID(), virLogPriorityString(priority),
+                               funcname, linenr, str);
     } else {
-        virAsprintf(msg, "%llu: %s : %s\n",
-                    virThreadSelfID(), virLogPriorityString(priority),
-                    str);
+        *msg = g_strdup_printf("%llu: %s : %s\n",
+                               virThreadSelfID(), virLogPriorityString(priority),
+                               str);
     }
 }
 
@@ -481,7 +481,7 @@ virLogHostnameString(char **rawmsg,
 {
     char *hoststr;
 
-    virAsprintf(&hoststr, "hostname: %s", virLogHostname);
+    hoststr = g_strdup_printf("hostname: %s", virLogHostname);
 
     virLogFormatString(msg, 0, NULL, VIR_LOG_INFO, hoststr);
     *rawmsg = hoststr;
@@ -689,7 +689,7 @@ virLogOutputToFd(virLogSourcePtr source G_GNUC_UNUSED,
     if (fd < 0)
         return;
 
-    virAsprintf(&msg, "%s: %s", timestamp, str);
+    msg = g_strdup_printf("%s: %s", timestamp, str);
     ignore_value(safewrite(fd, msg, strlen(msg)));
     VIR_FREE(msg);
 }

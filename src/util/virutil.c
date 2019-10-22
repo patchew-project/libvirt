@@ -744,11 +744,11 @@ static char *virGetXDGDirectory(const char *xdgenvname, const char *xdgdefdir)
     char *home = NULL;
 
     if (path && path[0]) {
-        virAsprintf(&ret, "%s/libvirt", path);
+        ret = g_strdup_printf("%s/libvirt", path);
     } else {
         home = virGetUserDirectory();
         if (home)
-            virAsprintf(&ret, "%s/%s/libvirt", home, xdgdefdir);
+            ret = g_strdup_printf("%s/%s/libvirt", home, xdgdefdir);
     }
 
     VIR_FREE(home);
@@ -774,7 +774,7 @@ char *virGetUserRuntimeDirectory(void)
     } else {
         char *ret;
 
-        virAsprintf(&ret, "%s/libvirt", path);
+        ret = g_strdup_printf("%s/libvirt", path);
         return ret;
     }
 }
@@ -1587,9 +1587,9 @@ virGetUnprivSGIOSysfsPath(const char *path,
         return NULL;
     }
 
-    virAsprintf(&sysfs_path, "%s/%d:%d/queue/unpriv_sgio",
-                sysfs_dir ? sysfs_dir : SYSFS_DEV_BLOCK_PATH,
-                maj, min);
+    sysfs_path = g_strdup_printf("%s/%d:%d/queue/unpriv_sgio",
+                                 sysfs_dir ? sysfs_dir : SYSFS_DEV_BLOCK_PATH,
+                                 maj, min);
     return sysfs_path;
 }
 
@@ -1612,7 +1612,7 @@ virSetDeviceUnprivSGIO(const char *path,
         goto cleanup;
     }
 
-    virAsprintf(&val, "%d", unpriv_sgio);
+    val = g_strdup_printf("%d", unpriv_sgio);
 
     if ((rc = virFileWriteStr(sysfs_path, val, 0)) < 0) {
         virReportSystemError(-rc, _("failed to set %s"), sysfs_path);
@@ -1877,7 +1877,7 @@ virHostGetDRMRenderNode(void)
         goto cleanup;
     }
 
-    virAsprintf(&ret, "%s/%s", driPath, ent->d_name);
+    ret = g_strdup_printf("%s/%s", driPath, ent->d_name);
 
  cleanup:
     VIR_DIR_CLOSE(driDir);

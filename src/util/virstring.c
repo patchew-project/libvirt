@@ -713,7 +713,7 @@ virDoubleToStr(char **strp, double number)
     if (virLocaleSetRaw(&oldlocale) < 0)
         return -1;
 
-    virAsprintf(strp, "%lf", number);
+    *strp = g_strdup_printf("%lf", number);
 
     virLocaleRevert(&oldlocale);
     virLocaleFixupRadix(strp);

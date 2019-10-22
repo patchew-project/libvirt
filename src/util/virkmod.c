@@ -149,7 +149,7 @@ virKModIsBlacklisted(const char *module)
     g_autofree char *drvblklst = NULL;
     g_autofree char *outbuf = NULL;
 
-    virAsprintf(&drvblklst, "blacklist %s\n", module);
+    drvblklst = g_strdup_printf("blacklist %s\n", module);
 
     /* modprobe will convert all '-' into '_', so we need to as well */
     for (i = 0; i < drvblklst[i]; i++)

@@ -1541,7 +1541,7 @@ virStorageFileGetNPIVKey(const char *path,
             *tmp = '\0';
 
         if (*serial != '\0' && *port != '\0')
-            virAsprintf(key, "%s_PORT%s", serial, port);
+            *key = g_strdup_printf("%s_PORT%s", serial, port);
     }
 
     return 0;
@@ -2620,9 +2620,9 @@ virStorageSourceNewFromBackingRelative(virStorageSourcePtr parent,
     }
 
     if (STRNEQ(dirname, "/")) {
-        virAsprintf(&def->path, "%s/%s", dirname, rel);
+        def->path = g_strdup_printf("%s/%s", dirname, rel);
     } else {
-        virAsprintf(&def->path, "/%s", rel);
+        def->path = g_strdup_printf("/%s", rel);
     }
 
     if (virStorageSourceGetActualType(parent) == VIR_STORAGE_TYPE_NETWORK) {
@@ -3281,7 +3281,7 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
         *port = '\0';
     }
 
-    virAsprintf(&src->path, "%s/%s", target, lun);
+    src->path = g_strdup_printf("%s/%s", target, lun);
 
     /* Libvirt doesn't handle inline authentication. Make the caller aware. */
     if (virJSONValueObjectGetString(json, "user") ||
@@ -4193,7 +4193,7 @@ virStorageFileGetRelativeBackingPath(virStorageSourcePtr top,
 
         VIR_FREE(path);
 
-        virAsprintf(&path, "%s%s", tmp, next->relPath);
+        path = g_strdup_printf("%s%s", tmp, next->relPath);
 
         VIR_FREE(tmp);
 

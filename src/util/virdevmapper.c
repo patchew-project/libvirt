@@ -127,9 +127,9 @@ virDevMapperGetTargetsImpl(const char *path,
         goto cleanup;
 
     for (i = 0; i < deps->count; i++) {
-        virAsprintf(&devPaths[i], "/dev/block/%u:%u",
-                    major(deps->device[i]),
-                    minor(deps->device[i]));
+        devPaths[i] = g_strdup_printf("/dev/block/%u:%u",
+                                      major(deps->device[i]),
+                                      minor(deps->device[i]));
     }
 
     recursiveDevPaths = NULL;

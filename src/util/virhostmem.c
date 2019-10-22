@@ -280,8 +280,8 @@ virHostMemGetStats(int cellNum G_GNUC_UNUSED,
                 return -1;
             }
 
-            virAsprintf(&meminfo_path,
-                        SYSFS_SYSTEM_PATH "/node/node%d/meminfo", cellNum);
+            meminfo_path = g_strdup_printf(
+                                           SYSFS_SYSTEM_PATH "/node/node%d/meminfo", cellNum);
         }
         meminfo = fopen(meminfo_path, "r");
 
@@ -316,9 +316,9 @@ virHostMemSetParameterValue(virTypedParameterPtr param)
     char *field = strchr(param->field, '_');
     sa_assert(field);
     field++;
-    virAsprintf(&path, "%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
+    path = g_strdup_printf("%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
 
-    virAsprintf(&strval, "%u", param->value.ui);
+    strval = g_strdup_printf("%u", param->value.ui);
 
     if ((rc = virFileWriteStr(path, strval, 0)) < 0) {
         virReportSystemError(-rc, _("failed to set %s"), param->field);
@@ -341,7 +341,7 @@ virHostMemParametersAreAllSupported(virTypedParameterPtr params,
         char *field = strchr(param->field, '_');
         sa_assert(field);
         field++;
-        virAsprintf(&path, "%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
+        path = g_strdup_printf("%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
 
         if (!virFileExists(path)) {
             virReportError(VIR_ERR_OPERATION_INVALID,
@@ -405,7 +405,7 @@ virHostMemGetParameterValue(const char *field,
     char *tmp = NULL;
     int rc = -1;
 
-    virAsprintf(&path, "%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
+    path = g_strdup_printf("%s/%s", SYSFS_MEMORY_SHARED_PATH, field);
 
     if (!virFileExists(path))
         return -2;

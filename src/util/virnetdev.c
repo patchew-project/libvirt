@@ -511,7 +511,7 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
     char *phy_path = NULL;
     int len;
 
-    virAsprintf(&pid, "%lld", (long long) pidInNs);
+    pid = g_strdup_printf("%lld", (long long) pidInNs);
 
     /* The 802.11 wireless devices only move together with their PHY. */
     if (virNetDevSysfsFile(&phy_path, ifname, "phy80211/name") < 0)
@@ -1068,7 +1068,7 @@ int
 virNetDevSysfsFile(char **pf_sysfs_device_link, const char *ifname,
                    const char *file)
 {
-    virAsprintf(pf_sysfs_device_link, SYSFS_NET_DIR "%s/%s", ifname, file);
+    *pf_sysfs_device_link = g_strdup_printf(SYSFS_NET_DIR "%s/%s", ifname, file);
     return 0;
 }
 
@@ -1076,8 +1076,8 @@ static int
 virNetDevSysfsDeviceFile(char **pf_sysfs_device_link, const char *ifname,
                          const char *file)
 {
-    virAsprintf(pf_sysfs_device_link, SYSFS_NET_DIR "%s/device/%s", ifname,
-                file);
+    *pf_sysfs_device_link = g_strdup_printf(SYSFS_NET_DIR "%s/device/%s", ifname,
+                                            file);
     return 0;
 }
 
@@ -1099,7 +1099,7 @@ virNetDevIsPCIDevice(const char *devpath)
     char *subsys = NULL;
     bool ret = false;
 
-    virAsprintf(&subsys_link, "%s/subsystem", devpath);
+    subsys_link = g_strdup_printf("%s/subsystem", devpath);
 
     if (!virFileExists(subsys_link))
         goto cleanup;
@@ -1400,7 +1400,7 @@ virNetDevPFGetVF(const char *pfname, int vf, char **vfname)
     if (virNetDevGetPhysPortID(pfname, &pfPhysPortID) < 0)
         goto cleanup;
 
-    virAsprintf(&virtfnName, "virtfn%d", vf);
+    virtfnName = g_strdup_printf("virtfn%d", vf);
 
     /* this provides the path to the VF's directory in sysfs,
      * e.g. "/sys/class/net/enp2s0f0/virtfn3"
@@ -1888,7 +1888,7 @@ virNetDevSaveNetConfig(const char *linkdev, int vf,
      */
 
     if (pfDevName && saveVlan) {
-        virAsprintf(&filePath, "%s/%s_vf%d", stateDir, pfDevName, vf);
+        filePath = g_strdup_printf("%s/%s_vf%d", stateDir, pfDevName, vf);
 
         /* get admin MAC and vlan tag */
         if (virNetDevGetVfConfig(pfDevName, vf, &oldMAC, &oldVlanTag) < 0)
@@ -1904,7 +1904,7 @@ virNetDevSaveNetConfig(const char *linkdev, int vf,
         }
 
     } else {
-        virAsprintf(&filePath, "%s/%s", stateDir, linkdev);
+        filePath = g_strdup_printf("%s/%s", stateDir, linkdev);
     }
 
     if (linkdev) {
@@ -2009,7 +2009,7 @@ virNetDevReadNetConfig(const char *linkdev, int vf,
      */
 
     if (pfDevName) {
-        virAsprintf(&filePath, "%s/%s_vf%d", stateDir, pfDevName, vf);
+        filePath = g_strdup_printf("%s/%s_vf%d", stateDir, pfDevName, vf);
 
         if (linkdev && !virFileExists(filePath)) {
             /* the device may have been stored in a file named for the
@@ -2023,7 +2023,7 @@ virNetDevReadNetConfig(const char *linkdev, int vf,
     }
 
     if (!pfDevName)
-        virAsprintf(&filePath, "%s/%s", stateDir, linkdev);
+        filePath = g_strdup_printf("%s/%s", stateDir, linkdev);
 
     if (!virFileExists(filePath)) {
         /* having no file to read is not necessarily an error, so we
@@ -2903,7 +2903,7 @@ virNetDevRDMAFeature(const char *ifname,
     if (virDirOpen(&dirp, SYSFS_INFINIBAND_DIR) < 0)
         return -1;
 
-    virAsprintf(&eth_devpath, SYSFS_NET_DIR "%s/device/resource", ifname);
+    eth_devpath = g_strdup_printf(SYSFS_NET_DIR "%s/device/resource", ifname);
 
     /* If /sys/class/net/<ifname>/device/resource doesn't exist it is not a PCI
      * device and therefore it will not have RDMA. */
@@ -2916,8 +2916,8 @@ virNetDevRDMAFeature(const char *ifname,
         goto cleanup;
 
     while (virDirRead(dirp, &dp, SYSFS_INFINIBAND_DIR) > 0) {
-        virAsprintf(&ib_devpath, SYSFS_INFINIBAND_DIR "%s/device/resource",
-                    dp->d_name);
+        ib_devpath = g_strdup_printf(SYSFS_INFINIBAND_DIR "%s/device/resource",
+                                     dp->d_name);
         if (virFileReadAll(ib_devpath, RESOURCE_FILE_LEN, &ib_res_buf) > 0 &&
             STREQ(eth_res_buf, ib_res_buf)) {
             ignore_value(virBitmapSetBit(*out, VIR_NET_DEV_FEAT_RDMA));

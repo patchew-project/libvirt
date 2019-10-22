@@ -233,7 +233,7 @@ int virPidFileReadPathIfAlive(const char *path,
         goto cleanup;
     }
 
-    virAsprintf(&procPath, "/proc/%lld/exe", (long long)retPid);
+    procPath = g_strdup_printf("/proc/%lld/exe", (long long)retPid);
 
     if ((ret = virFileIsLink(procPath)) < 0)
         return ret;
@@ -494,7 +494,7 @@ virPidFileConstructPath(bool privileged,
                            "%s", _("No runstatedir specified"));
             return -1;
         }
-        virAsprintf(pidfile, "%s/%s.pid", runstatedir, progname);
+        *pidfile = g_strdup_printf("%s/%s.pid", runstatedir, progname);
     } else {
         if (!(rundir = virGetUserRuntimeDirectory()))
             return -1;
@@ -506,7 +506,7 @@ virPidFileConstructPath(bool privileged,
             return -1;
         }
 
-        virAsprintf(pidfile, "%s/%s.pid", rundir, progname);
+        *pidfile = g_strdup_printf("%s/%s.pid", rundir, progname);
     }
 
     return 0;

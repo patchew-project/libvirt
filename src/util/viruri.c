@@ -234,7 +234,7 @@ virURIFormat(virURIPtr uri)
     if (xmluri.server != NULL &&
         strchr(xmluri.server, ':') != NULL) {
 
-        virAsprintf(&tmpserver, "[%s]", xmluri.server);
+        tmpserver = g_strdup_printf("[%s]", xmluri.server);
 
         xmluri.server = tmpserver;
     }

@@ -73,8 +73,8 @@ virTPMCreateCancelPath(const char *devpath)
 
     dev++;
     for (i = 0; i < G_N_ELEMENTS(prefix); i++) {
-        virAsprintf(&path, "/sys/class/%s%s/device/cancel", prefix[i],
-                    dev);
+        path = g_strdup_printf("/sys/class/%s%s/device/cancel", prefix[i],
+                               dev);
 
         if (virFileExists(path))
             break;

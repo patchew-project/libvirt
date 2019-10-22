@@ -158,7 +158,7 @@ char *virAuditEncode(const char *key, const char *value)
     return audit_encode_nv_string(key, value, 0);
 #else
     char *str;
-    virAsprintf(&str, "%s=%s", key, value);
+    str = g_strdup_printf("%s=%s", key, value);
     return str;
 #endif
 }

@@ -80,7 +80,7 @@ virMediatedDeviceGetSysfsDeviceAPI(virMediatedDevicePtr dev,
     g_autofree char *file = NULL;
     char *tmp = NULL;
 
-    virAsprintf(&file, "%s/mdev_type/device_api", dev->path);
+    file = g_strdup_printf("%s/mdev_type/device_api", dev->path);
 
     /* TODO - make this a generic method to access sysfs files for various
      * kinds of devices
@@ -217,7 +217,7 @@ virMediatedDeviceGetIOMMUGroupDev(const char *uuidstr)
     if (!dev_path)
         return NULL;
 
-    virAsprintf(&iommu_path, "%s/iommu_group", dev_path);
+    iommu_path = g_strdup_printf("%s/iommu_group", dev_path);
 
     if (!virFileExists(iommu_path)) {
         virReportSystemError(errno, _("failed to access '%s'"), iommu_path);
@@ -229,7 +229,7 @@ virMediatedDeviceGetIOMMUGroupDev(const char *uuidstr)
         return NULL;
     }
 
-    virAsprintf(&vfio_path, "/dev/vfio/%s", last_component(result_path));
+    vfio_path = g_strdup_printf("/dev/vfio/%s", last_component(result_path));
 
     return vfio_path;
 }
@@ -425,7 +425,7 @@ virMediatedDeviceGetSysfsPath(const char *uuidstr)
 {
     char *ret = NULL;
 
-    virAsprintf(&ret, MDEV_SYSFS_DEVICES "%s", uuidstr);
+    ret = g_strdup_printf(MDEV_SYSFS_DEVICES "%s", uuidstr);
     return ret;
 }
 
