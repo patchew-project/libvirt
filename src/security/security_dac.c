@@ -302,8 +302,8 @@ virSecurityDACSetUserAndGroup(virSecurityManagerPtr mgr,
     priv->user = user;
     priv->group = group;
 
-    virAsprintf(&priv->baselabel, "+%u:+%u", (unsigned int)user,
-                (unsigned int)group);
+    priv->baselabel = g_strdup_printf("+%u:+%u", (unsigned int)user,
+                                      (unsigned int)group);
 
     return 0;
 }
@@ -437,7 +437,7 @@ virSecurityDACRememberLabel(virSecurityDACDataPtr priv G_GNUC_UNUSED,
     char *label = NULL;
     int ret = -1;
 
-    virAsprintf(&label, "+%u:+%u", (unsigned int)uid, (unsigned int)gid);
+    label = g_strdup_printf("+%u:+%u", (unsigned int)uid, (unsigned int)gid);
 
     ret = virSecuritySetRememberedLabel(SECURITY_DAC_NAME, path, label);
     VIR_FREE(label);
@@ -1507,8 +1507,8 @@ virSecurityDACSetChardevLabelHelper(virSecurityManagerPtr mgr,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virAsprintf(&in, "%s.in", dev_source->data.file.path);
-        virAsprintf(&out, "%s.out", dev_source->data.file.path);
+        in = g_strdup_printf("%s.in", dev_source->data.file.path);
+        out = g_strdup_printf("%s.out", dev_source->data.file.path);
         if (virFileExists(in) && virFileExists(out)) {
             if (virSecurityDACSetOwnership(mgr, NULL, in, user, group, remember) < 0 ||
                 virSecurityDACSetOwnership(mgr, NULL, out, user, group, remember) < 0)
@@ -1599,8 +1599,8 @@ virSecurityDACRestoreChardevLabelHelper(virSecurityManagerPtr mgr,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virAsprintf(&out, "%s.out", dev_source->data.file.path);
-        virAsprintf(&in, "%s.in", dev_source->data.file.path);
+        out = g_strdup_printf("%s.out", dev_source->data.file.path);
+        in = g_strdup_printf("%s.in", dev_source->data.file.path);
         if (virFileExists(in) && virFileExists(out)) {
             if (virSecurityDACRestoreFileLabelInternal(mgr, NULL, out, recall) < 0 ||
                 virSecurityDACRestoreFileLabelInternal(mgr, NULL, in, recall) < 0)
@@ -2281,8 +2281,8 @@ virSecurityDACGenLabel(virSecurityManagerPtr mgr,
         }
         break;
     case VIR_DOMAIN_SECLABEL_DYNAMIC:
-        virAsprintf(&seclabel->label, "+%u:+%u", (unsigned int)priv->user,
-                    (unsigned int)priv->group);
+        seclabel->label = g_strdup_printf("+%u:+%u", (unsigned int)priv->user,
+                                          (unsigned int)priv->group);
         if (seclabel->label == NULL) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot generate dac user and group id "
@@ -2333,7 +2333,7 @@ virSecurityDACGetProcessLabelInternal(pid_t pid,
 
     VIR_DEBUG("Getting DAC user and group on process '%d'", pid);
 
-    virAsprintf(&path, "/proc/%d", (int)pid);
+    path = g_strdup_printf("/proc/%d", (int)pid);
 
     if (lstat(path, &sb) < 0) {
         virReportSystemError(errno,

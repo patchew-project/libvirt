@@ -157,7 +157,7 @@ parserCommand(const char *profile_name, const char cmd)
 
     snprintf(flag, 3, "-%c", cmd);
 
-    virAsprintf(&profile, "%s/%s", APPARMOR_DIR "/libvirt", profile_name);
+    profile = g_strdup_printf("%s/%s", APPARMOR_DIR "/libvirt", profile_name);
 
     if (!virFileExists(profile)) {
         vah_error(NULL, 0, _("profile does not exist"));
@@ -214,9 +214,9 @@ update_include_file(const char *include_file, const char *included_files,
     }
 
     if (append && virFileExists(include_file))
-        virAsprintf(&pcontent, "%s%s", existing, included_files);
+        pcontent = g_strdup_printf("%s%s", existing, included_files);
     else
-        virAsprintf(&pcontent, "%s%s", warning, included_files);
+        pcontent = g_strdup_printf("%s%s", warning, included_files);
 
     plen = strlen(pcontent);
     if (plen > MAX_FILE_LEN) {
@@ -290,7 +290,7 @@ create_profile(const char *profile, const char *profile_name,
         driver_name = virDomainVirtTypeToString(virtType);
     }
 
-    virAsprintf(&template, "%s/TEMPLATE.%s", APPARMOR_DIR "/libvirt", driver_name);
+    template = g_strdup_printf("%s/TEMPLATE.%s", APPARMOR_DIR "/libvirt", driver_name);
 
     if (!virFileExists(template)) {
         vah_error(NULL, 0, _("template does not exist"));
@@ -313,11 +313,11 @@ create_profile(const char *profile, const char *profile_name,
     }
 
     /* '\nprofile <profile_name>\0' */
-    virAsprintf(&replace_name, "\nprofile %s", profile_name);
+    replace_name = g_strdup_printf("\nprofile %s", profile_name);
 
     /* '\n<profile_files>\n}\0' */
     if (virtType != VIR_DOMAIN_VIRT_LXC)
-        virAsprintf(&replace_files, "\n%s\n}", profile_files);
+    replace_files = g_strdup_printf("\n%s\n}", profile_files);
 
     plen = tlen + strlen(replace_name) - strlen(template_name) + 1;
 
@@ -768,7 +768,7 @@ vah_add_path(virBufferPtr buf, const char *path, const char *perms, bool recursi
             vah_error(NULL, 0, _("could not find realpath"));
             goto cleanup;
         }
-        virAsprintf(&tmp, "%s%s", pathreal, pathtmp);
+        tmp = g_strdup_printf("%s%s", pathreal, pathtmp);
     }
 
     perms_new = g_strdup(perms);
@@ -835,13 +835,13 @@ vah_add_file_chardev(virBufferPtr buf,
 
     if (type == VIR_DOMAIN_CHR_TYPE_PIPE) {
         /* add the pipe input */
-        virAsprintf(&pipe_in, "%s.in", path);
+        pipe_in = g_strdup_printf("%s.in", path);
 
         if (vah_add_file(buf, pipe_in, perms) != 0)
             goto clean_pipe_in;
 
         /* add the pipe output */
-        virAsprintf(&pipe_out, "%s.out", path);
+        pipe_out = g_strdup_printf("%s.out", path);
 
         if (vah_add_file(buf, pipe_out, perms) != 0)
             goto clean_pipe_out;
@@ -934,7 +934,7 @@ get_files(vahControl * ctl)
 
     /* verify uuid is same as what we were given on the command line */
     virUUIDFormat(ctl->def->uuid, uuidstr);
-    virAsprintf(&uuid, "%s%s", AA_PREFIX, uuidstr);
+    uuid = g_strdup_printf("%s%s", AA_PREFIX, uuidstr);
 
     if (STRNEQ(uuid, ctl->uuid)) {
         vah_error(ctl, 0, _("given uuid does not match XML uuid"));
@@ -1431,8 +1431,8 @@ main(int argc, char **argv)
     if (vahParseArgv(ctl, argc, argv) != 0)
         vah_error(ctl, 1, _("could not parse arguments"));
 
-    virAsprintf(&profile, "%s/%s", APPARMOR_DIR "/libvirt", ctl->uuid);
-    virAsprintf(&include_file, "%s/%s.files", APPARMOR_DIR "/libvirt", ctl->uuid);
+    profile = g_strdup_printf("%s/%s", APPARMOR_DIR "/libvirt", ctl->uuid);
+    include_file = g_strdup_printf("%s/%s.files", APPARMOR_DIR "/libvirt", ctl->uuid);
 
     if (ctl->cmd == 'a') {
         rc = parserLoad(ctl->uuid);
@@ -1494,7 +1494,7 @@ main(int argc, char **argv)
         /* create the profile from TEMPLATE */
         if (ctl->cmd == 'c') {
             char *tmp = NULL;
-            virAsprintf(&tmp, "  #include <libvirt/%s.files>\n", ctl->uuid);
+            tmp = g_strdup_printf("  #include <libvirt/%s.files>\n", ctl->uuid);
 
             if (ctl->dryrun) {
                 vah_info(profile);

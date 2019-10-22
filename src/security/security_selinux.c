@@ -381,14 +381,14 @@ virSecuritySELinuxMCSFind(virSecurityManagerPtr mgr,
         VIR_DEBUG("Try cat %s:c%d,c%d", sens, c1 + catMin, c2 + catMin);
 
         if (c1 == c2) {
-            virAsprintf(&mcs, "%s:c%d", sens, catMin + c1);
+            mcs = g_strdup_printf("%s:c%d", sens, catMin + c1);
         } else {
             if (c1 > c2) {
                 int t = c1;
                 c1 = c2;
                 c2 = t;
             }
-            virAsprintf(&mcs, "%s:c%d,c%d", sens, catMin + c1, catMin + c2);
+            mcs = g_strdup_printf("%s:c%d,c%d", sens, catMin + c1, catMin + c2);
         }
 
         if (virHashLookup(data->mcs, mcs) == NULL)
@@ -2202,8 +2202,8 @@ virSecuritySELinuxSetHostdevCapsLabel(virSecurityManagerPtr mgr,
     switch (dev->source.caps.type) {
     case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_STORAGE: {
         if (vroot) {
-            virAsprintf(&path, "%s/%s", vroot,
-                        dev->source.caps.u.storage.block);
+            path = g_strdup_printf("%s/%s", vroot,
+                                   dev->source.caps.u.storage.block);
         } else {
             path = g_strdup(dev->source.caps.u.storage.block);
         }
@@ -2214,8 +2214,8 @@ virSecuritySELinuxSetHostdevCapsLabel(virSecurityManagerPtr mgr,
 
     case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_MISC: {
         if (vroot) {
-            virAsprintf(&path, "%s/%s", vroot,
-                        dev->source.caps.u.misc.chardev);
+            path = g_strdup_printf("%s/%s", vroot,
+                                   dev->source.caps.u.misc.chardev);
         } else {
             path = g_strdup(dev->source.caps.u.misc.chardev);
         }
@@ -2433,8 +2433,8 @@ virSecuritySELinuxRestoreHostdevCapsLabel(virSecurityManagerPtr mgr,
     switch (dev->source.caps.type) {
     case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_STORAGE: {
         if (vroot) {
-            virAsprintf(&path, "%s/%s", vroot,
-                        dev->source.caps.u.storage.block);
+            path = g_strdup_printf("%s/%s", vroot,
+                                   dev->source.caps.u.storage.block);
         } else {
             path = g_strdup(dev->source.caps.u.storage.block);
         }
@@ -2445,8 +2445,8 @@ virSecuritySELinuxRestoreHostdevCapsLabel(virSecurityManagerPtr mgr,
 
     case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_MISC: {
         if (vroot) {
-            virAsprintf(&path, "%s/%s", vroot,
-                        dev->source.caps.u.misc.chardev);
+            path = g_strdup_printf("%s/%s", vroot,
+                                   dev->source.caps.u.misc.chardev);
         } else {
             path = g_strdup(dev->source.caps.u.misc.chardev);
         }
@@ -2544,8 +2544,8 @@ virSecuritySELinuxSetChardevLabel(virSecurityManagerPtr mgr,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virAsprintf(&in, "%s.in", dev_source->data.file.path);
-        virAsprintf(&out, "%s.out", dev_source->data.file.path);
+        in = g_strdup_printf("%s.in", dev_source->data.file.path);
+        out = g_strdup_printf("%s.out", dev_source->data.file.path);
         if (virFileExists(in) && virFileExists(out)) {
             if ((virSecuritySELinuxSetFilecon(mgr, in, imagelabel, true) < 0) ||
                 (virSecuritySELinuxSetFilecon(mgr, out, imagelabel, true) < 0)) {
@@ -2618,8 +2618,8 @@ virSecuritySELinuxRestoreChardevLabel(virSecurityManagerPtr mgr,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virAsprintf(&out, "%s.out", dev_source->data.file.path);
-        virAsprintf(&in, "%s.in", dev_source->data.file.path);
+        out = g_strdup_printf("%s.out", dev_source->data.file.path);
+        in = g_strdup_printf("%s.in", dev_source->data.file.path);
         if (virFileExists(in) && virFileExists(out)) {
             if ((virSecuritySELinuxRestoreFileLabel(mgr, out, true) < 0) ||
                 (virSecuritySELinuxRestoreFileLabel(mgr, in, true) < 0)) {
@@ -3257,7 +3257,7 @@ virSecuritySELinuxSetTapFDLabel(virSecurityManagerPtr mgr,
     }
 
     /* Label /dev/tap.* devices only. Leave /dev/net/tun alone! */
-    virAsprintf(&proc, "/proc/self/fd/%d", fd);
+    proc = g_strdup_printf("/proc/self/fd/%d", fd);
 
     if (virFileResolveLink(proc, &fd_path) < 0) {
         virReportSystemError(errno,
@@ -3341,9 +3341,9 @@ virSecuritySELinuxGetSecurityMountOptions(virSecurityManagerPtr mgr,
             secdef->imagelabel = virSecuritySELinuxGenImageLabel(mgr, def);
 
         if (secdef->imagelabel) {
-            virAsprintf(&opts,
-                        ",context=\"%s\"",
-                        (const char*) secdef->imagelabel);
+            opts = g_strdup_printf(
+                                   ",context=\"%s\"",
+                                   (const char*) secdef->imagelabel);
         }
     }
 
@@ -3402,7 +3402,7 @@ virSecuritySELinuxSetFileLabels(virSecurityManagerPtr mgr,
         return -1;
 
     while ((ret = virDirRead(dir, &ent, path)) > 0) {
-        virAsprintf(&filename, "%s/%s", path, ent->d_name);
+        filename = g_strdup_printf("%s/%s", path, ent->d_name);
         ret = virSecuritySELinuxSetFilecon(mgr, filename,
                                            seclabel->imagelabel, true);
         VIR_FREE(filename);
@@ -3448,7 +3448,7 @@ virSecuritySELinuxRestoreFileLabels(virSecurityManagerPtr mgr,
         return -1;
 
     while ((ret = virDirRead(dir, &ent, path)) > 0) {
-        virAsprintf(&filename, "%s/%s", path, ent->d_name);
+        filename = g_strdup_printf("%s/%s", path, ent->d_name);
         ret = virSecuritySELinuxRestoreFileLabel(mgr, filename, true);
         VIR_FREE(filename);
         if (ret < 0)

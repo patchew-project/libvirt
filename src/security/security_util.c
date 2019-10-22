@@ -63,7 +63,7 @@ virSecurityGetAttrName(const char *name G_GNUC_UNUSED)
 {
     char *ret = NULL;
 #ifdef XATTR_NAMESPACE
-    virAsprintf(&ret, XATTR_NAMESPACE".libvirt.security.%s", name);
+    ret = g_strdup_printf(XATTR_NAMESPACE".libvirt.security.%s", name);
 #else
     errno = ENOSYS;
     virReportSystemError(errno, "%s",
@@ -78,7 +78,7 @@ virSecurityGetRefCountAttrName(const char *name G_GNUC_UNUSED)
 {
     char *ret = NULL;
 #ifdef XATTR_NAMESPACE
-    virAsprintf(&ret, XATTR_NAMESPACE".libvirt.security.ref_%s", name);
+    ret = g_strdup_printf(XATTR_NAMESPACE".libvirt.security.ref_%s", name);
 #else
     errno = ENOSYS;
     virReportSystemError(errno, "%s",
@@ -93,7 +93,7 @@ static char *
 virSecurityGetTimestampAttrName(const char *name)
 {
     char *ret = NULL;
-    virAsprintf(&ret, XATTR_NAMESPACE ".libvirt.security.timestamp_%s", name);
+    ret = g_strdup_printf(XATTR_NAMESPACE ".libvirt.security.timestamp_%s", name);
     return ret;
 }
 #else /* !XATTR_NAMESPACE */
@@ -120,7 +120,7 @@ virSecurityGetTimestamp(void)
         return NULL;
     }
 
-    virAsprintf(&ret, "%llu", boottime);
+    ret = g_strdup_printf("%llu", boottime);
     return ret;
 }
 
@@ -312,7 +312,7 @@ virSecurityGetRememberedLabel(const char *name,
     refcount--;
 
     if (refcount > 0) {
-        virAsprintf(&value, "%u", refcount);
+        value = g_strdup_printf("%u", refcount);
 
         if (virFileSetXAttr(path, ref_name, value) < 0)
             return -1;
@@ -419,7 +419,7 @@ virSecuritySetRememberedLabel(const char *name,
             return -1;
     }
 
-    virAsprintf(&value, "%u", refcount);
+    value = g_strdup_printf("%u", refcount);
 
     if (virFileSetXAttr(path, ref_name, value) < 0)
         return -1;
