@@ -153,8 +153,8 @@ main(int argc, char **argv)
 
     server_duid = g_strdup(getenv("DNSMASQ_SERVER_DUID"));
 
-    virAsprintf(&custom_lease_file,
-                LOCALSTATEDIR "/lib/libvirt/dnsmasq/%s.status", interface);
+    custom_lease_file = g_strdup_printf(
+                                        LOCALSTATEDIR "/lib/libvirt/dnsmasq/%s.status", interface);
 
     pid_file = g_strdup(RUNSTATEDIR "/leaseshelper.pid");
 
