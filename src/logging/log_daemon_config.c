@@ -47,7 +47,7 @@ virLogDaemonConfigFilePath(bool privileged, char **configfile)
         if (!(configdir = virGetUserConfigDirectory()))
             goto error;
 
-        virAsprintf(configfile, "%s/virtlogd.conf", configdir);
+        *configfile = g_strdup_printf("%s/virtlogd.conf", configdir);
         VIR_FREE(configdir);
     }
 

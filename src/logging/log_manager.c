@@ -52,7 +52,7 @@ virLogManagerDaemonPath(bool privileged)
         if (!(rundir = virGetUserRuntimeDirectory()))
             return NULL;
 
-        virAsprintf(&path, "%s/virtlogd-sock", rundir);
+        path = g_strdup_printf("%s/virtlogd-sock", rundir);
 
         VIR_FREE(rundir);
     }

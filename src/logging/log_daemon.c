@@ -405,8 +405,8 @@ virLogDaemonUnixSocketPaths(bool privileged,
         }
         umask(old_umask);
 
-        virAsprintf(sockfile, "%s/virtlogd-sock", rundir);
-        virAsprintf(adminSockfile, "%s/virtlogd-admin-sock", rundir);
+        *sockfile = g_strdup_printf("%s/virtlogd-sock", rundir);
+        *adminSockfile = g_strdup_printf("%s/virtlogd-admin-sock", rundir);
 
         VIR_FREE(rundir);
     }
@@ -632,7 +632,7 @@ virLogDaemonExecRestartStatePath(bool privileged,
         }
         umask(old_umask);
 
-        virAsprintf(state_file, "%s/virtlogd-restart-exec.json", rundir);
+        *state_file = g_strdup_printf("%s/virtlogd-restart-exec.json", rundir);
 
         VIR_FREE(rundir);
     }
@@ -649,7 +649,7 @@ virLogDaemonGetExecRestartMagic(void)
 {
     char *ret;
 
-    virAsprintf(&ret, "%lld", (long long int)getpid());
+    ret = g_strdup_printf("%lld", (long long int)getpid());
     return ret;
 }
 
