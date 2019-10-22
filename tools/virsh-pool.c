@@ -1286,19 +1286,16 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
                     const char *unit;
 
                     val = vshPrettyCapacity(info.capacity, &unit);
-                    if (virAsprintf(&poolInfoTexts[i].capacity,
-                                    "%.2lf %s", val, unit) < 0)
-                        goto cleanup;
+                    virAsprintf(&poolInfoTexts[i].capacity, "%.2lf %s", val,
+                                unit);
 
                     val = vshPrettyCapacity(info.allocation, &unit);
-                    if (virAsprintf(&poolInfoTexts[i].allocation,
-                                    "%.2lf %s", val, unit) < 0)
-                        goto cleanup;
+                    virAsprintf(&poolInfoTexts[i].allocation, "%.2lf %s", val,
+                                unit);
 
                     val = vshPrettyCapacity(info.available, &unit);
-                    if (virAsprintf(&poolInfoTexts[i].available,
-                                    "%.2lf %s", val, unit) < 0)
-                        goto cleanup;
+                    virAsprintf(&poolInfoTexts[i].available, "%.2lf %s", val,
+                                unit);
                 } else {
                     /* Capacity related information isn't available */
                     poolInfoTexts[i].capacity = g_strdup(_("-"));
