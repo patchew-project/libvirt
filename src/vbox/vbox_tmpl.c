@@ -619,7 +619,7 @@ _virtualboxCreateMachine(vboxDriverPtr data, virDomainDefPtr def, IMachine **mac
 
     VBOX_UTF8_TO_UTF16(def->name, &machineNameUtf16);
     vboxIIDFromUUID(&iid, def->uuid);
-    virAsprintf(&createFlags, "UUID=%s,forceOverwrite=0", uuidstr);
+    createFlags = g_strdup_printf("UUID=%s,forceOverwrite=0", uuidstr);
     VBOX_UTF8_TO_UTF16(createFlags, &createFlagsUtf16);
     rc = data->vboxObj->vtbl->CreateMachine(data->vboxObj,
                                             NULL,

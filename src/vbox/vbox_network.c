@@ -432,8 +432,8 @@ vboxNetworkDefineCreateXML(virConnectPtr conn, const char *xml, bool start)
 
     VBOX_UTF16_TO_UTF8(networkInterfaceNameUtf16, &networkInterfaceNameUtf8);
 
-    virAsprintf(&networkNameUtf8, "HostInterfaceNetworking-%s",
-                networkInterfaceNameUtf8);
+    networkNameUtf8 = g_strdup_printf("HostInterfaceNetworking-%s",
+                                      networkInterfaceNameUtf8);
 
     VBOX_UTF8_TO_UTF16(networkNameUtf8, &networkNameUtf16);
 
@@ -588,7 +588,7 @@ vboxNetworkUndefineDestroy(virNetworkPtr network, bool removeinterface)
      * show up in the net-list in virsh
      */
 
-    virAsprintf(&networkNameUtf8, "HostInterfaceNetworking-%s", network->name);
+    networkNameUtf8 = g_strdup_printf("HostInterfaceNetworking-%s", network->name);
 
     VBOX_UTF8_TO_UTF16(network->name, &networkInterfaceNameUtf16);
 
@@ -692,7 +692,7 @@ static int vboxNetworkCreate(virNetworkPtr network)
      * server by giving the machine static IP
      */
 
-    virAsprintf(&networkNameUtf8, "HostInterfaceNetworking-%s", network->name);
+    networkNameUtf8 = g_strdup_printf("HostInterfaceNetworking-%s", network->name);
 
     VBOX_UTF8_TO_UTF16(network->name, &networkInterfaceNameUtf16);
 
@@ -789,7 +789,7 @@ static char *vboxNetworkGetXMLDesc(virNetworkPtr network, unsigned int flags)
     def->ips = ipdef;
     def->nips = 1;
 
-    virAsprintf(&networkNameUtf8, "HostInterfaceNetworking-%s", network->name);
+    networkNameUtf8 = g_strdup_printf("HostInterfaceNetworking-%s", network->name);
 
     VBOX_UTF8_TO_UTF16(network->name, &networkInterfaceNameUtf16);
 

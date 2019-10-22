@@ -449,7 +449,7 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
 
     /* If target.path isn't given, use default path ~/.VirtualBox/image_name */
     if (!def->target.path)
-        virAsprintf(&def->target.path, "%s/.VirtualBox/%s", virGetUserDirectory(), def->name);
+        def->target.path = g_strdup_printf("%s/.VirtualBox/%s", virGetUserDirectory(), def->name);
     VBOX_UTF8_TO_UTF16(def->target.path, &hddNameUtf16);
 
     if (!hddFormatUtf16 || !hddNameUtf16)
