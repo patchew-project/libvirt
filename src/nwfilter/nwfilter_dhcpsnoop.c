@@ -315,7 +315,7 @@ virNWFilterSnoopActivate(virNWFilterSnoopReqPtr req)
 {
     char *key;
 
-    virAsprintf(&key, "%p-%d", req, req->ifindex);
+    key = g_strdup_printf("%p-%d", req, req->ifindex);
 
     virNWFilterSnoopActiveLock();
 
@@ -1080,7 +1080,7 @@ virNWFilterSnoopDHCPOpen(const char *ifname, virMacAddr *mac,
          * extend the filter with the macaddr of the VM; filter the
          * more unlikely parameters first, then go for the MAC
          */
-        virAsprintf(&ext_filter, "%s and ether src %s", filter, macaddr);
+        ext_filter = g_strdup_printf("%s and ether src %s", filter, macaddr);
     } else {
         /*
          * Some DHCP servers respond via MAC broadcast; we rely on later
@@ -1763,7 +1763,7 @@ virNWFilterSnoopLeaseFileWrite(int lfd, const char *ifkey,
     }
 
     /* time intf ip dhcpserver */
-    virAsprintf(&lbuf, "%u %s %s %s\n", ipl->timeout, ifkey, ipstr, dhcpstr);
+    lbuf = g_strdup_printf("%u %s %s %s\n", ipl->timeout, ifkey, ipstr, dhcpstr);
     len = strlen(lbuf);
 
     if (safewrite(lfd, lbuf, len) != len) {
