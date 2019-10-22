@@ -722,27 +722,6 @@ virDoubleToStr(char **strp, double number)
 }
 
 
-void
-virVasprintfInternal(char **strp,
-                     const char *fmt,
-                     va_list list)
-{
-    char *str = NULL;
-
-    g_vasprintf(&str, fmt, list);
-
-    /* GLib is supposed to abort() on OOM, but a mistake meant
-     * it did not. Delete this once our min glib is at 2.64.0
-     * which includes the fix:
-     *   https://gitlab.gnome.org/GNOME/glib/merge_requests/1145
-     */
-#if !GLIB_CHECK_VERSION(2, 64, 0)
-    if (!str)
-        abort();
-#endif
-    *strp = str;
-}
-
 /**
  * virStrncpy:
  *
