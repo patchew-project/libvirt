@@ -90,8 +90,7 @@ virDriverShouldAutostart(const char *dir,
 
     *autostart = false;
 
-    if (virAsprintf(&path, "%s/autostarted", dir) < 0)
-        return -1;
+    virAsprintf(&path, "%s/autostarted", dir);
 
     if (virFileExists(path)) {
         VIR_DEBUG("Autostart file %s exists, skipping autostart", path);
@@ -152,8 +151,7 @@ virGetConnectGeneric(virThreadLocalPtr threadPtr, const char *name)
         g_autofree char *uri = NULL;
         const char *uriPath = geteuid() == 0 ? "/system" : "/session";
 
-        if (virAsprintf(&uri, "%s://%s", name, uriPath) < 0)
-            return NULL;
+        virAsprintf(&uri, "%s://%s", name, uriPath);
 
         conn = virConnectOpen(uri);
         VIR_DEBUG("Opened new %s connection %p", name, conn);
