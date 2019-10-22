@@ -570,10 +570,10 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
               vol->target.allocation, info.obj_size, info.num_objs);
 
     VIR_FREE(vol->target.path);
-    virAsprintf(&vol->target.path, "%s/%s", def->source.name, vol->name);
+    vol->target.path = g_strdup_printf("%s/%s", def->source.name, vol->name);
 
     VIR_FREE(vol->key);
-    virAsprintf(&vol->key, "%s/%s", def->source.name, vol->name);
+    vol->key = g_strdup_printf("%s/%s", def->source.name, vol->name);
 
     ret = 0;
 
@@ -891,10 +891,10 @@ virStorageBackendRBDCreateVol(virStoragePoolObjPtr pool,
     }
 
     VIR_FREE(vol->target.path);
-    virAsprintf(&vol->target.path, "%s/%s", def->source.name, vol->name);
+    vol->target.path = g_strdup_printf("%s/%s", def->source.name, vol->name);
 
     VIR_FREE(vol->key);
-    virAsprintf(&vol->key, "%s/%s", def->source.name, vol->name);
+    vol->key = g_strdup_printf("%s/%s", def->source.name, vol->name);
 
     return 0;
 }

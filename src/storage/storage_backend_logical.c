@@ -291,7 +291,7 @@ virStorageBackendLogicalMakeVol(char **const groups,
     }
 
     if (vol->target.path == NULL)
-        virAsprintf(&vol->target.path, "%s/%s", def->target.path, vol->name);
+        vol->target.path = g_strdup_printf("%s/%s", def->target.path, vol->name);
 
     /* Mark the (s) sparse/snapshot lv, e.g. the lv created using
      * the --virtualsize/-V option. We've already ignored the (t)hin
@@ -313,8 +313,8 @@ virStorageBackendLogicalMakeVol(char **const groups,
         if (!(vol->target.backingStore = virStorageSourceNew()))
             goto cleanup;
 
-        virAsprintf(&vol->target.backingStore->path, "%s/%s",
-                    def->target.path, groups[1]);
+        vol->target.backingStore->path = g_strdup_printf("%s/%s",
+                                                         def->target.path, groups[1]);
 
         vol->target.backingStore->format = VIR_STORAGE_POOL_LOGICAL_LVM2;
         vol->target.backingStore->type = VIR_STORAGE_TYPE_BLOCK;
@@ -912,7 +912,7 @@ virStorageBackendLogicalCreateVol(virStoragePoolObjPtr pool,
     vol->type = VIR_STORAGE_VOL_BLOCK;
 
     VIR_FREE(vol->target.path);
-    virAsprintf(&vol->target.path, "%s/%s", def->target.path, vol->name);
+    vol->target.path = g_strdup_printf("%s/%s", def->target.path, vol->name);
 
     if (virStorageBackendLogicalLVCreate(vol, def) < 0)
         return -1;

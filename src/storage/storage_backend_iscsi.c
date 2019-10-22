@@ -63,13 +63,13 @@ virStorageBackendISCSIPortal(virStoragePoolSourcePtr source)
         source->hosts[0].port = ISCSI_DEFAULT_TARGET_PORT;
 
     if (strchr(source->hosts[0].name, ':')) {
-        virAsprintf(&portal, "[%s]:%d,1",
-                    source->hosts[0].name,
-                    source->hosts[0].port);
+        portal = g_strdup_printf("[%s]:%d,1",
+                                 source->hosts[0].name,
+                                 source->hosts[0].port);
     } else {
-        virAsprintf(&portal, "%s:%d,1",
-                    source->hosts[0].name,
-                    source->hosts[0].port);
+        portal = g_strdup_printf("%s:%d,1",
+                                 source->hosts[0].name,
+                                 source->hosts[0].port);
     }
 
     return portal;
@@ -133,8 +133,8 @@ virStorageBackendISCSIFindLUs(virStoragePoolObjPtr pool,
     uint32_t host;
     g_autofree char *sysfs_path = NULL;
 
-    virAsprintf(&sysfs_path, "/sys/class/iscsi_session/session%s/device",
-                session);
+    sysfs_path = g_strdup_printf("/sys/class/iscsi_session/session%s/device",
+                                 session);
 
     if (virStorageBackendISCSIGetHostNumber(sysfs_path, &host) < 0)
         return -1;

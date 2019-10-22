@@ -281,9 +281,9 @@ storageStateInitialize(bool privileged,
         if (!(configdir && rundir))
             goto error;
 
-        virAsprintf(&driver->configDir, "%s/storage", configdir);
-        virAsprintf(&driver->autostartDir, "%s/storage/autostart", configdir);
-        virAsprintf(&driver->stateDir, "%s/storage/run", rundir);
+        driver->configDir = g_strdup_printf("%s/storage", configdir);
+        driver->autostartDir = g_strdup_printf("%s/storage/autostart", configdir);
+        driver->stateDir = g_strdup_printf("%s/storage/run", rundir);
     }
     driver->privileged = privileged;
 
@@ -2289,7 +2289,7 @@ virStorageBackendPloopRestoreDesc(char *path)
     g_autofree char *refresh_tool = NULL;
     g_autofree char *desc = NULL;
 
-    virAsprintf(&desc, "%s/DiskDescriptor.xml", path);
+    desc = g_strdup_printf("%s/DiskDescriptor.xml", path);
 
     if (virFileRemove(desc, 0, 0) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -2851,8 +2851,8 @@ virStoragePoolObjBuildTempFilePath(virStoragePoolObjPtr obj,
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(obj);
     char *tmp = NULL;
 
-    virAsprintf(&tmp, "%s/%s.%s.secret.XXXXXX",
-                driver->stateDir, def->name, voldef->name);
+    tmp = g_strdup_printf("%s/%s.%s.secret.XXXXXX",
+                          driver->stateDir, def->name, voldef->name);
     return tmp;
 }
 

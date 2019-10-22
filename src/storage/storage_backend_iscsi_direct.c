@@ -68,17 +68,17 @@ virStorageBackendISCSIDirectPortal(virStoragePoolSourcePtr source)
         return NULL;
     }
     if (source->hosts[0].port == 0) {
-        virAsprintf(&portal, "%s:%d",
-                    source->hosts[0].name,
-                    ISCSI_DEFAULT_TARGET_PORT);
+        portal = g_strdup_printf("%s:%d",
+                                 source->hosts[0].name,
+                                 ISCSI_DEFAULT_TARGET_PORT);
     } else if (strchr(source->hosts[0].name, ':')) {
-        virAsprintf(&portal, "[%s]:%d",
-                    source->hosts[0].name,
-                    source->hosts[0].port);
+        portal = g_strdup_printf("[%s]:%d",
+                                 source->hosts[0].name,
+                                 source->hosts[0].port);
     } else {
-        virAsprintf(&portal, "%s:%d",
-                    source->hosts[0].name,
-                    source->hosts[0].port);
+        portal = g_strdup_printf("%s:%d",
+                                 source->hosts[0].name,
+                                 source->hosts[0].port);
     }
     return portal;
 }
@@ -230,11 +230,11 @@ virISCSIDirectSetVolumeAttributes(virStoragePoolObjPtr pool,
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
 
-    virAsprintf(&vol->name, "%s%u", VOL_NAME_PREFIX, lun);
-    virAsprintf(&vol->key, "ip-%s-iscsi-%s-lun-%u", portal,
-                def->source.devices[0].path, lun);
-    virAsprintf(&vol->target.path, "ip-%s-iscsi-%s-lun-%u", portal,
-                def->source.devices[0].path, lun);
+    vol->name = g_strdup_printf("%s%u", VOL_NAME_PREFIX, lun);
+    vol->key = g_strdup_printf("ip-%s-iscsi-%s-lun-%u", portal,
+                               def->source.devices[0].path, lun);
+    vol->target.path = g_strdup_printf("ip-%s-iscsi-%s-lun-%u", portal,
+                                       def->source.devices[0].path, lun);
     return 0;
 }
 

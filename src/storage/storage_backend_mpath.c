@@ -53,9 +53,9 @@ virStorageBackendMpathNewVol(virStoragePoolObjPtr pool,
 
     vol->type = VIR_STORAGE_VOL_BLOCK;
 
-    virAsprintf(&(vol->name), "dm-%u", devnum);
+    (vol->name) = g_strdup_printf("dm-%u", devnum);
 
-    virAsprintf(&vol->target.path, "/dev/%s", dev);
+    vol->target.path = g_strdup_printf("/dev/%s", dev);
 
     if (virStorageBackendUpdateVolInfo(vol, true,
                                        VIR_STORAGE_VOL_OPEN_DEFAULT, 0) < 0) {
@@ -163,7 +163,7 @@ virStorageBackendCreateVols(virStoragePoolObjPtr pool,
 
         if (is_mpath == 1) {
 
-            virAsprintf(&map_device, "mapper/%s", names->name);
+            map_device = g_strdup_printf("mapper/%s", names->name);
 
             if (virStorageBackendGetMinorNumber(names->name, &minor) < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,

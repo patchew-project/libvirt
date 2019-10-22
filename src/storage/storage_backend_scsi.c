@@ -60,7 +60,7 @@ virStorageBackendSCSITriggerRescan(uint32_t host)
 
     VIR_DEBUG("Triggering rescan of host %d", host);
 
-    virAsprintf(&path, "%s/host%u/scan", LINUX_SYSFS_SCSI_HOST_PREFIX, host);
+    path = g_strdup_printf("%s/host%u/scan", LINUX_SYSFS_SCSI_HOST_PREFIX, host);
 
     VIR_DEBUG("Scan trigger path is '%s'", path);
 
@@ -259,7 +259,7 @@ checkParent(const char *name,
         goto cleanup;
     }
 
-    virAsprintf(&scsi_host_name, "scsi_%s", name);
+    scsi_host_name = g_strdup_printf("scsi_%s", name);
 
     if (!(vhba_parent = virNodeDeviceGetParentName(conn, scsi_host_name)))
         goto cleanup;
@@ -373,7 +373,7 @@ virStorageBackendSCSICheckPool(virStoragePoolObjPtr pool,
     if (virSCSIHostGetNumber(name, &host) < 0)
         return -1;
 
-    virAsprintf(&path, "%s/host%d", LINUX_SYSFS_SCSI_HOST_PREFIX, host);
+    path = g_strdup_printf("%s/host%d", LINUX_SYSFS_SCSI_HOST_PREFIX, host);
 
     *isActive = virFileExists(path);
 

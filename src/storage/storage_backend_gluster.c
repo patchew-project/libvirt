@@ -101,7 +101,7 @@ virStorageBackendGlusterOpen(virStoragePoolObjPtr pool)
         return NULL;
 
     ret->volname = g_strdup(name);
-    virAsprintf(&ret->dir, "%s%s", dir ? dir : "/", trailing_slash ? "" : "/");
+    ret->dir = g_strdup_printf("%s%s", dir ? dir : "/", trailing_slash ? "" : "/");
 
     /* FIXME: Currently hard-coded to tcp transport; XML needs to be
      * extended to allow alternate transport */
@@ -109,7 +109,7 @@ virStorageBackendGlusterOpen(virStoragePoolObjPtr pool)
         goto error;
     ret->uri->scheme = g_strdup("gluster");
     ret->uri->server = g_strdup(def->source.hosts[0].name);
-    virAsprintf(&ret->uri->path, "/%s%s", ret->volname, ret->dir);
+    ret->uri->path = g_strdup_printf("/%s%s", ret->volname, ret->dir);
     ret->uri->port = def->source.hosts[0].port;
 
     /* Actually connect to glfs */
@@ -193,10 +193,10 @@ virStorageBackendGlusterSetMetadata(virStorageBackendGlusterStatePtr state,
         vol->name = g_strdup(name);
     }
 
-    virAsprintf(&path, "%s%s%s", state->volname, state->dir, vol->name);
+    path = g_strdup_printf("%s%s%s", state->volname, state->dir, vol->name);
 
     tmp = state->uri->path;
-    virAsprintf(&state->uri->path, "/%s", path);
+    state->uri->path = g_strdup_printf("/%s", path);
     if (!(vol->target.path = virURIFormat(state->uri))) {
         VIR_FREE(state->uri->path);
         state->uri->path = tmp;
