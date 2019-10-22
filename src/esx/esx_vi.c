@@ -387,9 +387,9 @@ esxVI_CURL_Download(esxVI_CURL *curl, const char *url, char **content,
             return -1;
         }
 
-        virAsprintf(&range, "%llu-%llu", offset, offset + *length - 1);
+        range = g_strdup_printf("%llu-%llu", offset, offset + *length - 1);
     } else if (offset > 0) {
-        virAsprintf(&range, "%llu-", offset);
+        range = g_strdup_printf("%llu-", offset);
     }
 
     virMutexLock(&curl->lock);
@@ -1487,9 +1487,8 @@ esxVI_Context_Execute(esxVI_Context *ctx, const char *methodName,
 
             goto cleanup;
         } else {
-            virAsprintf(&xpathExpression,
-                        "/soapenv:Envelope/soapenv:Body/vim:%sResponse",
-                        methodName);
+            xpathExpression = g_strdup_printf("/soapenv:Envelope/soapenv:Body/vim:%sResponse",
+                                              methodName);
 
             responseNode = virXPathNode(xpathExpression, xpathContext);
 
@@ -3585,12 +3584,12 @@ esxVI_LookupFileInfoByDatastorePath(esxVI_Context *ctx,
          * The <path> part of the datatore path didn't contain a '/', assume
          * that the <path> part is actually the file name.
          */
-        virAsprintf(&datastorePathWithoutFileName, "[%s]", datastoreName);
+        datastorePathWithoutFileName = g_strdup_printf("[%s]", datastoreName);
 
         fileName = g_strdup(directoryAndFileName);
     } else {
-        virAsprintf(&datastorePathWithoutFileName, "[%s] %s", datastoreName,
-                    directoryName);
+        datastorePathWithoutFileName = g_strdup_printf("[%s] %s", datastoreName,
+                                                       directoryName);
 
         length = strlen(directoryName);
 
@@ -3816,7 +3815,7 @@ esxVI_LookupDatastoreContentByDatastoreName
     floppyImageFileQuery = NULL;
 
     /* Search datastore for files */
-    virAsprintf(&datastorePath, "[%s]", datastoreName);
+    datastorePath = g_strdup_printf("[%s]", datastoreName);
 
     if (esxVI_SearchDatastoreSubFolders_Task(ctx, hostDatastoreBrowser,
                                              datastorePath, searchSpec,
@@ -4534,9 +4533,9 @@ esxVI_WaitForTaskCompletion(esxVI_Context *ctx,
         } else if (!taskInfo->error->localizedMessage) {
             *errorMessage = g_strdup(taskInfo->error->fault->_actualType);
         } else {
-            virAsprintf(errorMessage, "%s - %s",
-                        taskInfo->error->fault->_actualType,
-                        taskInfo->error->localizedMessage);
+            *errorMessage = g_strdup_printf("%s - %s",
+                                            taskInfo->error->fault->_actualType,
+                                            taskInfo->error->localizedMessage);
         }
     }
 
