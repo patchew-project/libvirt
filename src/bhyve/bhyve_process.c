@@ -89,7 +89,7 @@ bhyveNetCleanup(virDomainObjPtr vm)
 static void
 virBhyveFormatDevMapFile(const char *vm_name, char **fn_out)
 {
-    virAsprintf(fn_out, "%s/grub_bhyve-%s-device.map", BHYVE_STATE_DIR, vm_name);
+    *fn_out, = g_strdup_printf("%s/grub_bhyve-%s-device.map", BHYVE_STATE_DIR, vm_name);
 }
 
 int
@@ -112,7 +112,7 @@ virBhyveProcessStart(virConnectPtr conn,
     int ret = -1, rc;
     virCapsPtr caps = NULL;
 
-    virAsprintf(&logfile, "%s/%s.log", BHYVE_LOG_DIR, vm->def->name);
+    logfile = g_strdup_printf("%s/%s.log", BHYVE_LOG_DIR, vm->def->name);
 
     caps = bhyveDriverGetCapabilities(privconn);
     if (!caps)
@@ -403,7 +403,7 @@ virBhyveProcessReconnect(virDomainObjPtr vm,
     if (kp == NULL || nprocs != 1)
         goto cleanup;
 
-    virAsprintf(&expected_proctitle, "bhyve: %s", vm->def->name);
+    expected_proctitle = g_strdup_printf("bhyve: %s", vm->def->name);
 
     proc_argv = kvm_getargv(data->kd, kp, 0);
     if (proc_argv && proc_argv[0]) {
