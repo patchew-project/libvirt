@@ -1321,12 +1321,12 @@ BAD:
       Whenever you add a new printf-style function, i.e., one with a format
       string argument and following "..." in its prototype, be sure to use
       gcc's printf attribute directive in the prototype.  For example, here's
-      the one for virAsprintf, in util.h:
+      the one for virBufferAsprintf, in virbuffer.h:
     </p>
 
 <pre>
-  int virAsprintf(char **strp, const char *fmt, ...)
-      ATTRIBUTE_FORMAT(printf, 2, 3);
+  void virBufferAsprintf(virBufferPtr buf, const char *format, ...)
+    G_GNUC_PRINTF(2, 3);
 </pre>
 
     <p>
@@ -1337,7 +1337,7 @@ BAD:
 
     <p>
       When printing to a string, consider using virBuffer for
-      incremental allocations, virAsprintf for a one-shot allocation,
+      incremental allocations, g_strdup_printf for a one-shot allocation,
       and snprintf for fixed-width buffers.  Do not use sprintf, even
       if you can prove the buffer won't overflow, since gnulib does
       not provide the same portability guarantees for sprintf as it
