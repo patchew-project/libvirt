@@ -640,7 +640,7 @@ testDomainGenerateIfname(virDomainDefPtr domdef)
         virDomainNetDefPtr net = NULL;
         char *ifname;
 
-        virAsprintf(&ifname, "testnet%d", ifctr);
+        ifname = g_strdup_printf("testnet%d", ifctr);
 
         /* Generate network interface names */
         if (!(net = virDomainNetFindByName(domdef, ifname)))
@@ -1075,7 +1075,7 @@ testOpenVolumesForPool(const char *file,
     g_autoptr(virStorageVolDef) volDef = NULL;
 
     /* Find storage volumes */
-    virAsprintf(&vol_xpath, "/node/pool[%d]/volume", objidx);
+    vol_xpath = g_strdup_printf("/node/pool[%d]/volume", objidx);
 
     num = virXPathNodeSet(vol_xpath, ctxt, &nodes);
     if (num < 0)
@@ -1091,8 +1091,8 @@ testOpenVolumesForPool(const char *file,
             return -1;
 
         if (!volDef->target.path) {
-            virAsprintf(&volDef->target.path, "%s/%s", def->target.path,
-                        volDef->name);
+            volDef->target.path = g_strdup_printf("%s/%s", def->target.path,
+                                                  volDef->name);
         }
 
         if (!volDef->key)
@@ -2043,7 +2043,7 @@ testDomainGetHostname(virDomainPtr domain,
     if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
 
-    virAsprintf(&ret, "%shost", domain->name);
+    ret = g_strdup_printf("%shost", domain->name);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -4732,7 +4732,7 @@ testDomainGetFSInfo(virDomainPtr dom,
             info_ret[0]->mountpoint = g_strdup("/");
             info_ret[0]->fstype = g_strdup("ext4");
             info_ret[0]->devAlias[0] = g_strdup(name);
-            virAsprintf(&info_ret[0]->name, "%s1", name);
+            info_ret[0]->name = g_strdup_printf("%s1", name);
 
             if (VIR_ALLOC(info_ret[1]) < 0 ||
                 VIR_ALLOC(info_ret[1]->devAlias) < 0)
@@ -4741,7 +4741,7 @@ testDomainGetFSInfo(virDomainPtr dom,
             info_ret[1]->mountpoint = g_strdup("/boot");
             info_ret[1]->fstype = g_strdup("ext4");
             info_ret[1]->devAlias[0] = g_strdup(name);
-            virAsprintf(&info_ret[1]->name, "%s2", name);
+            info_ret[1]->name = g_strdup_printf("%s2", name);
 
             info_ret[0]->ndevAlias = info_ret[1]->ndevAlias = 1;
 
@@ -5111,7 +5111,7 @@ testDomainInterfaceAddresses(virDomainPtr dom,
         } else {
             iface->addrs[0].type = VIR_IP_ADDR_TYPE_IPV4;
             iface->addrs[0].prefix = 24;
-            virAsprintf(&iface->addrs[0].addr, "192.168.0.%zu", 1 + i);
+            iface->addrs[0].addr = g_strdup_printf("192.168.0.%zu", 1 + i);
 
         }
 
@@ -6364,7 +6364,7 @@ testConnectFindStoragePoolSources(virConnectPtr conn G_GNUC_UNUSED,
             return NULL;
         }
 
-        virAsprintf(&ret, defaultPoolSourcesNetFSXML, source->hosts[0].name);
+        ret = g_strdup_printf(defaultPoolSourcesNetFSXML, source->hosts[0].name);
         return ret;
 
     default:
@@ -7007,8 +7007,8 @@ testStorageVolCreateXML(virStoragePoolPtr pool,
         goto cleanup;
     }
 
-    virAsprintf(&privvol->target.path, "%s/%s", def->target.path,
-                privvol->name);
+    privvol->target.path = g_strdup_printf("%s/%s", def->target.path,
+                                           privvol->name);
 
     privvol->key = g_strdup(privvol->target.path);
     if (virStoragePoolObjAddVol(obj, privvol) < 0)
@@ -7074,8 +7074,8 @@ testStorageVolCreateXMLFrom(virStoragePoolPtr pool,
     }
     def->available = (def->capacity - def->allocation);
 
-    virAsprintf(&privvol->target.path, "%s/%s", def->target.path,
-                privvol->name);
+    privvol->target.path = g_strdup_printf("%s/%s", def->target.path,
+                                           privvol->name);
 
     privvol->key = g_strdup(privvol->target.path);
     if (virStoragePoolObjAddVol(obj, privvol) < 0)
