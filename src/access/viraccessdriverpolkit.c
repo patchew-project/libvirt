@@ -59,8 +59,8 @@ virAccessDriverPolkitFormatAction(const char *typename,
     char *actionid = NULL;
     size_t i;
 
-    virAsprintf(&actionid, "%s.%s.%s", VIR_ACCESS_DRIVER_POLKIT_ACTION_PREFIX,
-                typename, permname);
+    actionid = g_strdup_printf("%s.%s.%s", VIR_ACCESS_DRIVER_POLKIT_ACTION_PREFIX,
+                               typename, permname);
 
     for (i = 0; actionid[i]; i++)
         if (actionid[i] == '_')
