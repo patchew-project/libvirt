@@ -1855,7 +1855,7 @@ vshDebug(vshControl *ctl, int level, const char *format, ...)
     va_end(ap);
 
     va_start(ap, format);
-    virVasprintf(&str, format, ap);
+    str = g_strdup_vprintf(format, ap);
     va_end(ap);
     fputs(str, stdout);
     VIR_FREE(str);
@@ -1871,7 +1871,7 @@ vshPrintExtra(vshControl *ctl, const char *format, ...)
         return;
 
     va_start(ap, format);
-    virVasprintf(&str, format, ap);
+    str = g_strdup_vprintf(format, ap);
     va_end(ap);
     fputs(str, stdout);
     VIR_FREE(str);
@@ -1885,7 +1885,7 @@ vshPrint(vshControl *ctl G_GNUC_UNUSED, const char *format, ...)
     char *str;
 
     va_start(ap, format);
-    virVasprintf(&str, format, ap);
+    str = g_strdup_vprintf(format, ap);
     va_end(ap);
     fputs(str, stdout);
     VIR_FREE(str);
@@ -2017,7 +2017,7 @@ vshError(vshControl *ctl, const char *format, ...)
     fputs(_("error: "), stderr);
 
     va_start(ap, format);
-    virVasprintf(&str, format, ap);
+    str = g_strdup_vprintf(format, ap);
     va_end(ap);
 
     fprintf(stderr, "%s\n", NULLSTR(str));

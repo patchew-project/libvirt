@@ -59,7 +59,7 @@ void virHostMsgCheck(const char *prefix,
         return;
 
     va_start(args, format);
-    virVasprintf(&msg, format, args);
+    msg = g_strdup_vprintf(format, args);
     va_end(args);
 
     fprintf(stdout, _("%6s: Checking %-60s: "), prefix, msg);
@@ -117,7 +117,7 @@ void virHostMsgFail(virHostValidateLevel level,
         return;
 
     va_start(args, format);
-    virVasprintf(&msg, format, args);
+    msg = g_strdup_vprintf(format, args);
     va_end(args);
 
     if (virHostMsgWantEscape())

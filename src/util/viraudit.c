@@ -110,7 +110,7 @@ void virAuditSend(virLogSourcePtr source,
 #endif
 
     va_start(args, fmt);
-    virVasprintf(&str, fmt, args);
+    str = g_strdup_vprintf(fmt, args);
     va_end(args);
 
     if (auditlog && str) {

@@ -188,7 +188,7 @@ qemuMonitorReportError(qemuMonitorTestPtr test, const char *errmsg, ...)
 
     va_start(msgargs, errmsg);
 
-    virVasprintf(&msg, errmsg, msgargs);
+    msg = g_strdup_vprintf(errmsg, msgargs);
 
     jsonmsg = g_strdup_printf("{ \"error\": " " { \"desc\": \"%s\", "
                               "   \"class\": \"UnexpectedCommand\" } }", msg);

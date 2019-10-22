@@ -594,7 +594,7 @@ virLogVMessage(virLogSourcePtr source,
     /*
      * serialize the error message, add level and timestamp
      */
-    virVasprintf(&str, fmt, vargs);
+    str = g_strdup_vprintf(fmt, vargs);
 
     virLogFormatString(&msg, linenr, funcname, priority, str);
 

@@ -1324,7 +1324,7 @@ virCommandAddEnvFormat(virCommandPtr cmd, const char *format, ...)
         return;
 
     va_start(list, format);
-    virVasprintf(&env, format, list);
+    env = g_strdup_vprintf(format, list);
     va_end(list);
 
     virCommandAddEnv(cmd, env);
@@ -1553,7 +1553,7 @@ virCommandAddArgFormat(virCommandPtr cmd, const char *format, ...)
         return;
 
     va_start(list, format);
-    virVasprintf(&arg, format, list);
+    arg = g_strdup_vprintf(format, list);
     va_end(list);
 
     /* Arg plus trailing NULL. */

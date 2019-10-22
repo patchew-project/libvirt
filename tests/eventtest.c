@@ -90,7 +90,7 @@ testEventReport(const char *name, bool failed, const char *msg, ...)
     struct testEventResultData data;
 
     if (msg)
-        virVasprintf(&str, msg, vargs);
+        str = g_strdup_vprintf(msg, vargs);
 
     data.failed = failed;
     data.msg = str;

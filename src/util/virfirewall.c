@@ -509,7 +509,7 @@ void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
     VIR_FIREWALL_RULE_RETURN_IF_ERROR(firewall, rule);
 
     va_start(list, fmt);
-    virVasprintf(&arg, fmt, list);
+    arg = g_strdup_vprintf(fmt, list);
     va_end(list);
 
     ADD_ARG(rule, arg);
