@@ -88,9 +88,8 @@ fillQemuCaps(virDomainCapsPtr domCaps,
         fakeHostCPU(caps, domCaps->arch) < 0)
         goto cleanup;
 
-    if (virAsprintf(&path, "%s/%s.%s.xml",
-                    TEST_QEMU_CAPS_PATH, name, arch) < 0 ||
-        !(qemuCaps = qemuTestParseCapabilities(caps, path)))
+    virAsprintf(&path, "%s/%s.%s.xml", TEST_QEMU_CAPS_PATH, name, arch);
+    if (!(qemuCaps = qemuTestParseCapabilities(caps, path)))
         goto cleanup;
 
     if (machine) {
@@ -217,9 +216,8 @@ test_virDomainCapsFormat(const void *opaque)
     char *domCapsXML = NULL;
     int ret = -1;
 
-    if (virAsprintf(&path, "%s/domaincapsschemadata/%s.xml",
-                    abs_srcdir, data->name) < 0)
-        goto cleanup;
+    virAsprintf(&path, "%s/domaincapsschemadata/%s.xml", abs_srcdir,
+                data->name);
 
     if (!(domCaps = virDomainCapsNew(data->emulator, data->machine,
                                      virArchFromString(data->arch),
@@ -299,13 +297,10 @@ mymain(void)
 #define DO_TEST_QEMU(Name, CapsName, Emulator, Machine, Arch, Type) \
     do { \
         char *name = NULL; \
-        if (virAsprintf(&name, "qemu_%s%s%s.%s", \
-                        Name, \
-                        Machine ? "-" : "", Machine ? Machine : "", \
-                        Arch) < 0) { \
-            ret = -1; \
-            break; \
-        } \
+        virAsprintf(&name, "qemu_%s%s%s.%s", \
+                    Name, \
+                    Machine ? "-" : "", Machine ? Machine : "", \
+                    Arch); \
         struct testData data = { \
             .name = name, \
             .emulator = Emulator, \
@@ -338,10 +333,7 @@ mymain(void)
 #define DO_TEST_BHYVE(Name, Emulator, BhyveCaps, Type) \
     do { \
         char *name = NULL; \
-        if (virAsprintf(&name, "bhyve_%s.x86_64", Name) < 0) { \
-             ret = -1; \
-             break; \
-        } \
+        virAsprintf(&name, "bhyve_%s.x86_64", Name); \
         struct testData data = { \
             .name = name, \
             .emulator = Emulator, \

@@ -50,13 +50,12 @@ testCompareXMLToXMLHelper(const void *data)
     g_autofree char *inxml = NULL;
     g_autofree char *outxml = NULL;
 
-    if (virAsprintf(&poolxml, "%s/storagepoolxml2xmlin/%s.xml",
-                    abs_srcdir, info->pool) < 0 ||
-        virAsprintf(&inxml, "%s/storagevolxml2xmlin/%s.xml",
-                    abs_srcdir, info->name) < 0 ||
-        virAsprintf(&outxml, "%s/storagevolxml2xmlout/%s.xml",
-                    abs_srcdir, info->name) < 0)
-        return -1;
+    virAsprintf(&poolxml, "%s/storagepoolxml2xmlin/%s.xml",
+                abs_srcdir, info->pool);
+    virAsprintf(&inxml, "%s/storagevolxml2xmlin/%s.xml",
+                abs_srcdir, info->name);
+    virAsprintf(&outxml, "%s/storagevolxml2xmlout/%s.xml",
+                abs_srcdir, info->name);
 
     return testCompareXMLToXMLFiles(poolxml, inxml, outxml, info->flags);
 }

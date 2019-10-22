@@ -76,11 +76,10 @@ testQemuCaps(const void *opaque)
     unsigned int fakeMicrocodeVersion = 0;
     const char *p;
 
-    if (virAsprintf(&repliesFile, "%s/%s.%s.replies",
-                    data->dataDir, data->base, data->archName) < 0 ||
-        virAsprintf(&capsFile, "%s/%s.%s.xml",
-                    data->dataDir, data->base, data->archName) < 0)
-        goto cleanup;
+    virAsprintf(&repliesFile, "%s/%s.%s.replies",
+                data->dataDir, data->base, data->archName);
+    virAsprintf(&capsFile, "%s/%s.%s.xml",
+                data->dataDir, data->base, data->archName);
 
     if (!(mon = qemuMonitorTestNewFromFileFull(repliesFile, &data->driver, NULL,
                                                NULL)))
@@ -145,9 +144,8 @@ testQemuCapsCopy(const void *opaque)
     virQEMUCapsPtr copy = NULL;
     char *actual = NULL;
 
-    if (virAsprintf(&capsFile, "%s/%s.%s.xml",
-                    data->dataDir, data->base, data->archName) < 0)
-        goto cleanup;
+    virAsprintf(&capsFile, "%s/%s.%s.xml", data->dataDir, data->base,
+                data->archName);
 
     if (!(caps = virCapabilitiesNew(virArchFromString(data->archName),
                                     false, false)))
@@ -186,10 +184,8 @@ doCapsTest(const char *base,
     g_autofree char *title = NULL;
     g_autofree char *copyTitle = NULL;
 
-    if (virAsprintf(&title, "%s (%s)", base, archName) < 0 ||
-        virAsprintf(&copyTitle, "copy %s (%s)", base, archName) < 0) {
-        return -1;
-    }
+    virAsprintf(&title, "%s (%s)", base, archName);
+    virAsprintf(&copyTitle, "copy %s (%s)", base, archName);
 
     data->base = base;
     data->archName = archName;

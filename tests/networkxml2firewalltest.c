@@ -117,15 +117,13 @@ testCompareXMLToIPTablesHelper(const void *data)
     char *xml = NULL;
     char *args = NULL;
 
-    if (virAsprintf(&xml, "%s/networkxml2firewalldata/%s.xml",
-                    abs_srcdir, info->name) < 0 ||
-        virAsprintf(&args, "%s/networkxml2firewalldata/%s-%s.args",
-                    abs_srcdir, info->name, RULESTYPE) < 0)
-        goto cleanup;
+    virAsprintf(&xml, "%s/networkxml2firewalldata/%s.xml",
+                abs_srcdir, info->name);
+    virAsprintf(&args, "%s/networkxml2firewalldata/%s-%s.args",
+                abs_srcdir, info->name, RULESTYPE);
 
     result = testCompareXMLToArgvFiles(xml, args, info->baseargs);
 
- cleanup:
     VIR_FREE(xml);
     VIR_FREE(args);
     return result;
@@ -169,11 +167,7 @@ mymain(void)
         goto cleanup;
     }
 
-    if (virAsprintf(&basefile, "%s/networkxml2firewalldata/base.args",
-                    abs_srcdir) < 0) {
-        ret = -1;
-        goto cleanup;
-    }
+    virAsprintf(&basefile, "%s/networkxml2firewalldata/base.args", abs_srcdir);
 
     if (virTestLoadFile(basefile, &baseargs) < 0) {
         ret = -1;

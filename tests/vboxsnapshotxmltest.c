@@ -104,9 +104,8 @@ testCompareXMLToXMLHelper(const void *data)
     int result = -1;
     char *xml = NULL;
 
-    if (virAsprintf(&xml, "%s/vboxsnapshotxmldata/%s.vbox",
-                    abs_srcdir, (const char*)data) < 0)
-        return -1;
+    virAsprintf(&xml, "%s/vboxsnapshotxmldata/%s.vbox", abs_srcdir,
+                (const char *)data);
 
     result = testCompareXMLtoXMLFiles(xml);
 

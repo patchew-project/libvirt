@@ -55,12 +55,9 @@ getrealpath(char **newpath,
             const char *path)
 {
     if (STRPREFIX(path, LEASEDIR)) {
-        if (virAsprintfQuiet(newpath, "%s/nssdata/%s",
-                             abs_srcdir,
-                             path + strlen(LEASEDIR)) < 0) {
-            errno = ENOMEM;
-            return -1;
-        }
+        virAsprintfQuiet(newpath, "%s/nssdata/%s",
+                         abs_srcdir,
+                         path + strlen(LEASEDIR));
     } else {
         *newpath = g_strdup(path);
     }

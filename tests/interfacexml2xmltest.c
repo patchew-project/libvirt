@@ -50,9 +50,8 @@ testCompareXMLToXMLHelper(const void *data)
     int result = -1;
     char *xml = NULL;
 
-    if (virAsprintf(&xml, "%s/interfaceschemadata/%s.xml",
-                    abs_srcdir, (const char*)data) < 0)
-        return -1;
+    virAsprintf(&xml, "%s/interfaceschemadata/%s.xml", abs_srcdir,
+                (const char *)data);
 
     result = testCompareXMLToXMLFiles(xml);
 

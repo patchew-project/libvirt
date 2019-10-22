@@ -31,20 +31,19 @@ static int testBufInfiniteLoop(const void *data)
      * This test is a bit fragile, since it relies on virBuffer internals.
      */
     len = buf->size - buf->use - 1;
-    if (virAsprintf(&addstr, "%*s", len, "a") < 0)
-        goto out;
+    virAsprintf(&addstr, "%*s", len, "a");
 
     if (info->doEscape)
         virBufferEscapeString(buf, "%s", addstr);
     else
         virBufferAsprintf(buf, "%s", addstr);
 
-    ret = 0;
- out:
     bufret = virBufferContentAndReset(buf);
     if (!bufret) {
         VIR_TEST_DEBUG("Buffer had error set");
         ret = -1;
+    } else {
+        ret = 0;
     }
 
     VIR_FREE(addstr);

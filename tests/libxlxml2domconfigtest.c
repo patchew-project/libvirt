@@ -151,15 +151,11 @@ testCompareXMLToDomConfigHelper(const void *data)
     char *xmlfile = NULL;
     char *jsonfile = NULL;
 
-    if (virAsprintf(&xmlfile, "%s/libxlxml2domconfigdata/%s.xml",
-                    abs_srcdir, info->name) < 0 ||
-        virAsprintf(&jsonfile, "%s/libxlxml2domconfigdata/%s.json",
-                    abs_srcdir, info->name) < 0)
-        goto cleanup;
+    virAsprintf(&xmlfile, "%s/libxlxml2domconfigdata/%s.xml", abs_srcdir, info->name);
+    virAsprintf(&jsonfile, "%s/libxlxml2domconfigdata/%s.json", abs_srcdir, info->name);
 
     ret = testCompareXMLToDomConfig(xmlfile, jsonfile);
 
- cleanup:
     VIR_FREE(xmlfile);
     VIR_FREE(jsonfile);
     return ret;

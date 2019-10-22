@@ -55,13 +55,12 @@ linuxTestCompareFiles(const char *cpuinfofile,
     }
     VIR_FORCE_FCLOSE(cpuinfo);
 
-    if (virAsprintf(&actualData,
-                    "CPUs: %u/%u, MHz: %u, Nodes: %u, Sockets: %u, "
-                    "Cores: %u, Threads: %u\n",
-                    nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo),
-                    nodeinfo.mhz, nodeinfo.nodes, nodeinfo.sockets,
-                    nodeinfo.cores, nodeinfo.threads) < 0)
-        goto fail;
+    virAsprintf(&actualData,
+                "CPUs: %u/%u, MHz: %u, Nodes: %u, Sockets: %u, "
+                "Cores: %u, Threads: %u\n",
+                nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo),
+                nodeinfo.mhz, nodeinfo.nodes, nodeinfo.sockets,
+                nodeinfo.cores, nodeinfo.threads);
 
     if (virTestCompareToFile(actualData, outputfile) < 0)
         goto fail;
@@ -177,20 +176,17 @@ linuxTestHostCPU(const void *opaque)
     struct linuxTestHostCPUData *data = (struct linuxTestHostCPUData *) opaque;
     const char *archStr = virArchToString(data->arch);
 
-    if (virAsprintf(&sysfs_prefix, "%s/virhostcpudata/linux-%s",
-                    abs_srcdir, data->testName) < 0 ||
-        virAsprintf(&cpuinfo, "%s/virhostcpudata/linux-%s-%s.cpuinfo",
-                    abs_srcdir, archStr, data->testName) < 0 ||
-        virAsprintf(&output, "%s/virhostcpudata/linux-%s-%s.expected",
-                    abs_srcdir, archStr, data->testName) < 0) {
-        goto cleanup;
-    }
+    virAsprintf(&sysfs_prefix, "%s/virhostcpudata/linux-%s",
+                abs_srcdir, data->testName);
+    virAsprintf(&cpuinfo, "%s/virhostcpudata/linux-%s-%s.cpuinfo",
+                abs_srcdir, archStr, data->testName);
+    virAsprintf(&output, "%s/virhostcpudata/linux-%s-%s.expected",
+                abs_srcdir, archStr, data->testName);
 
     virFileWrapperAddPrefix(SYSFS_SYSTEM_PATH, sysfs_prefix);
     result = linuxTestCompareFiles(cpuinfo, data->arch, output);
     virFileWrapperRemovePrefix(SYSFS_SYSTEM_PATH);
 
- cleanup:
     VIR_FREE(cpuinfo);
     VIR_FREE(output);
     VIR_FREE(sysfs_prefix);
@@ -211,16 +207,14 @@ linuxTestNodeCPUStats(const void *data)
     char *cpustatfile = NULL;
     char *outfile = NULL;
 
-    if (virAsprintf(&cpustatfile, "%s/virhostcpudata/linux-cpustat-%s.stat",
-                    abs_srcdir, testData->name) < 0 ||
-        virAsprintf(&outfile, "%s/virhostcpudata/linux-cpustat-%s.out",
-                    abs_srcdir, testData->name) < 0)
-        goto fail;
+    virAsprintf(&cpustatfile, "%s/virhostcpudata/linux-cpustat-%s.stat",
+                abs_srcdir, testData->name);
+    virAsprintf(&outfile, "%s/virhostcpudata/linux-cpustat-%s.out",
+                abs_srcdir, testData->name);
 
     result = linuxCPUStatsCompareFiles(cpustatfile,
                                        testData->ncpus,
                                        outfile);
- fail:
     VIR_FREE(cpustatfile);
     VIR_FREE(outfile);
     return result;

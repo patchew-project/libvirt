@@ -66,9 +66,8 @@ qemuMigParamsTestXML2XML(const void *opaque)
     char *actualXML = NULL;
     int ret = -1;
 
-    if (virAsprintf(&xmlFile, "%s/qemumigparamsdata/%s.xml",
-                    abs_srcdir, data->name) < 0)
-        goto cleanup;
+    virAsprintf(&xmlFile, "%s/qemumigparamsdata/%s.xml", abs_srcdir,
+                data->name);
 
     if (!(doc = virXMLParseFileCtxt(xmlFile, &ctxt)))
         goto cleanup;
@@ -110,11 +109,10 @@ qemuMigParamsTestXML(const void *opaque)
     char *actualXML = NULL;
     int ret = -1;
 
-    if (virAsprintf(&replyFile, "%s/qemumigparamsdata/%s.reply",
-                    abs_srcdir, data->name) < 0 ||
-        virAsprintf(&xmlFile, "%s/qemumigparamsdata/%s.xml",
-                    abs_srcdir, data->name) < 0)
-        goto cleanup;
+    virAsprintf(&replyFile, "%s/qemumigparamsdata/%s.reply",
+                abs_srcdir, data->name);
+    virAsprintf(&xmlFile, "%s/qemumigparamsdata/%s.xml",
+                abs_srcdir, data->name);
 
     if (!(mon = qemuMonitorTestNewFromFile(replyFile, data->xmlopt, true)))
         goto cleanup;
@@ -161,11 +159,10 @@ qemuMigParamsTestJSON(const void *opaque)
     char *actualJSON = NULL;
     int ret = -1;
 
-    if (virAsprintf(&replyFile, "%s/qemumigparamsdata/%s.reply",
-                    abs_srcdir, data->name) < 0 ||
-        virAsprintf(&jsonFile, "%s/qemumigparamsdata/%s.json",
-                    abs_srcdir, data->name) < 0)
-        goto cleanup;
+    virAsprintf(&replyFile, "%s/qemumigparamsdata/%s.reply",
+                abs_srcdir, data->name);
+    virAsprintf(&jsonFile, "%s/qemumigparamsdata/%s.json",
+                abs_srcdir, data->name);
 
     if (!(mon = qemuMonitorTestNewFromFile(replyFile, data->xmlopt, true)))
         goto cleanup;

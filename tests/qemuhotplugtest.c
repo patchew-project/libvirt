@@ -245,15 +245,14 @@ testQemuHotplug(const void *data)
     qemuMonitorTestPtr test_mon = NULL;
     qemuDomainObjPrivatePtr priv = NULL;
 
-    if (virAsprintf(&domain_filename, "%s/qemuhotplugtestdomains/qemuhotplug-%s.xml",
-                    abs_srcdir, test->domain_filename) < 0 ||
-        virAsprintf(&device_filename, "%s/qemuhotplugtestdevices/qemuhotplug-%s.xml",
-                    abs_srcdir, test->device_filename) < 0 ||
-        virAsprintf(&result_filename,
-                    "%s/qemuhotplugtestdomains/qemuhotplug-%s+%s.xml",
-                    abs_srcdir, test->domain_filename,
-                    test->device_filename) < 0)
-        goto cleanup;
+    virAsprintf(&domain_filename, "%s/qemuhotplugtestdomains/qemuhotplug-%s.xml",
+                abs_srcdir, test->domain_filename);
+    virAsprintf(&device_filename, "%s/qemuhotplugtestdevices/qemuhotplug-%s.xml",
+                abs_srcdir, test->device_filename);
+    virAsprintf(&result_filename,
+                "%s/qemuhotplugtestdomains/qemuhotplug-%s+%s.xml",
+                abs_srcdir, test->domain_filename,
+                test->device_filename);
 
     if (virTestLoadFile(domain_filename, &domain_xml) < 0 ||
         virTestLoadFile(device_filename, &device_xml) < 0)
@@ -409,19 +408,17 @@ testQemuHotplugCpuPrepare(const char *test,
     char *prefix = NULL;
     struct testQemuHotplugCpuData *data = NULL;
 
-    if (virAsprintf(&prefix, "%s/qemuhotplugtestcpus/%s", abs_srcdir, test) < 0)
-        return NULL;
+    virAsprintf(&prefix, "%s/qemuhotplugtestcpus/%s", abs_srcdir, test);
 
     if (VIR_ALLOC(data) < 0)
         goto error;
 
     data->modern = modern;
 
-    if (virAsprintf(&data->file_xml_dom, "%s-domain.xml", prefix) < 0 ||
-        virAsprintf(&data->file_xml_res_live, "%s-result-live.xml", prefix) < 0 ||
-        virAsprintf(&data->file_xml_res_conf, "%s-result-conf.xml", prefix) < 0 ||
-        virAsprintf(&data->file_json_monitor, "%s-monitor.json", prefix) < 0)
-        goto error;
+    virAsprintf(&data->file_xml_dom, "%s-domain.xml", prefix);
+    virAsprintf(&data->file_xml_res_live, "%s-result-live.xml", prefix);
+    virAsprintf(&data->file_xml_res_conf, "%s-result-conf.xml", prefix);
+    virAsprintf(&data->file_json_monitor, "%s-monitor.json", prefix);
 
     if (virTestLoadFile(data->file_xml_dom, &data->xml_dom) < 0)
         goto error;
