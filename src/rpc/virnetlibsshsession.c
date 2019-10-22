@@ -341,9 +341,9 @@ virNetLibsshCheckHostKey(virNetLibsshSessionPtr sess)
             if (!keyhashstr)
                 return -1;
 
-            virAsprintf(&tmp,
-                        _("Accept SSH host key with hash '%s' for " "host '%s:%d' (%s/%s)?"),
-                        keyhashstr, sess->hostname, sess->port, "y", "n");
+            tmp = g_strdup_printf(
+                                  _("Accept SSH host key with hash '%s' for " "host '%s:%d' (%s/%s)?"),
+                                  keyhashstr, sess->hostname, sess->port, "y", "n");
             askKey.prompt = tmp;
 
             if (sess->cred->cb(&askKey, 1, sess->cred->cbdata)) {
@@ -524,7 +524,7 @@ virNetLibsshAuthenticatePrivkey(virNetLibsshSessionPtr sess,
 
     VIR_DEBUG("sess=%p", sess);
 
-    virAsprintf(&tmp, "%s.pub", priv->filename);
+    tmp = g_strdup_printf("%s.pub", priv->filename);
 
     /* try to open the public part of the private key */
     ret = ssh_pki_import_pubkey_file(tmp, &public_key);

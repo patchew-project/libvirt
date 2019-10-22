@@ -796,13 +796,13 @@ static int virNetTLSContextLocateCredentials(const char *pkipath,
      */
     if (pkipath) {
         VIR_DEBUG("Told to use TLS credentials in %s", pkipath);
-        virAsprintf(cacert, "%s/%s", pkipath, "cacert.pem");
-        virAsprintf(cacrl, "%s/%s", pkipath, "cacrl.pem");
-        virAsprintf(key, "%s/%s", pkipath,
-                    isServer ? "serverkey.pem" : "clientkey.pem");
+        *cacert = g_strdup_printf("%s/%s", pkipath, "cacert.pem");
+        *cacrl = g_strdup_printf("%s/%s", pkipath, "cacrl.pem");
+        *key = g_strdup_printf("%s/%s", pkipath,
+                               isServer ? "serverkey.pem" : "clientkey.pem");
 
-        virAsprintf(cert, "%s/%s", pkipath,
-                    isServer ? "servercert.pem" : "clientcert.pem");
+        *cert = g_strdup_printf("%s/%s", pkipath,
+                                isServer ? "servercert.pem" : "clientcert.pem");
     } else if (tryUserPkiPath) {
         /* Check to see if $HOME/.pki contains at least one of the
          * files and if so, use that
@@ -812,19 +812,19 @@ static int virNetTLSContextLocateCredentials(const char *pkipath,
         if (!userdir)
             goto error;
 
-        virAsprintf(&user_pki_path, "%s/.pki/libvirt", userdir);
+        user_pki_path = g_strdup_printf("%s/.pki/libvirt", userdir);
 
         VIR_DEBUG("Trying to find TLS user credentials in %s", user_pki_path);
 
-        virAsprintf(cacert, "%s/%s", user_pki_path, "cacert.pem");
+        *cacert = g_strdup_printf("%s/%s", user_pki_path, "cacert.pem");
 
-        virAsprintf(cacrl, "%s/%s", user_pki_path, "cacrl.pem");
+        *cacrl = g_strdup_printf("%s/%s", user_pki_path, "cacrl.pem");
 
-        virAsprintf(key, "%s/%s", user_pki_path,
-                    isServer ? "serverkey.pem" : "clientkey.pem");
+        *key = g_strdup_printf("%s/%s", user_pki_path,
+                               isServer ? "serverkey.pem" : "clientkey.pem");
 
-        virAsprintf(cert, "%s/%s", user_pki_path,
-                    isServer ? "servercert.pem" : "clientcert.pem");
+        *cert = g_strdup_printf("%s/%s", user_pki_path,
+                                isServer ? "servercert.pem" : "clientcert.pem");
 
         /*
          * If some of the files can't be found, fallback
