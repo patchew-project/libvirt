@@ -460,9 +460,8 @@ ppc64Compute(virCPUDefPtr host,
             VIR_DEBUG("CPU arch %s does not match host arch",
                       virArchToString(cpu->arch));
             if (message)
-                virAsprintf(message,
-                            _("CPU arch %s does not match host arch"),
-                            virArchToString(cpu->arch));
+                *message = g_strdup_printf(_("CPU arch %s does not match host arch"),
+                                           virArchToString(cpu->arch));
 
             ret = VIR_CPU_COMPARE_INCOMPATIBLE;
             goto cleanup;
@@ -477,10 +476,9 @@ ppc64Compute(virCPUDefPtr host,
         VIR_DEBUG("host CPU vendor does not match required CPU vendor %s",
                   cpu->vendor);
         if (message) {
-            virAsprintf(message,
-                        _("host CPU vendor does not match required "
-                          "CPU vendor %s"),
-                        cpu->vendor);
+            *message = g_strdup_printf(_("host CPU vendor does not match required "
+                                         "CPU vendor %s"),
+                                       cpu->vendor);
         }
 
         ret = VIR_CPU_COMPARE_INCOMPATIBLE;
@@ -532,10 +530,9 @@ ppc64Compute(virCPUDefPtr host,
         VIR_DEBUG("host CPU model does not match required CPU model %s",
                   guest_model->name);
         if (message) {
-            virAsprintf(message,
-                        _("host CPU model does not match required "
-                          "CPU model %s"),
-                        guest_model->name);
+            *message = g_strdup_printf(_("host CPU model does not match required "
+                                         "CPU model %s"),
+                                       guest_model->name);
         }
 
         ret = VIR_CPU_COMPARE_INCOMPATIBLE;
