@@ -275,15 +275,15 @@ vmwareExtractVersion(struct vmware_driver *driver)
 
     switch (driver->type) {
         case VMWARE_DRIVER_PLAYER:
-            virAsprintf(&bin, "%s/%s", vmwarePath, "vmplayer");
+            bin = g_strdup_printf("%s/%s", vmwarePath, "vmplayer");
             break;
 
         case VMWARE_DRIVER_WORKSTATION:
-            virAsprintf(&bin, "%s/%s", vmwarePath, "vmware");
+            bin = g_strdup_printf("%s/%s", vmwarePath, "vmware");
             break;
 
         case VMWARE_DRIVER_FUSION:
-            virAsprintf(&bin, "%s/%s", vmwarePath, "vmware-vmx");
+            bin = g_strdup_printf("%s/%s", vmwarePath, "vmware-vmx");
             break;
 
         default:
@@ -366,9 +366,9 @@ void
 vmwareConstructVmxPath(char *directoryName, char *name, char **vmxPath)
 {
     if (directoryName != NULL)
-        virAsprintf(vmxPath, "%s/%s.vmx", directoryName, name);
+        *vmxPath = g_strdup_printf("%s/%s.vmx", directoryName, name);
     else
-        virAsprintf(vmxPath, "%s.vmx", name);
+        *vmxPath = g_strdup_printf("%s.vmx", name);
 }
 
 int
@@ -467,7 +467,7 @@ vmwareMoveFile(char *srcFile, char *dstFile)
 int
 vmwareMakePath(char *srcDir, char *srcName, char *srcExt, char **outpath)
 {
-    virAsprintf(outpath, "%s/%s.%s", srcDir, srcName, srcExt);
+    *outpath = g_strdup_printf("%s/%s.%s", srcDir, srcName, srcExt);
     return 0;
 }
 
@@ -484,7 +484,7 @@ vmwareExtractPid(const char * vmxPath)
     if ((vmxDir = mdir_name(vmxPath)) == NULL)
         goto cleanup;
 
-    virAsprintf(&logFilePath, "%s/vmware.log", vmxDir);
+    logFilePath = g_strdup_printf("%s/vmware.log", vmxDir);
 
     if ((logFile = fopen(logFilePath, "r")) == NULL)
         goto cleanup;
