@@ -439,8 +439,7 @@ hypervCreateInvokeXmlDoc(hypervInvokeParamsListPtr params, WsXmlDocH *docRoot)
     char *method = NULL;
     WsXmlNodeH xmlNodeMethod = NULL;
 
-    if (virAsprintf(&method, "%s_INPUT", params->method) < 0)
-        goto cleanup;
+    virAsprintf(&method, "%s_INPUT", params->method);
 
     *docRoot = ws_xml_create_doc(NULL, method);
     if (*docRoot == NULL) {
@@ -849,9 +848,9 @@ hypervInvokeMethod(hypervPrivate *priv, hypervInvokeParamsListPtr params,
             params->method, paramsDocRoot);
 
     /* check return code of invocation */
-    if (virAsprintf(&returnValue_xpath, "/s:Envelope/s:Body/p:%s_OUTPUT/p:ReturnValue",
-            params->method) < 0)
-        goto cleanup;
+    virAsprintf(&returnValue_xpath,
+                "/s:Envelope/s:Body/p:%s_OUTPUT/p:ReturnValue",
+                params->method);
 
     returnValue = ws_xml_get_xpath_value(response, returnValue_xpath);
     if (!returnValue) {
@@ -865,12 +864,10 @@ hypervInvokeMethod(hypervPrivate *priv, hypervInvokeParamsListPtr params,
         goto cleanup;
 
     if (returnCode == CIM_RETURNCODE_TRANSITION_STARTED) {
-        if (virAsprintf(&jobcode_instance_xpath,
+        virAsprintf(&jobcode_instance_xpath,
                     "/s:Envelope/s:Body/p:%s_OUTPUT/p:Job/a:ReferenceParameters/"
                     "w:SelectorSet/w:Selector[@Name='InstanceID']",
-                    params->method) < 0) {
-            goto cleanup;
-        }
+                    params->method);
 
         instanceID = ws_xml_get_xpath_value(response, jobcode_instance_xpath);
         if (!instanceID) {
@@ -1341,10 +1338,8 @@ hypervInvokeMsvmComputerSystemRequestStateChange(virDomainPtr domain,
 
     virUUIDFormat(domain->uuid, uuid_string);
 
-    if (virAsprintf(&selector, "Name=%s&CreationClassName=Msvm_ComputerSystem",
-                    uuid_string) < 0 ||
-        virAsprintf(&properties, "RequestedState=%d", requestedState) < 0)
-        goto cleanup;
+    virAsprintf(&selector, "Name=%s&CreationClassName=Msvm_ComputerSystem", uuid_string);
+    virAsprintf(&properties, "RequestedState=%d", requestedState);
 
     if (priv->wmiVersion == HYPERV_WMI_VERSION_V1)
         resourceUri = MSVM_COMPUTERSYSTEM_V1_RESOURCE_URI;
