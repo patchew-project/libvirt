@@ -15338,45 +15338,57 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     return g_steal_pointer(&def);
 }
 
-static virDomainVideoResolutionDefPtr
-virDomainVideoResolutionDefParseXML(xmlNodePtr node)
+static int
+virDomainVideoResolutionDefParseXML(xmlNodePtr node,
+                                    virDomainVideoResolutionDefPtr *res)
 {
     xmlNodePtr cur;
     g_autofree virDomainVideoResolutionDefPtr def = NULL;
     g_autofree char *x = NULL;
     g_autofree char *y = NULL;
 
+    *res = NULL;
     cur = node->children;
     while (cur != NULL) {
-        if (cur->type == XML_ELEMENT_NODE) {
-            if (!x && !y &&
-                virXMLNodeNameEqual(cur, "resolution")) {
-                x = virXMLPropString(cur, "x");
-                y = virXMLPropString(cur, "y");
-            }
+        if ((cur->type == XML_ELEMENT_NODE) &&
+            virXMLNodeNameEqual(cur, "resolution")) {
+            x = virXMLPropString(cur, "x");
+            y = virXMLPropString(cur, "y");
+            break;
         }
         cur = cur->next;
     }
 
+    /* resolution not specified */
+    if (cur == NULL)
+        return 0;
+
+    /* resolution specified, but x or y is missing. report error */
     if (!x || !y)
-        return NULL;
+        return -1;
 
     def = g_new0(virDomainVideoResolutionDef, 1);
 
     if (virStrToLong_uip(x, NULL, 10, &def->x) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("cannot parse video x-resolution '%s'"), x);
-        goto cleanup;
+        return -1;
     }
 
     if (virStrToLong_uip(y, NULL, 10, &def->y) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("cannot parse video y-resolution '%s'"), y);
-        goto cleanup;
+        return -1;
     }
 
- cleanup:
-    return g_steal_pointer(&def);
+    if (def->x == 0 || def->y == 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("resolution values must be greater than 0"));
+        return -1;
+    }
+
+    *res = g_steal_pointer(&def);
+    return 0;
 }
 
 static virDomainVideoDriverDefPtr
@@ -15458,7 +15470,11 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
                 }
 
                 def->accel = virDomainVideoAccelDefParseXML(cur);
-                def->res = virDomainVideoResolutionDefParseXML(cur);
+                if (virDomainVideoResolutionDefParseXML(cur, &def->res) < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   "%s", _("Cannot parse video resolution"));
+                    goto error;
+                }
             }
             if (virXMLNodeNameEqual(cur, "driver")) {
                 if (virDomainVirtioOptionsParseXML(cur, &def->virtio) < 0)
