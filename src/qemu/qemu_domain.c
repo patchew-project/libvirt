@@ -5384,7 +5384,10 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
      * time), but only if the validations would SUCCEED for
      * type='network'.)
      */
+    char macstr[VIR_MAC_STRING_BUFLEN];
     virDomainNetType actualType = virDomainNetGetActualType(net);
+
+    virMacAddrFormat(&net->mac, macstr);
 
     /* Only tap/macvtap devices support multiqueue. */
     if (net->driver.virtio.queues > 0) {
@@ -5395,17 +5398,18 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
               actualType == VIR_DOMAIN_NET_TYPE_ETHERNET ||
               actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("multiqueue network is not supported for: %s"),
-                           virDomainNetTypeToString(actualType));
+                           _("interface %s - multiqueue network is not supported for: %s"),
+                           macstr, virDomainNetTypeToString(actualType));
             return -1;
         }
 
         if (net->driver.virtio.queues > 1 &&
             actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER &&
             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VHOSTUSER_MULTIQUEUE)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("multiqueue network is not supported for vhost-user "
-                             "with this QEMU binary"));
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("interface %s - multiqueue network is "
+                             "not supported for vhost-user with this QEMU binary"),
+                           macstr);
             return -1;
         }
     }
@@ -5417,21 +5421,22 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
      */
     if (net->filter) {
         virNetDevVPortProfilePtr vport = virDomainNetGetActualVirtPortProfile(net);
+
         if (!(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
               actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
               actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("filterref is not supported for "
+                           _("interface %s - filterref is not supported for "
                              "network interfaces of type %s"),
-                           virDomainNetTypeToString(actualType));
+                           macstr, virDomainNetTypeToString(actualType));
             return -1;
         }
         if (vport && vport->virtPortType != VIR_NETDEV_VPORT_PROFILE_NONE) {
             /* currently none of the defined virtualport types support iptables */
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("filterref is not supported for "
+                           _("interface %s - filterref is not supported for "
                              "network interfaces with virtualport type %s"),
-                           virNetDevVPortTypeToString(vport->virtPortType));
+                           macstr, virNetDevVPortTypeToString(vport->virtPortType));
             return -1;
         }
     }
@@ -5441,8 +5446,8 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
           actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
           actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Custom tap device path is not supported for: %s"),
-                       virDomainNetTypeToString(actualType));
+                       _("interface %s - custom tap device path is not supported for: %s"),
+                       macstr, virDomainNetTypeToString(actualType));
         return -1;
     }
 
