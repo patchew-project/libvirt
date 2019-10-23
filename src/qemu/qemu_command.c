@@ -8397,7 +8397,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     char **vhostfdName = NULL;
     g_autofree char *slirpfdName = NULL;
     virDomainNetType actualType = virDomainNetGetActualType(net);
-    virNetDevBandwidthPtr actualBandwidth;
+    const virNetDevBandwidth *actualBandwidth;
     bool requireNicdev = false;
     qemuSlirpPtr slirp;
     size_t i;

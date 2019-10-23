@@ -1146,7 +1146,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     bool releaseaddr = false;
     bool iface_connected = false;
     virDomainNetType actualType;
-    virNetDevBandwidthPtr actualBandwidth;
+    const virNetDevBandwidth *actualBandwidth;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     virDomainCCWAddressSetPtr ccwaddrs = NULL;
     size_t i;
@@ -3820,7 +3820,7 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
     }
 
     if (needBandwidthSet) {
-        virNetDevBandwidthPtr newb = virDomainNetGetActualBandwidth(newdev);
+        const virNetDevBandwidth *newb = virDomainNetGetActualBandwidth(newdev);
 
         if (newb) {
             if (virNetDevBandwidthSet(newdev->ifname, newb, false,
