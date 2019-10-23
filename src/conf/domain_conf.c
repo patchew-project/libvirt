@@ -15285,8 +15285,8 @@ virDomainVideoDefaultType(const virDomainDef *def)
     }
 }
 
-static virDomainVideoAccelDefPtr
-virDomainVideoAccelDefParseXML(xmlNodePtr node)
+static int
+virDomainVideoAccelDefParseXML(xmlNodePtr node, virDomainVideoAccelDefPtr *accel)
 {
     xmlNodePtr cur;
     g_autofree virDomainVideoAccelDefPtr def = NULL;
@@ -15295,21 +15295,25 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     g_autofree char *accel3d = NULL;
     g_autofree char *rendernode = NULL;
 
+    *accel = NULL;
     cur = node->children;
     while (cur != NULL) {
-        if (cur->type == XML_ELEMENT_NODE) {
-            if (!accel3d && !accel2d &&
-                virXMLNodeNameEqual(cur, "acceleration")) {
-                accel3d = virXMLPropString(cur, "accel3d");
-                accel2d = virXMLPropString(cur, "accel2d");
-                rendernode = virXMLPropString(cur, "rendernode");
-            }
+        if ((cur->type == XML_ELEMENT_NODE) &&
+            virXMLNodeNameEqual(cur, "acceleration")) {
+            accel3d = virXMLPropString(cur, "accel3d");
+            accel2d = virXMLPropString(cur, "accel2d");
+            rendernode = virXMLPropString(cur, "rendernode");
+            break;
         }
         cur = cur->next;
     }
 
+    /* no acceleration node was specified */
+    if (cur == NULL)
+        return 0;
+
     if (!accel3d && !accel2d && !rendernode)
-        return NULL;
+        return -1;
 
     def = g_new0(virDomainVideoAccelDef, 1);
 
@@ -15317,7 +15321,7 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
         if ((val = virTristateBoolTypeFromString(accel3d)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown accel3d value '%s'"), accel3d);
-            goto cleanup;
+            return -1;
         }
         def->accel3d = val;
     }
@@ -15326,7 +15330,7 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
         if ((val = virTristateBoolTypeFromString(accel2d)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown accel2d value '%s'"), accel2d);
-            goto cleanup;
+            return -1;
         }
         def->accel2d = val;
     }
@@ -15334,8 +15338,8 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     if (rendernode)
         def->rendernode = virFileSanitizePath(rendernode);
 
- cleanup:
-    return g_steal_pointer(&def);
+    *accel = g_steal_pointer(&def);
+    return 0;
 }
 
 static int
@@ -15469,7 +15473,11 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
                     VIR_FREE(primary);
                 }
 
-                def->accel = virDomainVideoAccelDefParseXML(cur);
+                if (virDomainVideoAccelDefParseXML(cur, &def->accel) < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   "%s", _("Cannot parse video acceleration"));
+                    goto error;
+                }
                 if (virDomainVideoResolutionDefParseXML(cur, &def->res) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    "%s", _("Cannot parse video resolution"));
