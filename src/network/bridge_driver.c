@@ -4793,43 +4793,6 @@ networkAllocatePort(virNetworkObjPtr obj,
     if (virNetDevVPortProfileCheckComplete(port->virtPortProfile, true) < 0)
         goto cleanup;
 
-    /* make sure that everything now specified for the device is
-     * actually supported on this type of network. NB: network,
-     * netdev, and iface->data.network.actual may all be NULL.
-     */
-    VIR_DEBUG("Sanity check port config");
-
-    if (port->vlan.nTags) {
-        /* vlan configuration via libvirt is only supported for PCI
-         * Passthrough SR-IOV devices (hostdev or macvtap passthru
-         * mode) and openvswitch bridges. Otherwise log an error and
-         * fail
-         */
-        if (!(port->plugtype == VIR_NETWORK_PORT_PLUG_TYPE_HOSTDEV_PCI ||
-              (port->plugtype == VIR_NETWORK_PORT_PLUG_TYPE_DIRECT &&
-               port->plug.direct.mode == VIR_NETDEV_MACVLAN_MODE_PASSTHRU) ||
-              (port->plugtype == VIR_NETWORK_PORT_PLUG_TYPE_BRIDGE &&
-               port->virtPortProfile &&
-               port->virtPortProfile->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("an interface connecting to network '%s' "
-                             "is requesting a vlan tag, but that is not "
-                             "supported for this type of network"),
-                           netdef->name);
-            goto cleanup;
-        }
-    }
-
-    /* bandwidth configuration via libvirt is not supported for
-     * hostdev network devices
-     */
-    if (port->bandwidth && port->plugtype == VIR_NETWORK_PORT_PLUG_TYPE_HOSTDEV_PCI) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("bandwidth settings are not supported "
-                         "for hostdev interfaces"));
-        goto cleanup;
-    }
-
     netdef->connections++;
     if (dev)
         dev->connections++;
