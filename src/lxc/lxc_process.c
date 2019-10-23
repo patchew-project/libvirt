@@ -163,7 +163,7 @@ static void virLXCProcessCleanup(virLXCDriverPtr driver,
 {
     size_t i;
     virLXCDomainObjPrivatePtr priv = vm->privateData;
-    virNetDevVPortProfilePtr vport = NULL;
+    const virNetDevVPortProfile *vport = NULL;
     virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
     virConnectPtr conn = NULL;
 
@@ -284,7 +284,7 @@ virLXCProcessSetupInterfaceTap(virDomainDefPtr vm,
     char *ret = NULL;
     char *parentVeth;
     char *containerVeth = NULL;
-    virNetDevVPortProfilePtr vport = virDomainNetGetActualVirtPortProfile(net);
+    const virNetDevVPortProfile *vport = virDomainNetGetActualVirtPortProfile(net);
 
     VIR_DEBUG("calling vethCreate()");
     parentVeth = net->ifname;
@@ -339,7 +339,7 @@ char *virLXCProcessSetupInterfaceDirect(virConnectPtr conn,
     char *res_ifname = NULL;
     virLXCDriverPtr driver = conn->privateData;
     const virNetDevBandwidth *bw;
-    virNetDevVPortProfilePtr prof;
+    const virNetDevVPortProfile *prof;
     virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
     const char *linkdev = virDomainNetGetActualDirectDev(net);
     unsigned int macvlan_create_flags = VIR_NETDEV_MACVLAN_CREATE_IFUP;
@@ -645,7 +645,7 @@ static int virLXCProcessSetupInterfaces(virConnectPtr conn,
         virErrorPreserveLast(&save_err);
         for (i = 0; i < def->nnets; i++) {
             virDomainNetDefPtr iface = def->nets[i];
-            virNetDevVPortProfilePtr vport = virDomainNetGetActualVirtPortProfile(iface);
+            const virNetDevVPortProfile *vport = virDomainNetGetActualVirtPortProfile(iface);
             if (vport && vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH)
                 ignore_value(virNetDevOpenvswitchRemovePort(
                                 virDomainNetGetActualBridgeName(iface),

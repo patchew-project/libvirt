@@ -29665,7 +29665,7 @@ virDomainNetGetActualHostdev(virDomainNetDefPtr iface)
     return NULL;
 }
 
-virNetDevVPortProfilePtr
+const virNetDevVPortProfile *
 virDomainNetGetActualVirtPortProfile(const virDomainNetDef *iface)
 {
     switch (iface->type) {

@@ -1108,7 +1108,7 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
 static void
 qemuDomainNetDeviceVportRemove(virDomainNetDefPtr net)
 {
-    virNetDevVPortProfilePtr vport = virDomainNetGetActualVirtPortProfile(net);
+    const virNetDevVPortProfile *vport = virDomainNetGetActualVirtPortProfile(net);
     const char *brname;
 
     if (!vport)
