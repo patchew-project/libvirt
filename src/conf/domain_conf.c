@@ -15289,7 +15289,7 @@ static virDomainVideoAccelDefPtr
 virDomainVideoAccelDefParseXML(xmlNodePtr node)
 {
     xmlNodePtr cur;
-    virDomainVideoAccelDefPtr def;
+    g_autofree virDomainVideoAccelDefPtr def = NULL;
     int val;
     g_autofree char *accel2d = NULL;
     g_autofree char *accel3d = NULL;
@@ -15311,8 +15311,7 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
     if (!accel3d && !accel2d && !rendernode)
         return NULL;
 
-    if (VIR_ALLOC(def) < 0)
-        goto cleanup;
+    def = g_new0(virDomainVideoAccelDef, 1);
 
     if (accel3d) {
         if ((val = virTristateBoolTypeFromString(accel3d)) <= 0) {
@@ -15336,14 +15335,14 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
         def->rendernode = virFileSanitizePath(rendernode);
 
  cleanup:
-    return def;
+    return g_steal_pointer(&def);
 }
 
 static virDomainVideoResolutionDefPtr
 virDomainVideoResolutionDefParseXML(xmlNodePtr node)
 {
     xmlNodePtr cur;
-    virDomainVideoResolutionDefPtr def;
+    g_autofree virDomainVideoResolutionDefPtr def = NULL;
     g_autofree char *x = NULL;
     g_autofree char *y = NULL;
 
@@ -15362,8 +15361,7 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
     if (!x || !y)
         return NULL;
 
-    if (VIR_ALLOC(def) < 0)
-        goto cleanup;
+    def = g_new0(virDomainVideoResolutionDef, 1);
 
     if (virStrToLong_uip(x, NULL, 10, &def->x) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -15378,7 +15376,7 @@ virDomainVideoResolutionDefParseXML(xmlNodePtr node)
     }
 
  cleanup:
-    return def;
+    return g_steal_pointer(&def);
 }
 
 static virDomainVideoDriverDefPtr
