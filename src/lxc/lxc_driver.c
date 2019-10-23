@@ -3860,6 +3860,10 @@ lxcDomainAttachDeviceNetLive(virConnectPtr conn,
         virObjectUnref(netconn);
     }
 
+    /* final validation now that actual type is known */
+    if (virDomainNetDefRuntimeValidate(net) < 0)
+        return -1;
+
     actualType = virDomainNetGetActualType(net);
 
     switch (actualType) {

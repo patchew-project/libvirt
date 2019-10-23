@@ -5389,6 +5389,12 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
 
     virMacAddrFormat(&net->mac, macstr);
 
+    /* hypervisor-agnostic validation */
+    if (virDomainNetDefRuntimeValidate(net) < 0)
+        return -1;
+
+    /* QEMU-specific validation */
+
     /* Only tap/macvtap devices support multiqueue. */
     if (net->driver.virtio.queues > 0) {
 

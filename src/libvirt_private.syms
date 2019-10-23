@@ -479,6 +479,7 @@ virDomainNetDefClear;
 virDomainNetDefFormat;
 virDomainNetDefFree;
 virDomainNetDefNew;
+virDomainNetDefRuntimeValidate;
 virDomainNetDefToNetworkPort;
 virDomainNetFind;
 virDomainNetFindByName;

@@ -3425,6 +3425,10 @@ libxlDomainAttachNetDevice(libxlDriverPrivatePtr driver,
             goto cleanup;
     }
 
+    /* final validation now that actual type is known */
+    if (virDomainNetDefRuntimeValidate(net) < 0)
+        return -1;
+
     actualType = virDomainNetGetActualType(net);
 
     if (virDomainHasNet(vm->def, net)) {

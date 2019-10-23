@@ -574,6 +574,10 @@ static int virLXCProcessSetupInterfaces(virConnectPtr conn,
                 goto cleanup;
         }
 
+        /* final validation now that actual type is known */
+        if (virDomainNetDefRuntimeValidate(net) < 0)
+            return -1;
+
         type = virDomainNetGetActualType(net);
         switch (type) {
         case VIR_DOMAIN_NET_TYPE_NETWORK:
