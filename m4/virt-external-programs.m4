@@ -87,4 +87,6 @@ AC_DEFUN([LIBVIRT_CHECK_EXTERNAL_PROGRAMS], [
 
   AC_PATH_PROG([EBTABLES_PATH], [ebtables], [/sbin/ebtables], [$LIBVIRT_SBIN_PATH])
   AC_DEFINE_UNQUOTED([EBTABLES_PATH], ["$EBTABLES_PATH"], [path to ebtables binary])
+
+  AC_PATH_PROGS([ZANATA], [zanata zanata-cli], [zanata])
 ])

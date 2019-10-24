@@ -66,14 +66,14 @@ update-mini-po: $(POTFILE)
 	done
 
 push-pot: $(POTFILE)
-	zanata push \
+	$(ZANATA) push \
 		--project-config $(srcdir)/zanata.xml \
 		--push-type=source \
 		--trans-dir $(builddir) \
 		--src-dir $(srcdir)
 
 pull-po: $(POTFILE)
-	zanata pull \
+	$(ZANATA) pull \
 		--project-config $(srcdir)/zanata.xml \
 		--create-skeletons \
 		--trans-dir $(builddir) \
