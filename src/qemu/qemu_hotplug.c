@@ -2794,6 +2794,8 @@ qemuDomainAttachMediatedDevice(virQEMUDriverPtr driver,
 {
     int ret = -1;
     g_autofree char *devstr = NULL;
+    char *devName = NULL;
+    bool releaseaddr = false;
     bool added = false;
     bool teardowncgroup = false;
     bool teardownlabel = false;
@@ -2809,6 +2811,10 @@ qemuDomainAttachMediatedDevice(virQEMUDriverPtr driver,
             return -1;
         break;
     case VIR_MDEV_MODEL_TYPE_VFIO_CCW:
+        devName = hostdev->source.subsys.u.mdev.uuidstr;
+        if (qemuDomainEnsureVirtioAddress(&releaseaddr, vm, &dev, devName) < 0)
+            return -1;
+        break;
     case VIR_MDEV_MODEL_TYPE_LAST:
         break;
     }
