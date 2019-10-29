@@ -1244,6 +1244,13 @@ VIR_ENUM_IMPL(virDomainShmemModel,
               "ivshmem-doorbell",
 );
 
+VIR_ENUM_IMPL(virDomainHostdevDeleteAction,
+              VIR_DOMAIN_HOSTDEV_DELETE_ACTION_LAST,
+              "none",
+              "delete",
+              "unplug"
+);
+
 VIR_ENUM_IMPL(virDomainLaunchSecurity,
               VIR_DOMAIN_LAUNCH_SECURITY_LAST,
               "",
@@ -7585,6 +7592,7 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
     virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
     g_autofree char *startupPolicy = NULL;
     g_autofree char *autoAddress = NULL;
+    g_autofree char *deleteAction = NULL;
 
     if ((startupPolicy = virXMLPropString(node, "startupPolicy"))) {
         def->startupPolicy =
@@ -7600,6 +7608,18 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
     if ((autoAddress = virXMLPropString(node, "autoAddress"))) {
         if (STREQ(autoAddress, "yes"))
             usbsrc->autoAddress = true;
+    }
+
+    if ((deleteAction = virXMLPropString(node, "deleteAction"))) {
+        def->deleteAction =
+            virDomainHostdevDeleteActionTypeFromString(deleteAction);
+
+        if (def->deleteAction <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unknown deleteAction '%s'"),
+                           deleteAction);
+            goto out;
+        }
     }
 
     /* Product can validly be 0, so we need some extra help to determine
@@ -25024,6 +25044,12 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
 
         if (def->missing && !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
             virBufferAddLit(buf, " missing='yes'");
+
+        if (def->deleteAction && (flags & VIR_DOMAIN_DEF_FORMAT_STATUS)) {
+            const char *deleteAction;
+            deleteAction = virDomainHostdevDeleteActionTypeToString(def->deleteAction);
+            virBufferAsprintf(buf, " deleteAction='%s'", deleteAction);
+        }
     }
 
     if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
