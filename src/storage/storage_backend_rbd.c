@@ -411,6 +411,7 @@ volStorageBackendRBDGetFeatures(rbd_image_t image,
     int r, ret = -1;
 
     if ((r = rbd_get_features(image, features)) < 0) {
+        ret = r;
         virReportSystemError(-r, _("failed to get the features of RBD image "
                                  "%s"), volname);
         goto cleanup;
@@ -427,16 +428,19 @@ volStorageBackendRBDGetFlags(rbd_image_t image,
                              const char *volname,
                              uint64_t *flags)
 {
-    int rc;
+    int r, ret = -1;
 
-    if ((rc = rbd_get_flags(image, flags)) < 0) {
-        virReportSystemError(-rc,
+    if ((r = rbd_get_flags(image, flags)) < 0) {
+        ret = r;
+        virReportSystemError(-r,
                              _("failed to get the flags of RBD image %s"),
                              volname);
-        return -1;
+        goto cleanup;
     }
+    ret = 0;
 
-    return 0;
+ cleanup:
+    return ret;
 }
 
 static bool
@@ -470,6 +474,7 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol,
     if ((r = rbd_diff_iterate2(image, NULL, 0, info->size, 0, 1,
                                &virStorageBackendRBDRefreshVolInfoCb,
                                &allocation)) < 0) {
+        ret = r;
         virReportSystemError(-r, _("failed to iterate RBD image '%s'"),
                              vol->name);
         goto cleanup;
@@ -525,24 +530,28 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
     uint64_t flags;
 
     if ((r = rbd_open_read_only(ptr->ioctx, vol->name, &image, NULL)) < 0) {
-        ret = -r;
+        ret = r;
         virReportSystemError(-r, _("failed to open the RBD image '%s'"),
                              vol->name);
         goto cleanup;
     }
 
     if ((r = rbd_stat(image, &info, sizeof(info))) < 0) {
-        ret = -r;
+        ret = r;
         virReportSystemError(-r, _("failed to stat the RBD image '%s'"),
                              vol->name);
         goto cleanup;
     }
 
-    if (volStorageBackendRBDGetFeatures(image, vol->name, &features) < 0)
+    if ((r = volStorageBackendRBDGetFeatures(image, vol->name, &features)) < 0) {
+        ret = r;
         goto cleanup;
+    }
 
-    if (volStorageBackendRBDGetFlags(image, vol->name, &flags) < 0)
+    if ((r = volStorageBackendRBDGetFlags(image, vol->name, &flags)) < 0) {
+        ret = r;
         goto cleanup;
+    }
 
     vol->target.capacity = info.size;
     vol->type = VIR_STORAGE_VOL_NETWORK;
@@ -555,8 +564,11 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
                   "Querying for actual allocation",
                   def->source.name, vol->name);
 
-        if (virStorageBackendRBDSetAllocation(vol, image, &info) < 0)
+        if ((r = virStorageBackendRBDSetAllocation(vol, image, &info) < 0)) {
+            ret = r;
             goto cleanup;
+        }
+
     } else {
         vol->target.allocation = info.obj_size * info.num_objs;
     }
