@@ -7699,6 +7699,13 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
         goto out;
     }
 
+    if (usbsrc->replug && (!got_vendor || !got_product)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("replug is only possible if vendor/product "
+                         "pair is specified"));
+        goto out;
+    }
+
     ret = 0;
  out:
     return ret;
@@ -8139,12 +8146,14 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
+    virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
     g_autofree char *managed = NULL;
     g_autofree char *sgio = NULL;
     g_autofree char *rawio = NULL;
     g_autofree char *backendStr = NULL;
     g_autofree char *model = NULL;
     g_autofree char *display = NULL;
+    g_autofree char *replug = NULL;
 
     /* @managed can be read from the xml document - it is always an
      * attribute of the toplevel element, no matter what type of
@@ -8160,6 +8169,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     rawio = virXMLPropString(node, "rawio");
     model = virXMLPropString(node, "model");
     display = virXMLPropString(node, "display");
+    replug = virXMLPropString(node, "replug");
 
     /* @type is passed in from the caller rather than read from the
      * xml document, because it is specified in different places for
@@ -8222,6 +8232,20 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
             virReportError(VIR_ERR_XML_ERROR,
                            _("unknown hostdev rawio setting '%s'"),
                            rawio);
+            return -1;
+        }
+    }
+
+    if (replug) {
+        if (def->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("replug is only supported for usb host device"));
+            return -1;
+        }
+
+        if ((usbsrc->replug = virTristateBoolTypeFromString(replug)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("unknown hostdev replug setting '%s'"), rawio);
             return -1;
         }
     }
@@ -27183,6 +27207,7 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
+    virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
     const char *type;
 
     if (!mode) {
@@ -27247,6 +27272,11 @@ virDomainHostdevDefFormat(virBufferPtr buf,
                                   virTristateSwitchTypeToString(mdevsrc->display));
         }
 
+        if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB &&
+            usbsrc->replug) {
+            virBufferAsprintf(buf, " replug='%s'",
+                              virTristateBoolTypeToString(usbsrc->replug));
+        }
     }
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
