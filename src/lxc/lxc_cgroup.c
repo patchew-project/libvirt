@@ -102,32 +102,6 @@ static int virLXCCgroupSetupCpusetTune(virDomainDefPtr def,
 }
 
 
-static int virLXCCgroupSetupMemTune(virDomainDefPtr def,
-                                    virCgroupPtr cgroup)
-{
-    int ret = -1;
-
-    if (virCgroupSetMemory(cgroup, virDomainDefGetMemoryInitial(def)) < 0)
-        goto cleanup;
-
-    if (virMemoryLimitIsSet(def->mem.hard_limit))
-        if (virCgroupSetMemoryHardLimit(cgroup, def->mem.hard_limit) < 0)
-            goto cleanup;
-
-    if (virMemoryLimitIsSet(def->mem.soft_limit))
-        if (virCgroupSetMemorySoftLimit(cgroup, def->mem.soft_limit) < 0)
-            goto cleanup;
-
-    if (virMemoryLimitIsSet(def->mem.swap_hard_limit))
-        if (virCgroupSetMemSwapHardLimit(cgroup, def->mem.swap_hard_limit) < 0)
-            goto cleanup;
-
-    ret = 0;
- cleanup:
-    return ret;
-}
-
-
 static int virLXCCgroupGetMemSwapUsage(virCgroupPtr cgroup,
                                        virLXCMeminfoPtr meminfo)
 {
@@ -438,7 +412,7 @@ int virLXCCgroupSetup(virDomainDefPtr def,
     if (virCgroupSetupBlkio(cgroup, def) < 0)
         goto cleanup;
 
-    if (virLXCCgroupSetupMemTune(def, cgroup) < 0)
+    if (virCgroupSetupMemory(cgroup, def) < 0)
         goto cleanup;
 
     if (virLXCCgroupSetupDeviceACL(def, cgroup) < 0)

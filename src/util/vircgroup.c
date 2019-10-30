@@ -1670,6 +1670,36 @@ virCgroupSetMemory(virCgroupPtr group, unsigned long long kb)
                             setMemory, -1, kb);
 }
 
+/**
+ * virCgroupSetupMemory
+ *
+ * @group: The cgroup to change memory for
+ * @def: pointer to domian def
+ *
+ * Returns: 0 on success, -1 on error.
+ */
+int
+virCgroupSetupMemory(virCgroupPtr group, virDomainDefPtr def)
+{
+    int ret = -1;
+
+    if (virMemoryLimitIsSet(def->mem.hard_limit))
+        if (virCgroupSetMemoryHardLimit(group, def->mem.hard_limit) < 0)
+            goto cleanup;
+
+    if (virMemoryLimitIsSet(def->mem.soft_limit))
+        if (virCgroupSetMemorySoftLimit(group, def->mem.soft_limit) < 0)
+            goto cleanup;
+
+    if (virMemoryLimitIsSet(def->mem.swap_hard_limit))
+        if (virCgroupSetMemSwapHardLimit(group, def->mem.swap_hard_limit) < 0)
+            goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
 
 /**
  * virCgroupGetMemoryStat:

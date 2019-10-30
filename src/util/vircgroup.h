@@ -179,6 +179,7 @@ int virCgroupGetBlkioDeviceWriteBps(virCgroupPtr group,
                                     unsigned long long *wbps);
 
 int virCgroupSetMemory(virCgroupPtr group, unsigned long long kb);
+int virCgroupSetupMemory(virCgroupPtr group, virDomainDefPtr def);
 int virCgroupGetMemoryStat(virCgroupPtr group,
                            unsigned long long *cache,
                            unsigned long long *activeAnon,
