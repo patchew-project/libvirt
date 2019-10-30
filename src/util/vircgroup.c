@@ -1420,6 +1420,67 @@ virCgroupGetBlkioWeight(virCgroupPtr group, unsigned int *weight)
 }
 
 /**
+ * virCgroupSetupBlkio
+ *
+ * @group: The cgroup to change block io setting for
+ * @def: pointer to domain def
+ *
+ * Returns: 0 on success, -1 on error
+ */
+int
+virCgroupSetupBlkio(virCgroupPtr group, virDomainDefPtr def)
+{
+    size_t i;
+
+    if (def->blkio.weight != 0 &&
+        virCgroupSetBlkioWeight(group, def->blkio.weight) < 0)
+        return -1;
+
+    if (def->blkio.ndevices) {
+        for (i = 0; i < def->blkio.ndevices; i++) {
+            virBlkioDevicePtr dev = &def->blkio.devices[i];
+            if (dev->weight &&
+                (virCgroupSetBlkioDeviceWeight(group, dev->path,
+                                               dev->weight) < 0 ||
+                 virCgroupGetBlkioDeviceWeight(group, dev->path,
+                                               &dev->weight) < 0))
+                return -1;
+
+            if (dev->riops &&
+                (virCgroupSetBlkioDeviceReadIops(group, dev->path,
+                                                 dev->riops) < 0 ||
+                 virCgroupGetBlkioDeviceReadIops(group, dev->path,
+                                                 &dev->riops) < 0))
+                return -1;
+
+            if (dev->wiops &&
+                (virCgroupSetBlkioDeviceWriteIops(group, dev->path,
+                                                  dev->wiops) < 0 ||
+                 virCgroupGetBlkioDeviceWriteIops(group, dev->path,
+                                                  &dev->wiops) < 0))
+                return -1;
+
+            if (dev->rbps &&
+                (virCgroupSetBlkioDeviceReadBps(group, dev->path,
+                                                dev->rbps) < 0 ||
+                 virCgroupGetBlkioDeviceReadBps(group, dev->path,
+                                                &dev->rbps) < 0))
+                return -1;
+
+            if (dev->wbps &&
+                (virCgroupSetBlkioDeviceWriteBps(group, dev->path,
+                                                 dev->wbps) < 0 ||
+                 virCgroupGetBlkioDeviceWriteBps(group, dev->path,
+                                                 &dev->wbps) < 0))
+                return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+/**
  * virCgroupSetBlkioDeviceReadIops:
  * @group: The cgroup to change block io setting for
  * @path: The path of device

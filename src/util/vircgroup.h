@@ -24,6 +24,7 @@
 #include "virutil.h"
 #include "virbitmap.h"
 #include "virenum.h"
+#include "conf/domain_conf.h"
 
 struct _virCgroup;
 typedef struct _virCgroup virCgroup;
@@ -122,6 +123,8 @@ int virCgroupAddThread(virCgroupPtr group, pid_t pid);
 
 int virCgroupSetBlkioWeight(virCgroupPtr group, unsigned int weight);
 int virCgroupGetBlkioWeight(virCgroupPtr group, unsigned int *weight);
+
+int virCgroupSetupBlkio(virCgroupPtr group, virDomainDefPtr def);
 
 int virCgroupGetBlkioIoServiced(virCgroupPtr group,
                                 long long *bytes_read,
