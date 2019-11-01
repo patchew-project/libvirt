@@ -817,6 +817,7 @@ struct _virDomainFSDef {
     unsigned long long space_soft_limit; /* in bytes */
     bool symlinksResolved;
     virDomainVirtioOptionsPtr virtio;
+    char *vhost_user_fs_path; /* TODO put this in private data */
 };
 
 
