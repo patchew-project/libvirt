@@ -4164,9 +4164,9 @@ remoteDispatchNodeDeviceGetParent(virNetServerPtr server G_GNUC_UNUSED,
 }
 
 static int
-remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server,
                                            virNetServerClientPtr client,
-                                           virNetMessagePtr msg G_GNUC_UNUSED,
+                                           virNetMessagePtr msg,
                                            virNetMessageErrorPtr rerr)
 {
     int rv = -1;
@@ -4174,6 +4174,12 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -4184,7 +4190,7 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
         goto cleanup;
 
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     /* eventID, callbackID, and legacy are not used */
     callback->eventID = -1;
     callback->callbackID = -1;
@@ -4236,9 +4242,9 @@ remoteDispatchConnectUnregisterCloseCallback(virNetServerPtr server G_GNUC_UNUSE
 }
 
 static int
-remoteDispatchConnectDomainEventRegister(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectDomainEventRegister(virNetServerPtr server,
                                          virNetServerClientPtr client,
-                                         virNetMessagePtr msg G_GNUC_UNUSED,
+                                         virNetMessagePtr msg,
                                          virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                          remote_connect_domain_event_register_ret *ret G_GNUC_UNUSED)
 {
@@ -4249,6 +4255,12 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server G_GNUC_UNUSED,
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -4266,7 +4278,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server G_GNUC_UNUSED,
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4457,9 +4469,9 @@ remoteDispatchDomainGetState(virNetServerPtr server G_GNUC_UNUSED,
  * VIR_DRV_SUPPORTS_FEATURE(VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK),
  * and must not mix the two styles.  */
 static int
-remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg G_GNUC_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                             remote_connect_domain_event_register_any_args *args)
 {
@@ -4470,6 +4482,12 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -4495,7 +4513,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4531,9 +4549,9 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
 
 
 static int
-remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server,
                                                     virNetServerClientPtr client,
-                                                    virNetMessagePtr msg G_GNUC_UNUSED,
+                                                    virNetMessagePtr msg,
                                                     virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                                     remote_connect_domain_event_callback_register_any_args *args,
                                                     remote_connect_domain_event_callback_register_any_ret *ret)
@@ -4546,6 +4564,12 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNU
         virNetServerClientGetPrivateData(client);
     virDomainPtr dom = NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -4571,7 +4595,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5641,7 +5665,7 @@ remoteDispatchDomainMigratePrepare3Params(virNetServerPtr server G_GNUC_UNUSED,
 }
 
 static int
-remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server,
                                                 virNetServerClientPtr client,
                                                 virNetMessagePtr msg,
                                                 virNetMessageErrorPtr rerr,
@@ -5656,6 +5680,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UN
     virStreamPtr st = NULL;
     daemonClientStreamPtr stream = NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
 
     if (!conn)
         goto cleanup;
@@ -5672,8 +5697,13 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UN
                                   0, &params, &nparams) < 0)
         goto cleanup;
 
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
+
     if (!(st = virStreamNew(conn, VIR_STREAM_NONBLOCK)) ||
-        !(stream = daemonCreateClientStream(client, st, remoteProgram,
+        !(stream = daemonCreateClientStream(client, st, program,
                                             &msg->header, false)))
         goto cleanup;
 
@@ -6014,9 +6044,9 @@ static int remoteDispatchDomainCreateWithFiles(virNetServerPtr server G_GNUC_UNU
 
 
 static int
-remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server,
                                              virNetServerClientPtr client,
-                                             virNetMessagePtr msg G_GNUC_UNUSED,
+                                             virNetMessagePtr msg,
                                              virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                              remote_connect_network_event_register_any_args *args,
                                              remote_connect_network_event_register_any_ret *ret)
@@ -6029,6 +6059,12 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetNetworkConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -6054,7 +6090,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6135,9 +6171,9 @@ remoteDispatchConnectNetworkEventDeregisterAny(virNetServerPtr server G_GNUC_UNU
 }
 
 static int
-remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server,
                                                  virNetServerClientPtr client,
-                                                 virNetMessagePtr msg G_GNUC_UNUSED,
+                                                 virNetMessagePtr msg,
                                                  virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                                  remote_connect_storage_pool_event_register_any_args *args,
                                                  remote_connect_storage_pool_event_register_any_ret *ret)
@@ -6150,6 +6186,12 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
         virNetServerClientGetPrivateData(client);
     virStoragePoolPtr  pool = NULL;
     virConnectPtr conn = remoteGetStorageConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -6175,7 +6217,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6255,9 +6297,9 @@ remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server G_GNUC
 }
 
 static int
-remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server,
                                                 virNetServerClientPtr client,
-                                                virNetMessagePtr msg G_GNUC_UNUSED,
+                                                virNetMessagePtr msg,
                                                 virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                                 remote_connect_node_device_event_register_any_args *args,
                                                 remote_connect_node_device_event_register_any_ret *ret)
@@ -6270,6 +6312,12 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server G_GNUC_UN
         virNetServerClientGetPrivateData(client);
     virNodeDevicePtr  dev = NULL;
     virConnectPtr conn = remoteGetNodeDevConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -6295,7 +6343,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server G_GNUC_UN
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6375,9 +6423,9 @@ remoteDispatchConnectNodeDeviceEventDeregisterAny(virNetServerPtr server G_GNUC_
 }
 
 static int
-remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED,
+remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg G_GNUC_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                             remote_connect_secret_event_register_any_args *args,
                                             remote_connect_secret_event_register_any_ret *ret)
@@ -6390,6 +6438,12 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
         virNetServerClientGetPrivateData(client);
     virSecretPtr secret = NULL;
     virConnectPtr conn = remoteGetSecretConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -6415,7 +6469,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6495,9 +6549,9 @@ remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server G_GNUC_UNUS
 }
 
 static int
-qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUSED,
+qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server,
                                               virNetServerClientPtr client,
-                                              virNetMessagePtr msg G_GNUC_UNUSED,
+                                              virNetMessagePtr msg,
                                               virNetMessageErrorPtr rerr G_GNUC_UNUSED,
                                               qemu_connect_domain_monitor_event_register_args *args,
                                               qemu_connect_domain_monitor_event_register_ret *ret)
@@ -6511,6 +6565,12 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUS
     virDomainPtr dom = NULL;
     const char *event = args->event ? *args->event : NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
+    virNetServerProgramPtr program;
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
 
     virMutexLock(&priv->lock);
 
@@ -6530,7 +6590,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUS
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(qemuProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = -1;
     callback->callbackID = -1;
     ref = callback;

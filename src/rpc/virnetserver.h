@@ -90,6 +90,8 @@ int virNetServerAddProgram(virNetServerPtr srv,
 int virNetServerSetTLSContext(virNetServerPtr srv,
                               virNetTLSContextPtr tls);
 
+virNetServerProgramPtr virNetServerGetProgram(virNetServerPtr srv,
+                                              virNetMessagePtr msg);
 
 int virNetServerAddClient(virNetServerPtr srv,
                           virNetServerClientPtr client);

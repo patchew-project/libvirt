@@ -124,6 +124,7 @@ virNetServerGetCurrentUnauthClients;
 virNetServerGetMaxClients;
 virNetServerGetMaxUnauthClients;
 virNetServerGetName;
+virNetServerGetProgram;
 virNetServerGetThreadPoolParameters;
 virNetServerHasClients;
 virNetServerNeedsAuth;
