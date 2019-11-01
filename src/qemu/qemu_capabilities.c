@@ -547,6 +547,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "query-cpu-model-comparison",
               "ramfb",
               "machine.pseries.cap-ccf-assist",
+
+              /* 345 */
+              "vhost-user-fs",
     );
 
 
@@ -1141,6 +1144,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vhost-user-gpu", QEMU_CAPS_DEVICE_VHOST_USER_GPU },
     { "vhost-user-vga", QEMU_CAPS_DEVICE_VHOST_USER_VGA },
     { "ramfb", QEMU_CAPS_DEVICE_RAMFB },
+    { "vhost-user-fs-device", QEMU_CAPS_DEVICE_VHOST_USER_FS },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
