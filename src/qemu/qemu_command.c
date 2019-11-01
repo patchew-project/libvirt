@@ -2697,6 +2697,9 @@ qemuBuildFilesystemCommandLine(virCommandPtr cmd,
             if (qemuBuildFSDevCommandLine(cmd, def->fss[i], def, qemuCaps) < 0)
                 return -1;
             break;
+        case VIR_DOMAIN_FS_DRIVER_TYPE_VIRTIO_FS:
+            /* TODO: vhost-user-fs-pci */
+            return 0;
         case VIR_DOMAIN_FS_DRIVER_TYPE_LOOP:
         case VIR_DOMAIN_FS_DRIVER_TYPE_NBD:
         case VIR_DOMAIN_FS_DRIVER_TYPE_PLOOP:

@@ -2567,6 +2567,7 @@
             <value>loop</value>
             <value>nbd</value>
             <value>ploop</value>
+            <value>virtio-fs</value>
           </choice>
         </attribute>
       </optional>

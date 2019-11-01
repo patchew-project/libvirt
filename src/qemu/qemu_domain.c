@@ -7110,6 +7110,10 @@ qemuDomainDeviceDefValidateFS(virDomainFSDefPtr fs,
                        _("Filesystem driver type not supported"));
         return -1;
 
+    case VIR_DOMAIN_FS_DRIVER_TYPE_VIRTIO_FS:
+        /* TODO: vhost-user-fs-pci */
+        return -0;
+
     case VIR_DOMAIN_FS_DRIVER_TYPE_LAST:
     default:
         virReportEnumRangeError(virDomainFSDriverType, fs->fsdriver);

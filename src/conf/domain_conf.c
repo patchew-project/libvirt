@@ -476,6 +476,7 @@ VIR_ENUM_IMPL(virDomainFSDriver,
               "loop",
               "nbd",
               "ploop",
+              "virtio-fs",
 );
 
 VIR_ENUM_IMPL(virDomainFSAccessMode,
