@@ -1620,12 +1620,12 @@ remoteRelayDomainQemuMonitorEvent(virConnectPtr conn,
 static
 void remoteRelayConnectionClosedEvent(virConnectPtr conn G_GNUC_UNUSED, int reason, void *opaque)
 {
-    virNetServerClientPtr client = opaque;
+    daemonClientEventCallbackPtr callback = opaque;
 
     VIR_DEBUG("Relaying connection closed event, reason %d", reason);
 
     remote_connect_event_connection_closed_msg msg = { reason };
-    remoteDispatchObjectEventSend(client, remoteProgram,
+    remoteDispatchObjectEventSend(callback->client, callback->program,
                                   REMOTE_PROC_CONNECT_EVENT_CONNECTION_CLOSED,
                                   (xdrproc_t)xdr_remote_connect_event_connection_closed_msg,
                                   &msg);
@@ -4170,6 +4170,7 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
                                            virNetMessageErrorPtr rerr)
 {
     int rv = -1;
+    daemonClientEventCallbackPtr callback = NULL;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -4179,9 +4180,17 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
     if (!conn)
         goto cleanup;
 
+    if (VIR_ALLOC(callback) < 0)
+        goto cleanup;
+
+    callback->client = virObjectRef(client);
+    callback->program = virObjectRef(remoteProgram);
+    /* eventID, callbackID, and legacy are not used */
+    callback->eventID = -1;
+    callback->callbackID = -1;
     if (virConnectRegisterCloseCallback(conn,
                                         remoteRelayConnectionClosedEvent,
-                                        client, NULL) < 0)
+                                        callback, remoteEventCallbackFree) < 0)
         goto cleanup;
 
     priv->closeRegistered = true;
@@ -4189,8 +4198,10 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server G_GNUC_UNUSED,
 
  cleanup:
     virMutexUnlock(&priv->lock);
-    if (rv < 0)
+    if (rv < 0) {
+        remoteEventCallbackFree(callback);
         virNetMessageSaveError(rerr);
+    }
     return rv;
 }
 
