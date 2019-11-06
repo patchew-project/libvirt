@@ -22654,6 +22654,27 @@ qemuDomainGetGuestInfo(virDomainPtr dom,
     return ret;
 }
 
+static int
+qemuDomainAgentSetResponseTimeout(virDomainPtr dom,
+                                  int timeout,
+                                  unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainAgentSetResponseTimeoutEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    ret = qemuDomainObjSetAgentResponseTimeout(vm, timeout, flags);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -22890,6 +22911,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainCheckpointGetParent = qemuDomainCheckpointGetParent, /* 5.6.0 */
     .domainCheckpointDelete = qemuDomainCheckpointDelete, /* 5.6.0 */
     .domainGetGuestInfo = qemuDomainGetGuestInfo, /* 5.7.0 */
+    .domainAgentSetResponseTimeout = qemuDomainAgentSetResponseTimeout, /* 5.8.0 */
 };
 
 

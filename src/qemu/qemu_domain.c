@@ -15564,3 +15564,18 @@ qemuDomainSupportsCheckpointsBlockjobs(virDomainObjPtr vm)
 
     return 0;
 }
+
+int qemuDomainObjSetAgentResponseTimeout(virDomainObjPtr vm,
+                                         int timeout,
+                                         unsigned int flags)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuAgentPtr agent = priv->agent;
+    int ret;
+
+    virObjectLock(agent);
+    ret = qemuAgentSetResponseTimeout(agent, timeout, flags);
+    virObjectUnlock(agent);
+
+    return ret;
+}

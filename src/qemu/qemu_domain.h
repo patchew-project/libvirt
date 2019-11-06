@@ -1225,3 +1225,8 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
 int
 qemuDomainSupportsCheckpointsBlockjobs(virDomainObjPtr vm)
     G_GNUC_WARN_UNUSED_RESULT;
+
+int
+qemuDomainObjSetAgentResponseTimeout(virDomainObjPtr vm,
+                                     int seconds,
+                                     unsigned int flags);
