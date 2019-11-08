@@ -114,7 +114,13 @@ internals_html = $(internals_html_in:%.html.in=%.html)
 
 kbase_html_in = \
   $(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/kbase/*.html.in))
-kbase_html = $(kbase_html_in:%.html.in=%.html)
+kbase_rst = \
+  $(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/kbase/*.rst))
+kbase_rst_html_in = \
+  $(kbase_rst:%.rst=%.html.in)
+kbase_html = \
+  $(kbase_html_in:%.html.in=%.html) \
+  $(kbase_rst_html_in:%.html.in=%.html)
 
 # Generate hvsupport.html and news.html first, since they take one extra step.
 dot_html_generated_in = \
@@ -170,7 +176,7 @@ EXTRA_DIST= \
   $(fig) $(png) $(css) \
   $(javascript) $(logofiles) \
   $(internals_html_in) $(fonts) \
-  $(kbase_html_in) \
+  $(kbase_html_in) $(kbase_rst) \
   aclperms.htmlinc \
   hvsupport.pl \
   $(schema_DATA)
@@ -186,6 +192,7 @@ CLEANFILES = \
   $(apihtml) \
   $(internals_html) \
   $(kbase_html) \
+  $(kbase_rst_html_in) \
   $(xml) \
   $(qemu_xml) \
   $(lxc_xml) \
@@ -234,6 +241,9 @@ EXTRA_DIST += \
 
 %.png: %.fig
 	convert -rotate 90 $< $@
+
+%.html.in: %.rst
+	$(AM_V_GEN)rst2html $< > $@
 
 %.html.tmp: %.html.in site.xsl subsite.xsl page.xsl \
 		$(acl_generated)
