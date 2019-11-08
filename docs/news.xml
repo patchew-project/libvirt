@@ -206,6 +206,18 @@
     </section>
   </release>
   <release version="v5.8.0" date="2019-10-05">
+    <section title="Improvements">
+      <change>
+        <summary>
+          qemu: Support unmanaged macvtap devices
+        </summary>
+        <description>
+          Add new "managed" attribute for target dev of
+          <code>&lt;interface type=&apos;ethernet&apos;&gt;</code> to control
+          whether using an existing macvtap device.
+        </description>
+      </change>
+    </section>
     <section title="Removed features">
       <change>
         <summary>
