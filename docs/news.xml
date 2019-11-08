@@ -216,6 +216,16 @@
           backend. It requires qemu over <code>4.1</code>.
         </description>
       </change>
+      <change>
+        <summary>
+          Introduce virConnectSetIdentity API
+        </summary>
+        <description>
+          For splited libvirt daemons, this API can be used to forward uid, gid
+          and selinux info from <code>virproxyd</code> to
+          <code>virtqemud</code>.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
