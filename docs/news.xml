@@ -209,6 +209,17 @@
     <section title="Improvements">
       <change>
         <summary>
+          qemu: Support to run SLIRP networking in a separate process
+        </summary>
+        <description>
+          User can configure the slirp-helper path in <code>qemu.conf</code>.
+          It will start a slirp-helper process to provide SLIRP networking
+          when VM is started with network interface "user". That will allow
+          stricter security policies for QEMU SLIRP network.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Support unmanaged macvtap devices
         </summary>
         <description>
