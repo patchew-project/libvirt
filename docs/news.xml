@@ -206,6 +206,17 @@
     </section>
   </release>
   <release version="v5.8.0" date="2019-10-05">
+    <section title="New features">
+      <change>
+        <summary>
+          qemu: Support vhost-user-gpu
+        </summary>
+        <description>
+          Support for running virtio GPUs in seperate processes by vhost-user
+          backend. It requires qemu over <code>4.1</code>.
+        </description>
+      </change>
+    </section>
     <section title="Improvements">
       <change>
         <summary>
