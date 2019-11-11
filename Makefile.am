@@ -61,6 +61,7 @@ EXTRA_DIST = \
   scripts/minimize-po.py \
   scripts/mock-noinline.py \
   scripts/prohibit-duplicate-header.py \
+  scripts/test-wrap-argv.py \
   build-aux/syntax-check.mk \
   build-aux/useless-if-before-free \
   build-aux/vc-list-files \
