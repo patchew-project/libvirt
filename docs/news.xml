@@ -220,6 +220,15 @@
           type='ethernet'&gt;</code>.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support vhost-user-gpu
+        </summary>
+        <description>
+          Support for running virtio GPUs in seperate processes by vhost-user
+          backend. It requires qemu over <code>4.1</code>.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
