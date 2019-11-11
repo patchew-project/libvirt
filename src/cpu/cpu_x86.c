@@ -3238,6 +3238,15 @@ virCPUx86ExpandFeatures(virCPUDefPtr cpu)
 }
 
 
+static bool
+x86FeatureFilterMigratable(const char *name,
+                           virCPUFeaturePolicy policy G_GNUC_UNUSED,
+                           void *cpu_map)
+{
+    return x86FeatureIsMigratable(name, cpu_map);
+}
+
+
 static virCPUDefPtr
 virCPUx86CopyMigratable(virCPUDefPtr cpu)
 {
@@ -3251,7 +3260,7 @@ virCPUx86CopyMigratable(virCPUDefPtr cpu)
         return NULL;
 
     if (virCPUDefCopyModelFilter(copy, cpu, false,
-                                 x86FeatureIsMigratable, map) < 0)
+                                 x86FeatureFilterMigratable, map) < 0)
         goto error;
 
     return copy;
@@ -3386,6 +3395,7 @@ virCPUx86FeatureIsMSR(const char *name)
  */
 bool
 virCPUx86FeatureFilterSelectMSR(const char *name,
+                                virCPUFeaturePolicy policy G_GNUC_UNUSED,
                                 void *opaque G_GNUC_UNUSED)
 {
     return virCPUx86FeatureIsMSR(name);
@@ -3402,6 +3412,7 @@ virCPUx86FeatureFilterSelectMSR(const char *name,
  */
 bool
 virCPUx86FeatureFilterDropMSR(const char *name,
+                              virCPUFeaturePolicy policy G_GNUC_UNUSED,
                               void *opaque G_GNUC_UNUSED)
 {
     return !virCPUx86FeatureIsMSR(name);

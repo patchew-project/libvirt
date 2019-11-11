@@ -2910,6 +2910,7 @@ virQEMUCapsProbeQMPSEVCapabilities(virQEMUCapsPtr qemuCaps,
  */
 bool
 virQEMUCapsCPUFilterFeatures(const char *name,
+                             virCPUFeaturePolicy policy G_GNUC_UNUSED,
                              void *opaque)
 {
     virArch *arch = opaque;
