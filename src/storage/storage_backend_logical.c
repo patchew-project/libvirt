@@ -214,13 +214,10 @@ virStorageBackendLogicalParseVolExtents(virStorageVolDefPtr vol,
         len = vars[j].rm_eo - vars[j].rm_so;
         p[vars[j].rm_eo] = '\0';
 
-        if (VIR_STRNDUP(extent.path,
-                        p + vars[j].rm_so, len) < 0)
-            goto cleanup;
+        extent.path = g_strndup(p + vars[j].rm_so, len);
 
         len = vars[j + 1].rm_eo - vars[j + 1].rm_so;
-        if (VIR_STRNDUP(offset_str, p + vars[j + 1].rm_so, len) < 0)
-            goto cleanup;
+        offset_str = g_strndup(p + vars[j + 1].rm_so, len);
 
         if (virStrToLong_ull(offset_str, NULL, 10, &offset) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
