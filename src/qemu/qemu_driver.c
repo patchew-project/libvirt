@@ -14496,8 +14496,7 @@ qemuDomainMigrateStartPostCopy(virDomainPtr dom,
  * is sent but failed, and number of frozen filesystems on success. If -2 is
  * returned, FSThaw should be called revert the quiesced status. */
 static int
-qemuDomainSnapshotFSFreeze(virQEMUDriverPtr driver G_GNUC_UNUSED,
-                           virDomainObjPtr vm,
+qemuDomainSnapshotFSFreeze(virDomainObjPtr vm,
                            const char **mountpoints,
                            unsigned int nmountpoints)
 {
@@ -14516,8 +14515,7 @@ qemuDomainSnapshotFSFreeze(virQEMUDriverPtr driver G_GNUC_UNUSED,
 
 /* Return -1 on error, otherwise number of thawed filesystems. */
 static int
-qemuDomainSnapshotFSThaw(virQEMUDriverPtr driver G_GNUC_UNUSED,
-                         virDomainObjPtr vm,
+qemuDomainSnapshotFSThaw(virDomainObjPtr vm,
                          bool report)
 {
     qemuAgentPtr agent;
@@ -15617,7 +15615,7 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
             goto cleanup;
         }
 
-        freeze = qemuDomainSnapshotFSFreeze(driver, vm, NULL, 0);
+        freeze = qemuDomainSnapshotFSFreeze(vm, NULL, 0);
         qemuDomainObjEndAgentJob(vm);
 
         if (freeze < 0) {
@@ -15746,7 +15744,7 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
     if (thaw != 0 &&
         qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_MODIFY) >= 0 &&
         virDomainObjIsActive(vm)) {
-        if (qemuDomainSnapshotFSThaw(driver, vm, ret == 0 && thaw > 0) < 0) {
+        if (qemuDomainSnapshotFSThaw(vm, ret == 0 && thaw > 0) < 0) {
             /* helper reported the error, if it was needed */
             if (thaw > 0)
                 ret = -1;
@@ -20297,7 +20295,7 @@ qemuDomainFSFreeze(virDomainPtr dom,
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
 
-    ret = qemuDomainSnapshotFSFreeze(driver, vm, mountpoints, nmountpoints);
+    ret = qemuDomainSnapshotFSFreeze(vm, mountpoints, nmountpoints);
 
  endjob:
     qemuDomainObjEndAgentJob(vm);
@@ -20338,7 +20336,7 @@ qemuDomainFSThaw(virDomainPtr dom,
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
 
-    ret = qemuDomainSnapshotFSThaw(driver, vm, true);
+    ret = qemuDomainSnapshotFSThaw(vm, true);
 
  endjob:
     qemuDomainObjEndAgentJob(vm);
