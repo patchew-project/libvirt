@@ -1058,9 +1058,7 @@ virStringSearch(const char *str,
         if (VIR_EXPAND_N(*matches, nmatches, 1) < 0)
             goto cleanup;
 
-        if (VIR_STRNDUP(match, str + rem.rm_so,
-                        rem.rm_eo - rem.rm_so) < 0)
-            goto cleanup;
+        match = g_strndup(str + rem.rm_so, rem.rm_eo - rem.rm_so);
 
         VIR_DEBUG("Got '%s'", match);
 

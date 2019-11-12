@@ -3145,9 +3145,8 @@ virCommandRunRegex(virCommandPtr cmd,
 
             /* NB vars[0] is the full pattern, so we offset j by 1 */
             for (j = 1; j <= nvars[i]; j++) {
-                if (VIR_STRNDUP(groups[ngroup++], p + vars[j].rm_so,
-                                vars[j].rm_eo - vars[j].rm_so) < 0)
-                    goto cleanup;
+                groups[ngroup++] = g_strndup(p + vars[j].rm_so,
+                                             vars[j].rm_eo - vars[j].rm_so);
             }
 
         }
