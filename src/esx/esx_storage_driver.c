@@ -517,6 +517,73 @@ esxStoragePoolIsPersistent(virStoragePoolPtr pool G_GNUC_UNUSED)
 
 
 
+#define MATCH(FLAG) (flags & (FLAG))
+static int
+esxConnectListAllStoragePools(virConnectPtr conn,
+                              virStoragePoolPtr **pools,
+                              unsigned int flags)
+{
+    bool success = false;
+    esxPrivate *priv = conn->privateData;
+    size_t count = 0;
+    size_t i, j;
+    int tmp;
+
+    virCheckFlags(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_ALL, -1);
+
+    /*
+     * ESX storage pools are always active, persistent, and
+     * autostarted, so return zero elements in case we are asked
+     * for pools different than that.
+     *
+     * Filtering by type will be done by each backend.
+     */
+    if (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_ACTIVE) &&
+        !(MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE)))
+        return 0;
+    if (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_PERSISTENT) &&
+        !(MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_PERSISTENT)))
+        return 0;
+    if (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_AUTOSTART) &&
+        !(MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_AUTOSTART)))
+        return 0;
+
+    if (esxVI_EnsureSession(priv->primary) < 0)
+        return -1;
+
+    for (i = 0; i < LAST_BACKEND; ++i) {
+        virStoragePoolPtr *new_pools = 0;
+        tmp = backends[i]->connectListAllStoragePools(conn, &new_pools, flags);
+
+        if (tmp < 0)
+            goto cleanup;
+
+        for (j = 0; j < tmp; ++j) {
+            if (VIR_APPEND_ELEMENT(*pools, count, new_pools[j]) < 0)
+                goto cleanup;
+        }
+        VIR_FREE(new_pools);
+    }
+
+    success = true;
+
+ cleanup:
+    if (! success) {
+        if (*pools) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*pools)[i]);
+            VIR_FREE(*pools);
+        }
+
+        count = -1;
+    }
+
+    return count;
+}
+#undef MATCH
+
+
+
 virStorageDriver esxStorageDriver = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 0.8.2 */
     .connectListStoragePools = esxConnectListStoragePools, /* 0.8.2 */
@@ -544,4 +611,5 @@ virStorageDriver esxStorageDriver = {
     .storageVolGetPath = esxStorageVolGetPath, /* 0.8.4 */
     .storagePoolIsActive = esxStoragePoolIsActive, /* 0.8.2 */
     .storagePoolIsPersistent = esxStoragePoolIsPersistent, /* 0.8.2 */
+    .connectListAllStoragePools = esxConnectListAllStoragePools, /* 5.10.0 */
 };
