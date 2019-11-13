@@ -600,6 +600,23 @@ virDomainCapsFeatureSEVFormat(virBufferPtr buf,
 }
 
 
+static void
+virDomainCapsFormatFeatures(const virDomainCaps *caps,
+                            virBufferPtr buf)
+{
+    virBufferAddLit(buf, "<features>\n");
+    virBufferAdjustIndent(buf, 2);
+
+    virDomainCapsFeatureGICFormat(buf, &caps->gic);
+    qemuDomainCapsFeatureFormatSimple(buf, "vmcoreinfo", caps->vmcoreinfo);
+    qemuDomainCapsFeatureFormatSimple(buf, "genid", caps->genid);
+    virDomainCapsFeatureSEVFormat(buf, caps->sev);
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</features>\n");
+}
+
+
 char *
 virDomainCapsFormat(const virDomainCaps *caps)
 {
@@ -636,16 +653,7 @@ virDomainCapsFormat(const virDomainCaps *caps)
     virBufferAdjustIndent(&buf, -2);
     virBufferAddLit(&buf, "</devices>\n");
 
-    virBufferAddLit(&buf, "<features>\n");
-    virBufferAdjustIndent(&buf, 2);
-
-    virDomainCapsFeatureGICFormat(&buf, &caps->gic);
-    qemuDomainCapsFeatureFormatSimple(&buf, "vmcoreinfo", caps->vmcoreinfo);
-    qemuDomainCapsFeatureFormatSimple(&buf, "genid", caps->genid);
-    virDomainCapsFeatureSEVFormat(&buf, caps->sev);
-
-    virBufferAdjustIndent(&buf, -2);
-    virBufferAddLit(&buf, "</features>\n");
+    virDomainCapsFormatFeatures(caps, &buf);
 
     virBufferAdjustIndent(&buf, -2);
     virBufferAddLit(&buf, "</domainCapabilities>\n");
