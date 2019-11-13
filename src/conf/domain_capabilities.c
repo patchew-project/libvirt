@@ -607,6 +607,7 @@ virDomainCapsFormatFeatures(const virDomainCaps *caps,
     g_auto(virBuffer) childBuf = VIR_BUFFER_INIT_CHILD(buf);
 
     virDomainCapsFeatureGICFormat(&childBuf, &caps->gic);
+    qemuDomainCapsFeatureFormatSimple(&childBuf, "iothreads", caps->iothreads);
     qemuDomainCapsFeatureFormatSimple(&childBuf, "vmcoreinfo", caps->vmcoreinfo);
     qemuDomainCapsFeatureFormatSimple(&childBuf, "genid", caps->genid);
     virDomainCapsFeatureSEVFormat(&childBuf, caps->sev);

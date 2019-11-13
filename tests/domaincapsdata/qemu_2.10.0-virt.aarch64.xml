@@ -135,6 +135,7 @@
         <value>2</value>
       </enum>
     </gic>
+    <iothreads supported='yes'/>
     <vmcoreinfo supported='no'/>
     <genid supported='no'/>
     <sev supported='no'/>

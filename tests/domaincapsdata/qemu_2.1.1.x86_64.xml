@@ -128,6 +128,7 @@
   </devices>
   <features>
     <gic supported='no'/>
+    <iothreads supported='yes'/>
     <vmcoreinfo supported='no'/>
     <genid supported='no'/>
     <sev supported='no'/>

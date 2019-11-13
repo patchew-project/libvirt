@@ -72,6 +72,7 @@
   </devices>
   <features>
     <gic supported='no'/>
+    <iothreads supported='no'/>
     <vmcoreinfo supported='no'/>
     <genid supported='no'/>
     <sev supported='no'/>

@@ -162,6 +162,7 @@
   </devices>
   <features>
     <gic supported='no'/>
+    <iothreads supported='yes'/>
     <vmcoreinfo supported='yes'/>
     <genid supported='yes'/>
     <sev supported='no'/>
