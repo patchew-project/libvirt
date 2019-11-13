@@ -10,10 +10,10 @@
       <cache id='1' level='3' type='both' size='768' unit='KiB'/>
     </cachetune>
     <memorytune vcpus='0-1'>
-      <monitor vcpus='0-1'/>
       <node id='0' bandwidth='20'/>
-      <monitor vcpus='0'/>
       <node id='1' bandwidth='30'/>
+      <monitor vcpus='0-1'/>
+      <monitor vcpus='0'/>
     </memorytune>
     <memorytune vcpus='3'>
       <node id='0' bandwidth='50'/>
