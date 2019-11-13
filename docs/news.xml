@@ -55,6 +55,15 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          esx driver: implement virConnectListAllStoragePools
+        </summary>
+        <description>
+          The virConnectListAllStoragePools API was implemented in the esx
+          driver.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
