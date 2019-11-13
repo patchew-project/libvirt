@@ -5281,12 +5281,35 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
 }
 
 
+struct virQEMUCapsDomainFeatureCapabilityTuple {
+    virDomainCapsFeature domcap;
+    virQEMUCapsFlags qemucap;
+};
+
+/**
+ * This maps the qemu features to the entries in <features> of the domain
+ * capability XML. Use QEMU_CAPS_LAST as qemucap to always enable the feature.
+ */
+static const struct virQEMUCapsDomainFeatureCapabilityTuple domCapsTuples[] = {
+    { VIR_DOMAIN_CAPS_FEATURE_IOTHREADS, QEMU_CAPS_OBJECT_IOTHREAD },
+    { VIR_DOMAIN_CAPS_FEATURE_VMCOREINFO, QEMU_CAPS_DEVICE_VMCOREINFO },
+    { VIR_DOMAIN_CAPS_FEATURE_GENID, QEMU_CAPS_DEVICE_VMGENID },
+};
+
+
 static void
-virQEMUCapsFillDomainIOThreadCaps(virQEMUCapsPtr qemuCaps,
-                                  virDomainCapsPtr domCaps)
+virQEMUCapsFillDomainFeaturesFromQEMUCaps(virQEMUCapsPtr qemuCaps,
+                                          virDomainCapsPtr domCaps)
 {
-    domCaps->features[VIR_DOMAIN_CAPS_FEATURE_IOTHREADS] = virTristateBoolFromBool(
-            virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD));
+    size_t i;
+
+    virDomainCapsFeaturesInitUnsupported(domCaps);
+
+    for (i = 0; i < G_N_ELEMENTS(domCapsTuples); i++) {
+        if (domCapsTuples[i].qemucap == QEMU_CAPS_LAST ||
+            virQEMUCapsGet(qemuCaps, domCapsTuples[i].qemucap))
+            domCaps->features[domCapsTuples[i].domcap] = VIR_TRISTATE_BOOL_YES;
+    }
 }
 
 
@@ -5572,6 +5595,7 @@ virQEMUCapsFillDomainCaps(virCapsPtr caps,
     virDomainCapsDeviceRNGPtr rng = &domCaps->rng;
 
     virDomainCapsFeaturesInitUnsupported(domCaps);
+    virQEMUCapsFillDomainFeaturesFromQEMUCaps(qemuCaps, domCaps);
 
     domCaps->maxvcpus = virQEMUCapsGetMachineMaxCpus(qemuCaps,
                                                      domCaps->machine);
@@ -5584,12 +5608,6 @@ virQEMUCapsFillDomainCaps(virCapsPtr caps,
         domCaps->maxvcpus = MIN(domCaps->maxvcpus, hostmaxvcpus);
     }
 
-    domCaps->features[VIR_DOMAIN_CAPS_FEATURE_VMCOREINFO] = virTristateBoolFromBool(
-            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMCOREINFO));
-
-    domCaps->features[VIR_DOMAIN_CAPS_FEATURE_GENID] = virTristateBoolFromBool(
-            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMGENID));
-
     if (virQEMUCapsFillDomainOSCaps(os,
                                     domCaps->machine,
                                     domCaps->arch,
@@ -5598,7 +5616,6 @@ virQEMUCapsFillDomainCaps(virCapsPtr caps,
         return -1;
 
     virQEMUCapsFillDomainCPUCaps(caps, qemuCaps, domCaps);
-    virQEMUCapsFillDomainIOThreadCaps(qemuCaps, domCaps);
     virQEMUCapsFillDomainDeviceDiskCaps(qemuCaps, domCaps->machine, disk);
     virQEMUCapsFillDomainDeviceGraphicsCaps(qemuCaps, graphics);
     virQEMUCapsFillDomainDeviceVideoCaps(qemuCaps, video);
