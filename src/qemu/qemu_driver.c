@@ -20585,8 +20585,8 @@ qemuDomainGetStatsCpuCache(virQEMUDriverPtr driver,
                                          "cpu.cache.monitor.%zu.bank.%zu.id", i, j) < 0)
                 goto cleanup;
 
-            if (virTypedParamListAddUInt(params, resdata[i]->stats[j]->vals[0],
-                                         "cpu.cache.monitor.%zu.bank.%zu.bytes", i, j) < 0)
+            if (virTypedParamListAddULLong(params, resdata[i]->stats[j]->vals[0],
+                                           "cpu.cache.monitor.%zu.bank.%zu.bytes", i, j) < 0)
                 goto cleanup;
         }
     }
