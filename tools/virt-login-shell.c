@@ -81,8 +81,8 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    assert(snprintf(uidstr, sizeof(uidstr), "%d", getuid()) < sizeof(uidstr));
-    assert(snprintf(gidstr, sizeof(gidstr), "%d", getgid()) < sizeof(gidstr));
+    assert(g_snprintf(uidstr, sizeof(uidstr), "%d", getuid()) < sizeof(uidstr));
+    assert(g_snprintf(gidstr, sizeof(gidstr), "%d", getgid()) < sizeof(gidstr));
 
     if (setuid(0) < 0) {
         fprintf(stderr, "%s: unable to set real UID to root: %s\n",
