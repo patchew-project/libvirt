@@ -112,7 +112,7 @@ testDomain(const void *opaque)
 
     /* Mocking is enabled only when this env variable is set.
      * See mock code for explanation. */
-    if (setenv(ENVVAR, "1", 0) < 0)
+    if (g_setenv(ENVVAR, "1", 0) < 0)
         return -1;
 
     if (qemuSecuritySetAllLabel(data->driver, vm, NULL, false) < 0)

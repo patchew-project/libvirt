@@ -104,7 +104,7 @@ tryLoadOne(const char *dir, bool setAppHome, bool ignoreMissing,
      */
     if (setAppHome) {
         if (dir != NULL) {
-            setenv("VBOX_APP_HOME", dir, 1 /* always override */);
+            g_setenv("VBOX_APP_HOME", dir, 1 /* always override */);
         } else {
             unsetenv("VBOX_APP_HOME");
         }

@@ -335,7 +335,7 @@ mymain(void)
         abort();
     }
 
-    setenv("LIBVIRT_FAKE_ROOT_DIR", fakerootdir, 1);
+    g_setenv("LIBVIRT_FAKE_ROOT_DIR", fakerootdir, 1);
 
 # define DO_TEST(fnc) \
     do { \

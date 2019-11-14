@@ -603,7 +603,7 @@ qemuTestSetHostCPU(virCapsPtr caps,
     if (cpu) {
         caps->host.arch = cpu->arch;
         if (cpu->model)
-            setenv("VIR_TEST_MOCK_FAKE_HOST_CPU", cpu->model, 1);
+            g_setenv("VIR_TEST_MOCK_FAKE_HOST_CPU", cpu->model, 1);
     }
     caps->host.cpu = cpu;
 }

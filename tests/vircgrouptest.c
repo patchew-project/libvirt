@@ -187,7 +187,7 @@ testCgroupDetectMounts(const void *args)
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     size_t i;
 
-    setenv("VIR_CGROUP_MOCK_FILENAME", data->file, 1);
+    g_setenv("VIR_CGROUP_MOCK_FILENAME", data->file, 1);
 
     parsed = g_strdup_printf("%s/vircgroupdata/%s.parsed", abs_srcdir, data->file);
 
@@ -994,13 +994,13 @@ initFakeFS(const char *mode,
         abort();
     }
 
-    setenv("LIBVIRT_FAKE_ROOT_DIR", fakerootdir, 1);
+    g_setenv("LIBVIRT_FAKE_ROOT_DIR", fakerootdir, 1);
 
     if (mode)
-        setenv("VIR_CGROUP_MOCK_MODE", mode, 1);
+        g_setenv("VIR_CGROUP_MOCK_MODE", mode, 1);
 
     if (filename)
-        setenv("VIR_CGROUP_MOCK_FILENAME", filename, 1);
+        g_setenv("VIR_CGROUP_MOCK_FILENAME", filename, 1);
 
     return fakerootdir;
 }

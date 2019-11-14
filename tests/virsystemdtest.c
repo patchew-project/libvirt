@@ -236,7 +236,7 @@ static int testCreateNoSystemd(const void *opaque G_GNUC_UNUSED)
     };
     int rv;
 
-    setenv("FAIL_NO_SERVICE", "1", 1);
+    g_setenv("FAIL_NO_SERVICE", "1", 1);
 
     if ((rv = virSystemdCreateMachine("demo",
                                       "qemu",
@@ -270,7 +270,7 @@ static int testCreateSystemdNotRunning(const void *opaque G_GNUC_UNUSED)
     };
     int rv;
 
-    setenv("FAIL_NOT_REGISTERED", "1", 1);
+    g_setenv("FAIL_NOT_REGISTERED", "1", 1);
 
     if ((rv = virSystemdCreateMachine("demo",
                                       "qemu",
@@ -304,7 +304,7 @@ static int testCreateBadSystemd(const void *opaque G_GNUC_UNUSED)
     };
     int rv;
 
-    setenv("FAIL_BAD_SERVICE", "1", 1);
+    g_setenv("FAIL_BAD_SERVICE", "1", 1);
 
     if ((rv = virSystemdCreateMachine("demo",
                                       "qemu",
@@ -445,7 +445,7 @@ static int testPMSupportHelper(const void *opaque)
     const struct testPMSupportData *data = opaque;
 
     for (i = 0; i < 4; i++) {
-        setenv("RESULT_SUPPORT",  results[i], 1);
+        g_setenv("RESULT_SUPPORT",  results[i], 1);
         if ((rv = data->tested(&result)) < 0) {
             fprintf(stderr, "%s", "Unexpected canSuspend error\n");
             return -1;
@@ -470,7 +470,7 @@ static int testPMSupportHelperNoSystemd(const void *opaque)
     bool result;
     const struct testPMSupportData *data = opaque;
 
-    setenv("FAIL_NO_SERVICE", "1", 1);
+    g_setenv("FAIL_NO_SERVICE", "1", 1);
 
     if ((rv = data->tested(&result)) == 0) {
         unsetenv("FAIL_NO_SERVICE");
@@ -493,7 +493,7 @@ static int testPMSupportSystemdNotRunning(const void *opaque)
     bool result;
     const struct testPMSupportData *data = opaque;
 
-    setenv("FAIL_NOT_REGISTERED", "1", 1);
+    g_setenv("FAIL_NOT_REGISTERED", "1", 1);
 
     if ((rv = data->tested(&result)) == 0) {
         unsetenv("FAIL_NOT_REGISTERED");
@@ -567,11 +567,11 @@ testActivation(bool useNames)
     snprintf(nfdstr, sizeof(nfdstr), "%zu", 1 + nsockIP);
     snprintf(pidstr, sizeof(pidstr), "%lld", (long long)getpid());
 
-    setenv("LISTEN_FDS", nfdstr, 1);
-    setenv("LISTEN_PID", pidstr, 1);
+    g_setenv("LISTEN_FDS", nfdstr, 1);
+    g_setenv("LISTEN_PID", pidstr, 1);
 
     if (useNames)
-        setenv("LISTEN_FDNAMES", virBufferCurrentContent(&names), 1);
+        g_setenv("LISTEN_FDNAMES", virBufferCurrentContent(&names), 1);
     else
         unsetenv("LISTEN_FDNAMES");
 
