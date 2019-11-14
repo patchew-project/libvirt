@@ -1169,6 +1169,14 @@ sc_prohibit_dirent_d_type:
 	halt='do not use the d_type field in "struct dirent"' \
 	  $(_sc_search_regexp)
 
+sc_prohibit_setenv:
+	@prohibit='\<setenv\>' \
+	halt='use g_setenv instead of setenv' \
+	  $(_sc_search_regexp)
+	@prohibit='\<unsetenv\>' \
+	halt='use g_unsetenv instead of unsetenv' \
+	  $(_sc_search_regexp)
+
 
 # _sc_search_regexp
 #
@@ -2340,6 +2348,9 @@ exclude_file_name_regexp--sc_prohibit_cross_inclusion = \
 
 exclude_file_name_regexp--sc_prohibit_dirent_d_type = \
   ^(src/util/vircgroup.c)$
+
+exclude_file_name_regexp--sc_prohibit_setenv = \
+  ^(build-aux/syntax-check\.mk|bootstrap\.conf)$$
 
 exclude_file_name_regexp--sc_prohibit_strcmp = \
   ^(tools/nss/libvirt_nss.*\.c|tools/virt-login-shell\.c)
