@@ -2350,7 +2350,7 @@ exclude_file_name_regexp--sc_prohibit_dirent_d_type = \
   ^(src/util/vircgroup.c)$
 
 exclude_file_name_regexp--sc_prohibit_setenv = \
-  ^(build-aux/syntax-check\.mk|bootstrap\.conf)$$
+  ^(build-aux/syntax-check\.mk)$$
 
 exclude_file_name_regexp--sc_prohibit_strcmp = \
   ^(tools/nss/libvirt_nss.*\.c|tools/virt-login-shell\.c)
