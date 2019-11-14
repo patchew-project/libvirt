@@ -187,6 +187,28 @@ virNetServerGetProgramLocked(virNetServerPtr srv,
     return NULL;
 }
 
+/**
+ * virNetServerGetProgram:
+ * @srv: server (must NOT be locked by the caller)
+ * @msg: message
+ *
+ * Searches @srv for the right program for a given message @msg.
+ *
+ * Returns a pointer to the server program or NULL if not found.
+ */
+virNetServerProgramPtr
+virNetServerGetProgram(virNetServerPtr srv,
+                       virNetMessagePtr msg)
+{
+    virNetServerProgramPtr ret;
+
+    virObjectLock(srv);
+    ret = virNetServerGetProgramLocked(srv, msg);
+    virObjectUnlock(srv);
+
+    return ret;
+}
+
 static void
 virNetServerDispatchNewMessage(virNetServerClientPtr client,
                                virNetMessagePtr msg,
