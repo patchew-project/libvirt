@@ -215,7 +215,7 @@ testCgroupDetectMounts(const void *args)
     result = 0;
 
  cleanup:
-    unsetenv("VIR_CGROUP_MOCK_FILENAME");
+    g_unsetenv("VIR_CGROUP_MOCK_FILENAME");
     VIR_FREE(parsed);
     virCgroupFree(&group);
     virBufferFreeAndReset(&buf);
@@ -1012,9 +1012,9 @@ cleanupFakeFS(char *fakerootdir)
         virFileDeleteTree(fakerootdir);
 
     VIR_FREE(fakerootdir);
-    unsetenv("LIBVIRT_FAKE_ROOT_DIR");
-    unsetenv("VIR_CGROUP_MOCK_MODE");
-    unsetenv("VIR_CGROUP_MOCK_FILENAME");
+    g_unsetenv("LIBVIRT_FAKE_ROOT_DIR");
+    g_unsetenv("VIR_CGROUP_MOCK_MODE");
+    g_unsetenv("VIR_CGROUP_MOCK_FILENAME");
 }
 
 static int

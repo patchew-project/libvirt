@@ -125,7 +125,7 @@ testDomain(const void *opaque)
 
     ret = 0;
  cleanup:
-    unsetenv(ENVVAR);
+    g_unsetenv(ENVVAR);
     freePaths();
     return ret;
 }

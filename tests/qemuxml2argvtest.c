@@ -797,11 +797,11 @@ mymain(void)
     g_setenv("USER", "test", 1);
     g_setenv("LOGNAME", "test", 1);
     g_setenv("HOME", "/home/test", 1);
-    unsetenv("TMPDIR");
-    unsetenv("LD_PRELOAD");
-    unsetenv("LD_LIBRARY_PATH");
-    unsetenv("QEMU_AUDIO_DRV");
-    unsetenv("SDL_AUDIODRIVER");
+    g_unsetenv("TMPDIR");
+    g_unsetenv("LD_PRELOAD");
+    g_unsetenv("LD_LIBRARY_PATH");
+    g_unsetenv("QEMU_AUDIO_DRV");
+    g_unsetenv("SDL_AUDIODRIVER");
 
     DO_TEST("minimal", NONE);
     DO_TEST("minimal-sandbox",

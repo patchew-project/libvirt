@@ -148,7 +148,7 @@ virTestRun(const char *title,
             fprintf(stderr, "!");
     }
 
-    unsetenv("VIR_TEST_MOCK_TESTNAME");
+    g_unsetenv("VIR_TEST_MOCK_TESTNAME");
     return ret;
 }
 

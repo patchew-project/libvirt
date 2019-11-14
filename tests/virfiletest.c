@@ -343,7 +343,7 @@ testFileIsSharedFSType(const void *opaque G_GNUC_UNUSED)
     ret = 0;
  cleanup:
     VIR_FREE(mtabFile);
-    unsetenv("LIBVIRT_MTAB");
+    g_unsetenv("LIBVIRT_MTAB");
     return ret;
 #endif
 }
