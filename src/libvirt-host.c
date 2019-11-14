@@ -1398,7 +1398,7 @@ virConnectIsAlive(virConnectPtr conn)
  * @conn: pointer to connection object
  * @cb: callback to invoke upon close
  * @opaque: user data to pass to @cb
- * @freecb: callback to free @opaque
+ * @freecb: callback to free @opaque when not used anymore
  *
  * Registers a callback to be invoked when the connection
  * is closed. This callback is invoked when there is any
@@ -1412,7 +1412,9 @@ virConnectIsAlive(virConnectPtr conn)
  *
  * The @freecb must not invoke any other libvirt public
  * APIs, since it is not called from a re-entrant safe
- * context.
+ * context. Only if virConnectRegisterCloseCallback is
+ * successful, @freecb will be called, otherwise the
+ * caller is responsible to free @opaque.
  *
  * Returns 0 on success, -1 on error
  */
@@ -1428,9 +1430,13 @@ virConnectRegisterCloseCallback(virConnectPtr conn,
     virCheckConnectReturn(conn, -1);
     virCheckNonNullArgGoto(cb, error);
 
-    if (conn->driver->connectRegisterCloseCallback &&
-        conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb) < 0)
-        goto error;
+    if (conn->driver->connectRegisterCloseCallback) {
+        if (conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb) < 0)
+            goto error;
+    } else {
+        if (freecb)
+            freecb(opaque);
+    }
 
     return 0;
 
