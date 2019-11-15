@@ -1566,6 +1566,90 @@ esxConnectListAllStoragePools(virConnectPtr conn,
 
 
 
+static int
+esxStoragePoolListAllVolumes(virStoragePoolPtr pool,
+                             virStorageVolPtr **vols,
+                             unsigned int flags)
+{
+    bool success = false;
+    esxPrivate *priv = pool->conn->privateData;
+    esxVI_HostDatastoreBrowserSearchResults *searchResultsList = NULL;
+    esxVI_HostDatastoreBrowserSearchResults *searchResults = NULL;
+    esxVI_FileInfo *fileInfo = NULL;
+    char *directoryAndFileName = NULL;
+    size_t length;
+    size_t count = 0;
+    size_t i;
+
+    virCheckFlags(0, -1);
+
+    if (esxVI_LookupDatastoreContentByDatastoreName(priv->primary, pool->name,
+                                                    &searchResultsList) < 0) {
+        goto cleanup;
+    }
+
+    /* Interpret search result */
+    for (searchResults = searchResultsList; searchResults;
+         searchResults = searchResults->_next) {
+        VIR_FREE(directoryAndFileName);
+
+        if (esxUtil_ParseDatastorePath(searchResults->folderPath, NULL, NULL,
+                                       &directoryAndFileName) < 0) {
+            goto cleanup;
+        }
+
+        /* Strip trailing separators */
+        length = strlen(directoryAndFileName);
+
+        while (length > 0 && directoryAndFileName[length - 1] == '/') {
+            directoryAndFileName[length - 1] = '\0';
+            --length;
+        }
+
+        /* Build volume names */
+        for (fileInfo = searchResults->file; fileInfo;
+             fileInfo = fileInfo->_next) {
+            g_autofree char *datastorePath = NULL;
+            virStorageVolPtr volume;
+
+            if (length < 1) {
+                datastorePath = g_strdup(fileInfo->path);
+            } else {
+                datastorePath = g_strdup_printf("%s/%s",
+                                                directoryAndFileName,
+                                                fileInfo->path);
+            }
+
+            volume = datastorePathToStorageVol(pool->conn, pool->name, datastorePath);
+            if (!volume)
+                goto cleanup;
+
+            if (VIR_APPEND_ELEMENT(*vols, count, volume) < 0)
+                goto cleanup;
+        }
+    }
+
+    success = true;
+
+ cleanup:
+    if (! success) {
+        if (*vols) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*vols)[i]);
+            VIR_FREE(*vols);
+        }
+
+        count = -1;
+    }
+
+    esxVI_HostDatastoreBrowserSearchResults_Free(&searchResultsList);
+    VIR_FREE(directoryAndFileName);
+
+    return count;
+}
+
+
+
 virStorageDriver esxStorageBackendVMFS = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 0.8.2 */
     .connectListStoragePools = esxConnectListStoragePools, /* 0.8.2 */
@@ -1587,4 +1671,5 @@ virStorageDriver esxStorageBackendVMFS = {
     .storageVolGetXMLDesc = esxStorageVolGetXMLDesc, /* 0.8.4 */
     .storageVolGetPath = esxStorageVolGetPath, /* 0.8.4 */
     .connectListAllStoragePools = esxConnectListAllStoragePools, /* 5.10.0 */
+    .storagePoolListAllVolumes = esxStoragePoolListAllVolumes, /* 5.10.0 */
 };

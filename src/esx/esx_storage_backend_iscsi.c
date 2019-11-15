@@ -852,6 +852,75 @@ esxConnectListAllStoragePools(virConnectPtr conn,
 
 
 
+static int
+esxStoragePoolListAllVolumes(virStoragePoolPtr pool,
+                             virStorageVolPtr **vols,
+                             unsigned int flags)
+{
+    bool success = false;
+    size_t count = 0;
+    esxPrivate *priv = pool->conn->privateData;
+    esxVI_HostScsiTopologyLun *hostScsiTopologyLunList = NULL;
+    esxVI_HostScsiTopologyLun *hostScsiTopologyLun;
+    esxVI_ScsiLun *scsiLunList = NULL;
+    esxVI_ScsiLun *scsiLun = NULL;
+    size_t i;
+
+    virCheckFlags(0, -1);
+
+    if (esxVI_LookupHostScsiTopologyLunListByTargetName
+          (priv->primary, pool->name, &hostScsiTopologyLunList) < 0) {
+        goto cleanup;
+    }
+
+    if (!hostScsiTopologyLunList) {
+        /* iSCSI adapter may not be enabled on ESX host */
+        return 0;
+    }
+
+    if (esxVI_LookupScsiLunList(priv->primary, &scsiLunList) < 0)
+        goto cleanup;
+
+    for (scsiLun = scsiLunList; scsiLun;
+         scsiLun = scsiLun->_next) {
+        for (hostScsiTopologyLun = hostScsiTopologyLunList;
+             hostScsiTopologyLun;
+             hostScsiTopologyLun = hostScsiTopologyLun->_next) {
+            if (STREQ(hostScsiTopologyLun->scsiLun, scsiLun->key)) {
+                virStorageVolPtr volume;
+
+                volume = scsilunToStorageVol(pool->conn, scsiLun, pool->name);
+                if (!volume)
+                    goto cleanup;
+
+                if (VIR_APPEND_ELEMENT(*vols, count, volume) < 0)
+                    goto cleanup;
+            }
+
+        }
+    }
+
+    success = true;
+
+ cleanup:
+    if (! success) {
+        if (*vols) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*vols)[i]);
+            VIR_FREE(*vols);
+        }
+
+        count = -1;
+    }
+
+    esxVI_HostScsiTopologyLun_Free(&hostScsiTopologyLunList);
+    esxVI_ScsiLun_Free(&scsiLunList);
+
+    return count;
+}
+
+
+
 virStorageDriver esxStorageBackendISCSI = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 1.0.1 */
     .connectListStoragePools = esxConnectListStoragePools, /* 1.0.1 */
@@ -873,4 +942,5 @@ virStorageDriver esxStorageBackendISCSI = {
     .storageVolWipe = esxStorageVolWipe, /* 1.0.1 */
     .storageVolGetPath = esxStorageVolGetPath, /* 1.0.1 */
     .connectListAllStoragePools = esxConnectListAllStoragePools, /* 5.10.0 */
+    .storagePoolListAllVolumes = esxStoragePoolListAllVolumes, /* 5.10.0 */
 };
