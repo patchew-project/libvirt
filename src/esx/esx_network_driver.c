@@ -863,6 +863,71 @@ esxNetworkIsPersistent(virNetworkPtr network G_GNUC_UNUSED)
 
 
 
+#define MATCH(FLAG) (flags & (FLAG))
+static int
+esxConnectListAllNetworks(virConnectPtr conn,
+                          virNetworkPtr **nets,
+                          unsigned int flags)
+{
+    bool success = false;
+    esxPrivate *priv = conn->privateData;
+    esxVI_HostVirtualSwitch *hostVirtualSwitchList = NULL;
+    esxVI_HostVirtualSwitch *hostVirtualSwitch = NULL;
+    size_t count = 0;
+    size_t i;
+
+    virCheckFlags(VIR_CONNECT_LIST_NETWORKS_FILTERS_ALL, -1);
+
+    /*
+     * ESX networks are always active, persistent, and
+     * autostarted, so return zero elements in case we are asked
+     * for networks different than that.
+     */
+    if (MATCH(VIR_CONNECT_LIST_NETWORKS_FILTERS_ACTIVE) &&
+        !(MATCH(VIR_CONNECT_LIST_NETWORKS_ACTIVE)))
+        return 0;
+    if (MATCH(VIR_CONNECT_LIST_NETWORKS_FILTERS_PERSISTENT) &&
+        !(MATCH(VIR_CONNECT_LIST_NETWORKS_PERSISTENT)))
+        return 0;
+    if (MATCH(VIR_CONNECT_LIST_NETWORKS_FILTERS_AUTOSTART) &&
+        !(MATCH(VIR_CONNECT_LIST_NETWORKS_AUTOSTART)))
+        return 0;
+
+    if (esxVI_EnsureSession(priv->primary) < 0 ||
+        esxVI_LookupHostVirtualSwitchList(priv->primary,
+                                          &hostVirtualSwitchList) < 0) {
+        return -1;
+    }
+
+    for (hostVirtualSwitch = hostVirtualSwitchList; hostVirtualSwitch;
+         hostVirtualSwitch = hostVirtualSwitch->_next) {
+        virNetworkPtr net = virtualswitchToNetwork(conn, hostVirtualSwitch);
+
+        if (VIR_APPEND_ELEMENT(*nets, count, net) < 0)
+            goto cleanup;
+    }
+
+    success = true;
+
+ cleanup:
+    if (! success) {
+        if (*nets) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*nets)[i]);
+            VIR_FREE(*nets);
+        }
+
+        count = -1;
+    }
+
+    esxVI_HostVirtualSwitch_Free(&hostVirtualSwitchList);
+
+    return count;
+}
+#undef MATCH
+
+
+
 virNetworkDriver esxNetworkDriver = {
     .connectNumOfNetworks = esxConnectNumOfNetworks, /* 0.10.0 */
     .connectListNetworks = esxConnectListNetworks, /* 0.10.0 */
@@ -877,4 +942,5 @@ virNetworkDriver esxNetworkDriver = {
     .networkSetAutostart = esxNetworkSetAutostart, /* 0.10.0 */
     .networkIsActive = esxNetworkIsActive, /* 0.10.0 */
     .networkIsPersistent = esxNetworkIsPersistent, /* 0.10.0 */
+    .connectListAllNetworks = esxConnectListAllNetworks, /* 5.10.0 */
 };
