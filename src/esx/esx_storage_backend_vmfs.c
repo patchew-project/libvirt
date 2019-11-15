@@ -696,31 +696,39 @@ esxStorageVolLookupByName(virStoragePoolPtr pool,
 
 
 static virStorageVolPtr
+datastorePathToStorageVol(virConnectPtr conn, const char *pool,
+                          const char *path)
+{
+    esxPrivate *priv = conn->privateData;
+    g_autofree char *key = NULL;
+
+    if (esxVI_LookupStorageVolumeKeyByDatastorePath(priv->primary, path,
+                                                    &key) < 0) {
+        return NULL;
+    }
+
+    return virGetStorageVol(conn, pool, path, key,
+                            &esxStorageBackendVMFS, NULL);
+}
+
+
+static virStorageVolPtr
 esxStorageVolLookupByPath(virConnectPtr conn, const char *path)
 {
     virStorageVolPtr volume = NULL;
-    esxPrivate *priv = conn->privateData;
     char *datastoreName = NULL;
     char *directoryAndFileName = NULL;
-    char *key = NULL;
 
     if (esxUtil_ParseDatastorePath(path, &datastoreName, NULL,
                                    &directoryAndFileName) < 0) {
         goto cleanup;
     }
 
-    if (esxVI_LookupStorageVolumeKeyByDatastorePath(priv->primary, path,
-                                                    &key) < 0) {
-        goto cleanup;
-    }
-
-    volume = virGetStorageVol(conn, datastoreName, directoryAndFileName, key,
-                              &esxStorageBackendVMFS, NULL);
+    volume = datastorePathToStorageVol(conn, datastoreName, directoryAndFileName);
 
  cleanup:
     VIR_FREE(datastoreName);
     VIR_FREE(directoryAndFileName);
-    VIR_FREE(key);
 
     return volume;
 }
