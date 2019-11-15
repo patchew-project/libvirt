@@ -779,6 +779,77 @@ esxStorageVolGetPath(virStorageVolPtr volume)
 
 
 
+#define MATCH(FLAG) (flags & (FLAG))
+static int
+esxConnectListAllStoragePools(virConnectPtr conn,
+                              virStoragePoolPtr **pools,
+                              unsigned int flags)
+{
+    bool success = false;
+    size_t count = 0;
+    esxPrivate *priv = conn->privateData;
+    esxVI_HostInternetScsiHba *hostInternetScsiHba = NULL;
+    esxVI_HostInternetScsiHbaStaticTarget *target;
+    size_t i;
+
+    /* this driver provides only iSCSI pools */
+    if (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_POOL_TYPE) &&
+        !(MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_ISCSI)))
+        return 0;
+
+    if (esxVI_LookupHostInternetScsiHba(priv->primary,
+                                        &hostInternetScsiHba) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to obtain iSCSI adapter"));
+        goto cleanup;
+    }
+
+    /* FIXME: code looks for software iSCSI adapter only */
+    if (!hostInternetScsiHba) {
+        /* iSCSI adapter may not be enabled for this host */
+        return 0;
+    }
+
+    /*
+     * ESX has two kind of targets:
+     * 1. staticIscsiTargets
+     * 2. dynamicIscsiTargets
+     * For each dynamic target if its reachable a static target is added.
+     * return iSCSI names for all static targets to avoid duplicate names.
+     */
+    for (target = hostInternetScsiHba->configuredStaticTarget;
+         target; target = target->_next) {
+        virStoragePoolPtr pool;
+
+        pool = targetToStoragePool(conn, target->iScsiName, target);
+        if (!pool)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(*pools, count, pool) < 0)
+            goto cleanup;
+    }
+
+    success = true;
+
+ cleanup:
+    if (! success) {
+        if (*pools) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*pools)[i]);
+            VIR_FREE(*pools);
+        }
+
+        count = -1;
+    }
+
+    esxVI_HostInternetScsiHba_Free(&hostInternetScsiHba);
+
+    return count;
+}
+#undef MATCH
+
+
+
 virStorageDriver esxStorageBackendISCSI = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 1.0.1 */
     .connectListStoragePools = esxConnectListStoragePools, /* 1.0.1 */
@@ -799,4 +870,5 @@ virStorageDriver esxStorageBackendISCSI = {
     .storageVolDelete = esxStorageVolDelete, /* 1.0.1 */
     .storageVolWipe = esxStorageVolWipe, /* 1.0.1 */
     .storageVolGetPath = esxStorageVolGetPath, /* 1.0.1 */
+    .connectListAllStoragePools = esxConnectListAllStoragePools, /* 5.10.0 */
 };
