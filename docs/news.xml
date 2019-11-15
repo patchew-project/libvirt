@@ -55,6 +55,17 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          esx: implement various APIs
+        </summary>
+        <description>
+          The <code>virConnectListAllStoragePools()</code>,
+          <code>virConnectListAllNetworks()</code> and
+          <code>virStoragePoolListAllVolumes()</code> APIs were implemented
+          in the esx driver.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
