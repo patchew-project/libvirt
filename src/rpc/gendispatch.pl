@@ -1073,6 +1073,14 @@ elsif ($mode eq "server") {
             print "        goto cleanup;\n";
             print "    }\n";
             print "\n";
+
+
+            print "    if (args->$single_ret_list_max_var == 0) {\n";
+            print "        ret->$single_ret_list_name.${single_ret_list_name}_len = 0;\n";
+            print "        rv = 0;\n";
+            print "        goto cleanup;\n";
+            print "    }\n";
+            print "\n";
         }
 
         print join("\n", @getters_list);
