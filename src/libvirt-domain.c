@@ -62,6 +62,9 @@ virConnectListDomains(virConnectPtr conn, int *ids, int maxids)
     virCheckNonNullArgGoto(ids, error);
     virCheckNonNegativeArgGoto(maxids, error);
 
+    if (maxids == 0)
+        return 0;
+
     if (conn->driver->connectListDomains) {
         int ret = conn->driver->connectListDomains(conn, ids, maxids);
         if (ret < 0)
