@@ -7617,6 +7617,15 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->niothreadids; i++)
         vm->def->iothreadids[i]->thread_id = 0;
 
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr disk = def->disks[i];
+
+        if (!disk->mirror)
+            continue;
+
+        qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->mirror);
+    }
+
     /* clear all private data entries which are no longer needed */
     qemuDomainObjPrivateDataClear(priv);
 
