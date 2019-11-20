@@ -49,9 +49,9 @@ with open(dtrace, "r") as fh:
         line = line.strip()
         if line == "":
             continue
-        if line.find("provider ") != -1 and line.find("{") != -1:
+        if "provider " in line and "{" in line:
             continue
-        if line.find("};") != -1:
+        if "};" in line:
             continue
 
         if line.startswith("#"):
