@@ -21,7 +21,6 @@
 #include <config.h>
 
 
-#include "c-ctype.h"
 #include "virlog.h"
 #include "viralloc.h"
 #include "virfile.h"
@@ -78,6 +77,7 @@ struct _virKeyFileParserCtxt {
 #define IS_EOF (ctxt->cur >= ctxt->end)
 #define IS_EOL(c) (((c) == '\n') || ((c) == '\r'))
 #define IS_BLANK(c) (((c) == ' ') || ((c) == '\t'))
+#define IS_ASCII(c) ((c) < 128)
 #define CUR (*ctxt->cur)
 #define NEXT if (!IS_EOF) ctxt->cur++;
 
@@ -110,7 +110,7 @@ static int virKeyFileParseGroup(virKeyFileParserCtxtPtr ctxt)
     VIR_FREE(ctxt->groupname);
 
     name = ctxt->cur;
-    while (!IS_EOF && c_isascii(CUR) && CUR != ']')
+    while (!IS_EOF && IS_ASCII(CUR) && CUR != ']')
         ctxt->cur++;
     if (CUR != ']') {
         virKeyFileError(ctxt, VIR_ERR_CONF_SYNTAX, "cannot find end of group name, expected ']'");
