@@ -18496,10 +18496,10 @@ qemuDomainBlockCommit(virDomainPtr dom,
     bool persistjob = false;
     bool blockdev = false;
 
-    /* XXX Add support for COMMIT_DELETE */
     virCheckFlags(VIR_DOMAIN_BLOCK_COMMIT_SHALLOW |
                   VIR_DOMAIN_BLOCK_COMMIT_ACTIVE |
                   VIR_DOMAIN_BLOCK_COMMIT_RELATIVE |
+                  VIR_DOMAIN_BLOCK_COMMIT_DELETE |
                   VIR_DOMAIN_BLOCK_COMMIT_BANDWIDTH_BYTES, -1);
 
     if (!(vm = qemuDomainObjFromDomain(dom)))
@@ -18638,7 +18638,8 @@ qemuDomainBlockCommit(virDomainPtr dom,
         goto endjob;
 
     if (!(job = qemuBlockJobDiskNewCommit(vm, disk, top_parent, topSource,
-                                          baseSource)))
+                                          baseSource,
+                                          flags & VIR_DOMAIN_BLOCK_COMMIT_DELETE)))
         goto endjob;
 
     disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_NONE;

@@ -85,6 +85,7 @@ struct _qemuBlockJobCommitData {
     virStorageSourcePtr topparent;
     virStorageSourcePtr top;
     virStorageSourcePtr base;
+    bool deleteCommittedImages;
 };
 
 
@@ -165,7 +166,8 @@ qemuBlockJobDiskNewCommit(virDomainObjPtr vm,
                           virDomainDiskDefPtr disk,
                           virStorageSourcePtr topparent,
                           virStorageSourcePtr top,
-                          virStorageSourcePtr base);
+                          virStorageSourcePtr base,
+                          bool delete_imgs);
 
 qemuBlockJobDataPtr
 qemuBlockJobNewCreate(virDomainObjPtr vm,
