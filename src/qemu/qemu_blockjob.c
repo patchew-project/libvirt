@@ -966,6 +966,31 @@ qemuBlockJobProcessEventCompletedPull(virQEMUDriverPtr driver,
 
 
 /**
+ * Helper for qemuBlockJobProcessEventCompletedCommit() and
+ * qemuBlockJobProcessEventCompletedActiveCommit().  Relies on adjustments
+ * these functions perform on the 'backingStore' chain to function correctly.
+ *
+ * TODO look into removing backing store for non-local snapshots too
+ */
+static void
+qemuBlockJobUnlinkCommittedStorage(virStorageSourcePtr top)
+{
+    virStorageSourcePtr p = top;
+    const size_t errmsg_len = 128;
+    char errmsg[errmsg_len];
+
+    for (; p != NULL; p = p->backingStore) {
+        if (virStorageSourceIsLocalStorage(p))
+            if (unlink(p->path) < 0) {
+                char *dummy = strerror_r(errno, errmsg, errmsg_len);
+                (void)dummy;
+                VIR_WARN("Unable to remove snapshot image file %s (%s)",
+                         p->path, errmsg);
+            }
+    }
+}
+
+/**
  * qemuBlockJobProcessEventCompletedCommit:
  * @driver: qemu driver object
  * @vm: domain object
@@ -1031,6 +1056,9 @@ qemuBlockJobProcessEventCompletedCommit(virQEMUDriverPtr driver,
     job->data.commit.topparent->backingStore = job->data.commit.base;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->data.commit.top);
+
+    if (job->data.commit.deleteCommittedImages)
+        qemuBlockJobUnlinkCommittedStorage(job->data.commit.top);
     virObjectUnref(job->data.commit.top);
     job->data.commit.top = NULL;
 
@@ -1121,6 +1149,9 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
     job->disk->src->readonly = job->data.commit.top->readonly;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->data.commit.top);
+
+    if (job->data.commit.deleteCommittedImages)
+        qemuBlockJobUnlinkCommittedStorage(job->data.commit.top);
     virObjectUnref(job->data.commit.top);
     job->data.commit.top = NULL;
     /* the mirror element does not serve functional purpose for the commit job */
