@@ -5463,6 +5463,11 @@
           </attribute>
           <ref name="dimmaddress"/>
         </group>
+        <group>
+          <attribute name="type">
+            <value>none</value>
+          </attribute>
+        </group>
       </choice>
     </element>
   </define>

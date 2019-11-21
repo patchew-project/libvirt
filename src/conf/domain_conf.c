@@ -7159,6 +7159,15 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 
+    /* Format <address type='none'/> for un-assigned hostdevs */
+    if (flags & VIR_DOMAIN_DEF_FORMAT_ADDRESS_NONE) {
+        virBufferAsprintf(&attrBuf, " type='%s'",
+                          virDomainDeviceAddressTypeToString(info->type));
+        virXMLFormatElement(buf, "address", &attrBuf, &childBuf);
+
+        return 0;
+    }
+
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE ||
         info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)
         /* We're done here */
@@ -8129,7 +8138,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
                                   virDomainHostdevDefPtr def,
                                   unsigned int flags)
 {
-    xmlNodePtr sourcenode;
+    xmlNodePtr sourcenode, addressnode;
     int backend;
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
@@ -8279,6 +8288,28 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         if (virDomainHostdevSubsysPCIDefParseXML(sourcenode, def, flags) < 0)
             return -1;
+
+        /* @unassigned has meaning only for hostdev PCI devices.
+         * <address type='none/> has a special meaning in this case,
+         * telling the guest that this hostdev shouldn't be assigned
+         * by it.
+         *
+         * Note that both <address type='none'/> and no <address> element
+         * declared implies in VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE
+         * through the code. This is why we can't simply check for
+         * VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE to set the @unassigned
+         * flag.
+         */
+        def->unassigned = false;
+
+        if ((addressnode = virXPathNode("./address", ctxt))) {
+            g_autofree char *address_type = virXMLPropString(addressnode,
+                                                             "type");
+            int typeFromString = virDomainDeviceAddressTypeFromString(address_type);
+
+            if (typeFromString == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
+                def->unassigned = true;
+        }
 
         backend = VIR_DOMAIN_HOSTDEV_PCI_BACKEND_DEFAULT;
         if ((backendStr = virXPathString("string(./driver/@name)", ctxt)) &&
@@ -15579,7 +15610,17 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
 
     if (def->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, def->info,
+        /* skip address parsing if we already know it is an un-assigned
+        * pci hostdev */
+        bool skipParse = false;
+
+        if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+            def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
+            def->unassigned)
+            skipParse = true;
+
+        if (!skipParse &&
+            virDomainDeviceInfoParseXML(xmlopt, node, def->info,
                                         flags  | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT
                                         | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0)
             goto error;
@@ -27082,6 +27123,7 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
     const char *type;
+    unsigned int formatFlags;
 
     if (!mode) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -27165,11 +27207,13 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     if (def->shareable)
         virBufferAddLit(buf, "<shareable/>\n");
 
-    if (virDomainDeviceInfoFormat(buf, def->info,
-                                  flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT
-                                  | VIR_DOMAIN_DEF_FORMAT_ALLOW_ROM) < 0) {
+    formatFlags = flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT
+                        | VIR_DOMAIN_DEF_FORMAT_ALLOW_ROM;
+    if (def->unassigned)
+        formatFlags |= VIR_DOMAIN_DEF_FORMAT_ADDRESS_NONE;
+
+    if (virDomainDeviceInfoFormat(buf, def->info, formatFlags) < 0)
         return -1;
-    }
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</hostdev>\n");
