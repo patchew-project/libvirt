@@ -2753,6 +2753,12 @@ remoteDispatchDomainGetVcpuPinInfo(virNetServerPtr server G_GNUC_UNUSED,
         goto cleanup;
     }
 
+    if (args->ncpumaps == 0) {
+        ret->cpumaps.cpumaps_len = 0;
+        rv = 0;
+        goto cleanup;
+    }
+
     if (INT_MULTIPLY_OVERFLOW(args->ncpumaps, args->maplen) ||
         args->ncpumaps * args->maplen > REMOTE_CPUMAPS_MAX) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("maxinfo * maplen > REMOTE_CPUMAPS_MAX"));
