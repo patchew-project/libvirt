@@ -2518,6 +2518,8 @@ qemuDomainObjPrivateXMLFormatBlockjobIterator(void *payload,
                 virBufferAsprintf(&childBuf, "<top node='%s'/>\n", job->data.commit.top->nodeformat);
             if (job->data.commit.topparent)
                 virBufferAsprintf(&childBuf, "<topparent node='%s'/>\n", job->data.commit.topparent->nodeformat);
+            if (job->data.commit.deleteCommittedImages)
+                virBufferAddLit(&childBuf, "<deleteCommittedImages/>\n");
             break;
 
         case QEMU_BLOCKJOB_TYPE_CREATE:
@@ -3077,6 +3079,8 @@ qemuDomainObjPrivateXMLParseBlockjobDataSpecific(qemuBlockJobDataPtr job,
                                                          "string(./base/@node)",
                                                          &job->data.commit.base,
                                                          ctxt);
+            if (virXPathNode("./deleteCommittedImages", ctxt))
+                job->data.commit.deleteCommittedImages = true;
             if (!job->data.commit.top ||
                 !job->data.commit.base)
                 goto broken;
