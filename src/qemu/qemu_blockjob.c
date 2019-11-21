@@ -970,6 +970,37 @@ qemuBlockJobProcessEventCompletedPull(virQEMUDriverPtr driver,
 
 
 /**
+ * Helper for qemuBlockJobProcessEventCompletedCommit() and
+ * qemuBlockJobProcessEventCompletedActiveCommit().  Relies on adjustments
+ * these functions perform on the 'backingStore' chain to function correctly.
+ *
+ * TODO look into removing backing store for non-local snapshots too
+ */
+static void
+qemuBlockJobUnlinkCommittedStorage(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainDiskDefPtr disk,
+                                   virStorageSourcePtr top)
+{
+    virStorageSourcePtr p = top;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    uid_t uid;
+    gid_t gid;
+
+    for (; p != NULL; p = p->backingStore) {
+        if (virStorageSourceIsLocalStorage(p)) {
+
+            qemuDomainGetImageIds(cfg, vm, p, disk->src, &uid, &gid);
+
+            if (virFileRemove(p->path, uid, gid) < 0) {
+                VIR_WARN("Unable to remove snapshot image file %s (%s)",
+                         p->path, g_strerror(errno));
+            }
+        }
+    }
+}
+
+/**
  * qemuBlockJobProcessEventCompletedCommit:
  * @driver: qemu driver object
  * @vm: domain object
@@ -1035,6 +1066,10 @@ qemuBlockJobProcessEventCompletedCommit(virQEMUDriverPtr driver,
     job->data.commit.topparent->backingStore = job->data.commit.base;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->data.commit.top);
+
+    if (job->data.commit.deleteCommittedImages)
+        qemuBlockJobUnlinkCommittedStorage(driver, vm, job->disk, job->data.commit.top);
+
     virObjectUnref(job->data.commit.top);
     job->data.commit.top = NULL;
 
@@ -1125,6 +1160,10 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
     job->disk->src->readonly = job->data.commit.top->readonly;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->data.commit.top);
+
+    if (job->data.commit.deleteCommittedImages)
+        qemuBlockJobUnlinkCommittedStorage(driver, vm, job->disk, job->data.commit.top);
+
     virObjectUnref(job->data.commit.top);
     job->data.commit.top = NULL;
     /* the mirror element does not serve functional purpose for the commit job */
