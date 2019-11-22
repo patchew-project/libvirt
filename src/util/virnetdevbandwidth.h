@@ -55,8 +55,7 @@ int virNetDevBandwidthPlug(const char *brname,
                            const virMacAddr *ifmac_ptr,
                            virNetDevBandwidthPtr bandwidth,
                            unsigned int id)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4)
-    G_GNUC_WARN_UNUSED_RESULT;
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) G_GNUC_WARN_UNUSED_RESULT;
 
 int virNetDevBandwidthUnplug(const char *brname,
                              unsigned int id)
