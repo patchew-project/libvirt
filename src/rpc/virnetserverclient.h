@@ -93,6 +93,8 @@ int virNetServerClientAddFilter(virNetServerClientPtr client,
 
 void virNetServerClientRemoveFilter(virNetServerClientPtr client,
                                     int filterID);
+int virNetServerClientCheckFilterExist(virNetServerClientPtr client,
+                                       int filterID);
 
 int virNetServerClientGetAuth(virNetServerClientPtr client);
 void virNetServerClientSetAuthLocked(virNetServerClientPtr client, int auth);
