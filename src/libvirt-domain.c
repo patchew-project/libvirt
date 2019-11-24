@@ -11017,6 +11017,7 @@ virDomainGetDiskErrors(virDomainPtr dom,
 /**
  * virDomainGetHostname:
  * @domain: a domain object
+ * @source: one of the virDomainHostnameSource constants
  * @flags: extra flags; not used yet, so callers should always pass 0
  *
  * Get the hostname for that domain.
@@ -11028,7 +11029,9 @@ virDomainGetDiskErrors(virDomainPtr dom,
  * NULL if there was an error.
  */
 char *
-virDomainGetHostname(virDomainPtr domain, unsigned int flags)
+virDomainGetHostname(virDomainPtr domain,
+                     unsigned int source,
+                     unsigned int flags)
 {
     virConnectPtr conn;
 
@@ -11043,7 +11046,7 @@ virDomainGetHostname(virDomainPtr domain, unsigned int flags)
 
     if (conn->driver->domainGetHostname) {
         char *ret;
-        ret = conn->driver->domainGetHostname(domain, flags);
+        ret = conn->driver->domainGetHostname(domain, source, flags);
         if (!ret)
             goto error;
         return ret;

@@ -1554,6 +1554,7 @@ int                     virDomainGetMaxVcpus    (virDomainPtr domain);
 int                     virDomainGetSecurityLabel (virDomainPtr domain,
                                                    virSecurityLabelPtr seclabel);
 char *                  virDomainGetHostname    (virDomainPtr domain,
+                                                 unsigned int source,
                                                  unsigned int flags);
 int                     virDomainGetSecurityLabelList (virDomainPtr domain,
                                                        virSecurityLabelPtr* seclabels);
@@ -4789,6 +4790,15 @@ typedef struct _virTypedParameter virMemoryParameter;
  * preferred alias since 0.9.2.
  */
 typedef virMemoryParameter *virMemoryParameterPtr;
+
+typedef enum {
+    VIR_DOMAIN_HOSTNAME_SRC_LEASE = 0, /* Parse DHCP lease file */
+    VIR_DOMAIN_HOSTNAME_SRC_AGENT = 1, /* Query qemu guest agent */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_HOSTNAME_SRC_LAST
+# endif
+} virDomainHostnameSource;
 
 typedef enum {
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE = 0, /* Parse DHCP lease file */

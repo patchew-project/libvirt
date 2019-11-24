@@ -295,7 +295,9 @@ openvzSetDiskQuota(virDomainDefPtr vmdef,
 
 
 static char *
-openvzDomainGetHostname(virDomainPtr dom, unsigned int flags)
+openvzDomainGetHostname(virDomainPtr dom,
+                        unsigned int source,
+                        unsigned int flags)
 {
     char *hostname = NULL;
     struct openvz_driver *driver = dom->conn->privateData;
@@ -305,15 +307,25 @@ openvzDomainGetHostname(virDomainPtr dom, unsigned int flags)
     if (!(vm = openvzDomObjFromDomain(driver, dom->uuid)))
         return NULL;
 
-    hostname = openvzVEGetStringParam(dom, "hostname");
-    if (hostname == NULL)
-        goto cleanup;
+    switch (source) {
+    default:
+        hostname = openvzVEGetStringParam(dom, "hostname");
+        if (hostname == NULL)
+            goto cleanup;
 
-    /* vzlist prints an unset hostname as '-' */
-    if (STREQ(hostname, "-")) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("Hostname of '%s' is unset"), vm->def->name);
-        VIR_FREE(hostname);
+        /* vzlist prints an unset hostname as '-' */
+        if (STREQ(hostname, "-")) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("Hostname of '%s' is unset"), vm->def->name);
+            VIR_FREE(hostname);
+        }
+        break;
+    case VIR_DOMAIN_HOSTNAME_SRC_AGENT:
+    case VIR_DOMAIN_HOSTNAME_SRC_LEASE:
+        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                       _("Unknown hostname data source %d"),
+                       source);
+        break;
     }
 
  cleanup:

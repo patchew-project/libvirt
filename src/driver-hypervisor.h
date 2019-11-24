@@ -156,6 +156,7 @@ typedef char *
 
 typedef char *
 (*virDrvDomainGetHostname)(virDomainPtr domain,
+                           unsigned int source,
                            unsigned int flags);
 
 typedef unsigned long long

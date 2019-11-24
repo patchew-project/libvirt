@@ -1467,6 +1467,7 @@ struct remote_domain_get_cpu_stats_ret {
 
 struct remote_domain_get_hostname_args {
     remote_nonnull_domain dom;
+    unsigned int source;
     unsigned int flags;
 };
 

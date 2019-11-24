@@ -2028,6 +2028,7 @@ testDomainReset(virDomainPtr dom,
 
 static char *
 testDomainGetHostname(virDomainPtr domain,
+                      unsigned int source G_GNUC_UNUSED,
                       unsigned int flags)
 {
     char *ret = NULL;
