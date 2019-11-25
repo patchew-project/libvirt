@@ -287,6 +287,18 @@ void virNetServerClientRemoveFilter(virNetServerClientPtr client,
     virObjectUnlock(client);
 }
 
+int virNetServerClientCheckFilterExist(virNetServerClientPtr client,
+                                       int filterID)
+{
+    virNetServerClientFilterPtr tmp;
+
+    tmp = client->filters;
+    while(tmp && tmp->id != filterID) {
+        tmp = tmp->next;
+    }
+
+    return (tmp != NULL);
+}
 
 /* Check the client's access. */
 static int

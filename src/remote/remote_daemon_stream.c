@@ -292,10 +292,18 @@ daemonStreamFilter(virNetServerClientPtr client,
 {
     daemonClientStream *stream = opaque;
     int ret = 0;
+    daemonClientPrivatePtr priv = NULL;
+    int filter_id = stream->filterID;
 
     virObjectUnlock(client);
+    priv = virNetServerClientGetPrivateData(client);
     virMutexLock(&stream->priv->lock);
     virObjectLock(client);
+    if (!virNetServerClientCheckFilterExist(client, filter_id)) {
+        VIR_WARN("this daemon stream filter: %d have been deleted!", filter_id);
+        ret = -1;
+        goto cleanup;
+    }
 
     if (msg->header.type != VIR_NET_STREAM &&
         msg->header.type != VIR_NET_STREAM_HOLE)
@@ -317,7 +325,7 @@ daemonStreamFilter(virNetServerClientPtr client,
     ret = 1;
 
  cleanup:
-    virMutexUnlock(&stream->priv->lock);
+    virMutexUnlock(&priv->lock);
     return ret;
 }
 

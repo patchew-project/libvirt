@@ -173,6 +173,7 @@ virNetServerClientPreExecRestart;
 virNetServerClientRemoteAddrStringSASL;
 virNetServerClientRemoteAddrStringURI;
 virNetServerClientRemoveFilter;
+virNetServerClientCheckFilterExist;
 virNetServerClientSendMessage;
 virNetServerClientSetAuthLocked;
 virNetServerClientSetAuthPendingLocked;
