@@ -8085,13 +8085,6 @@ qemuProcessReconnect(void *opaque)
         goto error;
     }
 
-    /* If upgrading from old libvirtd we won't have found any
-     * caps in the domain status, so re-query them
-     */
-    if (!priv->qemuCaps &&
-        (qemuDomainUpdateQEMUCaps(obj, driver->qemuCapsCache) < 0))
-        goto error;
-
     /* In case the domain shutdown while we were not running,
      * we need to finish the shutdown process. And we need to do it after
      * we have virQEMUCaps filled in.
