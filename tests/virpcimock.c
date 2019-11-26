@@ -1000,9 +1000,12 @@ init_env(void)
     MAKE_PCI_DEVICE("0001:01:00.1", 0x8086, 0x105e, 5);
     MAKE_PCI_DEVICE("0005:80:00.0", 0x10b5, 0x8112, 6, .klass = 0x060400);
     MAKE_PCI_DEVICE("0005:90:01.0", 0x1033, 0x0035, 7);
-    MAKE_PCI_DEVICE("0005:90:01.1", 0x1033, 0x0035, 7);
-    MAKE_PCI_DEVICE("0005:90:01.2", 0x1033, 0x00e0, 7);
-    MAKE_PCI_DEVICE("0005:90:01.3", 0x1033, 0x00e0, 7);
+    MAKE_PCI_DEVICE("0005:90:01.1", 0x1033, 0x0035, 7,
+                    .physfn = "0005:90:01.0"); /* Virtual Function */
+    MAKE_PCI_DEVICE("0005:90:01.2", 0x1033, 0x00e0, 7,
+                    .physfn = "0005:90:01.0"); /* Virtual Function */
+    MAKE_PCI_DEVICE("0005:90:01.3", 0x1033, 0x00e0, 7,
+                    .physfn = "0005:90:01.0"); /* Virtual Function */
     MAKE_PCI_DEVICE("0000:0a:01.0", 0x8086, 0x0047, 8);
     MAKE_PCI_DEVICE("0000:0a:02.0", 0x8286, 0x0048, 8);
     MAKE_PCI_DEVICE("0000:0a:03.0", 0x8386, 0x0048, 8);

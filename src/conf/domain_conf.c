@@ -15685,7 +15685,20 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
                                         | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0)
             goto error;
     }
+
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+        /* Do not allow function 0 of a PCI multifunction device to
+         * be unassigned */
+        if (virHostdevIsPCIMultifunctionDevice(def)) {
+            if (def->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED &&
+                def->source.subsys.u.pci.addr.function == 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Function zero of PCI Multifunction device "
+                                 "must always be assigned"));
+                goto error;
+            }
+        }
+
         switch ((virDomainHostdevSubsysType) def->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
             if (virXPathBoolean("boolean(./readonly)", ctxt))
