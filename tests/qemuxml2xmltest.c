@@ -431,6 +431,7 @@ mymain(void)
 
     DO_TEST("hostdev-usb-address", NONE);
     DO_TEST("hostdev-pci-address", NONE);
+    DO_TEST("hostdev-pci-address-unassigned", NONE);
     DO_TEST("hostdev-pci-multifunction", NONE);
     DO_TEST("hostdev-vfio", NONE);
     DO_TEST("hostdev-vfio-zpci",
