@@ -21189,6 +21189,8 @@ qemuDomainGetStatsIOThread(virQEMUDriverPtr driver,
     qemuMonitorIOThreadInfoPtr *iothreads = NULL;
     int niothreads;
     int ret = -1;
+    g_auto(virBuffer) iothridbuf = VIR_BUFFER_INITIALIZER;
+    g_autofree char *iothridstr = NULL;
 
     if (!HAVE_JOB(privflags) || !virDomainObjIsActive(dom))
         return 0;
@@ -21203,6 +21205,15 @@ qemuDomainGetStatsIOThread(virQEMUDriverPtr driver,
         return 0;
 
     if (virTypedParamListAddUInt(params, niothreads, "iothread.count") < 0)
+        goto cleanup;
+
+    for (i = 0; i < niothreads; i++)
+        virBufferAsprintf(&iothridbuf, "%u,", iothreads[i]->iothread_id);
+
+    virBufferTrim(&iothridbuf, ",", -1);
+    iothridstr = virBufferContentAndReset(&iothridbuf);
+
+    if (virTypedParamListAddString(params, iothridstr, "iothread.ids") < 0)
         goto cleanup;
 
     for (i = 0; i < niothreads; i++) {

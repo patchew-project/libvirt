@@ -11620,6 +11620,8 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *                        will use it's iothread_id value as the <id>. There
  *                        may be fewer <id> entries than the iothread.count
  *                        value if the polling values are not supported.
+ *     "iothread.ids" - a comma separated list of iotdread <id>s reported in the
+ *                      subsequent list reported as a string
  *     "iothread.<id>.poll-max-ns" - maximum polling time in ns as an unsigned
  *                                   long long. A 0 (zero) means polling is
  *                                   disabled.
