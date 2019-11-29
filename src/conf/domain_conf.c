@@ -4823,7 +4823,7 @@ virDomainSCSIDriveAddressIsUsed(const virDomainDef *def,
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
-            max = 16383;
+            max = 16384;
             break;
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI:
             max = 31;
