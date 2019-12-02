@@ -13027,7 +13027,8 @@ bool
 qemuDomainNeedsVFIO(const virDomainDef *def)
 {
     return virDomainDefHasVFIOHostdev(def) ||
-        virDomainDefHasMdevHostdev(def);
+        virDomainDefHasMdevHostdev(def) ||
+        virDomainDefHasNVMeDisk(def);
 }
 
 
