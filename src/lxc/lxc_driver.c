@@ -5321,6 +5321,76 @@ lxcDomainGetCPUStats(virDomainPtr dom,
     return ret;
 }
 
+static char *
+lxcDomainGetHostname(virDomainPtr dom,
+                     unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    char macaddr[VIR_MAC_STRING_BUFLEN];
+    g_autoptr(virNetwork) network = NULL;
+    virNetworkDHCPLeasePtr *leases = NULL;
+    int n_leases;
+    size_t i, j;
+    char *hostname = NULL;
+
+    virCheckFlags(VIR_DOMAIN_HOSTNAME_SRC_LEASE |
+                  VIR_DOMAIN_HOSTNAME_SRC_AGENT, NULL);
+
+    if (!(vm = lxcDomObjFromDomain(dom)))
+        return NULL;
+
+    if (virDomainGetHostnameEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    switch (flags) {
+    default:
+    case VIR_DOMAIN_HOSTNAME_SRC_LEASE:
+        for (i = 0; i < vm->def->nnets; i++) {
+            if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
+                continue;
+
+            virMacAddrFormat(&(vm->def->nets[i]->mac), macaddr);
+            virObjectUnref(network);
+            network = virNetworkLookupByName(dom->conn,
+                                             vm->def->nets[i]->data.network.name);
+
+            if ((n_leases = virNetworkGetDHCPLeases(network, macaddr,
+                                                    &leases, 0)) < 0)
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("There is no available hostname %d"),
+                               flags);
+
+            for (j = 0; j < n_leases; j++) {
+                virNetworkDHCPLeasePtr lease = leases[j];
+                if (lease->hostname) {
+                    hostname = g_strdup(lease->hostname);
+
+                    for (j = 0; j < n_leases; j++)
+                        virNetworkDHCPLeaseFree(leases[j]);
+
+                    VIR_FREE(leases);
+
+                    goto cleanup;
+                }
+            }
+
+            for (j = 0; j < n_leases; j++)
+                virNetworkDHCPLeaseFree(leases[j]);
+
+            VIR_FREE(leases);
+        }
+        break;
+    case VIR_DOMAIN_HOSTNAME_SRC_AGENT:
+        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                       _("Unknown hostname data source %d"),
+                       flags);
+        break;
+    }
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return hostname;
+}
 
 static int
 lxcNodeGetFreePages(virConnectPtr conn,
@@ -5467,6 +5537,7 @@ static virHypervisorDriver lxcHypervisorDriver = {
     .domainSetMetadata = lxcDomainSetMetadata, /* 1.1.3 */
     .domainGetMetadata = lxcDomainGetMetadata, /* 1.1.3 */
     .domainGetCPUStats = lxcDomainGetCPUStats, /* 1.2.2 */
+    .domainGetHostname = lxcDomainGetHostname, /* 5.9.0 */
     .nodeGetMemoryParameters = lxcNodeGetMemoryParameters, /* 0.10.2 */
     .nodeSetMemoryParameters = lxcNodeSetMemoryParameters, /* 0.10.2 */
     .domainSendProcessSignal = lxcDomainSendProcessSignal, /* 1.0.1 */

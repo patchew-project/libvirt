@@ -11669,6 +11669,10 @@ static const vshCmdInfo info_domhostname[] = {
 
 static const vshCmdOptDef opts_domhostname[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
+    {.name = "source",
+     .type = VSH_OT_STRING,
+     .flags = VSH_OFLAG_NONE,
+     .help = N_("address source: 'lease' or 'agent'")},
     {.name = NULL}
 };
 
@@ -11678,21 +11682,38 @@ cmdDomHostname(vshControl *ctl, const vshCmd *cmd)
     char *hostname;
     virDomainPtr dom;
     bool ret = false;
+    const char *sourcestr = NULL;
+    int flags = 0; /* Use default value. Drivers can have its own default. */
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    hostname = virDomainGetHostname(dom, 0);
+    if (vshCommandOptStringReq(ctl, cmd, "source", &sourcestr) < 0)
+        goto error;
+
+    if (sourcestr) {
+        if (STREQ(sourcestr, "lease")) {
+            flags |= VIR_DOMAIN_HOSTNAME_SRC_LEASE;
+        } else if (STREQ(sourcestr, "agent")) {
+            flags |= VIR_DOMAIN_HOSTNAME_SRC_AGENT;
+        } else {
+            vshError(ctl, _("Unknown data source '%s'"), sourcestr);
+            goto error;
+        }
+    }
+
+    hostname = virDomainGetHostname(dom, flags);
     if (hostname == NULL) {
         vshError(ctl, "%s", _("failed to get hostname"));
         goto error;
     }
 
     vshPrint(ctl, "%s\n", hostname);
+
+    VIR_FREE(hostname);
     ret = true;
 
  error:
-    VIR_FREE(hostname);
     virshDomainFree(dom);
     return ret;
 }

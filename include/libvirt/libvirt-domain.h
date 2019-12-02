@@ -4791,6 +4791,11 @@ typedef struct _virTypedParameter virMemoryParameter;
 typedef virMemoryParameter *virMemoryParameterPtr;
 
 typedef enum {
+    VIR_DOMAIN_HOSTNAME_SRC_LEASE = (1 << 0), /* Parse DHCP lease file */
+    VIR_DOMAIN_HOSTNAME_SRC_AGENT = (1 << 1), /* Query qemu guest agent */
+} virDomainHostnameSource;
+
+typedef enum {
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE = 0, /* Parse DHCP lease file */
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT = 1, /* Query qemu guest agent */
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP = 2, /* Query ARP tables */

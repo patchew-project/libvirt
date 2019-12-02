@@ -20090,9 +20090,15 @@ qemuDomainGetHostname(virDomainPtr dom,
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm = NULL;
     qemuAgentPtr agent;
+    char macaddr[VIR_MAC_STRING_BUFLEN];
+    g_autoptr(virNetwork) network = NULL;
+    virNetworkDHCPLeasePtr *leases = NULL;
+    int n_leases;
+    size_t i, j;
     char *hostname = NULL;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_DOMAIN_HOSTNAME_SRC_LEASE |
+                  VIR_DOMAIN_HOSTNAME_SRC_AGENT, NULL);
 
     if (!(vm = qemuDomainObjFromDomain(dom)))
         return NULL;
@@ -20100,21 +20106,62 @@ qemuDomainGetHostname(virDomainPtr dom,
     if (virDomainGetHostnameEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_QUERY) < 0)
-        goto cleanup;
-
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
 
-    if (!qemuDomainAgentAvailable(vm, true))
-        goto endjob;
+    switch (flags) {
+    default:
+    case VIR_DOMAIN_HOSTNAME_SRC_AGENT:
+        if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_QUERY) < 0)
+            goto cleanup;
 
-    agent = qemuDomainObjEnterAgent(vm);
-    ignore_value(qemuAgentGetHostname(agent, &hostname));
-    qemuDomainObjExitAgent(vm, agent);
+        if (!qemuDomainAgentAvailable(vm, true))
+            goto endjob;
 
- endjob:
-    qemuDomainObjEndAgentJob(vm);
+        agent = qemuDomainObjEnterAgent(vm);
+        ignore_value(qemuAgentGetHostname(agent, &hostname));
+        qemuDomainObjExitAgent(vm, agent);
+
+     endjob:
+        qemuDomainObjEndAgentJob(vm);
+        break;
+    case VIR_DOMAIN_HOSTNAME_SRC_LEASE:
+        for (i = 0; i < vm->def->nnets; i++) {
+            if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
+                continue;
+
+            virMacAddrFormat(&(vm->def->nets[i]->mac), macaddr);
+            virObjectUnref(network);
+            network = virNetworkLookupByName(dom->conn,
+                                             vm->def->nets[i]->data.network.name);
+
+            if ((n_leases = virNetworkGetDHCPLeases(network, macaddr,
+                                                    &leases, 0)) < 0)
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("There is no available hostname %d"),
+                               flags);
+
+            for (j = 0; j < n_leases; j++) {
+                virNetworkDHCPLeasePtr lease = leases[j];
+                if (lease->hostname) {
+                    hostname = g_strdup(lease->hostname);
+
+                    for (j = 0; j < n_leases; j++)
+                        virNetworkDHCPLeaseFree(leases[j]);
+
+                    VIR_FREE(leases);
+
+                    goto cleanup;
+                }
+            }
+
+            for (j = 0; j < n_leases; j++)
+                virNetworkDHCPLeaseFree(leases[j]);
+
+            VIR_FREE(leases);
+        }
+        break;
+    }
 
  cleanup:
     virDomainObjEndAPI(&vm);
