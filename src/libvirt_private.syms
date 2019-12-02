@@ -2708,6 +2708,7 @@ virPCIDeviceAddressAsString;
 virPCIDeviceAddressEqual;
 virPCIDeviceAddressFree;
 virPCIDeviceAddressGetIOMMUGroupAddresses;
+virPCIDeviceAddressGetIOMMUGroupDev;
 virPCIDeviceAddressGetIOMMUGroupNum;
 virPCIDeviceAddressGetSysfsFile;
 virPCIDeviceAddressIOMMUGroupIterate;
