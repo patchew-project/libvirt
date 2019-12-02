@@ -1527,6 +1527,9 @@ qemuDiskSourceNeedsProps(virStorageSourcePtr src,
         src->haveTLS == VIR_TRISTATE_BOOL_YES)
         return true;
 
+    if (actualType == VIR_STORAGE_TYPE_NVME)
+        return true;
+
     return false;
 }
 
