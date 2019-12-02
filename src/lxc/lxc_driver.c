@@ -85,6 +85,7 @@ VIR_LOG_INIT("lxc.lxc_driver");
 
 
 static int lxcStateInitialize(bool privileged,
+                              const char *root,
                               virStateInhibitCallback callback,
                               void *opaque);
 static int lxcStateCleanup(void);
@@ -1526,12 +1527,19 @@ lxcSecurityInit(virLXCDriverConfigPtr cfg)
 
 
 static int lxcStateInitialize(bool privileged,
+                              const char *root,
                               virStateInhibitCallback callback G_GNUC_UNUSED,
                               void *opaque G_GNUC_UNUSED)
 {
     virCapsPtr caps = NULL;
     virLXCDriverConfigPtr cfg = NULL;
     bool autostart = true;
+
+    if (root != NULL) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Driver does not support embedded mode"));
+        return -1;
+    }
 
     /* Check that the user is root, silently disable if not */
     if (!privileged) {

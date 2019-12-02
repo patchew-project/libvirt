@@ -4089,11 +4089,18 @@ vzStateCleanup(void)
 
 static int
 vzStateInitialize(bool privileged,
+                  const char *root,
                   virStateInhibitCallback callback G_GNUC_UNUSED,
                   void *opaque G_GNUC_UNUSED)
 {
     if (!privileged)
         return VIR_DRV_STATE_INIT_SKIPPED;
+
+    if (root != NULL) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Driver does not support embedded mode"));
+        return -1;
+    }
 
     vz_driver_privileged = privileged;
 
