@@ -231,3 +231,29 @@ EXTRA_DIST += \
 	qemu/THREADS.txt \
 	libvirt_qemu_probes.d \
 	$(NULL)
+
+QEMU_SHIM_SOURCES = qemu/qemu_shim.c
+QEMU_SHIM_POD = qemu/qemu_shim.pod
+
+EXTRA_DIST += $(QEMU_SHIM_SOURCES) $(QEMU_SHIM_POD)
+
+if WITH_QEMU
+bin_PROGRAMS += virt-qemu-run
+
+man1_MANS += virt-qemu-run.1
+
+virt_qemu_run_SOURCES = $(QEMU_SHIM_SOURCES)
+
+virt_qemu_run_LDADD = libvirt.la
+virt_qemu_run_LDFLAGS = -Wl,--export-dynamic
+endif WITH_QEMU
+
+virt-qemu-run.1.in: qemu/qemu_shim.pod
+	$(AM_V_GEN)$(POD2MAN) $< $@-t1 && \
+	if grep 'POD ERROR' $@-t1; then rm $@-t1; exit 1; fi && \
+	sed \
+		-e 's|SYSCONFDIR|\@sysconfdir\@|g' \
+		-e 's|LOCALSTATEDIR|\@localstatedir\@|g' \
+	< $@-t1 > $@-t2 && \
+	rm -f $@-t1 && \
+	mv $@-t2 $@

@@ -90,6 +90,8 @@ SYSTEMD_UNIT_FILES =
 SYSTEMD_UNIT_FILES_IN =
 SYSCONF_FILES =
 sbin_PROGRAMS =
+bin_PROGRAMS =
+man1_MANS =
 man8_MANS =
 DRIVER_SOURCES =
 man7_MANS =
@@ -653,6 +655,13 @@ endif WITH_LIBVIRTD
 
 
 %.8: %.8.in $(top_srcdir)/configure.ac
+	$(AM_V_GEN)sed \
+		-e 's|[@]sysconfdir[@]|$(sysconfdir)|g' \
+		-e 's|[@]runstatedir[@]|$(runstatedir)|g' \
+		< $< > $@-t && \
+	mv $@-t $@
+
+%.1: %.1.in $(top_srcdir)/configure.ac
 	$(AM_V_GEN)sed \
 		-e 's|[@]sysconfdir[@]|$(sysconfdir)|g' \
 		-e 's|[@]runstatedir[@]|$(runstatedir)|g' \

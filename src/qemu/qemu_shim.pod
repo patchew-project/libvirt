@@ -1,0 +1,94 @@
+=encoding utf8
+
+=head1 NAME
+
+virt-qemu-run - run a standalone QEMU guest
+
+=head1 SYNOPSIS
+
+B<virt-qemu-run> [I<OPTIONS>...] [I<GUEST-XML>]
+
+=head1 DESCRIPTION
+
+This tool provides a way to run a standalone QEMU guest such that it
+is completely independant of libvirtd. It makes use of the embedded
+QEMU driver support to run the VM placing files under an isolated
+directory tree. When the guest is run with this tool it is invisible
+to libvirtd and thus also invisible to other libvirt tools such as
+virsh.
+
+The virt-qemu-run program will run the QEMU virtual machine, and then
+block until the guest OS shuts down, at which point it will exit.
+
+If the virt-qemu-run program is interrupted (eg Ctrl-C) it will
+immediately terminate the virtual machine without giving the guest
+OS any opportunity to gracefully shutdown.
+
+=head1 OPTIONS
+
+=over 4
+
+=item C<GUEST-XML>
+
+The full path to the XML file describing the guest virtual machine
+to be booted.
+
+=item C<-h>, C<--help>
+
+Display the command line help
+
+=item C<-v>, C<--verbose>
+
+Display verbose information about startup
+
+=item C<-r DIR>, C<--root=DIR>
+
+Specify the root directory to use for storing state associated with
+the virtual machine. The caller is responsible for deleting this
+directory when it is no longer required.
+
+If this parameter is omitted, then a random temporary directory
+will be created, and its contents be automaticlaly deleted at
+VM shutdown.
+
+=item C<-s XML-FILE,VALUE-FILE> C<--secret=XML-FILE,VALUE-FILE>
+
+Specify a secret to be loaded into the secret driver. The C<XML-FILE>
+is a path to the XML description of the secret, whose UUID should
+match a secret referenced in the guest domain XML. The C<VALUE-FILE>
+is a path containing the raw value of the secret.
+
+=back
+
+=head1 EXIT STATUS
+
+Upon successful shutdown, an exit status of 0 will be set. Upon
+failure a non-zero status will be set.
+
+=head1 AUTHOR
+
+Daniel P. Berrangé
+
+=head1 BUGS
+
+Report any bugs discovered to the libvirt community via the
+mailing list L<https://libvirt.org/contact.html> or bug tracker
+L<https://libvirt.org/bugs.html>.
+Alternatively report bugs to your software distributor / vendor.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 by Red Hat, Inc.
+
+=head1 LICENSE
+
+virt-run-qemu is distributed under the terms of the GNU LGPL v2+.
+This is free software; see the source for copying conditions. There
+is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE
+
+=head1 SEE ALSO
+
+L<virsh(1)>
+
+=cut
