@@ -141,7 +141,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         (events & VIR_STREAM_EVENT_WRITABLE)) {
         if (daemonStreamHandleWrite(client, stream) < 0) {
             daemonRemoveClientStream(client, stream);
-            virNetServerClientClose(client);
+            virNetServerClientImmediateClose(client);
             goto cleanup;
         }
     }
@@ -151,7 +151,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         events = events & ~(VIR_STREAM_EVENT_READABLE);
         if (daemonStreamHandleRead(client, stream) < 0) {
             daemonRemoveClientStream(client, stream);
-            virNetServerClientClose(client);
+            virNetServerClientImmediateClose(client);
             goto cleanup;
         }
         /* If we detected EOF during read processing,
@@ -176,7 +176,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
             if (daemonStreamHandleFinish(client, stream, msg) < 0) {
                 virNetMessageFree(msg);
                 daemonRemoveClientStream(client, stream);
-                virNetServerClientClose(client);
+                virNetServerClientImmediateClose(client);
                 goto cleanup;
             }
             break;
@@ -186,7 +186,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
             if (daemonStreamHandleAbort(client, stream, msg) < 0) {
                 virNetMessageFree(msg);
                 daemonRemoveClientStream(client, stream);
-                virNetServerClientClose(client);
+                virNetServerClientImmediateClose(client);
                 goto cleanup;
             }
             break;
@@ -205,7 +205,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         stream->recvEOF = true;
         if (!(msg = virNetMessageNew(false))) {
             daemonRemoveClientStream(client, stream);
-            virNetServerClientClose(client);
+            virNetServerClientImmediateClose(client);
             goto cleanup;
         }
         msg->cb = daemonStreamMessageFinished;
@@ -219,7 +219,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
                                               "", 0) < 0) {
             virNetMessageFree(msg);
             daemonRemoveClientStream(client, stream);
-            virNetServerClientClose(client);
+            virNetServerClientImmediateClose(client);
             goto cleanup;
         }
     }
@@ -262,7 +262,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         }
         daemonRemoveClientStream(client, stream);
         if (ret < 0)
-            virNetServerClientClose(client);
+        	virNetServerClientImmediateClose(client);
         goto cleanup;
     }
 

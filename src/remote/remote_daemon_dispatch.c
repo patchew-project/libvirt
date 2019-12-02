@@ -1724,7 +1724,9 @@ static void remoteClientCloseFunc(virNetServerClientPtr client)
 {
     struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
 
+    virMutexLock(&priv->lock);
     daemonRemoveAllClientStreams(priv->streams);
+    virMutexUnlock(&priv->lock);
 
     remoteClientFreePrivateCallbacks(priv);
 }
