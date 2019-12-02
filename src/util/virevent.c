@@ -29,6 +29,9 @@
 
 VIR_LOG_INIT("util.event");
 
+
+#define VIR_FROM_THIS VIR_FROM_EVENT
+
 static virEventAddHandleFunc addHandleImpl;
 static virEventUpdateHandleFunc updateHandleImpl;
 static virEventRemoveHandleFunc removeHandleImpl;
@@ -251,6 +254,26 @@ void virEventRegisterImpl(virEventAddHandleFunc addHandle,
     removeTimeoutImpl = removeTimeout;
 }
 
+
+/**
+ * virEventRequireImpl:
+ *
+ * Require that there is an event loop implementation
+ * registered.
+ *
+ * Returns: -1 if no event loop is registered, 0 otherwise
+ */
+int virEventRequireImpl(void)
+{
+    if (!addHandleImpl || !addTimeoutImpl) {
+        virReportError(VIR_ERR_NO_SUPPORT, "%s",
+                       _("An event loop implementation must be registered"));
+        return -1;
+    }
+
+    return 0;
+}
+
 /**
  * virEventRegisterDefaultImpl:
  *
@@ -275,6 +298,8 @@ void virEventRegisterImpl(virEventAddHandleFunc addHandle,
 int virEventRegisterDefaultImpl(void)
 {
     VIR_DEBUG("registering default event implementation");
+
+    virInitialize();
 
     virResetLastError();
 
