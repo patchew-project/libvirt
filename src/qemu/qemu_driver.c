@@ -14054,11 +14054,16 @@ static int qemuDomainAbortJob(virDomainPtr dom)
     }
 
     VIR_DEBUG("Cancelling job at client request");
-    qemuDomainObjAbortAsyncJob(vm);
-    qemuDomainObjEnterMonitor(driver, vm);
-    ret = qemuMonitorMigrateCancel(priv->mon);
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        ret = -1;
+    if (priv->job.asyncJob == QEMU_ASYNC_JOB_BACKUP) {
+        qemuBackupJobCancelBlockjobs(vm, priv->backup, true);
+        ret = 0;
+    } else {
+        qemuDomainObjAbortAsyncJob(vm);
+        qemuDomainObjEnterMonitor(driver, vm);
+        ret = qemuMonitorMigrateCancel(priv->mon);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0)
+            ret = -1;
+    }
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
