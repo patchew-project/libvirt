@@ -90,6 +90,14 @@ test_connect()
 {
     uri=$1
 
+    if [ "x$uri" = xdefault ]; then
+        # Default config is most common and for the local libvirtd
+        # Check if it is active before wasting time in connect loop
+        if ! systemctl -q is-active libvirtd; then
+            return 1
+        fi
+    fi
+
     i=${CONNECT_RETRIES}
     while [ $i -gt 0 ]; do
         run_virsh "$uri" connect 2>/dev/null
