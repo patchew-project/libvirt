@@ -52,6 +52,7 @@
 #include "qemu_blockjob.h"
 #include "qemu_security.h"
 #include "qemu_checkpoint.h"
+#include "qemu_backup.h"
 
 #include "virerror.h"
 #include "virlog.h"
@@ -17212,6 +17213,50 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 }
 
 
+static int
+qemuDomainBackupBegin(virDomainPtr domain,
+                      const char *backupXML,
+                      const char *checkpointXML,
+                      unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+
+    if (!(vm = qemuDomainObjFromDomain(domain)))
+        goto cleanup;
+
+    if (virDomainBackupBeginEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    ret = qemuBackupBegin(vm, backupXML, checkpointXML, flags);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
+static char *
+qemuDomainBackupGetXMLDesc(virDomainPtr domain,
+                           unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    char *ret = NULL;
+
+    if (!(vm = qemuDomainObjFromDomain(domain)))
+        return NULL;
+
+    if (virDomainBackupGetXMLDescEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    ret = qemuBackupGetXMLDesc(vm, flags);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int qemuDomainQemuMonitorCommand(virDomainPtr domain, const char *cmd,
                                         char **result, unsigned int flags)
 {
@@ -22953,6 +22998,8 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainCheckpointDelete = qemuDomainCheckpointDelete, /* 5.6.0 */
     .domainGetGuestInfo = qemuDomainGetGuestInfo, /* 5.7.0 */
     .domainAgentSetResponseTimeout = qemuDomainAgentSetResponseTimeout, /* 5.10.0 */
+    .domainBackupBegin = qemuDomainBackupBegin, /* 5.10.0 */
+    .domainBackupGetXMLDesc = qemuDomainBackupGetXMLDesc, /* 5.10.0 */
 };
 
 
