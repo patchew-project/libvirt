@@ -14,6 +14,7 @@
     <feature name='bmi2'/>
     <feature name='clflush'/>
     <feature name='clflushopt'/>
+    <feature name='clzero'/>
     <feature name='cmov'/>
     <feature name='cr8legacy'/>
     <feature name='cx16'/>
