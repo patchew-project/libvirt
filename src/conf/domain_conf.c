@@ -11446,7 +11446,6 @@ static virDomainNetDefPtr
 virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                         xmlNodePtr node,
                         xmlXPathContextPtr ctxt,
-                        char *prefix,
                         unsigned int flags)
 {
     virDomainNetDefPtr def;
@@ -11494,6 +11493,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *vhostuser_type = NULL;
     g_autofree char *trustGuestRxFilters = NULL;
     g_autofree char *vhost_path = NULL;
+    const char *prefix = xmlopt ? xmlopt->config.netPrefix : NULL;
 
     if (!(def = virDomainNetDefNew(xmlopt)))
         return NULL;
@@ -16385,7 +16385,6 @@ virDomainDeviceDefParse(const char *xmlStr,
     xmlNodePtr node;
     g_autoptr(xmlXPathContext) ctxt = NULL;
     g_autofree virDomainDeviceDefPtr dev = NULL;
-    char *netprefix;
 
     if (!(xml = virXMLParseStringCtxt(xmlStr, _("(device_definition)"), &ctxt)))
         return NULL;
@@ -16428,9 +16427,7 @@ virDomainDeviceDefParse(const char *xmlStr,
             return NULL;
         break;
     case VIR_DOMAIN_DEVICE_NET:
-        netprefix = caps->host.netprefix;
-        if (!(dev->data.net = virDomainNetDefParseXML(xmlopt, node, ctxt,
-                                                      netprefix, flags)))
+        if (!(dev->data.net = virDomainNetDefParseXML(xmlopt, node, ctxt, flags)))
             return NULL;
         break;
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -19759,7 +19756,6 @@ virDomainDefParseXML(xmlDocPtr xml,
     bool usb_none = false;
     bool usb_other = false;
     bool usb_master = false;
-    char *netprefix = NULL;
     g_autofree xmlNodePtr *nodes = NULL;
     g_autofree char *tmp = NULL;
 
@@ -20872,12 +20868,10 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
     if (n && VIR_ALLOC_N(def->nets, n) < 0)
         goto error;
-    netprefix = caps->host.netprefix;
     for (i = 0; i < n; i++) {
         virDomainNetDefPtr net = virDomainNetDefParseXML(xmlopt,
                                                          nodes[i],
                                                          ctxt,
-                                                         netprefix,
                                                          flags);
         if (!net)
             goto error;
@@ -25362,7 +25356,7 @@ virDomainChrSourceReconnectDefFormat(virBufferPtr buf,
 int
 virDomainNetDefFormat(virBufferPtr buf,
                       virDomainNetDefPtr def,
-                      char *prefix,
+                      virDomainXMLOptionPtr xmlopt,
                       unsigned int flags)
 {
     virDomainNetType actualType = virDomainNetGetActualType(def);
@@ -25372,6 +25366,7 @@ virDomainNetDefFormat(virBufferPtr buf,
     virDomainHostdevDefPtr hostdef = NULL;
     char macstr[VIR_MAC_STRING_BUFLEN];
     g_auto(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+    const char *prefix = xmlopt ? xmlopt->config.netPrefix : NULL;
 
     /* publicActual is true if we should report the current state in
      * def->data.network.actual *instead of* the config (*not* in
@@ -28294,7 +28289,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
 int
 virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
                                       virDomainXMLOptionPtr xmlopt,
-                                      virCapsPtr caps,
+                                      virCapsPtr caps G_GNUC_UNUSED,
                                       virBufferPtr buf,
                                       const char *rootname,
                                       unsigned int flags)
@@ -28304,7 +28299,6 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
     const char *type = NULL;
     int n;
     size_t i;
-    char *netprefix = NULL;
 
     virCheckFlags(VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS |
                   VIR_DOMAIN_DEF_FORMAT_STATUS |
@@ -28660,10 +28654,8 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
         if (virDomainFSDefFormat(buf, def->fss[n], flags) < 0)
             goto error;
 
-    if (caps)
-        netprefix = caps->host.netprefix;
     for (n = 0; n < def->nnets; n++)
-        if (virDomainNetDefFormat(buf, def->nets[n], netprefix, flags) < 0)
+        if (virDomainNetDefFormat(buf, def->nets[n], xmlopt, flags) < 0)
             goto error;
 
     for (n = 0; n < def->nsmartcards; n++)
@@ -29834,7 +29826,6 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     int flags = VIR_DOMAIN_DEF_FORMAT_INACTIVE | VIR_DOMAIN_DEF_FORMAT_SECURE;
     int rc = -1;
-    char *netprefix;
     g_autofree char *xmlStr = NULL;
 
     switch ((virDomainDeviceType) src->type) {
@@ -29848,8 +29839,7 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
         rc = virDomainFSDefFormat(&buf, src->data.fs, flags);
         break;
     case VIR_DOMAIN_DEVICE_NET:
-        netprefix = caps->host.netprefix;
-        rc = virDomainNetDefFormat(&buf, src->data.net, netprefix, flags);
+        rc = virDomainNetDefFormat(&buf, src->data.net, xmlopt, flags);
         break;
     case VIR_DOMAIN_DEVICE_INPUT:
         rc = virDomainInputDefFormat(&buf, src->data.input, flags);
