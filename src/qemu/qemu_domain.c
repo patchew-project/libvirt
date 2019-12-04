@@ -9714,7 +9714,7 @@ qemuFindQemuImgBinary(virQEMUDriverPtr driver)
 int
 qemuDomainSnapshotWriteMetadata(virDomainObjPtr vm,
                                 virDomainMomentObjPtr snapshot,
-                                virCapsPtr caps,
+                                virCapsPtr caps G_GNUC_UNUSED,
                                 virDomainXMLOptionPtr xmlopt,
                                 const char *snapshotDir)
 {
@@ -9730,7 +9730,7 @@ qemuDomainSnapshotWriteMetadata(virDomainObjPtr vm,
     if (virDomainSnapshotGetCurrent(vm->snapshots) == snapshot)
         flags |= VIR_DOMAIN_SNAPSHOT_FORMAT_CURRENT;
     virUUIDFormat(vm->def->uuid, uuidstr);
-    newxml = virDomainSnapshotDefFormat(uuidstr, def, caps, xmlopt, flags);
+    newxml = virDomainSnapshotDefFormat(uuidstr, def, xmlopt, flags);
     if (newxml == NULL)
         return -1;
 
