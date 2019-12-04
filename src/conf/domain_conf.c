@@ -5207,7 +5207,6 @@ virDomainVsockDefPostParse(virDomainVsockDefPtr vsock)
 static int
 virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
                                   const virDomainDef *def,
-                                  virCapsPtr caps G_GNUC_UNUSED,
                                   unsigned int parseFlags G_GNUC_UNUSED,
                                   virDomainXMLOptionPtr xmlopt)
 {
@@ -5462,7 +5461,6 @@ virDomainDeviceDefPostParseCheckFeatures(virDomainDeviceDefPtr dev,
 static int
 virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                             const virDomainDef *def,
-                            virCapsPtr caps,
                             unsigned int flags,
                             virDomainXMLOptionPtr xmlopt,
                             void *parseOpaque)
@@ -5470,14 +5468,14 @@ virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     int ret;
 
     if (xmlopt->config.devicesPostParseCallback) {
-        ret = xmlopt->config.devicesPostParseCallback(dev, def, caps, flags,
+        ret = xmlopt->config.devicesPostParseCallback(dev, def, flags,
                                                       xmlopt->config.priv,
                                                       parseOpaque);
         if (ret < 0)
             return ret;
     }
 
-    if ((ret = virDomainDeviceDefPostParseCommon(dev, def, caps, flags, xmlopt)) < 0)
+    if ((ret = virDomainDeviceDefPostParseCommon(dev, def, flags, xmlopt)) < 0)
         return ret;
 
     if (virDomainDeviceDefPostParseCheckFeatures(dev, xmlopt) < 0)
@@ -5489,7 +5487,6 @@ virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
 static int
 virDomainDeviceDefPostParseOne(virDomainDeviceDefPtr dev,
                                const virDomainDef *def,
-                               virCapsPtr caps,
                                unsigned int flags,
                                virDomainXMLOptionPtr xmlopt,
                                void *parseOpaque)
@@ -5505,7 +5502,7 @@ virDomainDeviceDefPostParseOne(virDomainDeviceDefPtr dev,
         parseOpaque = data;
     }
 
-    ret = virDomainDeviceDefPostParse(dev, def, caps, flags, xmlopt, parseOpaque);
+    ret = virDomainDeviceDefPostParse(dev, def, flags, xmlopt, parseOpaque);
 
     if (data && xmlopt->config.domainPostParseDataFree)
         xmlopt->config.domainPostParseDataFree(data);
@@ -5515,7 +5512,6 @@ virDomainDeviceDefPostParseOne(virDomainDeviceDefPtr dev,
 
 
 struct virDomainDefPostParseDeviceIteratorData {
-    virCapsPtr caps;
     virDomainXMLOptionPtr xmlopt;
     void *parseOpaque;
     unsigned int parseFlags;
@@ -5529,7 +5525,7 @@ virDomainDefPostParseDeviceIterator(virDomainDefPtr def,
                                     void *opaque)
 {
     struct virDomainDefPostParseDeviceIteratorData *data = opaque;
-    return virDomainDeviceDefPostParse(dev, def, data->caps,
+    return virDomainDeviceDefPostParse(dev, def,
                                        data->parseFlags, data->xmlopt,
                                        data->parseOpaque);
 }
@@ -5806,7 +5802,7 @@ virDomainDefPostParseCheckFailure(virDomainDefPtr def,
 
 int
 virDomainDefPostParse(virDomainDefPtr def,
-                      virCapsPtr caps,
+                      virCapsPtr caps G_GNUC_UNUSED,
                       unsigned int parseFlags,
                       virDomainXMLOptionPtr xmlopt,
                       void *parseOpaque)
@@ -5814,7 +5810,6 @@ virDomainDefPostParse(virDomainDefPtr def,
     int ret = -1;
     bool localParseOpaque = false;
     struct virDomainDefPostParseDeviceIteratorData data = {
-        .caps = caps,
         .xmlopt = xmlopt,
         .parseFlags = parseFlags,
         .parseOpaque = parseOpaque,
@@ -7117,7 +7112,6 @@ virDomainDefValidate(virDomainDefPtr def,
                      virDomainXMLOptionPtr xmlopt)
 {
     struct virDomainDefPostParseDeviceIteratorData data = {
-        .caps = caps,
         .xmlopt = xmlopt,
         .parseFlags = parseFlags,
     };
@@ -16379,7 +16373,7 @@ virDomainVsockDefParseXML(virDomainXMLOptionPtr xmlopt,
 virDomainDeviceDefPtr
 virDomainDeviceDefParse(const char *xmlStr,
                         const virDomainDef *def,
-                        virCapsPtr caps,
+                        virCapsPtr caps G_GNUC_UNUSED,
                         virDomainXMLOptionPtr xmlopt,
                         void *parseOpaque,
                         unsigned int flags)
@@ -16537,7 +16531,7 @@ virDomainDeviceDefParse(const char *xmlStr,
     }
 
     /* callback to fill driver specific device aspects */
-    if (virDomainDeviceDefPostParseOne(dev, def, caps, flags,
+    if (virDomainDeviceDefPostParseOne(dev, def, flags,
                                        xmlopt, parseOpaque) < 0)
         return NULL;
 
