@@ -5936,8 +5936,42 @@ virDomainDiskAddressDiskBusCompatibility(virDomainDiskBus bus,
 
 
 static int
-virDomainDiskDefValidate(const virDomainDiskDef *disk)
+virSecurityDeviceLabelDefValidateXML(virSecurityDeviceLabelDefPtr *seclabels,
+                                     size_t nseclabels,
+                                     virSecurityLabelDefPtr *vmSeclabels,
+                                     size_t nvmSeclabels)
 {
+    virSecurityDeviceLabelDefPtr seclabel;
+    size_t i;
+    size_t j;
+
+    for (i = 0; i < nseclabels; i++) {
+        seclabel = seclabels[i];
+
+        /* find the security label that it's being overridden */
+        for (j = 0; j < nvmSeclabels; j++) {
+            if (STRNEQ_NULLABLE(vmSeclabels[j]->model, seclabel->model))
+                continue;
+
+            if (!vmSeclabels[j]->relabel) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("label overrides require relabeling to be "
+                                 "enabled at the domain level"));
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+static int
+virDomainDiskDefValidate(const virDomainDef *def,
+                         const virDomainDiskDef *disk)
+{
+    virStorageSourcePtr next;
+
     /* Validate LUN configuration */
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) {
         /* volumes haven't been translated at this point, so accept them */
@@ -5991,6 +6025,14 @@ virDomainDiskDefValidate(const virDomainDiskDef *disk)
         return -1;
     }
 
+    for (next = disk->src; next; next = next->backingStore) {
+        if (virSecurityDeviceLabelDefValidateXML(next->seclabels,
+                                                 next->nseclabels,
+                                                 def->seclabels,
+                                                 def->nseclabels) < 0)
+            return -1;
+    }
+
     return 0;
 }
 
@@ -6014,10 +6056,11 @@ virDomainDefHasUSB(const virDomainDef *def)
 
 
 static int
-virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
-                              const virDomainChrDef *chr_def)
+virDomainChrSourceDefValidate(const virDomainChrSourceDef *src_def,
+                              const virDomainChrDef *chr_def,
+                              const virDomainDef *def)
 {
-    switch ((virDomainChrType) def->type) {
+    switch ((virDomainChrType) src_def->type) {
     case VIR_DOMAIN_CHR_TYPE_NULL:
     case VIR_DOMAIN_CHR_TYPE_PTY:
     case VIR_DOMAIN_CHR_TYPE_VC:
@@ -6029,7 +6072,7 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
     case VIR_DOMAIN_CHR_TYPE_FILE:
     case VIR_DOMAIN_CHR_TYPE_DEV:
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        if (!def->data.file.path) {
+        if (!src_def->data.file.path) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing source path attribute for char device"));
             return -1;
@@ -6037,13 +6080,13 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_NMDM:
-        if (!def->data.nmdm.master) {
+        if (!src_def->data.nmdm.master) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing master path attribute for nmdm device"));
             return -1;
         }
 
-        if (!def->data.nmdm.slave) {
+        if (!src_def->data.nmdm.slave) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing slave path attribute for nmdm device"));
             return -1;
@@ -6051,19 +6094,19 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_TCP:
-        if (!def->data.tcp.host) {
+        if (!src_def->data.tcp.host) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing source host attribute for char device"));
             return -1;
         }
 
-        if (!def->data.tcp.service) {
+        if (!src_def->data.tcp.service) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing source service attribute for char device"));
             return -1;
         }
 
-        if (def->data.tcp.listen && def->data.tcp.reconnect.enabled) {
+        if (src_def->data.tcp.listen && src_def->data.tcp.reconnect.enabled) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("chardev reconnect is possible only for connect mode"));
             return -1;
@@ -6071,7 +6114,7 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UDP:
-        if (!def->data.udp.connectService) {
+        if (!src_def->data.udp.connectService) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing source service attribute for char device"));
             return -1;
@@ -6082,7 +6125,7 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
         /* The source path can be auto generated for certain specific
          * types of channels, but in most cases we should report an
          * error if the user didn't provide it */
-        if (!def->data.nix.path &&
+        if (!src_def->data.nix.path &&
             !(chr_def &&
               chr_def->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
               (chr_def->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN ||
@@ -6092,7 +6135,7 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
             return -1;
         }
 
-        if (def->data.nix.listen && def->data.nix.reconnect.enabled) {
+        if (src_def->data.nix.listen && src_def->data.nix.reconnect.enabled) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("chardev reconnect is possible only for connect mode"));
             return -1;
@@ -6100,19 +6143,25 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_SPICEPORT:
-        if (!def->data.spiceport.channel) {
+        if (!src_def->data.spiceport.channel) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Missing source channel attribute for char device"));
             return -1;
         }
-        if (strspn(def->data.spiceport.channel,
-                   SERIAL_CHANNEL_NAME_CHARS) < strlen(def->data.spiceport.channel)) {
+        if (strspn(src_def->data.spiceport.channel,
+                   SERIAL_CHANNEL_NAME_CHARS) < strlen(src_def->data.spiceport.channel)) {
             virReportError(VIR_ERR_INVALID_ARG, "%s",
                            _("Invalid character in source channel for char device"));
             return -1;
         }
         break;
     }
+
+    if (virSecurityDeviceLabelDefValidateXML(src_def->seclabels,
+                                             src_def->nseclabels,
+                                             def->seclabels,
+                                             def->nseclabels) < 0)
+        return -1;
 
     return 0;
 }
@@ -6130,7 +6179,7 @@ virDomainRedirdevDefValidate(const virDomainDef *def,
         return -1;
     }
 
-    return virDomainChrSourceDefValidate(redirdev->source, NULL);
+    return virDomainChrSourceDefValidate(redirdev->source, NULL, def);
 }
 
 
@@ -6253,27 +6302,30 @@ virDomainControllerDefValidate(const virDomainControllerDef *controller)
 
 
 static int
-virDomainChrDefValidate(const virDomainChrDef *chr)
+virDomainChrDefValidate(const virDomainChrDef *chr,
+                        const virDomainDef *def)
 {
-    return virDomainChrSourceDefValidate(chr->source, chr);
+    return virDomainChrSourceDefValidate(chr->source, chr, def);
 }
 
 
 static int
-virDomainSmartcardDefValidate(const virDomainSmartcardDef *smartcard)
+virDomainSmartcardDefValidate(const virDomainSmartcardDef *smartcard,
+                              const virDomainDef *def)
 {
     if (smartcard->type == VIR_DOMAIN_SMARTCARD_TYPE_PASSTHROUGH)
-        return virDomainChrSourceDefValidate(smartcard->data.passthru, NULL);
+        return virDomainChrSourceDefValidate(smartcard->data.passthru, NULL, def);
 
     return 0;
 }
 
 
 static int
-virDomainRNGDefValidate(const virDomainRNGDef *rng)
+virDomainRNGDefValidate(const virDomainRNGDef *rng,
+                        const virDomainDef *def)
 {
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD)
-        return virDomainChrSourceDefValidate(rng->source.chardev, NULL);
+        return virDomainChrSourceDefValidate(rng->source.chardev, NULL, def);
 
     return 0;
 }
@@ -6470,7 +6522,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
 {
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
-        return virDomainDiskDefValidate(dev->data.disk);
+        return virDomainDiskDefValidate(def, dev->data.disk);
 
     case VIR_DOMAIN_DEVICE_REDIRDEV:
         return virDomainRedirdevDefValidate(def, dev->data.redirdev);
@@ -6482,13 +6534,13 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
         return virDomainControllerDefValidate(dev->data.controller);
 
     case VIR_DOMAIN_DEVICE_CHR:
-        return virDomainChrDefValidate(dev->data.chr);
+        return virDomainChrDefValidate(dev->data.chr, def);
 
     case VIR_DOMAIN_DEVICE_SMARTCARD:
-        return virDomainSmartcardDefValidate(dev->data.smartcard);
+        return virDomainSmartcardDefValidate(dev->data.smartcard, def);
 
     case VIR_DOMAIN_DEVICE_RNG:
-        return virDomainRNGDefValidate(dev->data.rng);
+        return virDomainRNGDefValidate(dev->data.rng, def);
 
     case VIR_DOMAIN_DEVICE_HOSTDEV:
         return virDomainHostdevDefValidate(dev->data.hostdev);
@@ -9044,37 +9096,6 @@ virSecurityDeviceLabelDefParseXML(virSecurityDeviceLabelDefPtr **seclabels_rtn,
 }
 
 
-static int
-virSecurityDeviceLabelDefValidateXML(virSecurityDeviceLabelDefPtr *seclabels,
-                                     size_t nseclabels,
-                                     virSecurityLabelDefPtr *vmSeclabels,
-                                     size_t nvmSeclabels)
-{
-    virSecurityDeviceLabelDefPtr seclabel;
-    size_t i;
-    size_t j;
-
-    for (i = 0; i < nseclabels; i++) {
-        seclabel = seclabels[i];
-
-        /* find the security label that it's being overridden */
-        for (j = 0; j < nvmSeclabels; j++) {
-            if (STRNEQ_NULLABLE(vmSeclabels[j]->model, seclabel->model))
-                continue;
-
-            if (!vmSeclabels[j]->relabel) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("label overrides require relabeling to be "
-                                 "enabled at the domain level"));
-                return -1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-
 /* Parse the XML definition for a lease
  */
 static virDomainLeaseDefPtr
@@ -9703,9 +9724,7 @@ virDomainDiskSourceDefParseAuthValidate(const virStorageSource *src)
 
 
 static int
-virDomainDiskDefParseValidate(const virDomainDiskDef *def,
-                              virSecurityLabelDefPtr *vmSeclabels,
-                              size_t nvmSeclabels)
+virDomainDiskDefParseValidate(const virDomainDiskDef *def)
 
 {
     virStorageSourcePtr next;
@@ -9796,12 +9815,6 @@ virDomainDiskDefParseValidate(const virDomainDiskDef *def,
                 return -1;
             }
         }
-
-        if (virSecurityDeviceLabelDefValidateXML(next->seclabels,
-                                                 next->nseclabels,
-                                                 vmSeclabels,
-                                                 nvmSeclabels) < 0)
-            return -1;
     }
 
     return 0;
@@ -9958,8 +9971,6 @@ static virDomainDiskDefPtr
 virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                          xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
-                         virSecurityLabelDefPtr* vmSeclabels,
-                         int nvmSeclabels,
                          unsigned int flags)
 {
     virDomainDiskDefPtr def;
@@ -10362,7 +10373,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         virDomainDiskDefParsePrivateData(ctxt, def, xmlopt) < 0)
         goto error;
 
-    if (virDomainDiskDefParseValidate(def, vmSeclabels, nvmSeclabels) < 0)
+    if (virDomainDiskDefParseValidate(def) < 0)
         goto error;
 
  cleanup:
@@ -12652,9 +12663,7 @@ static int
 virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
                               xmlNodePtr cur, unsigned int flags,
                               virDomainChrDefPtr chr_def,
-                              xmlXPathContextPtr ctxt,
-                              virSecurityLabelDefPtr* vmSeclabels,
-                              int nvmSeclabels)
+                              xmlXPathContextPtr ctxt)
 {
     bool logParsed = false;
     bool protocolParsed = false;
@@ -12737,11 +12746,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
                 if (virSecurityDeviceLabelDefParseXML(&def->seclabels,
                                                       &def->nseclabels,
                                                       ctxt,
-                                                      flags) < 0 ||
-                    virSecurityDeviceLabelDefValidateXML(def->seclabels,
-                                                         def->nseclabels,
-                                                         vmSeclabels,
-                                                         nvmSeclabels) < 0) {
+                                                      flags) < 0) {
                     ctxt->node = saved_node;
                     goto error;
                 }
@@ -12878,8 +12883,6 @@ static virDomainChrDefPtr
 virDomainChrDefParseXML(virDomainXMLOptionPtr xmlopt,
                         xmlXPathContextPtr ctxt,
                         xmlNodePtr node,
-                        virSecurityLabelDefPtr* vmSeclabels,
-                        int nvmSeclabels,
                         unsigned int flags)
 {
     xmlNodePtr cur;
@@ -12926,7 +12929,7 @@ virDomainChrDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
 
     if (virDomainChrSourceDefParseXML(def->source, node->children, flags, def,
-                                      ctxt, vmSeclabels, nvmSeclabels) < 0)
+                                      ctxt) < 0)
         goto error;
 
     if (def->source->type == VIR_DOMAIN_CHR_TYPE_SPICEVMC) {
@@ -13057,7 +13060,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         cur = node->children;
         if (virDomainChrSourceDefParseXML(def->data.passthru, cur, flags,
-                                          NULL, ctxt, NULL, 0) < 0)
+                                          NULL, ctxt) < 0)
             goto error;
 
         if (def->data.passthru->type == VIR_DOMAIN_CHR_TYPE_SPICEVMC) {
@@ -14692,7 +14695,7 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         if (virDomainChrSourceDefParseXML(def->source.chardev,
                                           backends[0]->children, flags,
-                                          NULL, ctxt, NULL, 0) < 0)
+                                          NULL, ctxt) < 0)
             goto error;
         break;
 
@@ -15713,7 +15716,7 @@ virDomainRedirdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     /* boot gets parsed in virDomainDeviceInfoParseXML
      * source gets parsed in virDomainChrSourceDefParseXML */
     if (virDomainChrSourceDefParseXML(def->source, cur, flags,
-                                      NULL, ctxt, NULL, 0) < 0)
+                                      NULL, ctxt) < 0)
         goto error;
 
     if (def->source->type == VIR_DOMAIN_CHR_TYPE_SPICEVMC)
@@ -16413,8 +16416,6 @@ virDomainDeviceDefParse(const char *xmlStr,
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         if (!(dev->data.disk = virDomainDiskDefParseXML(xmlopt, node, ctxt,
-                                                        def->seclabels,
-                                                        def->nseclabels,
                                                         flags)))
             return NULL;
         break;
@@ -16484,8 +16485,6 @@ virDomainDeviceDefParse(const char *xmlStr,
         if (!(dev->data.chr = virDomainChrDefParseXML(xmlopt,
                                                       ctxt,
                                                       node,
-                                                      def->seclabels,
-                                                      def->nseclabels,
                                                       flags)))
             return NULL;
         break;
@@ -16552,14 +16551,11 @@ virDomainDeviceDefParse(const char *xmlStr,
 
 virDomainDiskDefPtr
 virDomainDiskDefParse(const char *xmlStr,
-                      const virDomainDef *def,
                       virDomainXMLOptionPtr xmlopt,
                       unsigned int flags)
 {
     g_autoptr(xmlDoc) xml = NULL;
     g_autoptr(xmlXPathContext) ctxt = NULL;
-    virSecurityLabelDefPtr *seclabels = NULL;
-    size_t nseclabels = 0;
 
     if (!(xml = virXMLParseStringCtxt(xmlStr, _("(disk_definition)"), &ctxt)))
         return NULL;
@@ -16571,13 +16567,7 @@ virDomainDiskDefParse(const char *xmlStr,
         return NULL;
     }
 
-    if (def) {
-        seclabels = def->seclabels;
-        nseclabels = def->nseclabels;
-    }
-
-    return virDomainDiskDefParseXML(xmlopt, ctxt->node, ctxt,
-                                    seclabels, nseclabels, flags);
+    return virDomainDiskDefParseXML(xmlopt, ctxt->node, ctxt, flags);
 }
 
 
@@ -20767,8 +20757,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainDiskDefPtr disk = virDomainDiskDefParseXML(xmlopt,
                                                             nodes[i],
                                                             ctxt,
-                                                            def->seclabels,
-                                                            def->nseclabels,
                                                             flags);
         if (!disk)
             goto error;
@@ -20919,8 +20907,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
                                                          ctxt,
                                                          nodes[i],
-                                                         def->seclabels,
-                                                         def->nseclabels,
                                                          flags);
         if (!chr)
             goto error;
@@ -20947,8 +20933,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
                                                          ctxt,
                                                          nodes[i],
-                                                         def->seclabels,
-                                                         def->nseclabels,
                                                          flags);
         if (!chr)
             goto error;
@@ -20977,8 +20961,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
                                                          ctxt,
                                                          nodes[i],
-                                                         def->seclabels,
-                                                         def->nseclabels,
                                                          flags);
         if (!chr)
             goto error;
@@ -20997,8 +20979,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainChrDefPtr chr = virDomainChrDefParseXML(xmlopt,
                                                          ctxt,
                                                          nodes[i],
-                                                         def->seclabels,
-                                                         def->nseclabels,
                                                          flags);
         if (!chr)
             goto error;
