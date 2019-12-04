@@ -2895,7 +2895,6 @@ void virDomainShmemDefFree(virDomainShmemDefPtr def);
 void virDomainDeviceDefFree(virDomainDeviceDefPtr def);
 virDomainDeviceDefPtr virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
                                              const virDomainDef *def,
-                                             virCapsPtr caps,
                                              virDomainXMLOptionPtr xmlopt,
                                              void *parseOpaque);
 virDomainDeviceInfoPtr virDomainDeviceGetInfo(virDomainDeviceDefPtr device);
@@ -2936,14 +2935,12 @@ void virDomainObjAssignDef(virDomainObjPtr domain,
                            virDomainDefPtr def,
                            bool live,
                            virDomainDefPtr *oldDef);
-int virDomainObjSetDefTransient(virCapsPtr caps,
-                                virDomainXMLOptionPtr xmlopt,
+int virDomainObjSetDefTransient(virDomainXMLOptionPtr xmlopt,
                                 virDomainObjPtr domain,
                                 void *parseOpaque);
 void virDomainObjRemoveTransientDef(virDomainObjPtr domain);
 virDomainDefPtr
-virDomainObjGetPersistentDef(virCapsPtr caps,
-                             virDomainXMLOptionPtr xmlopt,
+virDomainObjGetPersistentDef(virDomainXMLOptionPtr xmlopt,
                              virDomainObjPtr domain,
                              void *parseOpaque);
 
@@ -2960,12 +2957,10 @@ virDomainDefPtr virDomainObjGetOneDefState(virDomainObjPtr vm,
 virDomainDefPtr virDomainObjGetOneDef(virDomainObjPtr vm, unsigned int flags);
 
 virDomainDefPtr virDomainDefCopy(virDomainDefPtr src,
-                                 virCapsPtr caps,
                                  virDomainXMLOptionPtr xmlopt,
                                  void *parseOpaque,
                                  bool migratable);
 virDomainDefPtr virDomainObjCopyPersistentDef(virDomainObjPtr dom,
-                                              virCapsPtr caps,
                                               virDomainXMLOptionPtr xmlopt,
                                               void *parseOpaque);
 
