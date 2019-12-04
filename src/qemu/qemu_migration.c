@@ -4809,15 +4809,11 @@ qemuMigrationDstPersist(virQEMUDriverPtr driver,
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virCapsPtr caps = NULL;
     virDomainDefPtr vmdef;
     virDomainDefPtr oldDef = NULL;
     unsigned int oldPersist = vm->persistent;
     virObjectEventPtr event;
     int ret = -1;
-
-    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
-        goto cleanup;
 
     vm->persistent = 1;
     oldDef = vm->newDef;
@@ -4842,7 +4838,6 @@ qemuMigrationDstPersist(virQEMUDriverPtr driver,
 
  cleanup:
     virDomainDefFree(oldDef);
-    virObjectUnref(caps);
     virObjectUnref(cfg);
     return ret;
 
