@@ -28987,7 +28987,6 @@ virDomainDefSaveXML(virDomainDefPtr def,
 int
 virDomainDefSave(virDomainDefPtr def,
                  virDomainXMLOptionPtr xmlopt,
-                 virCapsPtr caps G_GNUC_UNUSED,
                  const char *configDir)
 {
     g_autofree char *xml = NULL;
@@ -29001,7 +29000,6 @@ virDomainDefSave(virDomainDefPtr def,
 int
 virDomainObjSave(virDomainObjPtr obj,
                  virDomainXMLOptionPtr xmlopt,
-                 virCapsPtr caps G_GNUC_UNUSED,
                  const char *statusDir)
 {
     unsigned int flags = (VIR_DOMAIN_DEF_FORMAT_SECURE |
@@ -30093,7 +30091,6 @@ virDomainObjSetMetadata(virDomainObjPtr vm,
                         const char *metadata,
                         const char *key,
                         const char *uri,
-                        virCapsPtr caps,
                         virDomainXMLOptionPtr xmlopt,
                         const char *stateDir,
                         const char *configDir,
@@ -30112,7 +30109,7 @@ virDomainObjSetMetadata(virDomainObjPtr vm,
         if (virDomainDefSetMetadata(def, type, metadata, key, uri) < 0)
             return -1;
 
-        if (virDomainObjSave(vm, xmlopt, caps, stateDir) < 0)
+        if (virDomainObjSave(vm, xmlopt, stateDir) < 0)
             return -1;
     }
 
@@ -30121,7 +30118,7 @@ virDomainObjSetMetadata(virDomainObjPtr vm,
                                     uri) < 0)
             return -1;
 
-        if (virDomainDefSave(persistentDef, xmlopt, caps, configDir) < 0)
+        if (virDomainDefSave(persistentDef, xmlopt, configDir) < 0)
             return -1;
     }
 
