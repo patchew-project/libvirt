@@ -16728,9 +16728,15 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                                      VIR_DOMAIN_EVENT_STOPPED,
                                                      detail);
                     virObjectEventStateQueue(driver->domainEventState, event);
-                    /* Start after stop won't be an async start job, so
-                     * reset to none */
-                    jobType = QEMU_ASYNC_JOB_NONE;
+                    /* We have to begin a new job as the original one (begun
+                     * near the top of this function) was lost during the purge
+                     * of private data in qemuProcessStop() above.
+                     */
+                    if (qemuProcessBeginJob(driver, vm,
+                                            VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_REVERT,
+                                            flags) < 0) {
+                        goto cleanup;
+                    }
                     goto load;
                 }
             }
@@ -16865,6 +16871,11 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             event = virDomainEventLifecycleNewFromObj(vm,
                                              VIR_DOMAIN_EVENT_STOPPED,
                                              detail);
+            if (qemuProcessBeginJob(driver, vm,
+                                    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_REVERT,
+                                    flags) < 0) {
+                goto cleanup;
+            }
         }
 
         if (qemuDomainSnapshotRevertInactive(driver, vm, snap) < 0) {
