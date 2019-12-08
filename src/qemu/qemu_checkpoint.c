@@ -468,7 +468,7 @@ qemuCheckpointCreateXML(virDomainPtr domain,
     bool update_current = true;
     bool redefine = flags & VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE;
     unsigned int parse_flags = 0;
-    g_autoptr(virQEMUDriverConfig) cfg = NULL;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     g_autoptr(virCaps) caps = NULL;
     g_autoptr(virDomainCheckpointDef) def = NULL;
 
