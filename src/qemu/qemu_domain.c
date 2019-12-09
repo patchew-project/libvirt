@@ -5300,6 +5300,27 @@ qemuDomainDeviceDefValidateSound(virDomainSoundDefPtr sound,
 
 
 static int
+qemuDomainDeviceDefValidateHub(virDomainHubDefPtr hub,
+                               virQEMUCapsPtr qemuCaps)
+{
+    if (hub->type != VIR_DOMAIN_HUB_TYPE_USB) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("hub type %s not supported"),
+                       virDomainHubTypeToString(hub->type));
+        return -1;
+    }
+
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_USB_HUB)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("usb-hub not supported by QEMU binary"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDefValidate(const virDomainDef *def,
                       void *opaque)
 {
@@ -7748,8 +7769,11 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         ret = qemuDomainDeviceDefValidateSound(dev->data.sound, qemuCaps);
         break;
 
-    case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_HUB:
+        ret = qemuDomainDeviceDefValidateHub(dev->data.hub, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_PANIC:
