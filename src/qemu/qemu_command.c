@@ -6111,9 +6111,6 @@ qemuBuildClockArgStr(virDomainClockDefPtr def)
             case -1: /* unspecified - use hypervisor default */
                 break;
             case VIR_DOMAIN_TIMER_TRACK_BOOT:
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("unsupported rtc timer track '%s'"),
-                               virDomainTimerTrackTypeToString(def->timers[i]->track));
                 return NULL;
             case VIR_DOMAIN_TIMER_TRACK_GUEST:
                 virBufferAddLit(&buf, ",clock=vm");
@@ -6135,9 +6132,6 @@ qemuBuildClockArgStr(virDomainClockDefPtr def)
                 break;
             case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
             case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("unsupported rtc timer tickpolicy '%s'"),
-                               virDomainTimerTickpolicyTypeToString(def->timers[i]->tickpolicy));
                 return NULL;
             }
             break; /* no need to check other timers - there is only one rtc */
@@ -6172,9 +6166,8 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
     for (i = 0; i < def->clock.ntimers; i++) {
         switch ((virDomainTimerNameType)def->clock.timers[i]->name) {
         case VIR_DOMAIN_TIMER_NAME_PLATFORM:
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unsupported timer type (name) '%s'"),
-                           virDomainTimerNameTypeToString(def->clock.timers[i]->name));
+            /* qemuDomainDefValidateClockTimers will handle this
+             * error condition  */
             return -1;
 
         case VIR_DOMAIN_TIMER_NAME_TSC:
@@ -6185,7 +6178,7 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
             break;
 
         case VIR_DOMAIN_TIMER_NAME_RTC:
-            /* Already handled in qemuBuildClockArgStr */
+            /* Already handled in qemuDomainDefValidateClockTimers */
             break;
 
         case VIR_DOMAIN_TIMER_NAME_PIT:
@@ -6199,15 +6192,8 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
                                          "kvm-pit.lost_tick_policy=delay", NULL);
                 break;
             case VIR_DOMAIN_TIMER_TICKPOLICY_CATCHUP:
-                if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM_PIT_TICK_POLICY)) {
-                    /* do nothing - this is default for kvm-pit */
-                } else {
-                    /* can't catchup if we don't have kvm-pit */
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unsupported pit tickpolicy '%s'"),
-                                   virDomainTimerTickpolicyTypeToString(def->clock.timers[i]->tickpolicy));
-                    return -1;
-                }
+                /* Do nothing - qemuDomainDefValidateClockTimers handled
+                 * the possible error condition here. */
                 break;
             case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
                 if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM_PIT_TICK_POLICY))
@@ -6216,9 +6202,6 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
                 break;
             case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
                 /* no way to support this mode for pit in qemu */
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("unsupported pit tickpolicy '%s'"),
-                               virDomainTimerTickpolicyTypeToString(def->clock.timers[i]->tickpolicy));
                 return -1;
             }
             break;
@@ -6234,14 +6217,6 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
             if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_HPET)) {
                 if (def->clock.timers[i]->present == 0)
                     virCommandAddArg(cmd, "-no-hpet");
-            } else {
-                /* no hpet timer available. The only possible action
-                   is to raise an error if present="yes" */
-                if (def->clock.timers[i]->present == 1) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   "%s", _("hpet timer is not supported"));
-                    return -1;
-                }
             }
             break;
         }
