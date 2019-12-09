@@ -8271,24 +8271,10 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
 
     switch (smartcard->type) {
     case VIR_DOMAIN_SMARTCARD_TYPE_HOST:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCID_EMULATED)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("this QEMU binary lacks smartcard host "
-                             "mode support"));
-            return -1;
-        }
-
         virBufferAddLit(&opt, "ccid-card-emulated,backend=nss-emulated");
         break;
 
     case VIR_DOMAIN_SMARTCARD_TYPE_HOST_CERTIFICATES:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCID_EMULATED)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("this QEMU binary lacks smartcard host "
-                             "mode support"));
-            return -1;
-        }
-
         virBufferAddLit(&opt, "ccid-card-emulated,backend=certificates");
         for (i = 0; i < VIR_DOMAIN_SMARTCARD_NUM_CERTIFICATES; i++) {
             virBufferAsprintf(&opt, ",cert%zu=", i + 1);
@@ -8304,13 +8290,6 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
         break;
 
     case VIR_DOMAIN_SMARTCARD_TYPE_PASSTHROUGH:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCID_PASSTHRU)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("this QEMU binary lacks smartcard "
-                             "passthrough mode support"));
-            return -1;
-        }
-
         if (!(devstr = qemuBuildChrChardevStr(logManager, secManager,
                                               cmd, cfg, def,
                                               smartcard->data.passthru,
@@ -8326,9 +8305,6 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
         break;
 
     default:
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unexpected smartcard type %d"),
-                       smartcard->type);
         return -1;
     }
 
