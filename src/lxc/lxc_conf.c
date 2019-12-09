@@ -186,7 +186,7 @@ virCapsPtr virLXCDriverGetCapabilities(virLXCDriverPtr driver,
                                        bool refresh)
 {
     virCapsPtr ret;
-    if (refresh) {
+    if (refresh || !driver->caps) {
         virCapsPtr caps = NULL;
         if ((caps = virLXCDriverCapsInit(driver)) == NULL)
             return NULL;
