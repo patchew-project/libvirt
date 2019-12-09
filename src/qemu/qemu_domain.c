@@ -5021,6 +5021,7 @@ qemuDomainDefValidateMemory(const virDomainDef *def,
 {
     const long system_page_size = virGetSystemPageSizeKB();
     const virDomainMemtune *mem = &def->mem;
+    size_t i;
 
     if (mem->nhugepages == 0)
         return 0;
@@ -5064,6 +5065,15 @@ qemuDomainDefValidateMemory(const virDomainDef *def,
                         _("disable shared memory is not available "
                           "with this QEMU binary"));
         return -1;
+    }
+
+    for (i = 0; i < def->nmems; i++) {
+        if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_NVDIMM)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("nvdimm isn't supported by this QEMU binary"));
+            return -1;
+        }
     }
 
     return 0;
