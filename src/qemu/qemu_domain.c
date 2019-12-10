@@ -4703,16 +4703,17 @@ static int
 qemuDomainDefPostParse(virDomainDefPtr def,
                        unsigned int parseFlags,
                        void *opaque,
-                       void *parseOpaque G_GNUC_UNUSED)
+                       void *parseOpaque)
 {
     virQEMUDriverPtr driver = opaque;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
-    g_autoptr(virQEMUCaps) qemuCaps = NULL;
+    /* Note that qemuCaps may be NULL when this function is called. This
+     * function shall not fail in that case. It will be re-run on VM startup
+     * with the capabilities populated. */
+    virQEMUCapsPtr qemuCaps = parseOpaque;
 
-    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
-                                            def->emulator))) {
+    if (!qemuCaps)
         return 1;
-    }
 
     if (def->os.type != VIR_DOMAIN_OSTYPE_HVM) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -4721,30 +4722,37 @@ qemuDomainDefPostParse(virDomainDefPtr def,
         return -1;
     }
 
-    if (!virQEMUCapsIsArchSupported(qemuCaps, def->os.arch)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Emulator '%s' does not support arch '%s'"),
-                       def->emulator, virArchToString(def->os.arch));
-        return -1;
-    }
+    if (def->id == -1) {
+        if (!virQEMUCapsIsArchSupported(qemuCaps, def->os.arch)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Emulator '%s' does not support arch '%s'"),
+                           def->emulator, virArchToString(def->os.arch));
+            return -1;
+        }
 
-    if (!virQEMUCapsIsVirtTypeSupported(qemuCaps, def->virtType)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Emulator '%s' does not support virt type '%s'"),
-                       def->emulator, virDomainVirtTypeToString(def->virtType));
-        return -1;
+        if (!virQEMUCapsIsVirtTypeSupported(qemuCaps, def->virtType)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Emulator '%s' does not support virt type '%s'"),
+                           def->emulator, virDomainVirtTypeToString(def->virtType));
+            return -1;
+        }
+        if (!def->os.machine) {
+            const char *machine = virQEMUCapsGetPreferredMachine(qemuCaps,
+                                                                 def->virtType);
+            def->os.machine = g_strdup(machine);
+        }
+    } else {
+        if (!def->os.machine) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("missing machine type"));
+            return -1;
+        }
     }
 
     if (def->os.bootloader || def->os.bootloaderArgs) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("bootloader is not supported by QEMU"));
         return -1;
-    }
-
-    if (!def->os.machine) {
-        const char *machine = virQEMUCapsGetPreferredMachine(qemuCaps,
-                                                             def->virtType);
-        def->os.machine = g_strdup(machine);
     }
 
     qemuDomainNVRAMPathGenerate(cfg, def);
