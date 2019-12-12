@@ -1,0 +1,14 @@
+libvirt-1-format:
+        d: recod:0 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+  current: recod:1 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+libvirt-2-format:
+        c: recod:0 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+        d: recod:1 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+libvirt-3-format:
+        a: recod:0 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+        b: recod:0 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+        c: recod:1 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+libvirt-4-format:
+        a: recod:1 busy:0 persist:1 inconist:0 gran:65536 dirty:0
+libvirt-5-format:
+        a: recod:1 busy:0 persist:1 inconist:0 gran:65536 dirty:0
