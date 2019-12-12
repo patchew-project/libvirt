@@ -18,22 +18,20 @@
 
 
 #include "testutils.h"
+#include "testutilsqemu.h"
+#include "testutilsqemuschema.h"
+#include "virstoragefile.h"
+#include "virstring.h"
+#include "virlog.h"
+#include "qemu/qemu_block.h"
+#include "qemu/qemu_qapi.h"
 
-#if WITH_YAJL
-# include "testutilsqemu.h"
-# include "testutilsqemuschema.h"
-# include "virstoragefile.h"
-# include "virstring.h"
-# include "virlog.h"
-# include "qemu/qemu_block.h"
-# include "qemu/qemu_qapi.h"
+#include "qemu/qemu_command.h"
 
-# include "qemu/qemu_command.h"
+#define LIBVIRT_SNAPSHOT_CONF_PRIV_H_ALLOW
+#include "conf/snapshot_conf_priv.h"
 
-# define LIBVIRT_SNAPSHOT_CONF_PRIV_H_ALLOW
-# include "conf/snapshot_conf_priv.h"
-
-# define VIR_FROM_THIS VIR_FROM_NONE
+#define VIR_FROM_THIS VIR_FROM_NONE
 
 VIR_LOG_INIT("tests.storagetest");
 
@@ -523,7 +521,7 @@ mymain(void)
 
     virTestCounterReset("qemu storage source xml->json->xml ");
 
-# define TEST_JSON_FORMAT(tpe, xmlstr) \
+#define TEST_JSON_FORMAT(tpe, xmlstr) \
     do { \
         xmljsonxmldata.type = tpe; \
         xmljsonxmldata.xml = xmlstr; \
@@ -532,7 +530,7 @@ mymain(void)
             ret = -1; \
     } while (0)
 
-# define TEST_JSON_FORMAT_NET(xmlstr) \
+#define TEST_JSON_FORMAT_NET(xmlstr) \
     TEST_JSON_FORMAT(VIR_STORAGE_TYPE_NETWORK, xmlstr)
 
     TEST_JSON_FORMAT(VIR_STORAGE_TYPE_FILE, "<source file='/path/to/file'/>\n");
@@ -588,7 +586,7 @@ mymain(void)
                          "  <host name='example.com' port='9999'/>\n"
                          "</source>\n");
 
-# define TEST_DISK_TO_JSON_FULL(nme, fl) \
+#define TEST_DISK_TO_JSON_FULL(nme, fl) \
     do { \
         diskxmljsondata.name = nme; \
         diskxmljsondata.props = NULL; \
@@ -611,7 +609,7 @@ mymain(void)
         testQemuDiskXMLToPropsClear(&diskxmljsondata); \
     } while (0)
 
-# define TEST_DISK_TO_JSON(nme) TEST_DISK_TO_JSON_FULL(nme, false)
+#define TEST_DISK_TO_JSON(nme) TEST_DISK_TO_JSON_FULL(nme, false)
 
     if (!(diskxmljsondata.schema = testQEMUSchemaLoad())) {
         ret = -1;
@@ -667,7 +665,7 @@ mymain(void)
     TEST_DISK_TO_JSON("block-raw-noopts");
     TEST_DISK_TO_JSON("block-raw-reservations");
 
-# define TEST_IMAGE_CREATE(testname, testbacking) \
+#define TEST_IMAGE_CREATE(testname, testbacking) \
     do { \
         imagecreatedata.name = testname; \
         imagecreatedata.backingname = testbacking; \
@@ -710,13 +708,5 @@ mymain(void)
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-#else
-static int
-mymain(void)
-{
-    return EXIT_AM_SKIP;
-}
-#endif
 
 VIR_TEST_MAIN(mymain)
