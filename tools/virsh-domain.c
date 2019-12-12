@@ -9522,6 +9522,10 @@ static const vshCmdOptDef opts_qemu_monitor_command[] = {
      .type = VSH_OT_BOOL,
      .help = N_("pretty-print any qemu monitor protocol output")
     },
+    {.name = "qmp",
+     .type = VSH_OT_BOOL,
+     .help = N_("wrap the 'cmd' argument in JSON wrapper for QMP")
+    },
     {.name = "cmd",
      .type = VSH_OT_ARGV,
      .flags = VSH_OFLAG_REQ,
@@ -9539,16 +9543,38 @@ cmdQemuMonitorCommand(vshControl *ctl, const vshCmd *cmd)
     unsigned int flags = 0;
     const vshCmdOpt *opt = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    bool qmp = vshCommandOptBool(cmd, "qmp");
 
     VSH_EXCLUSIVE_OPTIONS("hmp", "pretty");
+    VSH_EXCLUSIVE_OPTIONS("hmp", "qmp");
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    while ((opt = vshCommandOptArgv(ctl, cmd, opt)))
-        virBufferAsprintf(&buf, "%s ", opt->data);
+    if (qmp) {
+        const char *command = NULL;
+        const char *arguments = NULL;
 
-    virBufferTrim(&buf, " ", -1);
+        if ((opt = vshCommandOptArgv(ctl, cmd, opt)))
+            command = opt->data;
+        if ((opt = vshCommandOptArgv(ctl, cmd, opt)))
+            arguments = opt->data;
+
+        if (!command || (arguments && vshCommandOptArgv(ctl, cmd, opt))) {
+            vshError(ctl, "%s", _("-qmp option requires 1 or 2 arguments"));
+            return false;
+        }
+
+        virBufferAsprintf(&buf, "{\"execute\":\"%s\"", command);
+        if (arguments)
+            virBufferAsprintf(&buf, ", \"arguments\":%s", arguments);
+        virBufferAddLit(&buf, "}");
+    } else {
+        while ((opt = vshCommandOptArgv(ctl, cmd, opt)))
+            virBufferAsprintf(&buf, "%s ", opt->data);
+
+        virBufferTrim(&buf, " ", -1);
+    }
 
     monitor_cmd = virBufferContentAndReset(&buf);
 
