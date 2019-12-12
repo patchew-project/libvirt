@@ -1,0 +1,55 @@
+FROM centos:centos8
+
+RUN dnf update -y && \
+    dnf install 'dnf-command(config-manager)' -y && \
+    dnf config-manager --set-enabled PowerTools -y && \
+    dnf install -y epel-release && \
+    dnf install -y \
+        autoconf \
+        automake \
+        bash \
+        bash-completion \
+        ca-certificates \
+        check-devel \
+        chrony \
+        gcc \
+        gdb \
+        gettext \
+        gettext-devel \
+        git \
+        glib2-devel \
+        glibc-devel \
+        gobject-introspection-devel \
+        gtk-doc \
+        hwdata \
+        intltool \
+        json-glib-devel \
+        libarchive-devel \
+        libsoup-devel \
+        libtool \
+        libxml2 \
+        libxml2-devel \
+        libxslt-devel \
+        lsof \
+        make \
+        meson \
+        net-tools \
+        ninja-build \
+        patch \
+        perl \
+        pkgconfig \
+        python3 \
+        python3-lxml \
+        python3-pytest \
+        python3-requests \
+        python3-setuptools \
+        rpm-build \
+        screen \
+        strace \
+        sudo \
+        vala \
+        vim && \
+    dnf autoremove -y && \
+    dnf clean all -y
+
+ENV LANG "en_US.UTF-8"
