@@ -57,6 +57,12 @@ int virHostValidateQEMU(void)
         if (virBitmapIsBitSet(flags, VIR_HOST_VALIDATE_CPU_FLAG_SIE))
             hasHwVirt = true;
         break;
+    case VIR_ARCH_PPC64:
+    case VIR_ARCH_PPC64LE:
+        hasVirtFlag = true;
+        if (virHostValidatePowerPCModules() == 0)
+            hasHwVirt = true;
+        break;
     default:
         hasHwVirt = false;
     }

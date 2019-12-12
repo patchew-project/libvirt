@@ -83,3 +83,5 @@ int virHostValidateCGroupControllers(const char *hvname,
 
 int virHostValidateIOMMU(const char *hvname,
                          virHostValidateLevel level);
+
+int virHostValidatePowerPCModules(void);

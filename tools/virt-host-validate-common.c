@@ -411,3 +411,139 @@ int virHostValidateIOMMU(const char *hvname,
     virHostMsgPass();
     return 0;
 }
+
+
+static bool virHostCPUIsPower8(void)
+{
+   FILE *fp;
+   bool ret = false;
+
+    if (!(fp = fopen("/proc/cpuinfo", "r")))
+        return false;
+
+    do {
+        char line[1024];
+
+        if (!fgets(line, sizeof(line), fp))
+            break;
+
+        /* Looks for the 'model name' line. This is more common for
+         * Intel /proc/cpuinfo formats, but let's account for it
+         * too. */
+        if (STRPREFIX(line, "model name")) {
+            if (strstr(line, "POWER8"))
+                ret = true;
+            break;
+        }
+
+        /* Looks for the 'cpu:' line which is more commonly present
+         * in /proc/cpuinfo Power systems. To ensure this is not
+         * 'cpu id' or any other cpu attribute, peek at the next char
+         * after the first whitespace. A tab, whitespace or ':'
+         * indicates we're on the right line */
+        if (STRPREFIX(line, "cpu") &&
+            (line[3] == '\t' || line[3] == ':' || line[3] == ' ')) {
+             if (strstr(line, "POWER8"))
+                ret = true;
+            break;
+        }
+
+    } while (1);
+
+    VIR_FORCE_FCLOSE(fp);
+
+    return ret;
+}
+
+
+static bool virHostKernelModuleExists(const char *module)
+{
+    g_autofree char *cmd = g_strdup_printf("modinfo %s", module);
+    g_autofree char *stdout = NULL;
+    g_autofree char *stderr = NULL;
+    g_autoptr(GError) err = NULL;
+    int errStatus;
+
+    if (g_spawn_command_line_sync(cmd, &stdout, &stderr, &errStatus, &err))
+        return true;
+
+    return false;
+}
+
+
+static bool virHostKernelModuleIsLoaded(const char *module)
+{
+    FILE *fp;
+    bool ret = false;
+
+    if (!(fp = fopen("/proc/modules", "r")))
+        return false;
+
+    do {
+        char line[1024];
+
+        if (!fgets(line, sizeof(line), fp))
+            break;
+
+        if (STRPREFIX(line, module)) {
+            ret = true;
+            break;
+        }
+
+    } while (1);
+
+    VIR_FORCE_FCLOSE(fp);
+
+    return ret;
+}
+
+
+int virHostValidatePowerPCModules(void)
+{
+    bool kvm_pr_exists = virHostKernelModuleExists("kvm_pr");
+    bool kvm_pr_loaded = kvm_pr_exists && virHostKernelModuleIsLoaded("kvm_pr");
+    bool kvm_hv_exists = virHostKernelModuleExists("kvm_hv");
+    bool kvm_hv_loaded = kvm_hv_exists && virHostKernelModuleIsLoaded("kvm_hv");
+    bool hostIsP8 = virHostCPUIsPower8();
+
+    virHostMsgCheck("QEMU", "%s", _("for PowerPC KVM modules loaded"));
+
+    /* No Power KVM virtualization modules present on the host. */
+    if (!kvm_hv_exists && !kvm_pr_exists) {
+        virHostMsgFail(VIR_HOST_VALIDATE_FAIL,
+                           _("No kvm_hv or kvm_pr module present in "
+                             "the host"));
+        return -1;
+    }
+
+    /* Bail out for all non-Power8 CPUs if kvm_hv is not present. */
+    if (!kvm_hv_exists && !hostIsP8) {
+        virHostMsgFail(VIR_HOST_VALIDATE_FAIL,
+                       _("No kvm_hv module present in the host"));
+        return -1;
+    }
+
+    /* Power8 CPUs virtualization works with any of kvm_hv and kvm_pr.
+     * Issue a warning if none are loaded. */
+    if (hostIsP8) {
+        if (!kvm_hv_loaded && !kvm_pr_loaded) {
+            virHostMsgFail(VIR_HOST_VALIDATE_WARN,
+                           _("Load kvm_hv or kvm_pr module "
+                             "for better performance"));
+            return 0;
+        }
+
+        virHostMsgPass();
+        return 0;
+    }
+
+    /* For non-Power8 hosts, show a warning if kvm_hv is not loaded. */
+    if (!kvm_hv_loaded) {
+        virHostMsgFail(VIR_HOST_VALIDATE_WARN,
+                      _("Load kvm_hv for better performance"));
+        return 0;
+    }
+
+    virHostMsgPass();
+    return 0;
+}
