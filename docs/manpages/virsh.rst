@@ -7434,7 +7434,7 @@ qemu-monitor-command
 
 .. code-block::
 
-   qemu-monitor-command domain { [--hmp] | [--qmp] [--pretty] } command...
+   qemu-monitor-command domain { [--hmp] | [--qmp] [--pretty] [--return-value] } command...
 
 Send an arbitrary monitor command *command* to domain *domain* through the
 qemu monitor.  The results of the command will be printed on stdout.
@@ -7450,6 +7450,9 @@ of the QMP command verbatim.
 
 If *--pretty* is given, and the monitor uses QMP, then the output will be
 pretty-printed.
+
+If *--return-value* is given the 'return' key of the QMP response object is
+extracted rather than passing through the full reply from qemu.
 
 If *--hmp* is passed, the command is considered to be a human monitor command
 and libvirt will automatically convert it into QMP if needed.  In that case
