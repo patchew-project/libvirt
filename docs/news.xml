@@ -54,6 +54,25 @@
           written in the RST as an alternative to HTML.
         </description>
       </change>
+      <change>
+        <summary>
+          new PCI hostdev address type: unassigned
+        </summary>
+        <description>
+          A new PCI hostdev address type 'unassigned' is introduced,
+          giving users the option to choose which PCI hostdevs
+          within the same IOMMU group will not be assigned to the
+          guest. After this change, all PCI hostdevs of the same IOMMU
+          must be declared in the domain XML. Hostdevs that shouldn't
+          be used by the guest can be classified as
+          <code>address type='unassigned'</code>. Forcing all IOMMU
+          hostdevs to be declared makes the user aware of what will
+          be detached from the host, and this new address type gives
+          the user an extra layer of access control of hardware
+          resources, denying guest access to PCI hostdevs that
+          it shouldn't have access to.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
