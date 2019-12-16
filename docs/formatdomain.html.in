@@ -4152,6 +4152,20 @@
         attributes: <code>iobase</code> and <code>irq</code>.
         <span class="since">Since 1.2.1</span>
       </dd>
+      <dt><code>unassigned</code></dt>
+      <dd>For PCI hostdevs, <code>&lt;address type='unassigned'/&gt;</code>
+        has a special meaning. A PCI hostdev must be assigned to the domain
+        with all the devices of its IOMMU group. If the admin so chooses,
+        it is possible to filter which devices the guest OS will actually
+        see, while the Libvirt domain is retaining ownership of all the
+        devices of the IOMMU group. Using this address type in such cases
+        will tell Libvirt that the device must not be assigned to the guest.
+        This avoids scenarios in which the admin might be compelled to use
+        a ACS patch to remove the device from the guest.
+        <code>&lt;address type='unassigned'/&gt;</code> is an invalid address
+        type for all other device types.
+        <span class="since">Since 6.0.0</span>
+      </dd>
     </dl>
 
     <h4><a id="elementsVirtio">Virtio-related options</a></h4>
