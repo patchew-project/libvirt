@@ -5470,6 +5470,11 @@
           </attribute>
           <ref name="dimmaddress"/>
         </group>
+        <group>
+          <attribute name="type">
+            <value>unassigned</value>
+          </attribute>
+        </group>
       </choice>
     </element>
   </define>
