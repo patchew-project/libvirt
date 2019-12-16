@@ -5419,6 +5419,10 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                 }
             }
 
+           /* Ignore unassigned devices  */
+           if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+               continue;
+
             unsigned int bootIndex = hostdev->info->bootIndex;
 
             /* bootNet will be non-0 if boot order was set and no other
