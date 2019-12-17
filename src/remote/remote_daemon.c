@@ -57,6 +57,7 @@
 #include "virgettext.h"
 #include "util/virnetdevopenvswitch.h"
 #include "virsystemd.h"
+#include "virhostuptime.h"
 
 #include "driver.h"
 
@@ -1020,6 +1021,7 @@ int main(int argc, char **argv) {
     bool implicit_conf = false;
     char *run_dir = NULL;
     mode_t old_umask;
+    unsigned long long bootTime;
 
     struct option opts[] = {
         { "verbose", no_argument, &verbose, 'v'},
@@ -1149,6 +1151,12 @@ int main(int argc, char **argv) {
     if (daemonSetupLogging(config, privileged, verbose, godaemon) < 0) {
         VIR_ERROR(_("Can't initialize logging"));
         exit(EXIT_FAILURE);
+    }
+
+    if (virHostGetBootTime(&bootTime) < 0) {
+        VIR_DEBUG("Unable to get host boot time");
+    } else {
+        VIR_DEBUG("host boot time: %lld", bootTime);
     }
 
     daemonSetupNetDevOpenvswitch(config);
