@@ -54,6 +54,20 @@
           written in the RST as an alternative to HTML.
         </description>
       </change>
+      <change>
+        <summary>
+          new PCI hostdev address type: unassigned
+        </summary>
+        <description>
+          A new PCI hostdev address type 'unassigned' is introduced,
+          giving users the option to choose which PCI hostdevs
+          within the same IOMMU group will not be assigned to the
+          guest. PCI hostdevs that shouldn't be used by the guest
+          can be classified as <code>address type='unassigned'</code>.
+          Libvirt will still be able to manage the device as a
+          regular PCI hostdev.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
