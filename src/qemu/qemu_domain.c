@@ -8242,6 +8242,7 @@ qemuDomainDeviceDefValidateAddress(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DIMM:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED:
         /* No validation for these address types yet */
         break;
 
