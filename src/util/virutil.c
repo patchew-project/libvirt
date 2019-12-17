@@ -603,6 +603,17 @@ char *virGetUserConfigDirectory(void)
 }
 
 
+char *virGetUserCacheDirectory(void)
+{
+    const char *cachedir = g_get_user_cache_dir();
+
+    if (!cachedir)
+        return NULL;
+
+    return g_strdup_printf("%s/libvirt", cachedir);
+}
+
+
 #ifdef HAVE_GETPWUID_R
 /* Look up fields from the user database for the given user.  On
  * error, set errno, report the error if not instructed otherwise via @quiet,
@@ -752,29 +763,6 @@ char *virGetUserShell(uid_t uid)
     return ret;
 }
 
-
-static char *virGetXDGDirectory(const char *xdgenvname, const char *xdgdefdir)
-{
-    const char *path = getenv(xdgenvname);
-    char *ret = NULL;
-    char *home = NULL;
-
-    if (path && path[0]) {
-        ret = g_strdup_printf("%s/libvirt", path);
-    } else {
-        home = virGetUserDirectory();
-        if (home)
-            ret = g_strdup_printf("%s/%s/libvirt", home, xdgdefdir);
-    }
-
-    VIR_FREE(home);
-    return ret;
-}
-
-char *virGetUserCacheDirectory(void)
-{
-    return virGetXDGDirectory("XDG_CACHE_HOME", ".cache");
-}
 
 char *virGetUserRuntimeDirectory(void)
 {
@@ -1200,21 +1188,6 @@ virGetUserShell(uid_t uid G_GNUC_UNUSED)
 }
 
 char *
-virGetUserCacheDirectory(void)
-{
-    char *ret;
-    if (virGetWin32SpecialFolder(CSIDL_INTERNET_CACHE, &ret) < 0)
-        return NULL;
-
-    if (!ret) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to determine config directory"));
-        return NULL;
-    }
-    return ret;
-}
-
-char *
 virGetUserRuntimeDirectory(void)
 {
     return virGetUserCacheDirectory();
@@ -1235,15 +1208,6 @@ virGetUserShell(uid_t uid G_GNUC_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    "%s", _("virGetUserShell is not available"));
-
-    return NULL;
-}
-
-char *
-virGetUserCacheDirectory(void)
-{
-    virReportError(VIR_ERR_INTERNAL_ERROR,
-                   "%s", _("virGetUserCacheDirectory is not available"));
 
     return NULL;
 }
