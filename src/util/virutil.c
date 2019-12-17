@@ -582,7 +582,13 @@ virGetHostnameQuiet(void)
 char *
 virGetUserDirectory(void)
 {
-    return virGetUserDirectoryByUID(geteuid());
+    const char *homedir;
+
+    homedir = g_get_home_dir();
+    if (!homedir)
+        return NULL;
+
+    return g_strdup_printf("%s/libvirt", homedir);
 }
 
 
