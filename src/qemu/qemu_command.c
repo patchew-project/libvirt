@@ -5309,23 +5309,31 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
     for (i = 0; i < def->nhostdevs; i++) {
         virDomainHostdevDefPtr hostdev = def->hostdevs[i];
         virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
+        virDomainHostdevSubsysSCSIPtr scsisrc;
+        virDomainHostdevSubsysMediatedDevPtr mdevsrc;
         g_autofree char *devstr = NULL;
+        g_autofree char *drvstr = NULL;
+        g_autofree char *vhostfdName = NULL;
+        unsigned int bootIndex;
+        int vhostfd = -1;
 
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
+            continue;
+
+        switch (subsys->type) {
         /* USB */
-        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
-            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB) {
-
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
             virCommandAddArg(cmd, "-device");
             if (!(devstr =
                   qemuBuildUSBHostdevDevStr(def, hostdev, qemuCaps)))
                 return -1;
             virCommandAddArg(cmd, devstr);
-        }
+
+            break;
 
         /* PCI */
-        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
-            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
-            unsigned int bootIndex = hostdev->info->bootIndex;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
+            bootIndex = hostdev->info->bootIndex;
 
             /* bootNet will be non-0 if boot order was set and no other
              * net devices were encountered
@@ -5343,13 +5351,12 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
             if (!devstr)
                 return -1;
             virCommandAddArg(cmd, devstr);
-        }
+
+            break;
 
         /* SCSI */
-        if (virHostdevIsSCSIDevice(hostdev)) {
-            virDomainHostdevSubsysSCSIPtr scsisrc =
-                &hostdev->source.subsys.u.scsi;
-            g_autofree char *drvstr = NULL;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
+            scsisrc = &hostdev->source.subsys.u.scsi;
 
             if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
                 virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc =
@@ -5372,15 +5379,13 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
             if (!(devstr = qemuBuildSCSIHostdevDevStr(def, hostdev)))
                 return -1;
             virCommandAddArg(cmd, devstr);
-        }
+
+            break;
 
         /* SCSI_host */
-        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
-            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST) {
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
             if (hostdev->source.subsys.u.scsi_host.protocol ==
                 VIR_DOMAIN_HOSTDEV_SUBSYS_SCSI_HOST_PROTOCOL_TYPE_VHOST) {
-                g_autofree char *vhostfdName = NULL;
-                int vhostfd = -1;
 
                 if (virSCSIVHostOpenVhostSCSI(&vhostfd) < 0)
                     return -1;
@@ -5399,11 +5404,12 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
 
                 virCommandAddArg(cmd, devstr);
             }
-        }
+
+            break;
 
         /* MDEV */
-        if (virHostdevIsMdevDevice(hostdev)) {
-            virDomainHostdevSubsysMediatedDevPtr mdevsrc = &subsys->u.mdev;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+            mdevsrc = &subsys->u.mdev;
 
             switch ((virMediatedDeviceModelType) mdevsrc->model) {
             case VIR_MDEV_MODEL_TYPE_VFIO_PCI:
@@ -5422,6 +5428,12 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                   qemuBuildHostdevMediatedDevStr(def, hostdev, qemuCaps)))
                 return -1;
             virCommandAddArg(cmd, devstr);
+
+            break;
+
+        default:
+            virReportEnumRangeError(virDomainHostdevSubsysType, subsys->type);
+            return -1;
         }
     }
 
