@@ -81,17 +81,13 @@ daemonConfigFilePath(bool privileged, char **configfile)
     } else {
         char *configdir = NULL;
 
-        if (!(configdir = virGetUserConfigDirectory()))
-            goto error;
+        configdir = virGetUserConfigDirectory();
 
         *configfile = g_strdup_printf("%s/%s.conf", configdir, DAEMON_NAME);
         VIR_FREE(configdir);
     }
 
     return 0;
-
- error:
-    return -1;
 }
 
 struct daemonConfig*
