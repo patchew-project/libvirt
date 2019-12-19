@@ -99,7 +99,7 @@ virAdmInitialize(void)
 static char *
 getSocketPath(virURIPtr uri)
 {
-    char *rundir = virGetUserRuntimeDirectory();
+    g_autofree char *rundir = virGetUserRuntimeDirectory();
     char *sock_path = NULL;
     size_t i = 0;
 
@@ -160,7 +160,6 @@ getSocketPath(virURIPtr uri)
     }
 
  cleanup:
-    VIR_FREE(rundir);
     return sock_path;
 
  error:
