@@ -239,6 +239,7 @@ virCPUDefCopyWithoutModel(const virCPUDef *cpu)
     copy->check = cpu->check;
     copy->fallback = cpu->fallback;
     copy->sockets = cpu->sockets;
+    copy->dies = cpu->dies;
     copy->cores = cpu->cores;
     copy->threads = cpu->threads;
     copy->arch = cpu->arch;
@@ -535,6 +536,12 @@ virCPUDefParseXML(xmlXPathContextPtr ctxt,
         }
         def->sockets = (unsigned int) ul;
 
+        if (virXPathULong("string(./topology[1]/@dies)", ctxt, &ul) < 0) {
+            def->dies = 1;
+        } else {
+            def->dies = (unsigned int) ul;
+        }
+
         if (virXPathULong("string(./topology[1]/@cores)", ctxt, &ul) < 0) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Missing 'cores' attribute in CPU topology"));
@@ -549,7 +556,7 @@ virCPUDefParseXML(xmlXPathContextPtr ctxt,
         }
         def->threads = (unsigned int) ul;
 
-        if (!def->sockets || !def->cores || !def->threads) {
+        if (!def->sockets || !def->cores || !def->threads || !def->dies) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Invalid CPU topology"));
             goto cleanup;
@@ -817,9 +824,10 @@ virCPUDefFormatBuf(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 
-    if (def->sockets && def->cores && def->threads) {
+    if (def->sockets && def->dies && def->cores && def->threads) {
         virBufferAddLit(buf, "<topology");
         virBufferAsprintf(buf, " sockets='%u'", def->sockets);
+        virBufferAsprintf(buf, " dies='%u'", def->dies);
         virBufferAsprintf(buf, " cores='%u'", def->cores);
         virBufferAsprintf(buf, " threads='%u'", def->threads);
         virBufferAddLit(buf, "/>\n");
@@ -1056,6 +1064,12 @@ virCPUDefIsEqual(virCPUDefPtr src,
         MISMATCH(_("Target CPU sockets %d does not match source %d"),
                  dst->sockets, src->sockets);
         return false;
+    }
+
+    if (src->dies != dst->dies) {
+        MISMATCH(_("Target CPU dies %d does not match source %d"),
+                 dst->dies, src->dies);
+        goto cleanup;
     }
 
     if (src->cores != dst->cores) {
