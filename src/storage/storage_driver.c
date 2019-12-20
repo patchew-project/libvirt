@@ -1713,6 +1713,12 @@ storagePoolLookupByTargetPathCallback(virStoragePoolObjPtr obj,
         return false;
 
     def = virStoragePoolObjGetDef(obj);
+
+    /* Some Storage pool types have no Target elements,
+     * so we should check it. */
+    if (def->target.path == NULL)
+        return false;
+
     return STREQ(path, def->target.path);
 }
 
