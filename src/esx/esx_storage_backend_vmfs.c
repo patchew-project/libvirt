@@ -1461,6 +1461,101 @@ esxStorageVolGetPath(virStorageVolPtr volume)
 
 
 
+#define MATCH(FLAG) (flags & (FLAG))
+static int
+esxConnectListAllStoragePools(virConnectPtr conn,
+                              virStoragePoolPtr **pools,
+                              unsigned int flags)
+{
+    int ret = -1;
+    esxPrivate *priv = conn->privateData;
+    esxVI_String *propertyNameList = NULL;
+    esxVI_DynamicProperty *dynamicProperty = NULL;
+    esxVI_ObjectContent *datastoreList = NULL;
+    esxVI_ObjectContent *datastore = NULL;
+    size_t count = 0;
+    size_t i;
+    virStoragePoolPtr pool;
+    const bool checkPoolType = MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_POOL_TYPE);
+
+    if (esxVI_String_AppendValueToList(&propertyNameList,
+                                       "summary.name") < 0) {
+        goto cleanup;
+    }
+
+    if (checkPoolType &&
+        esxVI_String_AppendValueToList(&propertyNameList,
+                                       "info") < 0) {
+        goto cleanup;
+    }
+
+    if (esxVI_LookupDatastoreList(priv->primary, propertyNameList,
+                                  &datastoreList) < 0) {
+        goto cleanup;
+    }
+
+    for (datastore = datastoreList; datastore;
+         datastore = datastore->_next) {
+        const char *name = NULL;
+
+        for (dynamicProperty = datastore->propSet; dynamicProperty;
+             dynamicProperty = dynamicProperty->_next) {
+            if (STREQ(dynamicProperty->name, "summary.name")) {
+                if (esxVI_AnyType_ExpectType(dynamicProperty->val,
+                                             esxVI_Type_String) < 0) {
+                    goto cleanup;
+                }
+
+                name = dynamicProperty->val->string;
+            }
+        }
+
+        if (!name)
+            goto cleanup;
+
+        if (checkPoolType) {
+            int poolType;
+
+            if (datastorePoolType(datastore, &poolType) < 0)
+                goto cleanup;
+
+            if (!((MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_DIR) &&
+                   (poolType == VIR_STORAGE_POOL_DIR))     ||
+                  (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FS) &&
+                   (poolType == VIR_STORAGE_POOL_FS))      ||
+                  (MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_NETFS) &&
+                   (poolType == VIR_STORAGE_POOL_NETFS))))
+                continue;
+        }
+
+        pool = datastoreToStoragePoolPtr(conn, name, datastore);
+        if (!pool)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(*pools, count, pool) < 0)
+            goto cleanup;
+    }
+
+    ret = count;
+
+ cleanup:
+    if (ret < 0) {
+        if (*pools) {
+            for (i = 0; i < count; ++i)
+                VIR_FREE((*pools)[i]);
+            VIR_FREE(*pools);
+        }
+    }
+
+    esxVI_String_Free(&propertyNameList);
+    esxVI_ObjectContent_Free(&datastoreList);
+
+    return ret;
+}
+#undef MATCH
+
+
+
 virStorageDriver esxStorageBackendVMFS = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 0.8.2 */
     .connectListStoragePools = esxConnectListStoragePools, /* 0.8.2 */
@@ -1481,4 +1576,5 @@ virStorageDriver esxStorageBackendVMFS = {
     .storageVolGetInfo = esxStorageVolGetInfo, /* 0.8.4 */
     .storageVolGetXMLDesc = esxStorageVolGetXMLDesc, /* 0.8.4 */
     .storageVolGetPath = esxStorageVolGetPath, /* 0.8.4 */
+    .connectListAllStoragePools = esxConnectListAllStoragePools, /* 6.0.0 */
 };
