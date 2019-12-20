@@ -240,8 +240,9 @@ struct _virQEMUDriver {
     /* Atomic inc/dec only */
     unsigned int nactive;
 
-    /* Immutable value */
+    /* Immutable values */
     bool privileged;
+    bool embedded;
 
     /* Immutable pointers. Caller must provide locking */
     virStateInhibitCallback inhibitCallback;
@@ -313,7 +314,8 @@ struct _virQEMUDriver {
     virHashAtomicPtr migrationErrors;
 };
 
-virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged);
+virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
+                                              const char *root);
 
 int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                                 const char *filename,
