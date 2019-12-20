@@ -581,6 +581,24 @@ esxConnectListAllStoragePools(virConnectPtr conn,
 
 
 
+static int
+esxStoragePoolListAllVolumes(virStoragePoolPtr pool,
+                             virStorageVolPtr **vols,
+                             unsigned int flags)
+{
+    esxPrivate *priv = pool->conn->privateData;
+    virStorageDriverPtr backend = pool->privateData;
+
+    virCheckNonNullArgReturn(pool->privateData, -1);
+
+    if (esxVI_EnsureSession(priv->primary) < 0)
+        return -1;
+
+    return backend->storagePoolListAllVolumes(pool, vols, flags);
+}
+
+
+
 virStorageDriver esxStorageDriver = {
     .connectNumOfStoragePools = esxConnectNumOfStoragePools, /* 0.8.2 */
     .connectListStoragePools = esxConnectListStoragePools, /* 0.8.2 */
@@ -609,4 +627,5 @@ virStorageDriver esxStorageDriver = {
     .storagePoolIsActive = esxStoragePoolIsActive, /* 0.8.2 */
     .storagePoolIsPersistent = esxStoragePoolIsPersistent, /* 0.8.2 */
     .connectListAllStoragePools = esxConnectListAllStoragePools, /* 6.0.0 */
+    .storagePoolListAllVolumes = esxStoragePoolListAllVolumes, /* 6.0.0 */
 };
