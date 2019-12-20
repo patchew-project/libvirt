@@ -441,6 +441,35 @@ esxStoragePoolListVolumes(virStoragePoolPtr pool, char **const names,
 
 
 static virStorageVolPtr
+scsiLunToStorageVol(virConnectPtr conn, esxVI_ScsiLun *scsiLun,
+                    const char *pool)
+{
+    /* VIR_CRYPTO_HASH_SIZE_MD5 = VIR_UUID_BUFLEN = 16 */
+    unsigned char md5[VIR_CRYPTO_HASH_SIZE_MD5];
+    char uuid_string[VIR_UUID_STRING_BUFLEN] = "";
+
+    /*
+     * ScsiLun provides a UUID field that is unique across
+     * multiple servers. But this field length is ~55 characters
+     * compute MD5 hash to transform it to an acceptable
+     * libvirt format
+     */
+    if (virCryptoHashBuf(VIR_CRYPTO_HASH_MD5, scsiLun->uuid, md5) < 0)
+        return NULL;
+    virUUIDFormat(md5, uuid_string);
+
+    /*
+     * ScsiLun provides displayName and canonicalName but both are
+     * optional and its observed that they can be NULL, using
+     * deviceName to create volume.
+     */
+    return virGetStorageVol(conn, pool, scsiLun->deviceName, uuid_string,
+                            &esxStorageBackendISCSI, NULL);
+}
+
+
+
+static virStorageVolPtr
 esxStorageVolLookupByName(virStoragePoolPtr pool,
                           const char *name)
 {
@@ -448,9 +477,6 @@ esxStorageVolLookupByName(virStoragePoolPtr pool,
     esxPrivate *priv = pool->conn->privateData;
     esxVI_ScsiLun *scsiLunList = NULL;
     esxVI_ScsiLun *scsiLun;
-    /* VIR_CRYPTO_HASH_SIZE_MD5 = VIR_UUID_BUFLEN = 16 */
-    unsigned char md5[VIR_CRYPTO_HASH_SIZE_MD5];
-    char uuid_string[VIR_UUID_STRING_BUFLEN] = "";
 
     if (esxVI_LookupScsiLunList(priv->primary, &scsiLunList) < 0)
         goto cleanup;
@@ -458,23 +484,7 @@ esxStorageVolLookupByName(virStoragePoolPtr pool,
     for (scsiLun = scsiLunList; scsiLun;
          scsiLun = scsiLun->_next) {
         if (STREQ(scsiLun->deviceName, name)) {
-            /*
-             * ScsiLun provides a UUID field that is unique across
-             * multiple servers. But this field length is ~55 characters
-             * compute MD5 hash to transform it to an acceptable
-             * libvirt format
-             */
-            if (virCryptoHashBuf(VIR_CRYPTO_HASH_MD5, scsiLun->uuid, md5) < 0)
-                goto cleanup;
-            virUUIDFormat(md5, uuid_string);
-
-            /*
-             * ScsiLun provides displayName and canonicalName but both are
-             * optional and its observed that they can be NULL, using
-             * deviceName to create volume.
-             */
-            volume = virGetStorageVol(pool->conn, pool->name, name, uuid_string,
-                                      &esxStorageBackendISCSI, NULL);
+            volume = scsiLunToStorageVol(pool->conn, scsiLun, pool->name);
             break;
         }
     }
@@ -496,9 +506,6 @@ esxStorageVolLookupByPath(virConnectPtr conn, const char *path)
     esxVI_ScsiLun *scsiLun;
     esxVI_HostScsiDisk *hostScsiDisk = NULL;
     char *poolName = NULL;
-    /* VIR_CRYPTO_HASH_SIZE_MD5 = VIR_UUID_BUFLEN = 16 */
-    unsigned char md5[VIR_CRYPTO_HASH_SIZE_MD5];
-    char uuid_string[VIR_UUID_STRING_BUFLEN] = "";
 
     if (esxVI_LookupScsiLunList(priv->primary, &scsiLunList) < 0)
         goto cleanup;
@@ -516,12 +523,7 @@ esxStorageVolLookupByPath(virConnectPtr conn, const char *path)
                 goto cleanup;
             }
 
-            if (virCryptoHashBuf(VIR_CRYPTO_HASH_MD5, scsiLun->uuid, md5) < 0)
-                goto cleanup;
-            virUUIDFormat(md5, uuid_string);
-
-            volume = virGetStorageVol(conn, poolName, path, uuid_string,
-                                      &esxStorageBackendISCSI, NULL);
+            volume = scsiLunToStorageVol(conn, scsiLun, poolName);
             break;
         }
     }
