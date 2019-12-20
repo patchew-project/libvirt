@@ -435,7 +435,7 @@ esxVI_CURL_Upload(esxVI_CURL *curl, const char *url, const char *content)
     int responseCode = 0;
 
     if (!content) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
@@ -552,13 +552,13 @@ esxVI_SharedCURL_Add(esxVI_SharedCURL *shared, esxVI_CURL *curl)
     size_t i;
 
     if (!curl->handle) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot share uninitialized CURL handle"));
         return -1;
     }
 
     if (curl->shared) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot share CURL handle that is already shared"));
         return -1;
     }
@@ -607,19 +607,19 @@ int
 esxVI_SharedCURL_Remove(esxVI_SharedCURL *shared, esxVI_CURL *curl)
 {
     if (!curl->handle) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot unshare uninitialized CURL handle"));
         return -1;
     }
 
     if (!curl->shared) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot unshare CURL handle that is not shared"));
         return -1;
     }
 
     if (curl->shared != shared) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("CURL (share) mismatch"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("CURL (share) mismatch"));
         return -1;
     }
 
@@ -727,13 +727,13 @@ int
 esxVI_MultiCURL_Add(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 {
     if (!curl->handle) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot add uninitialized CURL handle to a multi handle"));
         return -1;
     }
 
     if (curl->multi) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot add CURL handle to a multi handle twice"));
         return -1;
     }
@@ -773,21 +773,21 @@ int
 esxVI_MultiCURL_Remove(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 {
     if (!curl->handle) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot remove uninitialized CURL handle from a "
                          "multi handle"));
         return -1;
     }
 
     if (!curl->multi) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Cannot remove CURL handle from a multi handle when it "
                          "wasn't added before"));
         return -1;
     }
 
     if (curl->multi != multi) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("CURL (multi) mismatch"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("CURL (multi) mismatch"));
         return -1;
     }
 
@@ -994,7 +994,7 @@ esxVI_Context_Connect(esxVI_Context *ctx, const char *url,
 
     if (!ctx || !url || !ipAddress || !username ||
         !password || ctx->url || ctx->service || ctx->curl) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
@@ -1405,7 +1405,7 @@ esxVI_Context_Execute(esxVI_Context *ctx, const char *methodName,
     xmlNodePtr responseNode = NULL;
 
     if (!request || !response || *response) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
@@ -1548,7 +1548,7 @@ esxVI_Context_Execute(esxVI_Context *ctx, const char *methodName,
             }
         }
     } else {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
+        virReportError(VIR_ERR_HTTP_ERROR,
                        _("HTTP response code %d for call to '%s'"),
                        (*response)->responseCode, methodName);
         goto cleanup;
@@ -1599,14 +1599,14 @@ esxVI_Enumeration_CastFromAnyType(const esxVI_Enumeration *enumeration,
     size_t i;
 
     if (!anyType || !value) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
     *value = 0; /* undefined */
 
     if (anyType->type != enumeration->type) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
+        virReportError(VIR_ERR_INVALID_ARG,
                        _("Expecting type '%s' but found '%s'"),
                        esxVI_Type_ToString(enumeration->type),
                        esxVI_AnyType_TypeToString(anyType));
@@ -1635,7 +1635,7 @@ esxVI_Enumeration_Serialize(const esxVI_Enumeration *enumeration,
     const char *name = NULL;
 
     if (!element || !output) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
@@ -1674,7 +1674,7 @@ esxVI_Enumeration_Deserialize(const esxVI_Enumeration *enumeration,
     char *name = NULL;
 
     if (!value) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 

@@ -218,7 +218,7 @@ esxUtil_ParseDatastorePath(const char *datastorePath, char **datastoreName,
     if ((datastoreName && *datastoreName) ||
         (directoryName && *directoryName) ||
         (directoryAndFileName && *directoryAndFileName)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("Invalid argument"));
         return -1;
     }
 
@@ -227,7 +227,7 @@ esxUtil_ParseDatastorePath(const char *datastorePath, char **datastoreName,
     /* Expected format: '[<datastore>] <path>' where <path> is optional */
     if (!(tmp = STRSKIP(copyOfDatastorePath, "[")) || *tmp == ']' ||
         !(preliminaryDatastoreName = strtok_r(tmp, "]", &saveptr))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
+        virReportError(VIR_ERR_INVALID_ARG,
                        _("Datastore path '%s' doesn't have expected format "
                          "'[<datastore>] <path>'"), datastorePath);
         goto cleanup;
