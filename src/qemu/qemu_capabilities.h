@@ -545,6 +545,9 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(virQEMUCaps, virObjectUnref);
 
 virQEMUCapsPtr virQEMUCapsNew(void);
 
+void virQEMUCapsSetInvalidation(virQEMUCapsPtr qemuCaps,
+                                bool enabled);
+
 void virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
                     virQEMUCapsFlags flag) ATTRIBUTE_NONNULL(1);
 
