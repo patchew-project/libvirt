@@ -661,6 +661,7 @@ qemuBackupJobTerminate(virDomainObjPtr vm,
  * @vm: domain object
  * @backup: backup definition
  * @terminatebackup: flag whether to terminate and unregister the backup
+ * @asyncJob: currently used qemu asynchronous job type
  *
  * Sends all active blockjobs which are part of @backup of @vm a signal to
  * cancel. If @terminatebackup is true qemuBackupJobTerminate is also called
@@ -669,7 +670,8 @@ qemuBackupJobTerminate(virDomainObjPtr vm,
 void
 qemuBackupJobCancelBlockjobs(virDomainObjPtr vm,
                              virDomainBackupDefPtr backup,
-                             bool terminatebackup)
+                             bool terminatebackup,
+                             int asyncJob)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     size_t i;
@@ -703,7 +705,8 @@ qemuBackupJobCancelBlockjobs(virDomainObjPtr vm,
         if (backupdisk->state != VIR_DOMAIN_BACKUP_DISK_STATE_RUNNING)
             continue;
 
-        qemuDomainObjEnterMonitor(priv->driver, vm);
+        if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
+            return;
 
         rc = qemuMonitorJobCancel(priv->mon, job->name, false);
 
@@ -869,7 +872,7 @@ qemuBackupBegin(virDomainObjPtr vm,
             goto endjob;
 
         if (rc < 0) {
-            qemuBackupJobCancelBlockjobs(vm, priv->backup, false);
+            qemuBackupJobCancelBlockjobs(vm, priv->backup, false, QEMU_ASYNC_JOB_BACKUP);
             goto endjob;
         }
     }
@@ -920,7 +923,8 @@ qemuBackupNotifyBlockjobEnd(virDomainObjPtr vm,
                             virDomainDiskDefPtr disk,
                             qemuBlockjobState state,
                             unsigned long long cur,
-                            unsigned long long end)
+                            unsigned long long end,
+                            int asyncJob)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     bool has_running = false;
@@ -938,7 +942,8 @@ qemuBackupNotifyBlockjobEnd(virDomainObjPtr vm,
         return;
 
     if (backup->type == VIR_DOMAIN_BACKUP_TYPE_PULL) {
-        qemuDomainObjEnterMonitor(priv->driver, vm);
+        if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
+            return;
         ignore_value(qemuMonitorNBDServerStop(priv->mon));
         if (qemuDomainObjExitMonitor(priv->driver, vm) < 0)
             return;
@@ -1011,7 +1016,7 @@ qemuBackupNotifyBlockjobEnd(virDomainObjPtr vm,
 
     if (has_running && (has_failed || has_cancelled)) {
         /* cancel the rest of the jobs */
-        qemuBackupJobCancelBlockjobs(vm, backup, false);
+        qemuBackupJobCancelBlockjobs(vm, backup, false, asyncJob);
     } else if (!has_running && !has_cancelling) {
         /* all sub-jobs have stopped */
 
