@@ -86,6 +86,20 @@
           lzop should be used.
         </description>
       </change>
+      <change>
+        <summary>
+          esx: implement various APIs
+        </summary>
+        <description>
+          The <code>virConnectListAllStoragePools()</code>,
+          <code>virConnectListAllNetworks()</code>,
+          <code>virStoragePoolListAllVolumes()</code>,
+          <code>virDomainGetHostname</code>,
+          and <code>virDomainInterfaceAddresses</code> (only for
+          <code>VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT</code> source)
+          APIs were implemented in the esx driver.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
