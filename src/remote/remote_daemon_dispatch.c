@@ -1699,9 +1699,10 @@ remoteClientFreePrivateCallbacks(struct daemonClientPrivate *priv)
  * We keep the libvirt connection open until any async
  * jobs have finished, then clean it up elsewhere
  */
-void remoteClientFree(void *data)
+
+static void remoteClientFreeFun(void *opaque)
 {
-    struct daemonClientPrivate *priv = data;
+    struct daemonClientPrivate *priv = opaque;
 
     if (priv->conn)
         virConnectClose(priv->conn);
@@ -1719,6 +1720,15 @@ void remoteClientFree(void *data)
         virConnectClose(priv->storageConn);
 
     VIR_FREE(priv);
+}
+
+void remoteClientFree(void *data)
+{
+    virThread thread;
+
+    if (virThreadCreate(&thread, false, remoteClientFreeFun, data) < 0) {
+        VIR_ERROR("Unable to create remoteClientFreeFun thread");
+    }
 }
 
 
