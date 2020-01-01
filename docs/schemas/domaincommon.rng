@@ -5681,6 +5681,12 @@
           <ref name="qemucdevSrcType"/>
           <ref name="qemucdevSrcDef"/>
         </group>
+        <group>
+          <attribute name="model">
+            <value>builtin</value>
+          </attribute>
+          <empty/>
+        </group>
       </choice>
     </element>
   </define>
