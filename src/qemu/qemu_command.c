@@ -5579,6 +5579,7 @@ qemuBuildRNGBackendChrdevStr(virLogManagerPtr logManager,
 
     switch ((virDomainRNGBackend) rng->backend) {
     case VIR_DOMAIN_RNG_BACKEND_RANDOM:
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         /* no chardev backend is needed */
         return 0;
@@ -5635,6 +5636,20 @@ qemuBuildRNGBackendProps(virDomainRNGDefPtr rng,
 
         if (qemuMonitorCreateObjectProps(props, "rng-egd", objAlias,
                                          "s:chardev", charBackendAlias,
+                                         NULL) < 0)
+            return -1;
+
+        break;
+
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_RNG_BUILTIN)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                    _("this qemu doesn't support the rng-builtin "
+                        "backend"));
+            return -1;
+        }
+
+        if (qemuMonitorCreateObjectProps(props, "rng-builtin", objAlias,
                                          NULL) < 0)
             return -1;
 

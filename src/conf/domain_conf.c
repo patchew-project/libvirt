@@ -1112,6 +1112,7 @@ VIR_ENUM_IMPL(virDomainRNGBackend,
               VIR_DOMAIN_RNG_BACKEND_LAST,
               "random",
               "egd",
+              "builtin",
 );
 
 VIR_ENUM_IMPL(virDomainTPMModel,
@@ -14821,6 +14822,7 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
 
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
     }
@@ -17764,6 +17766,7 @@ virDomainRNGFind(virDomainDefPtr def,
                 continue;
             break;
 
+        case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
         case VIR_DOMAIN_RNG_BACKEND_LAST:
             break;
         }
@@ -26443,6 +26446,11 @@ virDomainRNGDefFormat(virBufferPtr buf,
             return -1;
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</backend>\n");
+        break;
+
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
+        virBufferAddLit(buf, "/>\n");
+        break;
 
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
@@ -26474,6 +26482,7 @@ virDomainRNGDefFree(virDomainRNGDefPtr def)
     case VIR_DOMAIN_RNG_BACKEND_EGD:
         virObjectUnref(def->source.chardev);
         break;
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
     }
