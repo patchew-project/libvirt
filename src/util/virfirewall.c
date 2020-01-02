@@ -391,7 +391,6 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
     return rule;
 
  no_memory:
-    firewall->err = ENOMEM;
     virFirewallRuleFree(rule);
     return NULL;
 }
@@ -492,10 +491,8 @@ void virFirewallRuleAddArg(virFirewallPtr firewall,
 
     ADD_ARG(rule, arg);
 
-    return;
-
  no_memory:
-    firewall->err = ENOMEM;
+    return;
 }
 
 
@@ -514,10 +511,8 @@ void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
 
     ADD_ARG(rule, arg);
 
-    return;
-
  no_memory:
-    firewall->err = ENOMEM;
+    return;
 }
 
 
@@ -532,10 +527,8 @@ void virFirewallRuleAddArgSet(virFirewallPtr firewall,
         args++;
     }
 
-    return;
-
  no_memory:
-    firewall->err = ENOMEM;
+    return;
 }
 
 
@@ -553,12 +546,7 @@ void virFirewallRuleAddArgList(virFirewallPtr firewall,
     while ((str = va_arg(list, char *)) != NULL)
         ADD_ARG(rule, str);
 
-    va_end(list);
-
-    return;
-
  no_memory:
-    firewall->err = ENOMEM;
     va_end(list);
 }
 
@@ -591,15 +579,13 @@ void virFirewallStartTransaction(virFirewallPtr firewall,
 
     VIR_FIREWALL_RETURN_IF_ERROR(firewall);
 
-    if (!(group = virFirewallGroupNew())) {
-        firewall->err = ENOMEM;
+    if (!(group = virFirewallGroupNew()))
         return;
-    }
+
     group->actionFlags = flags;
 
     if (VIR_EXPAND_N(firewall->groups,
                      firewall->ngroups, 1) < 0) {
-        firewall->err = ENOMEM;
         virFirewallGroupFree(group);
         return;
     }
@@ -747,10 +733,6 @@ virFirewallApplyRule(virFirewallPtr firewall,
         if (rule->queryCB(firewall, rule->layer, (const char *const *)lines, rule->queryOpaque) < 0)
             return -1;
 
-        if (firewall->err == ENOMEM) {
-            virReportOOMError();
-            return -1;
-        }
         if (firewall->err) {
             virReportSystemError(firewall->err, "%s",
                                  _("Unable to create rule"));
@@ -818,7 +800,7 @@ virFirewallApply(virFirewallPtr firewall)
                        _("Failed to initialize a valid firewall backend"));
         goto cleanup;
     }
-    if (!firewall || firewall->err == ENOMEM) {
+    if (!firewall) {
         virReportOOMError();
         goto cleanup;
     }
