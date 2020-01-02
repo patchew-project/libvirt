@@ -321,7 +321,7 @@ void virFirewallFree(virFirewallPtr firewall)
         if (VIR_RESIZE_N(rule->args, \
                          rule->argsAlloc, \
                          rule->argsLen, 1) < 0) \
-            goto no_memory; \
+            goto cleanup; \
  \
         rule->args[rule->argsLen++] = g_strdup(str); \
     } while (0)
@@ -348,7 +348,7 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
 
 
     if (VIR_ALLOC(rule) < 0)
-        goto no_memory;
+        goto cleanup;
 
     rule->layer = layer;
     rule->queryCB = cb;
@@ -379,18 +379,18 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
         if (VIR_APPEND_ELEMENT_COPY(group->rollback,
                                     group->nrollback,
                                     rule) < 0)
-            goto no_memory;
+            goto cleanup;
     } else {
         if (VIR_APPEND_ELEMENT_COPY(group->action,
                                     group->naction,
                                     rule) < 0)
-            goto no_memory;
+            goto cleanup;
     }
 
 
     return rule;
 
- no_memory:
+ cleanup:
     firewall->err = ENOMEM;
     virFirewallRuleFree(rule);
     return NULL;
@@ -494,7 +494,7 @@ void virFirewallRuleAddArg(virFirewallPtr firewall,
 
     return;
 
- no_memory:
+ cleanup:
     firewall->err = ENOMEM;
 }
 
@@ -516,7 +516,7 @@ void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
 
     return;
 
- no_memory:
+ cleanup:
     firewall->err = ENOMEM;
 }
 
@@ -534,7 +534,7 @@ void virFirewallRuleAddArgSet(virFirewallPtr firewall,
 
     return;
 
- no_memory:
+ cleanup:
     firewall->err = ENOMEM;
 }
 
@@ -557,7 +557,7 @@ void virFirewallRuleAddArgList(virFirewallPtr firewall,
 
     return;
 
- no_memory:
+ cleanup:
     firewall->err = ENOMEM;
     va_end(list);
 }
