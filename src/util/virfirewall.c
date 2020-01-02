@@ -328,6 +328,16 @@ void virFirewallFree(virFirewallPtr firewall)
         rule->args[rule->argsLen++] = g_strdup(str); \
     } while (0)
 
+#define ADD_ARG_RETURN_ON_ERROR(rule, str) \
+    do { \
+        if (VIR_RESIZE_N(rule->args, \
+                         rule->argsAlloc, \
+                         rule->argsLen, 1) < 0) \
+            return; \
+ \
+        rule->args[rule->argsLen++] = g_strdup(str); \
+    } while (0)
+
 static virFirewallRulePtr
 virFirewallAddRuleFullV(virFirewallPtr firewall,
                         virFirewallLayer layer,
@@ -490,10 +500,7 @@ void virFirewallRuleAddArg(virFirewallPtr firewall,
 {
     VIR_FIREWALL_RULE_RETURN_IF_ERROR(firewall, rule);
 
-    ADD_ARG(rule, arg);
-
- cleanup:
-    return;
+    ADD_ARG_RETURN_ON_ERROR(rule, arg);
 }
 
 
@@ -510,10 +517,7 @@ void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
     arg = g_strdup_vprintf(fmt, list);
     va_end(list);
 
-    ADD_ARG(rule, arg);
-
- cleanup:
-    return;
+    ADD_ARG_RETURN_ON_ERROR(rule, arg);
 }
 
 
@@ -524,12 +528,9 @@ void virFirewallRuleAddArgSet(virFirewallPtr firewall,
     VIR_FIREWALL_RULE_RETURN_IF_ERROR(firewall, rule);
 
     while (*args) {
-        ADD_ARG(rule, *args);
+        ADD_ARG_RETURN_ON_ERROR(rule, *args);
         args++;
     }
-
- cleanup:
-    return;
 }
 
 
