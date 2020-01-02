@@ -338,6 +338,16 @@ void virFirewallFree(virFirewallPtr firewall)
         rule->args[rule->argsLen++] = g_strdup(str); \
     } while (0)
 
+#define ADD_ARG_RETURN_VALUE_ON_ERROR(rule, str, value) \
+    do { \
+        if (VIR_RESIZE_N(rule->args, \
+                         rule->argsAlloc, \
+                         rule->argsLen, 1) < 0) \
+            return value; \
+ \
+        rule->args[rule->argsLen++] = g_strdup(str); \
+    } while (0)
+
 static virFirewallRulePtr
 virFirewallAddRuleFullV(virFirewallPtr firewall,
                         virFirewallLayer layer,
@@ -370,22 +380,22 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
     switch (rule->layer) {
     case VIR_FIREWALL_LAYER_ETHERNET:
         if (ebtablesUseLock)
-            ADD_ARG(rule, "--concurrent");
+            ADD_ARG_RETURN_VALUE_ON_ERROR(rule, "--concurrent", NULL);
         break;
     case VIR_FIREWALL_LAYER_IPV4:
         if (iptablesUseLock)
-            ADD_ARG(rule, "-w");
+            ADD_ARG_RETURN_VALUE_ON_ERROR(rule, "-w", NULL);
         break;
     case VIR_FIREWALL_LAYER_IPV6:
         if (ip6tablesUseLock)
-            ADD_ARG(rule, "-w");
+            ADD_ARG_RETURN_VALUE_ON_ERROR(rule, "-w", NULL);
         break;
     case VIR_FIREWALL_LAYER_LAST:
         break;
     }
 
     while ((str = va_arg(args, char *)) != NULL)
-        ADD_ARG(rule, str);
+        ADD_ARG_RETURN_VALUE_ON_ERROR(rule, str, NULL);
 
     if (group->addingRollback) {
         if (VIR_APPEND_ELEMENT_COPY(group->rollback,
@@ -401,9 +411,6 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
 
 
     return g_steal_pointer(&rule);
-
- cleanup:
-    return NULL;
 }
 
 
