@@ -278,6 +278,7 @@ virFirewallGroupFree(virFirewallGroupPtr group)
     VIR_FREE(group);
 }
 
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC(virFirewallGroupPtr, virFirewallGroupFree, NULL);
 
 /**
  * virFirewallFree:
@@ -575,7 +576,7 @@ size_t virFirewallRuleGetArgCount(virFirewallRulePtr rule)
 void virFirewallStartTransaction(virFirewallPtr firewall,
                                  unsigned int flags)
 {
-    virFirewallGroupPtr group;
+    g_auto(virFirewallGroupPtr) group = NULL;
 
     VIR_FIREWALL_RETURN_IF_ERROR(firewall);
 
@@ -586,10 +587,9 @@ void virFirewallStartTransaction(virFirewallPtr firewall,
 
     if (VIR_EXPAND_N(firewall->groups,
                      firewall->ngroups, 1) < 0) {
-        virFirewallGroupFree(group);
         return;
     }
-    firewall->groups[firewall->ngroups - 1] = group;
+    firewall->groups[firewall->ngroups - 1] = g_steal_pointer(&group);
     firewall->currentGroup = firewall->ngroups - 1;
 }
 
