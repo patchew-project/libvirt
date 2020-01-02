@@ -382,13 +382,13 @@ main(int argc, char **argv)
         }
 
         clearenv();
-        setenv("PATH", "/bin:/usr/bin", 1);
-        setenv("SHELL", shcmd, 1);
-        setenv("USER", name, 1);
-        setenv("LOGNAME", name, 1);
-        setenv("HOME", homedir, 1);
+        g_setenv("PATH", "/bin:/usr/bin", 1);
+        g_setenv("SHELL", shcmd, 1);
+        g_setenv("USER", name, 1);
+        g_setenv("LOGNAME", name, 1);
+        g_setenv("HOME", homedir, 1);
         if (term)
-            setenv("TERM", term, 1);
+            g_setenv("TERM", term, 1);
 
         if (execv(shcmd, (char *const*) shargv) < 0) {
             virReportSystemError(errno, _("Unable to exec shell %s"),
