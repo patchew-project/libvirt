@@ -257,6 +257,7 @@ virFirewallRuleFree(virFirewallRulePtr rule)
     VIR_FREE(rule);
 }
 
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC(virFirewallRulePtr, virFirewallRuleFree, NULL);
 
 static void
 virFirewallGroupFree(virFirewallGroupPtr group)
@@ -335,8 +336,8 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
                         va_list args)
 {
     virFirewallGroupPtr group;
-    virFirewallRulePtr rule;
-    char *str;
+    g_auto(virFirewallRulePtr) rule = NULL;
+    g_autofree char *str = NULL;
 
     VIR_FIREWALL_RETURN_NULL_IF_ERROR(firewall);
 
@@ -348,7 +349,7 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
 
 
     if (VIR_ALLOC(rule) < 0)
-        goto cleanup;
+        return NULL;
 
     rule->layer = layer;
     rule->queryCB = cb;
@@ -379,19 +380,18 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
         if (VIR_APPEND_ELEMENT_COPY(group->rollback,
                                     group->nrollback,
                                     rule) < 0)
-            goto cleanup;
+            return NULL;
     } else {
         if (VIR_APPEND_ELEMENT_COPY(group->action,
                                     group->naction,
                                     rule) < 0)
-            goto cleanup;
+            return NULL;
     }
 
 
-    return rule;
+    return g_steal_pointer(&rule);
 
  cleanup:
-    virFirewallRuleFree(rule);
     return NULL;
 }
 
