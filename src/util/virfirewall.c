@@ -320,11 +320,9 @@ void virFirewallFree(virFirewallPtr firewall)
 
 #define ADD_ARG(rule, str) \
     do { \
-        if (VIR_RESIZE_N(rule->args, \
-                         rule->argsAlloc, \
-                         rule->argsLen, 1) < 0) \
-            goto no_memory; \
- \
+        ignore_value(VIR_RESIZE_N(rule->args, \
+                                  rule->argsAlloc, \
+                                  rule->argsLen, 1)); \
         rule->args[rule->argsLen++] = g_strdup(str); \
     } while (0)
 
@@ -391,9 +389,6 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
 
 
     return g_steal_pointer(&rule);
-
- no_memory:
-    return NULL;
 }
 
 
@@ -491,9 +486,6 @@ void virFirewallRuleAddArg(virFirewallPtr firewall,
     VIR_FIREWALL_RULE_RETURN_IF_ERROR(firewall, rule);
 
     ADD_ARG(rule, arg);
-
- no_memory:
-    return;
 }
 
 
@@ -511,9 +503,6 @@ void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
     va_end(list);
 
     ADD_ARG(rule, arg);
-
- no_memory:
-    return;
 }
 
 
@@ -527,9 +516,6 @@ void virFirewallRuleAddArgSet(virFirewallPtr firewall,
         ADD_ARG(rule, *args);
         args++;
     }
-
- no_memory:
-    return;
 }
 
 
@@ -547,7 +533,6 @@ void virFirewallRuleAddArgList(virFirewallPtr firewall,
     while ((str = va_arg(list, char *)) != NULL)
         ADD_ARG(rule, str);
 
- no_memory:
     va_end(list);
 }
 
