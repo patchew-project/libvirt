@@ -577,7 +577,7 @@ from the domain's XML <os/> element and <type/> subelement or one from a
 list of machines from the ``virsh capabilities`` output for a specific
 architecture and domain type.
 
-For the qemu hypervisor, a *virttype* of either 'qemu' or 'kvm' must be
+For the QEMU hypervisor, a *virttype* of either 'qemu' or 'kvm' must be
 supplied along with either the *emulatorbin* or *arch* in order to
 generate output for the default *machine*.  Supplying a *machine*
 value will generate output for the specific machine.
@@ -1072,7 +1072,7 @@ read I/O operations limit.
 write I/O operations limit.
 *--size-iops-sec* specifies size I/O operations limit per second.
 *--group-name* specifies group name to share I/O quota between multiple drives.
-For a qemu domain, if no name is provided, then the default is to have a single
+For a QEMU domain, if no name is provided, then the default is to have a single
 group for each *device*.
 
 Older versions of virsh only accepted these options with underscore
@@ -1084,7 +1084,7 @@ An explicit 0 also clears any limit.  A non-zero value for a given total
 cannot be mixed with non-zero values for read or write.
 
 It is up to the hypervisor to determine how to handle the length values.
-For the qemu hypervisor, if an I/O limit value or maximum value is set,
+For the QEMU hypervisor, if an I/O limit value or maximum value is set,
 then the default value of 1 second will be displayed. Supplying a 0 will
 reset the value back to the default.
 
@@ -1642,7 +1642,7 @@ domblkstat
 Get device block stats for a running domain.  A *block-device* corresponds
 to a unique target name (<target dev='name'/>) or source file (<source
 file='name'/>) for one of the disk devices attached to *domain* (see
-also ``domblklist`` for listing these names). On a lxc or qemu domain,
+also ``domblklist`` for listing these names). On a LXC or QEMU domain,
 omitting the *block-device* yields device block stats summarily for the
 entire domain.
 
@@ -3247,7 +3247,7 @@ destination). Some hypervisors do not support this feature and will return an
 error if this parameter is used.
 
 Optional *disks-port* sets the port that hypervisor on destination side should
-bind to for incoming disks traffic. Currently it is supported only by qemu.
+bind to for incoming disks traffic. Currently it is supported only by QEMU.
 
 
 migrate-compcache
