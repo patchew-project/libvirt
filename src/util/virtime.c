@@ -60,7 +60,7 @@ int virTimeMillisNowRaw(unsigned long long *now)
 
 
 /**
- * virTimeFieldsNowRaw:
+ * virTimeFieldsNow:
  * @fields: filled with current time fields
  *
  * Retrieves the current time, in broken-down field format.
