@@ -355,6 +355,7 @@ dnl and various less common threadsafe functions
 AC_CHECK_FUNCS_ONCE([\
   cfmakeraw \
   fallocate \
+  getegid \
   geteuid \
   getgid \
   getifaddrs \
