@@ -553,6 +553,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "blockdev-file-dynamic-auto-read-only",
               "savevm-monitor-nodes",
               "drive-nvme",
+              "rng-builtin",
     );
 
 
@@ -1244,6 +1245,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vhost-user-vga", QEMU_CAPS_DEVICE_VHOST_USER_VGA },
     { "ramfb", QEMU_CAPS_DEVICE_RAMFB },
     { "max-arm-cpu", QEMU_CAPS_ARM_MAX_CPU },
+    { "rng-builtin", QEMU_CAPS_OBJECT_RNG_BUILTIN },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
