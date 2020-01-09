@@ -18,20 +18,10 @@ test -f src/libvirt.c || {
     die "$0 must live in the top-level libvirt directory"
 }
 
-dry_run=
 no_git=
 gnulib_srcdir=
 while test "$#" -gt 0; do
     case "$1" in
-    --dry-run)
-        # This variable will serve both as an indicator of the fact that
-        # a dry run has been requested, and to store the result of the
-        # dry run. It will be ultimately used as return code for the
-        # script: 0 means no action is necessary, 2 means that autogen.sh
-        # needs to be executed, and 1 is reserved for failures
-        dry_run=0
-        shift
-        ;;
     --no-git)
         no_git=" $1"
         shift
@@ -89,12 +79,10 @@ if test -d .git || test -f .git; then
         done
     fi
     if test "$CLEAN_SUBMODULE" && test -z "$no_git"; then
-        if test -z "$dry_run"; then
-            echo "Cleaning up submodules..."
-            git submodule foreach 'git clean -dfqx && git reset --hard' || {
-                die "Cleaning up submodules failed"
-            }
-        fi
+        echo "Cleaning up submodules..."
+        git submodule foreach 'git clean -dfqx && git reset --hard' || {
+            die "Cleaning up submodules failed"
+        }
     fi
 
     # Update all submodules. If any of the submodules has not been
@@ -116,25 +104,19 @@ if test -d .git || test -f .git; then
         # that can only be generated through bootstrap are present:
         # we just need to run autoreconf. Unless we're performing a
         # dry run, of course...
-        if test -z "$dry_run"; then
-            echo "Running autoreconf..."
-            autoreconf -v || {
-                die "autoreconf failed"
-            }
-        fi
+        echo "Running autoreconf..."
+        autoreconf -v || {
+            die "autoreconf failed"
+        }
     else
         # Whenever the gnulib submodule or any of the related bits
         # has been changed in some way (see gnulib_hash) we need to
         # run bootstrap again. If we're performing a dry run, we
         # change the return code instead to signal our caller
-        if test "$dry_run"; then
-            dry_run=2
-        else
-            echo "Running bootstrap..."
-            ./bootstrap$no_git || {
-                die "bootstrap failed"
-            }
-            gnulib_hash >"$state_file"
-        fi
+        echo "Running bootstrap..."
+        ./bootstrap$no_git || {
+            die "bootstrap failed"
+        }
+        gnulib_hash >"$state_file"
     fi
 fi
