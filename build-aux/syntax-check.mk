@@ -151,7 +151,7 @@ endif
 
 # Files that should never cause syntax check failures.
 VC_LIST_ALWAYS_EXCLUDE_REGEX = \
-  (^(docs/(news(-[0-9]*)?\.html\.in|.*\.patch))|\.(po|fig|gif|ico|png))$$
+  (^(docs/(news(-[0-9]*)?\.html\.in|.*\.patch)|(m4|gnulib|build-aux)/.*|configure|config\.h\.in|aclocal\.m4)|\.(po|fig|gif|ico|png)|Makefile.in)$$
 
 # Functions like free() that are no-ops on NULL arguments.
 useless_free_options = \
@@ -1963,12 +1963,6 @@ sc_makefile_TAB_only_indentation:
 	halt='found TAB-8-space indentation'				\
 	  $(_sc_search_regexp)
 
-sc_m4_quote_check:
-	@prohibit='(AC_DEFINE(_UNQUOTED)?|AC_DEFUN)\([^[]'		\
-	in_vc_files='(^configure\.ac|\.m4)$$'				\
-	halt='quote the first arg to AC_DEF*'				\
-	  $(_sc_search_regexp)
-
 gen_source_files:
 	$(MAKE) -C src generated-sources
 
@@ -2170,20 +2164,20 @@ prohibit-duplicate-header:
 	$(PYTHON) $(top_srcdir)/scripts/prohibit-duplicate-header.py
 
 spacing-check:
-	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.c$$' | xargs \
+	$(AM_V_GEN)$(VC_LIST_EXCEPT) | $(GREP) '\.c$$' | xargs \
 	$(PERL) $(top_srcdir)/build-aux/check-spacing.pl || \
 	  { echo '$(ME): incorrect formatting' 1>&2; exit 1; }
 
 mock-noinline:
-	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.[ch]$$' | $(RUNUTF8) xargs \
+	$(AM_V_GEN)$(VC_LIST_EXCEPT) | $(GREP) '\.[ch]$$' | $(RUNUTF8) xargs \
 	$(PYTHON) $(top_srcdir)/scripts/mock-noinline.py
 
 header-ifdef:
-	$(AM_V_GEN)$(VC_LIST) | $(GREP) '\.[h]$$' | $(RUNUTF8) xargs \
+	$(AM_V_GEN)$(VC_LIST_EXCEPT) | $(GREP) '\.[h]$$' | $(RUNUTF8) xargs \
 	$(PYTHON) $(top_srcdir)/scripts/header-ifdef.py
 
 test-wrap-argv:
-	$(AM_V_GEN)$(VC_LIST) | $(GREP) -E '\.(ldargs|args)' | $(RUNUTF8) xargs \
+	$(AM_V_GEN)$(VC_LIST_EXCEPT) | $(GREP) -E '\.(ldargs|args)' | $(RUNUTF8) xargs \
 	$(PYTHON) $(top_srcdir)/scripts/test-wrap-argv.py --check
 
 group-qemu-caps:
@@ -2305,8 +2299,6 @@ exclude_file_name_regexp--sc_size_of_brackets = build-aux/syntax-check\.mk
 exclude_file_name_regexp--sc_correct_id_types = \
   (^src/locking/lock_protocol.x$$)
 
-exclude_file_name_regexp--sc_m4_quote_check = m4/virt-lib.m4
-
 exclude_file_name_regexp--sc_prohibit_include_public_headers_quote = \
   ^(src/internal\.h$$|tools/wireshark/src/packet-libvirt.c$$)
 
@@ -2360,3 +2352,6 @@ exclude_file_name_regexp--sc_prohibit_strcmp = \
 
 exclude_file_name_regexp--sc_prohibit_backslash_alignment = \
   ^build-aux/syntax-check\.mk$$
+
+exclude_file_name_regexp--sc_TAB_in_indentation = \
+  ^(.*Makefile.in|build-aux/.*|config.h.in)$$
