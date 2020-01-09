@@ -11,7 +11,6 @@ mkdir -p "$CI_CONT_BUILDDIR" || exit 1
 cd "$CI_CONT_BUILDDIR"
 
 export VIR_TEST_DEBUG=1
-NOCONFIGURE=1 "$CI_CONT_SRCDIR/autogen.sh" || exit 1
 
 # $CONFIGURE_OPTS is a env that can optionally be set in the container,
 # populated at build time from the Dockerfile. A typical use case would

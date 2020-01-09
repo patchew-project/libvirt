@@ -38,10 +38,9 @@ We require to have the build directory different than the source directory:
 
         $ mkdir build && cd build
 
-The next step is to get all required pieces from gnulib,
-to run autoreconf, and to invoke ../autogen.sh:
+The next step is to run configure:
 
-        $ ../autogen.sh
+        $ ../configure
 
 And there you are!  Just
 

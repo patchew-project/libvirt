@@ -81,7 +81,7 @@ matrix:
         # We can't run 'distcheck' or 'syntax-check' because they fail on
         # macOS, but doing 'install' and 'dist' gives us some useful coverage
         - mkdir build && cd build
-        - ../autogen.sh --prefix=$(pwd)/install-root && make -j3 && make -j3 install && make -j3 dist
+        - ../configure --prefix=$(pwd)/install-root && make -j3 && make -j3 install && make -j3 dist
     - compiler: clang
       language: c
       os: osx
@@ -96,7 +96,7 @@ matrix:
         # We can't run 'distcheck' or 'syntax-check' because they fail on
         # macOS, but doing 'install' and 'dist' gives us some useful coverage
         - mkdir build && cd build
-        - ../autogen.sh --prefix=$(pwd)/install-root && make -j3 && make -j3 install && make -j3 dist
+        - ../configure --prefix=$(pwd)/install-root && make -j3 && make -j3 install && make -j3 dist
 
 git:
   submodules: true

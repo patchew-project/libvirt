@@ -63,9 +63,7 @@ $ <b>sudo</b> <i>make install</i></pre>
     <h2><a id="building">Building from a GIT checkout</a></h2>
 
     <p>
-      The libvirt build process uses GNU autotools, so after obtaining a
-      checkout it is necessary to generate the configure script and Makefile.in
-      templates using the <code>autogen.sh</code> command. By default when
+      The libvirt build process uses GNU autotools. By default when
       the <code>configure</code> script is run from within a GIT checkout, it
       will turn on -Werror for builds. This can be disabled with
       --disable-werror, but this is not recommended.
@@ -101,7 +99,7 @@ $ GNULIB_SRCDIR=/path/to/gnulib ./autogen.sh --no-git
     </p>
 
     <pre>
-$ ./autogen.sh --prefix=$HOME/usr
+$ ./configure --prefix=$HOME/usr
 $ make
 $ <b>sudo</b> make install</pre>
 
@@ -113,7 +111,7 @@ $ <b>sudo</b> make install</pre>
     </p>
 
     <pre>
-$ ./autogen.sh --with-system
+$ ./configure --with-system
 $ make
     </pre>
 
