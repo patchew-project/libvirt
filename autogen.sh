@@ -7,8 +7,6 @@ die()
     exit 1
 }
 
-starting_point=$(pwd)
-
 srcdir=$(dirname "$0")
 test "$srcdir" || srcdir=.
 
@@ -140,55 +138,3 @@ if test -d .git || test -f .git; then
         fi
     fi
 fi
-
-# When performing a dry run, we can stop here
-test "$dry_run" && exit "$dry_run"
-
-# If asked not to run configure, we can stop here
-test "$NOCONFIGURE" && exit 0
-
-cd "$starting_point" || {
-    die "Failed to cd into $starting_point"
-}
-
-if test "$OBJ_DIR"; then
-    mkdir -p "$OBJ_DIR" || {
-        die "Failed to create $OBJ_DIR"
-    }
-    cd "$OBJ_DIR" || {
-        die "Failed to cd into $OBJ_DIR"
-    }
-fi
-
-# Make sure we can find GNU make and tell the user
-# the right command to run
-MAKE=
-for cmd in make gmake; do
-    if $cmd -v 2>&1 | grep -q "GNU Make"; then
-        MAKE=$cmd
-        break
-    fi
-done
-test "$MAKE" || {
-    die "GNU make is required to build libvirt"
-}
-
-if test -z "$*" && test -f config.status; then
-    echo "Running config.status..."
-    ./config.status --recheck || {
-        die "config.status failed"
-    }
-else
-    if test -z "$*"; then
-        echo "I am going to run configure with no arguments - if you wish"
-        echo "to pass any to it, please specify them on the $0 command line."
-    else
-        echo "Running configure with $@"
-    fi
-    "$srcdir/configure" "$@" || {
-        die "configure failed"
-    }
-fi
-
-echo
-echo "Now type '$MAKE' to compile libvirt."
