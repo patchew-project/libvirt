@@ -18,40 +18,8 @@ test -f src/libvirt.c || {
     die "$0 must live in the top-level libvirt directory"
 }
 
-no_git=
-gnulib_srcdir=
-while test "$#" -gt 0; do
-    case "$1" in
-    --no-git)
-        no_git=" $1"
-        shift
-        ;;
-    --gnulib-srcdir=*)
-        gnulib_srcdir=" $1"
-        shift
-        ;;
-    --gnulib-srcdir)
-        gnulib_srcdir=" $1=$2"
-        shift
-        shift
-        ;;
-    *)
-        # All remaining arguments will be passed to configure verbatim
-        break
-        ;;
-    esac
-done
-no_git="$no_git$gnulib_srcdir"
-
 gnulib_hash()
 {
-    local no_git=$1
-
-    if test "$no_git"; then
-        echo "no-git"
-        return
-    fi
-
     # Compute the hash we'll use to determine whether rerunning bootstrap
     # is required. The first is just the SHA1 that selects a gnulib snapshot.
     # The second ensures that whenever we change the set of gnulib modules used
@@ -78,7 +46,7 @@ if test -d .git || test -f .git; then
             esac
         done
     fi
-    if test "$CLEAN_SUBMODULE" && test -z "$no_git"; then
+    if test "$CLEAN_SUBMODULE"; then
         echo "Cleaning up submodules..."
         git submodule foreach 'git clean -dfqx && git reset --hard' || {
             die "Cleaning up submodules failed"
@@ -97,7 +65,7 @@ if test -d .git || test -f .git; then
     # successful bootstrap run, is stored on disk
     state_file=.git-module-status
     expected_hash=$(cat "$state_file" 2>/dev/null)
-    actual_hash=$(gnulib_hash "$no_git")
+    actual_hash=$(gnulib_hash)
 
     if test "$actual_hash" = "$expected_hash"; then
         # The gnulib hash matches our expectations, and all the files
@@ -114,7 +82,7 @@ if test -d .git || test -f .git; then
         # run bootstrap again. If we're performing a dry run, we
         # change the return code instead to signal our caller
         echo "Running bootstrap..."
-        ./bootstrap$no_git || {
+        ./bootstrap || {
             die "bootstrap failed"
         }
         gnulib_hash >"$state_file"
