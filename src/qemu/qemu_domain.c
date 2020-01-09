@@ -14832,6 +14832,7 @@ qemuDomainSetupRNG(virQEMUDriverConfigPtr cfg G_GNUC_UNUSED,
             return -1;
 
     case VIR_DOMAIN_RNG_BACKEND_EGD:
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         /* nada */
         break;
@@ -15811,6 +15812,7 @@ qemuDomainNamespaceSetupRNG(virDomainObjPtr vm,
         break;
 
     case VIR_DOMAIN_RNG_BACKEND_EGD:
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
     }
@@ -15834,6 +15836,7 @@ qemuDomainNamespaceTeardownRNG(virDomainObjPtr vm,
         break;
 
     case VIR_DOMAIN_RNG_BACKEND_EGD:
+    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
     }
