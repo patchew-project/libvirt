@@ -71,6 +71,8 @@ virDomainBackupDefFree(virDomainBackupDefPtr def)
         virDomainBackupDiskDefPtr disk = def->disks + i;
 
         g_free(disk->name);
+        g_free(disk->exportname);
+        g_free(disk->exportbitmap);
         virObjectUnref(disk->store);
     }
 
@@ -124,6 +126,11 @@ virDomainBackupDiskDefParseXML(xmlNodePtr node,
     if (def->backup == VIR_TRISTATE_BOOL_NO)
         return 0;
 
+    if (!push) {
+        def->exportname = virXMLPropString(node, "exportname");
+        def->exportbitmap = virXMLPropString(node, "exportbitmap");
+    }
+
     if (internal) {
         if (!(state = virXMLPropString(node, "state")) ||
             (tmp = virDomainBackupDiskStateTypeFromString(state)) < 0) {
@@ -164,6 +171,7 @@ virDomainBackupDiskDefParseXML(xmlNodePtr node,
         virDomainStorageSourceParse(srcNode, ctxt, def->store,
                                     storageSourceParseFlags, xmlopt) < 0)
         return -1;
+
 
     if ((driver = virXPathString("string(./driver/@type)", ctxt))) {
         def->store->format = virStorageFileFormatTypeFromString(driver);
@@ -332,6 +340,9 @@ virDomainBackupDiskDefFormat(virBufferPtr buf,
 
     if (disk->backup == VIR_TRISTATE_BOOL_YES) {
         virBufferAsprintf(&attrBuf, " type='%s'", virStorageTypeToString(disk->store->type));
+
+        virBufferEscapeString(&attrBuf, " exportname='%s'", disk->exportname);
+        virBufferEscapeString(&attrBuf, " exportbitmap='%s'", disk->exportbitmap);
 
         if (disk->store->format > 0)
             virBufferEscapeString(&childBuf, "<driver type='%s'/>\n",
