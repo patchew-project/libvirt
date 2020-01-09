@@ -113,7 +113,7 @@ $ <b>sudo</b> make install</pre>
     </p>
 
     <pre>
-$ ./autogen.sh --system
+$ ./autogen.sh --with-system
 $ make
     </pre>
 

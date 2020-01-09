@@ -23,7 +23,6 @@ test -f src/libvirt.c || {
 dry_run=
 no_git=
 gnulib_srcdir=
-extra_args=
 while test "$#" -gt 0; do
     case "$1" in
     --dry-run)
@@ -46,19 +45,6 @@ while test "$#" -gt 0; do
     --gnulib-srcdir)
         gnulib_srcdir=" $1=$2"
         shift
-        shift
-        ;;
-    --system)
-        prefix=/usr
-        sysconfdir=/etc
-        localstatedir=/var
-        if test -d $prefix/lib64; then
-            libdir=$prefix/lib64
-        else
-            libdir=$prefix/lib
-        fi
-        extra_args="--prefix=$prefix --localstatedir=$localstatedir"
-        extra_args="$extra_args --sysconfdir=$sysconfdir --libdir=$libdir"
         shift
         ;;
     *)
@@ -187,19 +173,19 @@ test "$MAKE" || {
     die "GNU make is required to build libvirt"
 }
 
-if test -z "$*" && test -z "$extra_args" && test -f config.status; then
+if test -z "$*" && test -f config.status; then
     echo "Running config.status..."
     ./config.status --recheck || {
         die "config.status failed"
     }
 else
-    if test -z "$*" && test -z "$extra_args"; then
+    if test -z "$*"; then
         echo "I am going to run configure with no arguments - if you wish"
         echo "to pass any to it, please specify them on the $0 command line."
     else
-        echo "Running configure with $extra_args $@"
+        echo "Running configure with $@"
     fi
-    "$srcdir/configure" $extra_args "$@" || {
+    "$srcdir/configure" "$@" || {
         die "configure failed"
     }
 fi

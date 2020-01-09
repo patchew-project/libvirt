@@ -151,6 +151,20 @@ then
   runstatedir=$with_runstatedir
 fi
 
+LIBVIRT_ARG_WITH([SYSTEM],
+                 [configure libvirt to be compatible with normal OS vendor prefixes],
+                 [no])
+if test "x$with_system" != "xno"; then
+    prefix=/usr
+    sysconfdir=/etc
+    localstatedir=/var
+    if test -d $prefix/lib64; then
+        libdir=$prefix/lib64
+    else
+        libdir=$prefix/lib
+    fi
+fi
+
 
 gl_EARLY
 gl_INIT
