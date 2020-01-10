@@ -21,7 +21,7 @@
 #include <config.h>
 #include <sys/stat.h>
 
-#include "intprops.h"
+#include "virintprops.h"
 
 #include "datatypes.h"
 #include "viralloc.h"

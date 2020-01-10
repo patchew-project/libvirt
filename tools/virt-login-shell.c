@@ -29,15 +29,14 @@
 #include <string.h>
 
 /*
- * These gnulib files are used for their macros only,
+ * This GNULIB file is used for its macros only,
  * so don't introduce a link time dep, which we must avoid
  */
 #include "gnulib/lib/configmake.h"
-#include "gnulib/lib/intprops.h"
 
 int main(int argc, char **argv) {
-    char uidstr[INT_BUFSIZE_BOUND(uid_t)];
-    char gidstr[INT_BUFSIZE_BOUND(gid_t)];
+    char uidstr[100];
+    char gidstr[100];
     const char * newargv[6];
     size_t nargs = 0;
     char *newenv[] = {

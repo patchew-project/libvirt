@@ -31,7 +31,7 @@
 #include "remote_daemon_stream.h"
 #include "viruuid.h"
 #include "vircommand.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virnetserverservice.h"
 #include "virnetserver.h"
 #include "virfile.h"

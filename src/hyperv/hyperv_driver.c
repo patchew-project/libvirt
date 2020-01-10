@@ -36,7 +36,7 @@
 #include "openwsman.h"
 #include "virstring.h"
 #include "virkeycode.h"
-#include "intprops.h"
+#include "virintprops.h"
 
 #define VIR_FROM_THIS VIR_FROM_HYPERV
 

@@ -33,7 +33,7 @@
 # include "virlog.h"
 # include "virmock.h"
 # include "rpc/virnetsocket.h"
-# include "intprops.h"
+# include "virintprops.h"
 # define VIR_FROM_THIS VIR_FROM_NONE
 
 VIR_LOG_INIT("tests.systemdtest");

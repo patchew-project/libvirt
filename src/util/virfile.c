@@ -68,7 +68,7 @@
 #endif
 
 #include "configmake.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "viralloc.h"
 #include "vircommand.h"
 #include "virerror.h"

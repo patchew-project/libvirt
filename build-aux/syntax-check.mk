@@ -1611,13 +1611,13 @@ gl_extract_define_simple = \
   /^\# *define ([A-Z]\w+)\(/ and print $$1
 # Filter out duplicates and convert to a space-separated list:
 _intprops_names = \
-  $(shell f=$(gnulib_dir)/lib/intprops.h;				\
+  $(shell f=$(srcdir)/src/util/virintprops.h;				\
     perl -lne '$(gl_extract_define_simple)' $$f | sort -u | tr '\n' ' ')
 # Remove trailing space and convert to a regular expression:
 _intprops_syms_re = $(subst $(_sp),|,$(strip $(_intprops_names)))
 # Prohibit the inclusion of intprops.h without an actual use.
 sc_prohibit_intprops_without_use:
-	@h='intprops.h'							\
+	@h='virintprops.h'							\
 	re='\<($(_intprops_syms_re)) *\('				\
 	  $(_sc_header_without_use)
 
@@ -2360,3 +2360,6 @@ exclude_file_name_regexp--sc_prohibit_strcmp = \
 
 exclude_file_name_regexp--sc_prohibit_backslash_alignment = \
   ^build-aux/syntax-check\.mk$$
+
+exclude_file_name_regexp--sc_prohibit_wrong_filename_in_comment = \
+  ^src/util/virintprops\.h$$

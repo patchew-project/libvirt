@@ -43,7 +43,7 @@
 #include "virhostcpupriv.h"
 #include "physmem.h"
 #include "virerror.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virarch.h"
 #include "virfile.h"
 #include "virtypedparam.h"

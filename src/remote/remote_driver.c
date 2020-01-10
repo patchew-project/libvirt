@@ -43,7 +43,7 @@
 #include "viralloc.h"
 #include "virfile.h"
 #include "vircommand.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virtypedparam.h"
 #include "viruri.h"
 #include "virauth.h"

@@ -29,7 +29,7 @@
 
 #include "internal.h"
 #include "conf/virdomainobjlist.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "viralloc.h"
 #include "virmacaddr.h"
 #include "virxml.h"

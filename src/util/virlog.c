@@ -45,7 +45,7 @@
 #include "virthread.h"
 #include "virfile.h"
 #include "virtime.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virstring.h"
 #include "configmake.h"
 

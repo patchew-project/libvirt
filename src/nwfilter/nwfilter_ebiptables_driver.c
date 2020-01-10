@@ -40,7 +40,7 @@
 #include "virfile.h"
 #include "vircommand.h"
 #include "configmake.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virstring.h"
 #include "virfirewall.h"
 

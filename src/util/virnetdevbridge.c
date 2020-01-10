@@ -25,7 +25,7 @@
 #include "virfile.h"
 #include "viralloc.h"
 #include "virlog.h"
-#include "intprops.h"
+#include "virintprops.h"
 #include "virstring.h"
 
 #include <sys/ioctl.h>

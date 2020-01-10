@@ -39,7 +39,7 @@
 
 #include "internal.h"
 
-#include "intprops.h"
+#include "virintprops.h"
 #include "virbuffer.h"
 #include "viralloc.h"
 #include "virlog.h"
