@@ -6569,6 +6569,21 @@ Set the value associated with *secret* (specified by its UUID) to the value
 Base64-encoded value *base64*.
 
 
+secret-passwd
+----------------
+
+**Syntax:**
+
+.. code-block::
+
+   secret-passwd secret
+
+Set the value associated with *secret* (specified by its UUID) to a string
+read from stdin. Note that input is terminated by a newline and the secret
+can't contain non-printable characters. Use *secret-set-value* for generic
+secrets. Note that this requires a terminal associated with virsh to read
+the password.
+
 secret-get-value
 ----------------
 

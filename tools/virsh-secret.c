@@ -219,6 +219,70 @@ cmdSecretSetValue(vshControl *ctl, const vshCmd *cmd)
     return ret;
 }
 
+
+/*
+ * "secret-passwd" command
+ */
+static const vshCmdInfo info_secret_passwd[] = {
+    {.name = "help",
+     .data = N_("set a secret value from stdin")
+    },
+    {.name = "desc",
+     .data = N_("Set a secret value from stdin")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_secret_passwd[] = {
+    {.name = "secret",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("secret UUID"),
+     .completer = virshSecretUUIDCompleter,
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdSecretPasswd(vshControl *ctl,
+                const vshCmd *cmd)
+{
+    virSecretPtr secret;
+    g_autofree char *value = NULL;
+    int res;
+    bool ret = false;
+
+    if (!ctl->istty) {
+        vshError(ctl, "%s", _("secret-passwd requires a terminal"));
+        return false;
+    }
+
+    if (!(secret = virshCommandOptSecret(ctl, cmd, NULL)))
+        return false;
+
+    vshPrint(ctl, "%s", _("Enter new value for secret:"));
+    fflush(stdout);
+
+    if (!(value = getpass(""))) {
+        vshError(ctl, "%s", _("Failed to read secret"));
+        goto cleanup;
+    }
+
+    res = virSecretSetValue(secret, (unsigned char *) value, strlen(value), 0);
+
+    if (res != 0) {
+        vshError(ctl, "%s", _("Failed to set secret value"));
+        goto cleanup;
+    }
+    vshPrintExtra(ctl, "%s", _("Secret value set\n"));
+    ret = true;
+
+ cleanup:
+    virSecretFree(secret);
+    return ret;
+}
+
+
 /*
  * "secret-get-value" command
  */
@@ -803,6 +867,12 @@ const vshCmdDef secretCmds[] = {
      .handler = cmdSecretSetValue,
      .opts = opts_secret_set_value,
      .info = info_secret_set_value,
+     .flags = 0
+    },
+    {.name = "secret-passwd",
+     .handler = cmdSecretPasswd,
+     .opts = opts_secret_passwd,
+     .info = info_secret_passwd,
      .flags = 0
     },
     {.name = "secret-undefine",
