@@ -23155,7 +23155,7 @@ qemuDomainGetGuestInfo(virDomainPtr dom,
  cleanup:
     for (i = 0; i < nfs; i++)
         qemuAgentFSInfoFree(agentfsinfo[i]);
-    VIR_FREE(agentfsinfo);
+    g_free(agentfsinfo);
 
     virDomainObjEndAPI(&vm);
     return ret;
