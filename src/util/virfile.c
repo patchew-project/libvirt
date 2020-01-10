@@ -27,7 +27,9 @@
 
 #include <passfd.h>
 #include <fcntl.h>
-#include <termios.h>
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#endif /* !HAVE_TERMIOS_H */
 #ifdef HAVE_PTY_H
 /* Linux openpty */
 # include <pty.h>

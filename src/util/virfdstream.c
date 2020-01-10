@@ -31,7 +31,9 @@
 # include <sys/un.h>
 #endif
 #include <netinet/in.h>
-#include <termios.h>
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#endif
 
 #include "virfdstream.h"
 #include "virerror.h"
