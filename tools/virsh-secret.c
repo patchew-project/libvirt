@@ -177,9 +177,13 @@ static const vshCmdOptDef opts_secret_set_value[] = {
      .help = N_("secret UUID"),
      .completer = virshSecretUUIDCompleter,
     },
+    {.name = "file",
+     .type = VSH_OT_STRING,
+     .flags = VSH_OFLAG_REQ_OPT,
+     .help = N_("read secret from file"),
+    },
     {.name = "base64",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
+     .type = VSH_OT_STRING,
      .help = N_("base64-encoded secret value")
     },
     {.name = NULL}
@@ -191,9 +195,12 @@ cmdSecretSetValue(vshControl *ctl, const vshCmd *cmd)
     virSecretPtr secret;
     size_t value_size;
     const char *base64 = NULL;
+    const char *filename = NULL;
     unsigned char *value;
     int res;
     bool ret = false;
+
+    VSH_EXCLUSIVE_OPTIONS("file", "base64");
 
     if (!(secret = virshCommandOptSecret(ctl, cmd, NULL)))
         return false;
@@ -201,7 +208,24 @@ cmdSecretSetValue(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptStringReq(ctl, cmd, "base64", &base64) < 0)
         goto cleanup;
 
-    value = g_base64_decode(base64, &value_size);
+    if (vshCommandOptStringReq(ctl, cmd, "file", &filename) < 0)
+        goto cleanup;
+
+    if (!base64 && !filename) {
+        vshError(ctl, _("Input secret value is missing"));
+        goto cleanup;
+    }
+
+    if (filename) {
+        ssize_t read_len;
+        if ((read_len = virFileReadAll(filename, 1024, (char **) &value)) < 0) {
+            vshSaveLibvirtError();
+            goto cleanup;
+        }
+        value_size = read_len;
+    } else {
+        value = g_base64_decode(base64, &value_size);
+    }
 
     res = virSecretSetValue(secret, value, value_size, 0);
     memset(value, 0, value_size);
