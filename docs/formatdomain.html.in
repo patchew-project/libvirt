@@ -3866,9 +3866,13 @@
           <dt><code>secs</code></dt>
           <dd>The <code>secs</code> attribute is the
             number of sectors per track. </dd>
+          <dt>Note that <code>cyls</code>, <code>heads</code> and
+            <code>secs</code> are not supported in <code>usb</code>
+            or <code>sd</code> bus.</dt>
           <dt><code>trans</code></dt>
           <dd>The optional <code>trans</code> attribute is the
-            BIOS-Translation-Modus (none, lba or auto)</dd>
+            BIOS-Translation-Modus (none, lba or auto). Note that this
+            attribute is only supported in <code>ide</code> bus.</dd>
         </dl>
       </dd>
       <dt><code>blockio</code></dt>
