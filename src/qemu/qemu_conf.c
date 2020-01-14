@@ -144,6 +144,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 
         cfg->cacheDir = g_strdup_printf("%s/cache/libvirt/qemu", LOCALSTATEDIR);
 
+        cfg->dbusStateDir = g_strdup_printf("%s/run/libvirt/qemu/dbus", LOCALSTATEDIR);
+
         cfg->libDir = g_strdup_printf("%s/lib/libvirt/qemu", LOCALSTATEDIR);
         cfg->saveDir = g_strdup_printf("%s/save", cfg->libDir);
         cfg->snapshotDir = g_strdup_printf("%s/snapshot", cfg->libDir);
@@ -174,6 +176,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         cfg->stateDir = g_strdup_printf("%s/qemu/run", rundir);
 
         cfg->swtpmStateDir = g_strdup_printf("%s/swtpm", cfg->stateDir);
+        cfg->dbusStateDir = g_strdup_printf("%s/dbus", cfg->stateDir);
 
         cfg->configBaseDir = virGetUserConfigDirectory();
 
@@ -274,6 +277,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->stateDir);
     VIR_FREE(cfg->swtpmStateDir);
     VIR_FREE(cfg->slirpStateDir);
+    VIR_FREE(cfg->dbusStateDir);
 
     VIR_FREE(cfg->libDir);
     VIR_FREE(cfg->cacheDir);
