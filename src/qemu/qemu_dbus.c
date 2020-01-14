@@ -297,3 +297,17 @@ qemuDBusSetupCgroup(virQEMUDriverPtr driver,
 
     return 0;
 }
+
+
+int
+qemuDBusVMStateAdd(virDomainObjPtr vm, const char *id)
+{
+    return virStringListAdd(&QEMU_DOMAIN_PRIVATE(vm)->dbusVMStateIds, id);
+}
+
+
+void
+qemuDBusVMStateRemove(virDomainObjPtr vm, const char *id)
+{
+    virStringListRemove(&QEMU_DOMAIN_PRIVATE(vm)->dbusVMStateIds, id);
+}

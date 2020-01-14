@@ -840,3 +840,10 @@ qemuDomainGetUnmanagedPRAlias(const char *parentalias)
 
     return ret;
 }
+
+
+const char *
+qemuDomainGetDBusVMStateAlias(void)
+{
+    return "dbus-vmstate0";
+}
