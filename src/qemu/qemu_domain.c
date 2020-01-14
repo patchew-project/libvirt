@@ -2916,6 +2916,9 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
                           virDomainChrTypeToString(priv->monConfig->type));
     }
 
+    if (priv->dbusDaemonRunning)
+        virBufferAddLit(buf, "<dbusDaemon/>\n");
+
     if (priv->namespaces) {
         ssize_t ns = -1;
 
@@ -3696,6 +3699,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
                        _("failed to parse agent timeout"));
         goto error;
     }
+
+    priv->dbusDaemonRunning = virXPathBoolean("boolean(./dbusDaemon)", ctxt) > 0;
 
     if ((node = virXPathNode("./namespaces", ctxt))) {
         xmlNodePtr next;
