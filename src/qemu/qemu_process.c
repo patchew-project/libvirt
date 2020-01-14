@@ -58,6 +58,7 @@
 #include "qemu_extdevice.h"
 #include "qemu_firmware.h"
 #include "qemu_backup.h"
+#include "qemu_dbus.h"
 
 #include "cpu/cpu.h"
 #include "cpu/cpu_x86.h"
@@ -6457,6 +6458,9 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
 
+    if (qemuDBusPrepareHost(driver) < 0)
+        return -1;
+
     if (qemuPrepareNVRAM(cfg, vm) < 0)
         return -1;
 
@@ -7377,6 +7381,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     qemuDomainCleanupRun(driver, vm);
 
     qemuExtDevicesStop(driver, vm);
+
+    qemuDBusStop(driver, vm);
 
     vm->def->id = -1;
 
