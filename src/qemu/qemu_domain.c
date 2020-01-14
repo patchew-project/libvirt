@@ -2264,6 +2264,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     /* reset node name allocator */
     qemuDomainStorageIdReset(priv);
+
+    priv->dbusDaemonRunning = false;
 }
 
 

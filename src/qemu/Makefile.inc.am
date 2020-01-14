@@ -69,6 +69,8 @@ QEMU_DRIVER_SOURCES = \
 	qemu/qemu_checkpoint.h \
 	qemu/qemu_backup.c \
 	qemu/qemu_backup.h \
+	qemu/qemu_dbus.c \
+	qemu/qemu_dbus.h \
 	$(NULL)
 
 
@@ -93,6 +95,7 @@ libvirt_driver_qemu_impl_la_CFLAGS = \
 	$(LIBNL_CFLAGS) \
 	$(SELINUX_CFLAGS) \
 	$(XDR_CFLAGS) \
+	$(DBUS_CFLAGS) \
 	-I$(srcdir)/access \
 	-I$(builddir)/access \
 	-I$(srcdir)/conf \
@@ -105,6 +108,7 @@ libvirt_driver_qemu_impl_la_LIBADD = \
 	$(GNUTLS_LIBS) \
 	$(LIBNL_LIBS) \
 	$(SELINUX_LIBS) \
+	$(DBUS_LIBS) \
 	$(LIBXML_LIBS) \
 	$(NULL)
 libvirt_driver_qemu_impl_la_SOURCES = $(QEMU_DRIVER_SOURCES)

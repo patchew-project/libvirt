@@ -40,6 +40,7 @@
 #include "logging/log_manager.h"
 #include "virdomainmomentobjlist.h"
 #include "virenum.h"
+#include "virdbus.h"
 
 #define QEMU_DOMAIN_FORMAT_LIVE_FLAGS \
     (VIR_DOMAIN_XML_SECURE)
@@ -417,6 +418,8 @@ struct _qemuDomainObjPrivate {
 
     /* running backup job */
     virDomainBackupDefPtr backup;
+
+    bool dbusDaemonRunning;
 };
 
 #define QEMU_DOMAIN_PRIVATE(vm) \
