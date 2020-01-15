@@ -3030,8 +3030,10 @@ libxlDomainAttachDeviceDiskLive(virDomainObjPtr vm, virDomainDeviceDefPtr dev)
 
     switch (l_disk->device)  {
         case VIR_DOMAIN_DISK_DEVICE_CDROM:
-            ret = libxlDomainChangeEjectableMedia(vm, l_disk);
-            break;
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           "%s", _("cdrom update is not supported in this API. "
+                           "Use virDomainUpdateDeviceFlags instead."));
+            goto cleanup;
         case VIR_DOMAIN_DISK_DEVICE_DISK:
             if (l_disk->bus == VIR_DOMAIN_DISK_BUS_XEN) {
                 if (virDomainDiskIndexByName(vm->def, l_disk->dst, true) >= 0) {
