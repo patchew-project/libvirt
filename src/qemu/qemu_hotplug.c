@@ -1076,7 +1076,7 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
  * @vm: domain object
  * @dev: device to attach (expected type is DISK)
  *
- * Attach a new disk or in case of cdroms/floppies change the media in the drive.
+ * Attach a new disk in the drive.
  * This function handles all the necessary steps to attach a new storage source
  * to the VM.
  */
@@ -1088,17 +1088,13 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
     virDomainDiskDefPtr disk = dev->data.disk;
     virDomainDiskDefPtr orig_disk = NULL;
 
-    /* this API overloads media change semantics on disk hotplug
-     * for devices supporting media changes */
     if ((disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
          disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) &&
         (orig_disk = virDomainDiskByTarget(vm->def, disk->dst))) {
-        if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
-                                           disk->src, false) < 0)
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("cdrom/floppy media update isn't supported. "
+                             "Use virDomainUpdateDeviceFlags instead."));
             return -1;
-
-        disk->src = NULL;
-        return 0;
     }
 
     return qemuDomainAttachDeviceDiskLiveInternal(driver, vm, dev);
