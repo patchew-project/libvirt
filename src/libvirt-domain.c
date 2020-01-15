@@ -8208,10 +8208,6 @@ virDomainAttachDevice(virDomainPtr domain, const char *xml)
  * return failure if LIVE is specified but it only supports modifying the
  * persisted device allocation.
  *
- * For compatibility, this method can also be used to change the media
- * in an existing CDROM/Floppy device, however, applications are
- * recommended to use the virDomainUpdateDeviceFlag method instead.
- *
  * Be aware that hotplug changes might not persist across a domain going
  * into S4 state (also known as hibernation) unless you also modify the
  * persistent domain definition.
