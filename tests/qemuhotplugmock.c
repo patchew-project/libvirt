@@ -18,6 +18,7 @@
 
 #include <config.h>
 
+#include "virmock.h"
 #include "qemu/qemu_hotplug.h"
 #include "conf/domain_conf.h"
 
@@ -30,4 +31,20 @@ qemuDomainGetUnplugTimeout(virDomainObjPtr vm G_GNUC_UNUSED)
     if (qemuDomainIsPSeries(vm->def))
         return 200;
     return 100;
+}
+
+VIR_MOCK_IMPL_RET_ARGS(virFileMakePath, int,
+                       const char *, path)
+{
+    const char *home;
+
+    VIR_MOCK_REAL_INIT(virFileMakePath);
+
+    /* ignore non-existing homes (e.g. in build environments) */
+    home = getenv("HOME");
+    if (strstr(path, home)) {
+        if (!g_file_test (home, G_FILE_TEST_EXISTS))
+            return 0;
+    }
+    return real_virFileMakePath(path);
 }
