@@ -606,6 +606,9 @@ testBackingParse(const void *args)
     if (!src)
         return 0;
 
+    /* allow tests pass format */
+    src->format = VIR_STORAGE_FILE_RAW;
+
     if (src && !data->expect) {
         fprintf(stderr, "parsing of backing store string '%s' should "
                         "have failed\n", data->backing);
@@ -1567,7 +1570,9 @@ mymain(void)
                                                           "}"
                                              "}"
                                   "}",
-                            "<source file='/tmp/testfle'/>\n", 0);
+                            "<source file='/tmp/testfle'>\n"
+                            "  <options offset='10752' size='4063232'/>\n"
+                            "</source>\n", 0);
 
 #endif /* WITH_YAJL */
 

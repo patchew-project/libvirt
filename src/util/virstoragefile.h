@@ -286,6 +286,10 @@ struct _virStorageSource {
     bool nocow;
     bool sparse;
 
+    /* properties of the raw driver. Unspecified if 0. */
+    unsigned long long offset;
+    unsigned long long size;
+
     virStoragePermsPtr perms;
     virStorageTimestampsPtr timestamps;
     unsigned long long capacity; /* in bytes, 0 if unknown */

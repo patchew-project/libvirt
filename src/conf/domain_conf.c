@@ -24184,6 +24184,23 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
 }
 
 
+static void
+virDomainDiskSourceFormatOptions(virBufferPtr buf,
+                                 virStorageSourcePtr src)
+{
+    g_auto(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+
+    if (src->format == VIR_STORAGE_FILE_RAW) {
+        if (src->offset > 0)
+            virBufferAsprintf(&attrBuf, " offset='%llu'", src->offset);
+        if (src->size > 0)
+            virBufferAsprintf(&attrBuf, " size='%llu'", src->size);
+    }
+
+    virXMLFormatElement(buf, "options", &attrBuf, NULL);
+}
+
+
 /**
  * virDomainDiskSourceFormat:
  * @buf: output buffer
@@ -24253,6 +24270,8 @@ virDomainDiskSourceFormat(virBufferPtr buf,
                        _("unexpected disk type %d"), src->type);
         return -1;
     }
+
+    virDomainDiskSourceFormatOptions(&childBuf, src);
 
     if (src->type != VIR_STORAGE_TYPE_NETWORK)
         virDomainSourceDefFormatSeclabel(&childBuf, src->nseclabels,

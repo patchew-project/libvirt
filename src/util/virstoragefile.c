@@ -2270,6 +2270,8 @@ virStorageSourceCopy(const virStorageSource *src,
     def->type = src->type;
     def->protocol = src->protocol;
     def->format = src->format;
+    def->offset = src->offset;
+    def->size = src->size;
     def->capacity = src->capacity;
     def->allocation = src->allocation;
     def->has_allocation = src->has_allocation;
@@ -3511,10 +3513,21 @@ virStorageSourceParseBackingJSONRaw(virStorageSourcePtr src,
                                     virJSONValuePtr json,
                                     int opaque G_GNUC_UNUSED)
 {
-    /* There are no interesting attributes in raw driver.
-     * Treat it as pass-through.
-     */
-    return virStorageSourceParseBackingJSONInternal(src, json);
+    int rc;
+
+    if ((rc = virStorageSourceParseBackingJSONInternal(src, json)) < 0)
+        return rc;
+
+    if ((virJSONValueObjectHasKey(json, "offset") &&
+         virJSONValueObjectGetNumberUlong(json, "offset", &src->offset) < 0) ||
+        (virJSONValueObjectHasKey(json, "size") &&
+         virJSONValueObjectGetNumberUlong(json, "size", &src->size) < 0)) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("malformed 'size' or 'offset' property of 'raw' driver"));
+        return -1;
+    }
+
+    return rc;
 }
 
 
