@@ -611,6 +611,24 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
         for (i = 0; i < def->ninputs; i++) {
             char **usbdevice;
 
+#ifdef LIBXL_HAVE_BUILDINFO_VKB_DEVICE
+            if (def->inputs[i]->type == VIR_DOMAIN_INPUT_TYPE_KBD) {
+                switch (def->inputs[i]->bus) {
+                    case VIR_DOMAIN_INPUT_BUS_PS2:
+                        libxl_defbool_set(&b_info->u.hvm.vkb_device, false);
+                        break;
+                    case VIR_DOMAIN_INPUT_BUS_XEN:
+                        libxl_defbool_set(&b_info->u.hvm.vkb_device, true);
+                        break;
+                    case VIR_DOMAIN_INPUT_BUS_VIRTIO:
+                    default:
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                _("libxenlight supports only ps2/xen keyboard device"));
+                        return -1;
+                }
+            }
+#endif
+
             if (def->inputs[i]->bus != VIR_DOMAIN_INPUT_BUS_USB)
                 continue;
 
