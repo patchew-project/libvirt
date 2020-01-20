@@ -17,7 +17,7 @@
 
 #include <config.h>
 
-#ifdef HAVE_SYS_IOCTL_H
+#ifndef WIN32
 # include <sys/ioctl.h>
 #endif
 
