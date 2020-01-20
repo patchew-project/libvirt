@@ -14618,6 +14618,16 @@ qemuDomainSnapshotCreateInactiveExternal(virQEMUDriverPtr driver,
     if (!(created = virBitmapNew(snapdef->ndisks)))
         goto cleanup;
 
+    for (i = 0; i < snapdef->ndisks && !reuse; i++) {
+        snapdisk = &(snapdef->disks[i]);
+        defdisk = snapdef->parent.dom->disks[snapdisk->idx];
+        if (snapdisk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+
+        if (qemuDomainStorageSourceValidateDepth(defdisk->src, 1, defdisk->dst) < 0)
+            return -1;
+    }
+
     /* If reuse is true, then qemuDomainSnapshotPrepare already
      * ensured that the new files exist, and it was up to the user to
      * create them correctly.  */
