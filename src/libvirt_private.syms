@@ -524,6 +524,8 @@ virDomainNetTypeFromString;
 virDomainNetTypeSharesHostView;
 virDomainNetTypeToString;
 virDomainNetUpdate;
+virDomainNetDHCPInterfaces;
+virDomainNetARPInterfaces;
 virDomainNostateReasonTypeFromString;
 virDomainNostateReasonTypeToString;
 virDomainObjAssignDef;
