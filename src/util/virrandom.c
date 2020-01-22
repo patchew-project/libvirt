@@ -24,10 +24,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef WITH_GNUTLS
-# include <gnutls/gnutls.h>
-# include <gnutls/crypto.h>
-#endif
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #include "virrandom.h"
 #include "virthread.h"
@@ -116,7 +114,6 @@ int
 virRandomBytes(unsigned char *buf,
                size_t buflen)
 {
-#if WITH_GNUTLS
     int rv;
 
     /* Generate the byte stream using gnutls_rnd() if possible */
@@ -126,35 +123,6 @@ virRandomBytes(unsigned char *buf,
                        gnutls_strerror(rv));
         return -1;
     }
-
-#else /* !WITH_GNUTLS */
-
-    int fd;
-
-    if ((fd = open(RANDOM_SOURCE, O_RDONLY)) < 0) {
-        virReportSystemError(errno,
-                             _("unable to open %s"),
-                             RANDOM_SOURCE);
-        return -1;
-    }
-
-    while (buflen > 0) {
-        ssize_t n;
-
-        if ((n = saferead(fd, buf, buflen)) <= 0) {
-            virReportSystemError(errno,
-                                 _("unable to read from %s"),
-                                 RANDOM_SOURCE);
-            VIR_FORCE_CLOSE(fd);
-            return n < 0 ? -errno : -ENODATA;
-        }
-
-        buf += n;
-        buflen -= n;
-    }
-
-    VIR_FORCE_CLOSE(fd);
-#endif /* !WITH_GNUTLS */
 
     return 0;
 }
