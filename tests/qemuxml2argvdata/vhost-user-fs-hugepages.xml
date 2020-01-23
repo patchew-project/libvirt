@@ -61,7 +61,9 @@
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x3'/>
     </controller>
     <filesystem type='mount' accessmode='passthrough'>
-      <driver type='virtiofs'/>
+      <driver type='virtiofs'>
+        <binary>/usr/libexec/virtiofsd</binary>
+      </driver>
       <source dir='/path'/>
       <target dir='mount_tag'/>
       <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>

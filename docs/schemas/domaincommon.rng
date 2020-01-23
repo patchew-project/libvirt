@@ -2630,6 +2630,57 @@
             <value>virtiofs</value>
           </attribute>
           <optional>
+            <attribute name="queue">
+              <ref name="unsignedInt"/>
+            </attribute>
+          </optional>
+          <optional>
+            <attribute name="xattr">
+              <ref name="virOnOff"/>
+            </attribute>
+          </optional>
+          <optional>
+            <element name="binary">
+              <ref name="absFilePath"/>
+            </element>
+          </optional>
+          <optional>
+            <element name="cache">
+              <optional>
+                <attribute name="size">
+                  <ref name="unsignedLong"/>
+                </attribute>
+                <optional>
+                  <attribute name="unit">
+                    <ref name="unit"/>
+                  </attribute>
+                </optional>
+              </optional>
+              <optional>
+                <attribute name="mode">
+                  <choice>
+                    <value>none</value>
+                    <value>always</value>
+                  </choice>
+                </attribute>
+              </optional>
+            </element>
+          </optional>
+          <optional>
+            <element name="lock">
+              <optional>
+                <attribute name="posix">
+                  <ref name="virOnOff"/>
+                </attribute>
+              </optional>
+              <optional>
+                <attribute name="flock">
+                  <ref name="virOnOff"/>
+                </attribute>
+              </optional>
+            </element>
+          </optional>
+          <optional>
             <attribute name="format">
               <ref name="storageFormat"/>
             </attribute>

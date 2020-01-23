@@ -802,6 +802,14 @@ typedef enum {
     VIR_DOMAIN_FS_MODEL_LAST
 } virDomainFSModel;
 
+typedef enum {
+    VIR_DOMAIN_FS_CACHE_MODE_DEFAULT = 0,
+    VIR_DOMAIN_FS_CACHE_MODE_NONE,
+    VIR_DOMAIN_FS_CACHE_MODE_ALWAYS,
+
+    VIR_DOMAIN_FS_CACHE_MODE_LAST
+} virDomainFSCacheMode;
+
 struct _virDomainFSDef {
     int type;
     int fsdriver; /* enum virDomainFSDriverType */
@@ -817,6 +825,13 @@ struct _virDomainFSDef {
     unsigned long long space_hard_limit; /* in bytes */
     unsigned long long space_soft_limit; /* in bytes */
     bool symlinksResolved;
+    char *binary;
+    unsigned long long queue_size;
+    virTristateSwitch xattr;
+    virDomainFSCacheMode cache;
+    unsigned long long cache_size;
+    virTristateSwitch posix_lock;
+    virTristateSwitch flock;
     virDomainVirtioOptionsPtr virtio;
     virObjectPtr privateData;
 };
@@ -3425,6 +3440,7 @@ VIR_ENUM_DECL(virDomainFSDriver);
 VIR_ENUM_DECL(virDomainFSAccessMode);
 VIR_ENUM_DECL(virDomainFSWrpolicy);
 VIR_ENUM_DECL(virDomainFSModel);
+VIR_ENUM_DECL(virDomainFSCacheMode);
 VIR_ENUM_DECL(virDomainNet);
 VIR_ENUM_DECL(virDomainNetBackend);
 VIR_ENUM_DECL(virDomainNetVirtioTxMode);

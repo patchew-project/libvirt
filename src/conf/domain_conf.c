@@ -501,6 +501,14 @@ VIR_ENUM_IMPL(virDomainFSModel,
               "virtio-non-transitional",
 );
 
+VIR_ENUM_IMPL(virDomainFSCacheMode,
+              VIR_DOMAIN_FS_CACHE_MODE_LAST,
+              "default",
+              "none",
+              "always",
+);
+
+
 VIR_ENUM_IMPL(virDomainNet,
               VIR_DOMAIN_NET_TYPE_LAST,
               "user",
@@ -2314,6 +2322,7 @@ void virDomainFSDefFree(virDomainFSDefPtr def)
     VIR_FREE(def->dst);
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def->virtio);
+    VIR_FREE(def->binary);
 
     VIR_FREE(def);
 }
@@ -11116,6 +11125,14 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *usage = NULL;
     g_autofree char *units = NULL;
     g_autofree char *model = NULL;
+    g_autofree char *binary = NULL;
+    g_autofree char *queue_size = NULL;
+    g_autofree char *xattr = NULL;
+    g_autofree char *cache = NULL;
+    g_autofree char *cache_size = NULL;
+    g_autofree char *cache_unit = NULL;
+    g_autofree char *posix_lock = NULL;
+    g_autofree char *flock = NULL;
 
     ctxt->node = node;
 
@@ -11193,12 +11210,39 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
             } else if (virXMLNodeNameEqual(cur, "readonly")) {
                 def->readonly = true;
             } else if (virXMLNodeNameEqual(cur, "driver")) {
+                xmlNodePtr child;
+
                 if (!fsdriver)
                     fsdriver = virXMLPropString(cur, "type");
                 if (!wrpolicy)
                     wrpolicy = virXMLPropString(cur, "wrpolicy");
                 if (!format)
                     format = virXMLPropString(cur, "format");
+                if (!queue_size)
+                    queue_size = virXMLPropString(cur, "queue");
+                if (!xattr)
+                    xattr = virXMLPropString(cur, "xattr");
+
+                child = cur->children;
+                while (child != NULL) {
+                    if (virXMLNodeNameEqual(child, "cache")) {
+                        if (!cache)
+                            cache = virXMLPropString(child, "mode");
+                        if (!cache_size)
+                            cache_size = virXMLPropString(child, "size");
+                        if (!cache_unit)
+                            cache_unit = virXMLPropString(child, "unit");
+                    } else if (virXMLNodeNameEqual(child, "lock")) {
+                        if (!posix_lock)
+                            posix_lock = virXMLPropString(child, "posix");
+                        if (!flock)
+                            flock = virXMLPropString(child, "flock");
+                    } else if (virXMLNodeNameEqual(child, "binary")) {
+                        if (!binary)
+                            binary = virXMLNodeContentString(child);
+                    }
+                    child = child->next;
+                }
 
                 if (virDomainVirtioOptionsParseXML(cur, &def->virtio) < 0)
                     goto error;
@@ -11208,10 +11252,71 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
 
     if (fsdriver) {
+        int val;
+
         if ((def->fsdriver = virDomainFSDriverTypeFromString(fsdriver)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown fs driver type '%s'"), fsdriver);
             goto error;
+        }
+
+        if (binary)
+            def->binary = virFileSanitizePath(binary);
+
+        if (queue_size && virStrToLong_ull(queue_size, NULL, 10, &def->queue_size) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("cannot parse queue size '%s' for virtiofs"),
+                           cache_size);
+            goto error;
+        }
+
+        if (xattr) {
+            if ((val = virTristateSwitchTypeFromString(xattr)) <= 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown xattr value '%s'"), xattr);
+                goto error;
+            }
+            def->xattr = val;
+        }
+
+        if (cache) {
+            if ((val = virDomainFSCacheModeTypeFromString(cache)) <= 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("cannot parse cache mode '%s' for virtiofs"),
+                               cache);
+                goto error;
+            }
+            def->cache = val;
+        }
+
+        if (cache_size && virStrToLong_ull(cache_size, NULL, 10, &def->cache_size) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("cannot parse cache size '%s' for virtiofs"),
+                           cache_size);
+            goto error;
+        }
+
+        if (virScaleInteger(&def->cache_size, cache_unit,
+                            1024, ULLONG_MAX) < 0)
+            goto error;
+        def->cache_size = VIR_DIV_UP(def->cache_size, 1024);
+
+        if (posix_lock) {
+            if ((val = virTristateSwitchTypeFromString(posix_lock)) <= 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown posix lock value '%s'"), posix_lock);
+                goto error;
+            }
+            def->posix_lock = val;
+        }
+
+        if (flock) {
+            if ((val = virTristateSwitchTypeFromString(flock)) <= 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown flock value '%s'"), flock);
+                goto error;
+            }
+            def->flock = val;
         }
     }
 
@@ -24998,6 +25103,7 @@ virDomainFSDefFormat(virBufferPtr buf,
     const char *wrpolicy = virDomainFSWrpolicyTypeToString(def->wrpolicy);
     const char *src = def->src->path;
     g_auto(virBuffer) driverAttrBuf = VIR_BUFFER_INITIALIZER;
+    g_auto(virBuffer) driverBuf = VIR_BUFFER_INIT_CHILD(buf);
 
     if (!type) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -25021,7 +25127,11 @@ virDomainFSDefFormat(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
 
     virBufferAdjustIndent(buf, 2);
+    virBufferAdjustIndent(&driverBuf, 2);
     if (def->fsdriver) {
+        g_auto(virBuffer) lockAttrBuf = VIR_BUFFER_INITIALIZER;
+        g_auto(virBuffer) cacheAttrBuf = VIR_BUFFER_INITIALIZER;
+
         virBufferAsprintf(&driverAttrBuf, " type='%s'", fsdriver);
 
         if (def->format)
@@ -25032,11 +25142,45 @@ virDomainFSDefFormat(virBufferPtr buf,
         if (def->wrpolicy)
             virBufferAsprintf(&driverAttrBuf, " wrpolicy='%s'", wrpolicy);
 
+        if (def->queue_size)
+            virBufferAsprintf(&driverAttrBuf, " queue='%llu'", def->queue_size);
+
+        if (def->xattr) {
+            virBufferAsprintf(&driverAttrBuf, " xattr='%s'",
+                              virTristateSwitchTypeToString(def->xattr));
+        }
+
+        virBufferEscapeString(&driverBuf, "<binary>%s</binary>\n", def->binary);
+
+        if (def->cache) {
+            virBufferAsprintf(&cacheAttrBuf, " mode='%s'",
+                              virDomainFSCacheModeTypeToString(def->cache));
+        }
+
+        if (def->cache_size) {
+            virBufferAsprintf(&cacheAttrBuf, " size='%llu' unit='KiB'",
+                              def->cache_size);
+        }
+
+        virXMLFormatElement(&driverBuf, "cache", &cacheAttrBuf, NULL);
+
+        if (def->posix_lock) {
+            virBufferAsprintf(&lockAttrBuf, " posix='%s'",
+                              virTristateSwitchTypeToString(def->posix_lock));
+        }
+
+        if (def->flock) {
+            virBufferAsprintf(&lockAttrBuf, " flock='%s'",
+                              virTristateSwitchTypeToString(def->flock));
+        }
+
+        virXMLFormatElement(&driverBuf, "lock", &lockAttrBuf, NULL);
     }
+
 
     virDomainVirtioOptionsFormat(&driverAttrBuf, def->virtio);
 
-    virXMLFormatElement(buf, "driver", &driverAttrBuf, NULL);
+    virXMLFormatElement(buf, "driver", &driverAttrBuf, &driverBuf);
 
     switch (def->type) {
     case VIR_DOMAIN_FS_TYPE_MOUNT:
