@@ -2625,6 +2625,22 @@
           </optional>
           <ref name='virtioOptions'/>
         </group>
+        <group>
+          <attribute name="type">
+            <value>virtiofs</value>
+          </attribute>
+          <optional>
+            <attribute name="format">
+              <ref name="storageFormat"/>
+            </attribute>
+          </optional>
+          <optional>
+            <attribute name="wrpolicy">
+              <value>immediate</value>
+            </attribute>
+          </optional>
+          <ref name='virtioOptions'/>
+        </group>
         <empty/>
       </choice>
     </element>
