@@ -538,6 +538,7 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
 
     /* 350 */
     QEMU_CAPS_DEVICE_I8042, /* PS/2 controller */
+    QEMU_CAPS_DEVICE_VHOST_USER_FS, /* -device vhost-user-fs */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

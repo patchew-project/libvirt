@@ -557,6 +557,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 350 */
               "i8042",
+              "vhost-user-fs",
     );
 
 
@@ -1249,6 +1250,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "ramfb", QEMU_CAPS_DEVICE_RAMFB },
     { "max-arm-cpu", QEMU_CAPS_ARM_MAX_CPU },
     { "i8042", QEMU_CAPS_DEVICE_I8042 },
+    { "vhost-user-fs-device", QEMU_CAPS_DEVICE_VHOST_USER_FS },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
