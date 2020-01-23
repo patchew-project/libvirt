@@ -801,6 +801,8 @@ virQEMUDriverConfigLoadDebugEntry(virQEMUDriverConfigPtr cfg,
 {
     if (virConfGetValueUInt(conf, "gluster_debug_level", &cfg->glusterDebugLevel) < 0)
         return -1;
+    if (virConfGetValueBool(conf, "virtiofs_debug", &cfg->virtiofsDebug) < 0)
+        return -1;
 
     return 0;
 }
