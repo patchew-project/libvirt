@@ -14676,7 +14676,8 @@ qemuDomainSnapshotCreateInactiveExternal(virQEMUDriverPtr driver,
         if (virStorageSourceInitChainElement(newsrc, defdisk->src, false) < 0)
             goto cleanup;
 
-        if (virStorageSourceHasBacking(defdisk->src)) {
+        if (!reuse &&
+            virStorageSourceHasBacking(defdisk->src)) {
             defdisk->src->readonly = true;
             newsrc->backingStore = g_steal_pointer(&defdisk->src);
         } else {
