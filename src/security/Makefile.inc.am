@@ -38,7 +38,7 @@ EXTRA_DIST += \
 	security/apparmor/TEMPLATE.lxc \
 	security/apparmor/libvirt-qemu \
 	security/apparmor/libvirt-lxc \
-	security/apparmor/usr.lib.libvirt.virt-aa-helper \
+	security/apparmor/usr.libexec.virt-aa-helper \
 	security/apparmor/usr.sbin.libvirtd \
 	$(NULL)
 
@@ -91,7 +91,7 @@ endif WITH_SECDRIVER_APPARMOR
 if WITH_APPARMOR_PROFILES
 apparmordir = $(sysconfdir)/apparmor.d/
 apparmor_DATA = \
-	security/apparmor/usr.lib.libvirt.virt-aa-helper \
+	security/apparmor/usr.libexec.virt-aa-helper \
 	security/apparmor/usr.sbin.libvirtd \
 	$(NULL)
 
@@ -111,11 +111,11 @@ APPARMOR_LOCAL_DIR = "$(DESTDIR)$(apparmordir)/local"
 install-apparmor-local:
 	$(MKDIR_P) "$(APPARMOR_LOCAL_DIR)"
 	echo "# Site-specific additions and overrides for \
-		'usr.lib.libvirt.virt-aa-helper'" \
-		>"$(APPARMOR_LOCAL_DIR)/usr.lib.libvirt.virt-aa-helper"
+		'usr.libexec.virt-aa-helper'" \
+		>"$(APPARMOR_LOCAL_DIR)/usr.libexec.virt-aa-helper"
 
 uninstall-apparmor-local:
-	rm -f "$(APPARMOR_LOCAL_DIR)/usr.lib.libvirt.virt-aa-helper"
+	rm -f "$(APPARMOR_LOCAL_DIR)/usr.libexec.virt-aa-helper"
 	rmdir "$(APPARMOR_LOCAL_DIR)" || :
 
 INSTALL_DATA_LOCAL += install-apparmor-local
