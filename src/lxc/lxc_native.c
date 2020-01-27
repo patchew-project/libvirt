@@ -650,6 +650,49 @@ lxcNetworkParseDataSuffix(const char *entry,
 
 
 static lxcNetworkParseDataPtr
+lxcNetworkGetParseDataByIndex(lxcNetworkParseDataArray *networks,
+                              unsigned int index)
+{
+    size_t ndata = networks->ndata;
+    size_t i;
+
+    for (i = 0; i < ndata; i++) {
+        if (networks->parseData[i]->index == index)
+            return networks->parseData[i];
+    }
+
+    /* Index was not found. So, it is time to add new *
+     * interface and return this last position.       */
+    if (VIR_EXPAND_N(networks->parseData, networks->ndata, 1) < 0)
+        return NULL;
+
+    networks->parseData[ndata] = g_new0(lxcNetworkParseData, 1);
+    networks->parseData[ndata]->index = index;
+
+    return networks->parseData[ndata];
+}
+
+
+static int
+lxcNetworkParseDataEntry(const char *name,
+                         virConfValuePtr value,
+                         lxcNetworkParseDataArray *networks)
+{
+    lxcNetworkParseData *parseData;
+    const char *suffix = STRSKIP(name, "lxc.net.");
+    size_t index;
+
+    suffix = strchr(suffix, '.') + 1;
+    sscanf(name, "lxc.net.%zu", &index);
+
+    if (!(parseData = lxcNetworkGetParseDataByIndex(networks, index)))
+        return -1;
+
+    return lxcNetworkParseDataSuffix(suffix, value, parseData);
+}
+
+
+static lxcNetworkParseDataPtr
 lxcNetworkGetParseDataByIndexLegacy(lxcNetworkParseDataArray *networks,
                                     const char *entry)
 {
@@ -695,6 +738,8 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
 
     if (STRPREFIX(name, "lxc.network."))
         return lxcNetworkParseDataEntryLegacy(name, value, networks);
+    if (STRPREFIX(name, "lxc.net."))
+        return lxcNetworkParseDataEntry(name, value, networks);
 
     return 0;
 }
