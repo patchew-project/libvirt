@@ -2007,7 +2007,6 @@ virFileMoveMount;
 virFileNBDDeviceAssociate;
 virFileOpenAs;
 virFileOpenTty;
-virFilePrintf;
 virFileReadAll;
 virFileReadAllQuiet;
 virFileReadBufQuiet;
