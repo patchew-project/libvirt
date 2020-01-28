@@ -3006,6 +3006,11 @@ virSecretLookupFormatSecret;
 virSecretLookupParseSecret;
 
 
+# util/virsocket.h
+virSocketRecvFD;
+virSocketSendFD;
+
+
 # util/virsocketaddr.h
 virSocketAddrBroadcast;
 virSocketAddrBroadcastByPrefix;
