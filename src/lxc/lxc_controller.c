@@ -672,7 +672,7 @@ static int virLXCControllerSetupLoopDevices(virLXCControllerPtr ctrl)
 
             /* The NBD device will be cleaned up while the cgroup will end.
              * For this we need to remember the qemu-nbd pid and add it to
-             * the cgroup*/
+             * the cgroup */
             if (virLXCControllerAppendNBDPids(ctrl, fs->src->path) < 0)
                 return -1;
         } else {
@@ -737,7 +737,7 @@ static int virLXCControllerSetupLoopDevices(virLXCControllerPtr ctrl)
 
             /* The NBD device will be cleaned up while the cgroup will end.
              * For this we need to remember the qemu-nbd pid and add it to
-             * the cgroup*/
+             * the cgroup */
             if (virLXCControllerAppendNBDPids(ctrl, virDomainDiskGetSource(disk)) < 0)
                 return -1;
         } else {
