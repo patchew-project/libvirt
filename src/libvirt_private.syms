@@ -1926,6 +1926,11 @@ virSetErrorLogPriorityFunc;
 virStrerror;
 
 
+# util/vireventglib.h
+virEventGLibRegister;
+virEventGLibRunOnce;
+
+
 # util/vireventpoll.h
 virEventPollAddHandle;
 virEventPollAddTimeout;
