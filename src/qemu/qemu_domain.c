@@ -63,9 +63,7 @@
 #include "virdomaincheckpointobjlist.h"
 #include "backup_conf.h"
 
-#ifdef MAJOR_IN_MKDEV
-# include <sys/mkdev.h>
-#elif MAJOR_IN_SYSMACROS
+#ifdef __linux__
 # include <sys/sysmacros.h>
 #endif
 #include <sys/time.h>
