@@ -4422,7 +4422,7 @@ cmdSave(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "verbose"))
         verbose = true;
 
-    if (pipe(p) < 0)
+    if (virPipeQuiet(p) < 0)
         goto cleanup;
 
     data.ctl = ctl;
@@ -4731,7 +4731,7 @@ cmdManagedSave(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "verbose"))
         verbose = true;
 
-    if (pipe(p) < 0)
+    if (virPipeQuiet(p) < 0)
         goto cleanup;
 
     data.ctl = ctl;
@@ -5461,7 +5461,7 @@ cmdDump(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "verbose"))
         verbose = true;
 
-    if (pipe(p) < 0)
+    if (virPipeQuiet(p) < 0)
         goto cleanup;
 
     data.ctl = ctl;
@@ -11032,7 +11032,7 @@ cmdMigrate(vshControl *ctl, const vshCmd *cmd)
             goto cleanup;
     }
 
-    if (pipe(p) < 0)
+    if (virPipeQuiet(p) < 0)
         goto cleanup;
 
     data.ctl = ctl;
