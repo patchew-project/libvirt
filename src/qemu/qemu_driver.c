@@ -19117,6 +19117,26 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
 }
 
 
+static void
+qemuDomainSetGroupBlockIoTune(virDomainDefPtr def,
+                              virDomainBlockIoTuneInfoPtr iotune)
+{
+    size_t i;
+
+    if (!iotune->group_name)
+        return;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr d = def->disks[i];
+
+        if (STREQ_NULLABLE(d->blkdeviotune.group_name, iotune->group_name)) {
+            VIR_FREE(d->blkdeviotune.group_name);
+            virDomainBlockIoTuneInfoCopy(iotune, &d->blkdeviotune);
+        }
+    }
+}
+
+
 static int
 qemuDomainSetBlockIoTune(virDomainPtr dom,
                          const char *path,
@@ -19419,6 +19439,8 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         if (virDomainDiskSetBlockIOTune(disk, &info) < 0)
             goto endjob;
 
+        qemuDomainSetGroupBlockIoTune(def, &info);
+
         if (virDomainObjSave(vm, driver->xmlopt, cfg->stateDir) < 0)
             goto endjob;
 
@@ -19443,6 +19465,8 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
 
         if (virDomainDiskSetBlockIOTune(conf_disk, &info) < 0)
             goto endjob;
+
+        qemuDomainSetGroupBlockIoTune(persistentDef, &conf_info);
 
         if (virDomainDefSave(persistentDef, driver->xmlopt,
                              cfg->configDir) < 0)
