@@ -489,7 +489,8 @@ struct _virDomainBlockIoTuneInfo {
     unsigned long long total_iops_sec_max_length;
     unsigned long long read_iops_sec_max_length;
     unsigned long long write_iops_sec_max_length;
-    /* Don't forget to update virDomainBlockIoTuneInfoEqual. */
+    /* Don't forget to update virDomainBlockIoTuneInfoEqual
+     * and virDomainBlockIoTuneInfoCopy. */
 };
 
 
@@ -3715,3 +3716,7 @@ virDomainBlockIoTuneInfoHasAny(const virDomainBlockIoTuneInfo *iotune);
 bool
 virDomainBlockIoTuneInfoEqual(const virDomainBlockIoTuneInfo *a,
                               const virDomainBlockIoTuneInfo *b);
+
+void
+virDomainBlockIoTuneInfoCopy(const virDomainBlockIoTuneInfo *src,
+                             virDomainBlockIoTuneInfoPtr dst);

@@ -31811,3 +31811,12 @@ virDomainBlockIoTuneInfoEqual(const virDomainBlockIoTuneInfo *a,
         a->read_iops_sec_max_length == b->read_iops_sec_max_length &&
         a->write_iops_sec_max_length == b->write_iops_sec_max_length;
 }
+
+
+void
+virDomainBlockIoTuneInfoCopy(const virDomainBlockIoTuneInfo *src,
+                             virDomainBlockIoTuneInfoPtr dst)
+{
+    *dst = *src;
+    dst->group_name = g_strdup(src->group_name);
+}
