@@ -5110,6 +5110,31 @@ virDomainRNGDefPostParse(virDomainRNGDefPtr rng)
 }
 
 
+static void
+virDomainDiskExpandGroupIoTune(virDomainDiskDefPtr disk,
+                               const virDomainDef *def)
+{
+    size_t i;
+
+    if (!disk->blkdeviotune.group_name ||
+        virDomainBlockIoTuneInfoHasAny(&disk->blkdeviotune))
+        return;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr d = def->disks[i];
+        char *tmp = disk->blkdeviotune.group_name;
+
+        if (STRNEQ_NULLABLE(disk->blkdeviotune.group_name, d->blkdeviotune.group_name) ||
+            !virDomainBlockIoTuneInfoHasAny(&d->blkdeviotune))
+            continue;
+
+        disk->blkdeviotune = d->blkdeviotune;
+        disk->blkdeviotune.group_name = tmp;
+        return;
+    }
+}
+
+
 static int
 virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
                           const virDomainDef *def,
@@ -5154,6 +5179,8 @@ virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
         virDomainDiskDefAssignAddress(xmlopt, disk, def) < 0) {
         return -1;
     }
+
+    virDomainDiskExpandGroupIoTune(disk, def);
 
     return 0;
 }
