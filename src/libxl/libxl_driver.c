@@ -75,6 +75,7 @@ VIR_LOG_INIT("libxl.libxl_driver");
 
 /* Number of Xen scheduler parameters */
 #define XEN_SCHED_CREDIT_NPARAM   2
+#define XEN_SCHED_CREDIT2_NPARAM  2
 
 #define LIBXL_CHECK_DOM0_GOTO(name, label) \
     do { \
@@ -4586,6 +4587,8 @@ libxlDomainGetSchedulerType(virDomainPtr dom, int *nparams)
         break;
     case LIBXL_SCHEDULER_CREDIT2:
         name = "credit2";
+        if (nparams)
+            *nparams = XEN_SCHED_CREDIT2_NPARAM;
         break;
     case LIBXL_SCHEDULER_ARINC653:
         name = "arinc653";
@@ -4632,11 +4635,11 @@ libxlDomainGetSchedulerParametersFlags(virDomainPtr dom,
     if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
 
+    /* Only credit and credit2 are supported for now. */
     sched_id = libxl_get_scheduler(cfg->ctx);
-
-    if (sched_id != LIBXL_SCHEDULER_CREDIT) {
+    if (sched_id != LIBXL_SCHEDULER_CREDIT && sched_id != LIBXL_SCHEDULER_CREDIT2) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Only 'credit' scheduler is supported"));
+                       _("Only 'credit' and 'credit2' schedulers are supported"));
         goto cleanup;
     }
 
@@ -4657,6 +4660,9 @@ libxlDomainGetSchedulerParametersFlags(virDomainPtr dom,
             goto cleanup;
     }
 
+    /* Credit and Credit2 have the same number (two) of parameters,
+     * so this is ok for both, at least as long as that stays true. */
+    G_STATIC_ASSERT(XEN_SCHED_CREDIT_NPARAM == XEN_SCHED2_CREDIT_NPARAM);
     if (*nparams > XEN_SCHED_CREDIT_NPARAM)
         *nparams = XEN_SCHED_CREDIT_NPARAM;
     ret = 0;
@@ -4711,9 +4717,11 @@ libxlDomainSetSchedulerParametersFlags(virDomainPtr dom,
 
     sched_id = libxl_get_scheduler(cfg->ctx);
 
-    if (sched_id != LIBXL_SCHEDULER_CREDIT) {
+    /* Only credit and credit2 are supported for now. */
+    sched_id = libxl_get_scheduler(cfg->ctx);
+    if (sched_id != LIBXL_SCHEDULER_CREDIT && sched_id != LIBXL_SCHEDULER_CREDIT2) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Only 'credit' scheduler is supported"));
+                       _("Only 'credit' and 'credit2' schedulers are supported"));
         goto endjob;
     }
 
