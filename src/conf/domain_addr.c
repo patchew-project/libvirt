@@ -297,7 +297,7 @@ virDomainPCIControllerModelToConnectType(virDomainControllerModelPCI model)
         return VIR_PCI_CONNECT_TYPE_PCIE_TO_PCI_BRIDGE;
 
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
-        return VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT | VIR_PCI_CONNECT_AGGREGATE_SLOT;
+        return VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT;
 
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
         return VIR_PCI_CONNECT_TYPE_PCIE_SWITCH_UPSTREAM_PORT;
@@ -827,6 +827,7 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
                                        virPCIDeviceAddressPtr addr,
                                        virDomainPCIConnectFlags flags,
                                        unsigned int isolationGroup,
+                                       unsigned int aggregateSlotIdx,
                                        bool fromConfig)
 {
     int ret = -1;
@@ -859,9 +860,14 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
      * the device it's being reserved for can aggregate multiples on a
      * slot, set the slot's aggregate flag.
     */
-    if (!bus->slot[addr->slot].functions &&
-        flags & VIR_PCI_CONNECT_AGGREGATE_SLOT) {
-        bus->slot[addr->slot].aggregate = true;
+    if (!bus->slot[addr->slot].functions && aggregateSlotIdx > 0) {
+        bus->slot[addr->slot].aggregateSlotIdx = aggregateSlotIdx;
+    } else if (bus->slot[addr->slot].aggregateSlotIdx !=
+               aggregateSlotIdx && fromConfig) {
+        bus->slot[addr->slot].aggregateSlotIdx = 0;
+        VIR_DEBUG("PCI functions of %.4x:%.2x is aggregated to slot %u"
+                  "because of user assigned address %s",
+                  addr->domain, addr->bus, aggregateSlotIdx, addrStr);
     }
 
     if (virDomainPCIAddressBusIsEmpty(bus) && !bus->isolationGroupLocked) {
@@ -886,8 +892,8 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
 
     /* mark the requested function as reserved */
     bus->slot[addr->slot].functions |= (1 << addr->function);
-    VIR_DEBUG("Reserving PCI address %s (aggregate='%s')", addrStr,
-              bus->slot[addr->slot].aggregate ? "true" : "false");
+    VIR_DEBUG("Reserving PCI address %s (aggregateSlotIdx='%d')",
+              addrStr, bus->slot[addr->slot].aggregateSlotIdx);
 
     ret = 0;
  cleanup:
@@ -900,10 +906,11 @@ int
 virDomainPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr addr,
                                virDomainPCIConnectFlags flags,
-                               unsigned int isolationGroup)
+                               unsigned int isolationGroup,
+                               unsigned int aggregateSlotIdx)
 {
     return virDomainPCIAddressReserveAddrInternal(addrs, addr, flags,
-                                                  isolationGroup, true);
+                                                  isolationGroup, aggregateSlotIdx, true);
 }
 
 int
@@ -940,6 +947,7 @@ virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
 
         if (virDomainPCIAddressReserveAddrInternal(addrs, &dev->addr.pci,
                                                    flags, dev->isolationGroup,
+                                                   dev->aggregateSlotIdx,
                                                    true) < 0) {
             goto cleanup;
         }
@@ -1109,6 +1117,7 @@ virDomainPCIAddressSetFree(virDomainPCIAddressSetPtr addrs)
 static int
 virDomainPCIAddressFindUnusedFunctionOnBus(virDomainPCIAddressBusPtr bus,
                                            virPCIDeviceAddressPtr searchAddr,
+                                           unsigned int aggregateSlotIdx,
                                            int function,
                                            virDomainPCIConnectFlags flags,
                                            bool *found)
@@ -1132,8 +1141,8 @@ virDomainPCIAddressFindUnusedFunctionOnBus(virDomainPCIAddressBusPtr bus,
                 break;
             }
 
-            if (flags & VIR_PCI_CONNECT_AGGREGATE_SLOT &&
-                bus->slot[searchAddr->slot].aggregate) {
+            if (bus->slot[searchAddr->slot].aggregateSlotIdx > 0 &&
+                bus->slot[searchAddr->slot].aggregateSlotIdx == aggregateSlotIdx) {
                 /* slot and device are okay with aggregating devices */
                 if ((bus->slot[searchAddr->slot].functions &
                      (1 << searchAddr->function)) == 0) {
@@ -1178,6 +1187,7 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr next_addr,
                                virDomainPCIConnectFlags flags,
                                unsigned int isolationGroup,
+                               unsigned int aggregateSlotIdx,
                                int function)
 {
     virPCIDeviceAddress a = { 0 };
@@ -1206,7 +1216,9 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
 
         a.slot = bus->minSlot;
 
-        if (virDomainPCIAddressFindUnusedFunctionOnBus(bus, &a, function,
+        if (virDomainPCIAddressFindUnusedFunctionOnBus(bus, &a,
+                                                       aggregateSlotIdx,
+                                                       function,
                                                        flags, &found) < 0) {
             return -1;
         }
@@ -1230,7 +1242,9 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
 
         a.slot = bus->minSlot;
 
-        if (virDomainPCIAddressFindUnusedFunctionOnBus(bus, &a, function,
+        if (virDomainPCIAddressFindUnusedFunctionOnBus(bus, &a,
+                                                       aggregateSlotIdx,
+                                                       function,
                                                        flags, &found) < 0) {
             return -1;
         }
@@ -1288,12 +1302,13 @@ virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
 {
     virPCIDeviceAddress addr;
 
-    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags,
-                                       dev->isolationGroup, function) < 0)
+    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags, dev->isolationGroup,
+                                       dev->aggregateSlotIdx, function) < 0)
         return -1;
 
     if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags,
-                                               dev->isolationGroup, false) < 0)
+                                               dev->isolationGroup,
+                                               dev->aggregateSlotIdx, false) < 0)
         return -1;
 
     addr.extFlags = dev->addr.pci.extFlags;

@@ -53,6 +53,15 @@ int qemuDomainFillDeviceIsolationGroup(virDomainDefPtr def,
                                        virDomainDeviceDefPtr dev)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+void
+qemuDomainSetDeviceSlotAggregateIdx(virDomainDefPtr def,
+                                     virDomainDeviceDefPtr dev);
+
+int
+qemuDomainDefDeviceFindSlotAggregateIdx(virDomainDefPtr def,
+                                        virDomainDeviceDefPtr dev);
+
+
 void qemuDomainReleaseDeviceAddress(virDomainObjPtr vm,
                                     virDomainDeviceInfoPtr info);
 

@@ -170,6 +170,7 @@ struct _virDomainDeviceInfo {
      */
     int pciAddrExtFlags; /* enum virDomainPCIAddressExtensionFlags */
     char *loadparm;
+    unsigned int aggregateSlotIdx; /* Used when the aggregate flag is set */
 
     /* PCI devices will only be automatically placed on a PCI bus
      * that shares the same isolation group */
