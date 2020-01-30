@@ -1,7 +1,7 @@
 # Last Modified: Mon Apr  5 15:10:27 2010
 #include <tunables/global>
 
-profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
+profile virt-aa-helper /usr/{lib,lib64,libexec}/libvirt/virt-aa-helper {
   #include <abstractions/base>
 
   # needed for searching directories
@@ -70,5 +70,5 @@ profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
   /**.[iI][sS][oO] r,
   /**/disk{,.*} r,
 
-  #include <local/usr.lib.libvirt.virt-aa-helper>
+  #include <local/usr.libexec.virt-aa-helper>
 }
