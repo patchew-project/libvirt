@@ -321,6 +321,7 @@ virDomainDefHasOldStyleUEFI;
 virDomainDefHasUSB;
 virDomainDefHasVcpusOffline;
 virDomainDefHasVFIOHostdev;
+virDomainDefHostdevGetPCIOnlineFunctionMap;
 virDomainDefLifecycleActionAllowed;
 virDomainDefMaybeAddController;
 virDomainDefMaybeAddInput;

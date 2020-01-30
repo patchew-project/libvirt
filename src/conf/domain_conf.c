@@ -16947,6 +16947,33 @@ virDomainHostdevFind(virDomainDefPtr def,
     return *found ? i : -1;
 }
 
+#define PCI_MAX_SLOT_FUNCTIONS 8
+/**
+ * virDomainDefHostdevGetPCIOnlineFunctionMap:
+ * @def: domain definition
+ * @aggrSlotIdx: slot aggregation index
+ * Returns a bitmap representing state of individual functions of a slot.
+ */
+virBitmapPtr
+virDomainDefHostdevGetPCIOnlineFunctionMap(virDomainDefPtr def,
+                                           int aggrSlotIdx)
+{
+    size_t i;
+    virBitmapPtr ret = NULL;
+
+    if (!(ret = virBitmapNew(PCI_MAX_SLOT_FUNCTIONS)))
+        return NULL;
+
+    for (i = 0; i < def->nhostdevs; i++) {
+        size_t function = def->hostdevs[i]->source.subsys.u.pci.addr.function;
+
+        if (def->hostdevs[i]->info->aggregateSlotIdx == aggrSlotIdx)
+            ignore_value(virBitmapSetBit(ret, function));
+    }
+
+    return ret;
+}
+
 static bool
 virDomainDiskControllerMatch(int controller_type, int disk_bus)
 {

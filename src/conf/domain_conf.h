@@ -3212,6 +3212,9 @@ virDomainHostdevDefPtr
 virDomainHostdevRemove(virDomainDefPtr def, size_t i);
 int virDomainHostdevFind(virDomainDefPtr def, virDomainHostdevDefPtr match,
                          virDomainHostdevDefPtr *found);
+virBitmapPtr virDomainDefHostdevGetPCIOnlineFunctionMap(virDomainDefPtr def,
+                                                        int aggrSlotIdx);
+
 
 virDomainGraphicsListenDefPtr
 virDomainGraphicsGetListen(virDomainGraphicsDefPtr def, size_t i);
