@@ -559,6 +559,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "i8042",
               "rng-builtin",
               "virtio-net.failover",
+              "vhost-user-fs",
     );
 
 
@@ -1275,6 +1276,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "max-arm-cpu", QEMU_CAPS_ARM_MAX_CPU },
     { "i8042", QEMU_CAPS_DEVICE_I8042 },
     { "rng-builtin", QEMU_CAPS_OBJECT_RNG_BUILTIN },
+    { "vhost-user-fs-device", QEMU_CAPS_DEVICE_VHOST_USER_FS },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
