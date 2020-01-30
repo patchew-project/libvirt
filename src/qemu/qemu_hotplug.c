@@ -5074,13 +5074,19 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
 
 static void
 qemuDomainMarkDeviceAliasForRemoval(virDomainObjPtr vm,
-                                    const char *alias)
+                                    const char *alias,
+                                    bool fresh)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
-    memset(&priv->unplug, 0, sizeof(priv->unplug));
+    if (fresh)
+        memset(&priv->unplug, 0, sizeof(priv->unplug));
 
-    priv->unplug.alias = alias;
+    if (VIR_REALLOC_N(priv->unplug.aliases, priv->unplug.naliases + 1) < 0)
+        return;
+
+    priv->unplug.aliases[priv->unplug.naliases++] = alias;
+
 }
 
 
@@ -5089,7 +5095,7 @@ qemuDomainMarkDeviceForRemoval(virDomainObjPtr vm,
                                virDomainDeviceInfoPtr info)
 
 {
-    qemuDomainMarkDeviceAliasForRemoval(vm, info->alias);
+    qemuDomainMarkDeviceAliasForRemoval(vm, info->alias, true);
 }
 
 
@@ -5097,7 +5103,9 @@ static void
 qemuDomainResetDeviceRemoval(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    priv->unplug.alias = NULL;
+    priv->unplug.aliases = NULL;
+    VIR_FREE(priv->unplug.aliases);
+    priv->unplug.naliases = 0;
     priv->unplug.eventSeen = false;
 }
 
@@ -5132,13 +5140,14 @@ qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
         return 1;
     until += qemuDomainGetUnplugTimeout(vm);
 
-    while (priv->unplug.alias) {
+    /* All devices should get released around same time*/
+    while (priv->unplug.naliases) {
         if ((rc = virDomainObjWaitUntil(vm, until)) == 1)
             return 0;
 
         if (rc < 0) {
             VIR_WARN("Failed to wait on unplug condition for domain '%s' "
-                     "device '%s'", vm->def->name, priv->unplug.alias);
+                     "device '%s'", vm->def->name, priv->unplug.aliases[0]);
             return 1;
         }
     }
@@ -5164,14 +5173,16 @@ qemuDomainSignalDeviceRemoval(virDomainObjPtr vm,
                               qemuDomainUnpluggingDeviceStatus status)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    size_t i;
 
-    if (STREQ_NULLABLE(priv->unplug.alias, devAlias)) {
-        VIR_DEBUG("Removal of device '%s' continues in waiting thread", devAlias);
-        qemuDomainResetDeviceRemoval(vm);
-        priv->unplug.status = status;
-        priv->unplug.eventSeen = true;
-        virDomainObjBroadcast(vm);
-        return true;
+    for (i = 0; i < priv->unplug.naliases; i++) {
+        if (STREQ_NULLABLE(priv->unplug.aliases[i], devAlias)) {
+            VIR_DEBUG("Removal of device '%s' continues in waiting thread", devAlias);
+            VIR_DELETE_ELEMENT(priv->unplug.aliases, i, priv->unplug.naliases);
+            priv->unplug.status = status;
+            virDomainObjBroadcast(vm);
+            return true;
+        }
     }
     return false;
 }
@@ -5984,7 +5995,7 @@ qemuDomainHotplugDelVcpu(virQEMUDriverPtr driver,
         return -1;
     }
 
-    qemuDomainMarkDeviceAliasForRemoval(vm, vcpupriv->alias);
+    qemuDomainMarkDeviceAliasForRemoval(vm, vcpupriv->alias, true);
 
     if (qemuDomainDeleteDevice(vm, vcpupriv->alias) < 0) {
         if (virDomainObjIsActive(vm))
