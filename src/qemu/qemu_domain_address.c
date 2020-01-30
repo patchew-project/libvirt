@@ -23,6 +23,7 @@
 
 #include "qemu_domain_address.h"
 #include "qemu_domain.h"
+#include "domain_conf.h"
 #include "viralloc.h"
 #include "virhostdev.h"
 #include "virerror.h"
@@ -3476,6 +3477,81 @@ qemuDomainEnsurePCIAddress(virDomainObjPtr obj,
     return virDomainPCIAddressEnsureAddr(priv->pciaddrs, info,
                                          info->pciConnectFlags);
 }
+
+
+int
+qemuDomainPCIMultifunctionHostdevEnsurePCIAddresses(virDomainObjPtr vm,
+                                                    virDomainDeviceDefListPtr devlist,
+                                                    virQEMUDriverPtr driver)
+{
+    int ret = -1, aggrslotidx = 0;
+    virBitmapPtr slotmap = NULL;
+    size_t i;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainPCIMultifunctionAddressInfoPtr devinfos = NULL;
+
+    if (devlist->count > VIR_PCI_MAX_FUNCTIONS) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("More devices per slot found"));
+        return -1;
+    }
+
+    for (i = 0; i < devlist->count; i++)
+        qemuDomainFillDevicePCIConnectFlags(vm->def, devlist->devs[i],
+                                            priv->qemuCaps, driver);
+
+    if (VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs + devlist->count) < 0)
+        return -1;
+
+    /* Temporarily add the devices to the domain def to get the
+     * next aggregateIdx */
+    for (i = 0; i < devlist->count; i++)
+        vm->def->hostdevs[vm->def->nhostdevs++] = devlist->devs[i]->data.hostdev;
+
+    for (i = 0; i < devlist->count; i++) {
+        virDomainHostdevDefPtr hostdev = devlist->devs[i]->data.hostdev;
+
+        if (qemuDomainIsPSeries(vm->def)) {
+            /* Isolation groups are only relevant for pSeries guests */
+            if (qemuDomainFillDeviceIsolationGroup(vm->def, devlist->devs[i]) < 0)
+                return -1;
+        }
+
+        qemuDomainSetDeviceSlotAggregateIdx(vm->def, devlist->devs[i]);
+        aggrslotidx = aggrslotidx ? aggrslotidx : hostdev->info->aggregateSlotIdx;
+
+        if (aggrslotidx != hostdev->info->aggregateSlotIdx) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Devices belong to different PCI slots"));
+            return -1;
+        }
+    }
+
+    for (i = 0; i < devlist->count; i++)
+        vm->def->hostdevs[--(vm->def->nhostdevs)] = NULL;
+
+    slotmap = virDomainDefHostdevGetPCIOnlineFunctionMap(vm->def, aggrslotidx);
+    if (!virBitmapIsAllClear(slotmap)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("Device already assigned to guest"));
+        return -1;
+    }
+
+    if (VIR_ALLOC(devinfos) < 0)
+        return -1;
+
+    for (i = 0; i < devlist->count; i++) {
+        virDomainHostdevDefPtr hostdev = devlist->devs[i]->data.hostdev;
+        virPCIDeviceAddress addr = hostdev->source.subsys.u.pci.addr;
+
+        devinfos->infos[addr.function] = hostdev->info;
+    }
+
+    ret = virDomainPCIAddressEnsureMultifunctionAddress(priv->pciaddrs, devinfos);
+    VIR_FREE(devinfos);
+    return ret;
+}
+
 
 void
 qemuDomainReleaseDeviceAddress(virDomainObjPtr vm,

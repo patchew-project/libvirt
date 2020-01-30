@@ -1668,6 +1668,92 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuiHostdevPCIMultifunctionDevicesListSort(const void *p1,
+                                            const void *p2)
+{
+    virDomainDeviceDefPtr a = *(virDomainDeviceDefPtr *) p1;
+    virDomainDeviceDefPtr b = *(virDomainDeviceDefPtr *) p2;
+    virPCIDeviceAddressPtr addr1 = &a->data.hostdev->source.subsys.u.pci.addr;
+    virPCIDeviceAddressPtr addr2 = &b->data.hostdev->source.subsys.u.pci.addr;
+
+    return addr1->function - addr2->function;
+}
+
+
+int
+qemuDomainAttachMultifunctionDevice(virDomainObjPtr vm,
+                                    virDomainDeviceDefListPtr devlist,
+                                    virQEMUDriverPtr driver)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    size_t i, d, h = devlist->count;
+    int ret = -1;
+    char *alias;
+    virObjectEventPtr event;
+    virDomainHostdevDefPtr hostdev;
+
+    qsort(devlist->devs, devlist->count, sizeof(*devlist->devs),
+          qemuiHostdevPCIMultifunctionDevicesListSort);
+
+    if (qemuDomainPCIMultifunctionHostdevEnsurePCIAddresses(vm, devlist,
+                                                            driver) < 0)
+        return -1;
+
+    for (d = 0; d < devlist->count; d++) {
+        hostdev = devlist->devs[d]->data.hostdev;
+
+        if (qemuDomainAttachPCIHostDevicePrepare(driver, vm->def, hostdev,
+                                                 priv->qemuCaps) < 0)
+            goto cleanup;
+    }
+
+    /* Hotplug all functions, and Primary at last */
+    for (h = devlist->count; h > 0; h--) {
+        /* The functions need not be contiguous, as a card may be sold with
+         * minimal functionality and then install the additional functions on
+         * purchase into any of the daughter-card connectors.
+         */
+        hostdev = devlist->devs[h-1]->data.hostdev;
+
+        ret = qemuDomainAttachHostPCIDevice(driver, vm, hostdev);
+        if (ret)
+            goto release;
+
+        alias = hostdev->info->alias;
+        hostdev = NULL;
+
+        event = virDomainEventDeviceAddedNewFromObj(vm, alias);
+        virObjectEventStateQueue(driver->domainEventState, event);
+    }
+
+ release:
+    /* Release addresses for the device which are not hotplugged.
+     */
+    for (i = 0; i < h; i++)
+        qemuDomainReleaseDeviceAddress(vm, devlist->devs[i]->data.hostdev->info);
+
+ cleanup:
+    /* If none are actually hotplugged and just detached from the
+     * host driver reattach the devices to host driver.
+     *
+     * If one of the hotplug failed, those which are already hotplugged cannot
+     * be unplugged as they are released by qemu only on guest reboot even
+     * if we issue device_del on them.
+     * So, dont attempt to reattach any of them.
+     * NB: Let them be in the guest as they are not used anyway without
+     *     function-zero?
+     */
+    if (d > 0 && h == devlist->count) {
+        for (i = 0; i < d; i++)
+            qemuHostdevReAttachPCIDevices(driver, vm->def->name,
+                                          &devlist->devs[i]->data.hostdev, 1);
+    }
+
+    return ret;
+}
+
+
 void
 qemuDomainDelTLSObjects(virQEMUDriverPtr driver,
                         virDomainObjPtr vm,
