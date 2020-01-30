@@ -87,6 +87,7 @@ qemuHotplugCreateObjects(virDomainXMLOptionPtr xmlopt,
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_VNC);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_SPICE);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_SPICE_FILE_XFER_DISABLE);
+    virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY);
 
     if (qemuTestCapsCacheInsert(driver.qemuCapsCache, priv->qemuCaps) < 0)
         return -1;

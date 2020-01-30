@@ -1409,11 +1409,134 @@ qemuDomainSetupIsolationGroups(virDomainDefPtr def)
 }
 
 
+#define PCI_MAX_BRIDGE_NUMBER 0xff
+#define PCI_MAX_DEVICES 32
+
+
+/**
+ * qemuDomainPCIHostDevicesIter:
+ * @data - The data->device is the one which is called-back with for
+ *         each hostdev
+ * cb() - callback to be called for each hostdev
+ * Return :
+ * If the callback for any of the hostdev fails, the Iter returns
+ * with the return value for that callback.
+ * Zero on success.
+ */
+static
+int qemuDomainPCIHostDevicesIter(qemuDomainPCIHostdevDataPtr data,
+                                 virDomainPCIHostdevCallback cb)
+{
+    size_t i;
+    int ret = -1;
+
+    /* Iterate through the PCI Hostdevices, the Mdev source is of type
+     * UUID, so skip that. */
+    for (i = 0; i < data->def->nhostdevs; i++) {
+        virDomainHostdevSubsysPtr subsys = &data->def->hostdevs[i]->source.subsys;
+        virDomainHostdevDefPtr hostdev = data->def->hostdevs[i];
+        if (data->device == hostdev)
+            continue;
+        if (data->def->hostdevs[i]->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
+            continue;
+        if (subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
+            subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST &&
+            (subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV &&
+             subsys->u.mdev.model == VIR_MDEV_MODEL_TYPE_VFIO_PCI)) {
+            continue;
+        }
+
+        if ((ret = cb(data, hostdev)) != 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+
+
+static int
+qemuDomainFindNextAggregationSlotIdxIter(virDomainDefPtr def G_GNUC_UNUSED,
+                                         virDomainDeviceDefPtr dev G_GNUC_UNUSED,
+                                         virDomainDeviceInfoPtr info,
+                                         void *opaque)
+{
+    int *aggregationSlotIdx = opaque;
+
+    if (info && info->aggregateSlotIdx == *aggregationSlotIdx)
+        return -1;
+
+    return 0;
+}
+
+
+static unsigned int
+qemuDomainFindNextSlotAggregationIdx(virDomainDefPtr def)
+{
+    int aggregateSlotIdx = 2;
+
+    while (aggregateSlotIdx < PCI_MAX_BRIDGE_NUMBER * PCI_MAX_DEVICES	&&
+           virDomainDeviceInfoIterate(def,
+                                      qemuDomainFindNextAggregationSlotIdxIter,
+                                      &aggregateSlotIdx) < 0) {
+        aggregateSlotIdx++;
+    }
+
+    return aggregateSlotIdx;
+}
+
+
+static int
+qemuDomainDefHostdevGetSlotAggregateIdx(qemuDomainPCIHostdevDataPtr data,
+                                        virDomainHostdevDefPtr hostdev)
+{
+    if (data->device &&
+        virHostdevPCIDevicesBelongToSameSlot(data->device, hostdev)) {
+        if (hostdev->info->aggregateSlotIdx > 0)
+            return hostdev->info->aggregateSlotIdx;
+    }
+
+    return 0;
+}
+
+/**
+ * qemuDomainDefDeviceFindSlotAggregateIdx:
+ * @def : domain def
+ * @dev : Find the slot aggregate for the device if other
+ *        functions are already part of the def and have
+ *        a slot aggreate idx assigned.
+ * Return:
+ *      -1: if not assigned.
+ *       0: If the device is not a hostdev or not a
+ *          multifunction device.
+ *      >0: If assinged a value;
+ **/
+int
+qemuDomainDefDeviceFindSlotAggregateIdx(virDomainDefPtr def,
+                                        virDomainDeviceDefPtr dev)
+{
+    int aggregateSlotIdx = 0;
+    virDomainHostdevDefPtr hostdev = dev->data.hostdev;
+    qemuDomainPCIHostdevdata temp = {def, NULL, hostdev};
+
+    /* Only PCI host devices are subject to isolation */
+    if (!virHostdevIsPCIMultifunctionDevice(hostdev))
+        return 0;
+
+    aggregateSlotIdx = qemuDomainPCIHostDevicesIter(&temp, qemuDomainDefHostdevGetSlotAggregateIdx);
+    if (aggregateSlotIdx > 0)
+        return aggregateSlotIdx;
+
+    return -1;
+}
+
+
 void
-qemuDomainSetDeviceSlotAggregateIdx(virDomainDefPtr def G_GNUC_UNUSED,
+qemuDomainSetDeviceSlotAggregateIdx(virDomainDefPtr def,
                                     virDomainDeviceDefPtr dev)
 {
     virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
+    int aggregateSlotIdx = 0;
 
     if (!info)
         return;
@@ -1426,6 +1549,12 @@ qemuDomainSetDeviceSlotAggregateIdx(virDomainDefPtr def G_GNUC_UNUSED,
             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT) {
             info->aggregateSlotIdx = 1;
         }
+    } else if (dev->type == VIR_DOMAIN_DEVICE_HOSTDEV) {
+        aggregateSlotIdx = qemuDomainDefDeviceFindSlotAggregateIdx(def, dev);
+        if (aggregateSlotIdx > 0)
+            info->aggregateSlotIdx = aggregateSlotIdx;
+        else if (aggregateSlotIdx < 0)
+            info->aggregateSlotIdx = qemuDomainFindNextSlotAggregationIdx(def);
     }
 
     return;
@@ -2364,10 +2493,12 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* Host PCI devices */
     for (i = 0; i < def->nhostdevs; i++) {
-        virDomainHostdevSubsysPtr subsys = &def->hostdevs[i]->source.subsys;
-        if (!virDeviceInfoPCIAddressIsWanted(def->hostdevs[i]->info))
+        int function = 0;
+        virDomainHostdevDefPtr hostdev = def->hostdevs[i];
+        virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
+        if (!virDeviceInfoPCIAddressIsWanted(hostdev->info))
             continue;
-        if (def->hostdevs[i]->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
             continue;
         if (subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
             subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST &&
@@ -2381,9 +2512,14 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
             continue;
 
-        if (qemuDomainPCIAddressReserveNextAddr(addrs,
-                                                def->hostdevs[i]->info) < 0)
+        if (hostdev->info->aggregateSlotIdx > 1)
+            function = hostdev->source.subsys.u.pci.addr.function;
+
+        if (virDomainPCIAddressReserveNextAddr(addrs, hostdev->info,
+                                               hostdev->info->pciConnectFlags,
+                                               function) < 0) {
             return -1;
+        }
     }
 
     /* memballoon. the qemu driver only accepts virtio memballoon devices */

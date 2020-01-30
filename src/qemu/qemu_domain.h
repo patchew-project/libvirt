@@ -612,6 +612,17 @@ struct _qemuDomainSaveCookie {
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuDomainSaveCookie, virObjectUnref);
 
+typedef struct _qemuDomainPCIHostdevdata qemuDomainPCIHostdevdata;
+typedef qemuDomainPCIHostdevdata *qemuDomainPCIHostdevDataPtr;
+struct _qemuDomainPCIHostdevdata {
+    const virDomainDef *def;
+    virDomainPCIAddressSetPtr addrs;
+    virDomainHostdevDefPtr device;
+};
+
+typedef int (*virDomainPCIHostdevCallback)(qemuDomainPCIHostdevDataPtr data,
+                                           virDomainHostdevDefPtr hostdev);
+
 typedef struct _qemuDomainXmlNsDef qemuDomainXmlNsDef;
 typedef qemuDomainXmlNsDef *qemuDomainXmlNsDefPtr;
 struct _qemuDomainXmlNsDef {
