@@ -2266,6 +2266,60 @@ qemuDomainValidateDevicePCISlotsChipsets(virDomainDefPtr def,
 }
 
 
+static int
+qemuDomainDefPCIHostdevIsPrimaryFunction(qemuDomainPCIHostdevDataPtr data,
+                                         virDomainHostdevDefPtr hostdev)
+{
+    if (!data->device || !hostdev)
+        return 0;
+
+    if ((hostdev->source.subsys.u.pci.addr.function == 0) &&
+        (virHostdevPCIDevicesBelongToSameSlot(data->device, hostdev)))
+        return 1;
+
+    return 0;
+}
+
+
+static int qemuDomainDefValidatePCIMultifunctionHostdev(qemuDomainPCIHostdevDataPtr data,
+                                                        virDomainHostdevDefPtr hostdev)
+{
+    int ret = 0;
+    qemuDomainPCIHostdevdata hostdevIterData = {data->def, NULL, hostdev};
+
+    if (!virHostdevIsPCIMultifunctionDevice(hostdev) ||
+        hostdev->source.subsys.u.pci.addr.function == 0)
+        goto skip;
+
+    /* If the device is non-zero function but its Primary function is not
+     * part of the domain, then error out.
+     */
+    if (!qemuDomainPCIHostDevicesIter(&hostdevIterData,
+                                      qemuDomainDefPCIHostdevIsPrimaryFunction)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Secondary functions of a PCI multifunction card "
+                         "cannot be assigned to a domain without the "
+                         "Primary function."));
+        ret = -1;
+    }
+
+ skip:
+    return ret;
+}
+
+int qemuDomainDefValidatePCIHostdevs(const virDomainDef *def)
+{
+    qemuDomainPCIHostdevdata hostdevdata = {def, NULL, NULL};
+
+    if (qemuDomainPCIHostDevicesIter(&hostdevdata,
+                                     qemuDomainDefValidatePCIMultifunctionHostdev)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /*
  * This assigns static PCI slots to all configured devices.
  * The ordering here is chosen to match the ordering used
