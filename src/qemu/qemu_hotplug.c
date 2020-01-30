@@ -5216,15 +5216,21 @@ qemuDomainGetUnplugTimeout(virDomainObjPtr vm)
  *      - we failed to reliably wait for the event and thus use fallback behavior
  */
 static int
-qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
+qemuDomainWaitForMultipleDeviceRemoval(virDomainObjPtr vm,
+                                       bool isMultiFunctionDevice)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    unsigned long long until;
+    unsigned long long until, waitTime;
     int rc;
 
     if (virTimeMillisNow(&until) < 0)
         return 1;
-    until += qemuDomainGetUnplugTimeout(vm);
+
+    waitTime = qemuDomainGetUnplugTimeout(vm);
+    if (isMultiFunctionDevice)
+        waitTime *= priv->unplug.naliases;
+
+    until += waitTime;
 
     /* All devices should get released around same time*/
     while (priv->unplug.naliases) {
@@ -5245,6 +5251,17 @@ qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
     }
 
     return 1;
+}
+
+/* For a single device, call qemuDomainWaitForMultipleDeviceRemoval with
+ * isMultiFunctionDevice = false.
+ *
+ * Returns: same values as qemuDomainWaitForMultipleDeviceRemoval.
+ */
+static int
+qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
+{
+    return qemuDomainWaitForMultipleDeviceRemoval(vm, false);
 }
 
 /* Returns:
@@ -6098,7 +6115,7 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
 
-    if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1) {
+    if ((ret = qemuDomainWaitForMultipleDeviceRemoval(vm, true)) == 1) {
         FOR_EACH_DEV_IN_DEVLIST()
              ret = qemuDomainRemoveHostDevice(driver, vm, detach);
         }
