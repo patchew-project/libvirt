@@ -3511,6 +3511,9 @@ qemuDomainPCIMultifunctionHostdevEnsurePCIAddresses(virDomainObjPtr vm,
     for (i = 0; i < devlist->count; i++) {
         virDomainHostdevDefPtr hostdev = devlist->devs[i]->data.hostdev;
 
+        if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+            continue;
+
         if (qemuDomainIsPSeries(vm->def)) {
             /* Isolation groups are only relevant for pSeries guests */
             if (qemuDomainFillDeviceIsolationGroup(vm->def, devlist->devs[i]) < 0)
@@ -3543,6 +3546,9 @@ qemuDomainPCIMultifunctionHostdevEnsurePCIAddresses(virDomainObjPtr vm,
     for (i = 0; i < devlist->count; i++) {
         virDomainHostdevDefPtr hostdev = devlist->devs[i]->data.hostdev;
         virPCIDeviceAddress addr = hostdev->source.subsys.u.pci.addr;
+
+        if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+            continue;
 
         devinfos->infos[addr.function] = hostdev->info;
     }

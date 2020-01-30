@@ -1629,6 +1629,13 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
         goto error;
     }
 
+    /* For an unassigned hostdev, add it to the domain definition
+     * and return without hotplugging it to QEMU.  */
+    if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED) {
+        vm->def->hostdevs[vm->def->nhostdevs++] = hostdev;
+        return 0;
+    }
+
     if (!(devstr = qemuBuildPCIHostdevDevStr(vm->def, hostdev, 0, priv->qemuCaps)))
         goto error;
 
@@ -6058,6 +6065,9 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
 
     /* Check if the devices belong to same guest slot.*/
     FOR_EACH_DEV_IN_DEVLIST()
+        if (detach->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+            continue;
+
         /* Pick one aggregateSlotIdx and compare against rest of them */
         slotaggridx = slotaggridx ? slotaggridx : detach->info->aggregateSlotIdx;
         if (slotaggridx != detach->info->aggregateSlotIdx) {
@@ -6090,6 +6100,9 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
         if (qemuAssignDeviceHostdevAlias(vm->def, &detach->info->alias, -1) < 0)
             goto reset;
 
+        if (detach->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+            continue;
+
         qemuDomainMarkDeviceAliasForRemoval(vm, detach->info->alias, false);
     }
 
@@ -6101,6 +6114,9 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
         subsys = &hostdev->source.subsys;
         pcisrc = &subsys->u.pci;
         virDomainHostdevFind(vm->def, hostdev, &detach);
+
+        if (detach->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+            continue;
 
         if (qemuMonitorDelDevice(priv->mon, detach->info->alias) < 0) {
             ignore_value(qemuDomainObjExitMonitor(driver, vm));

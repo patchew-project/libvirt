@@ -843,6 +843,15 @@ mymain(void)
                                  QMP_DEVICE_DELETED("hostdev1")
                                  QMP_DEVICE_DELETED("hostdev0") QMP_OK);
 
+    DO_TEST_ATTACH("base-live", "multifunction-hostdev-pci-partial", false, true,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK);
+    DO_TEST_DETACH("base-live", "multifunction-hostdev-pci-partial", false, false,
+                   "device_del", QMP_DEVICE_DELETED("hostdev3")
+                                 QMP_DEVICE_DELETED("hostdev2")
+                                 QMP_DEVICE_DELETED("hostdev0") QMP_OK);
+
     qemuTestSetHostArch(&driver, VIR_ARCH_PPC64);
     DO_TEST_ATTACH("pseries-base-live", "multifunction-hostdev-pci-2", false, true,
                    "device_add", QMP_OK,
