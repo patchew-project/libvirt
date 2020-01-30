@@ -1205,6 +1205,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     g_autofree char *netdev_name = NULL;
     g_autoptr(virConnect) conn = NULL;
     virErrorPtr save_err = NULL;
+    virDomainHostdevDefPtr hostdev = NULL;
 
     /* preallocate new slot for device */
     if (VIR_REALLOC_N(vm->def->nets, vm->def->nnets + 1) < 0)
@@ -1235,9 +1236,18 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
          * as a hostdev (the hostdev code will reach over into the
          * netdev-specific code as appropriate), then also added to
          * the nets list (see cleanup:) if successful.
+         *
+         * qemuDomainAttachHostDevice uses a connection to resolve
+         * a SCSI hostdev secret, which is not this case, so pass NULL.
          */
-        ret = qemuDomainAttachHostDevice(driver, vm,
-                                         virDomainNetGetActualHostdev(net));
+        hostdev = virDomainNetGetActualHostdev(net);
+        if (qemuDomainAttachPCIHostDevicePrepare(driver, vm->def,
+                                                 hostdev, priv->qemuCaps) < 0)
+            goto cleanup;
+
+        if ((ret = qemuDomainAttachHostDevice(driver, vm, hostdev)) < 0)
+            qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
+
         goto cleanup;
     }
 
@@ -1593,10 +1603,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
     if (VIR_REALLOC_N(vm->def->hostdevs, vm->def->nhostdevs + 1) < 0)
         return -1;
 
-    if (qemuDomainAttachPCIHostDevicePrepare(driver, vm->def,
-                                             hostdev, priv->qemuCaps) < 0)
-        return -1;
-
     /* this could have been changed by qemuHostdevPreparePCIDevices */
     backend = hostdev->source.subsys.u.pci.backend;
 
@@ -1673,8 +1679,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
 
     if (releaseaddr)
         qemuDomainReleaseDeviceAddress(vm, info);
-
-    qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
 
     return -1;
 }
@@ -2905,6 +2909,8 @@ qemuDomainAttachHostDevice(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainHostdevDefPtr hostdev)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
     if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("hotplug is not supported for hostdev mode '%s'"),
@@ -2914,9 +2920,15 @@ qemuDomainAttachHostDevice(virQEMUDriverPtr driver,
 
     switch (hostdev->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
-        if (qemuDomainAttachHostPCIDevice(driver, vm,
-                                          hostdev) < 0)
+        if (qemuDomainAttachPCIHostDevicePrepare(driver, vm->def,
+                                                 hostdev, priv->qemuCaps) < 0)
             return -1;
+
+        if (qemuDomainAttachHostPCIDevice(driver, vm, hostdev) < 0) {
+            qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
+            return -1;
+        }
+
         break;
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
