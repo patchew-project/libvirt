@@ -1260,6 +1260,13 @@ qemuDomainNVRAMPathGenerate(virQEMUDriverConfigPtr cfg,
 virDomainEventSuspendedDetailType
 qemuDomainPausedReasonToSuspendedEvent(virDomainPausedReason reason);
 
+
+virDomainDeviceDefListPtr
+qemuDomainDeviceParseXMLMany(const char *xml,
+                             virDomainDeviceDefListDataPtr data,
+                             void *parseOpaque,
+                             unsigned int parse_flags);
+
 int
 qemuDomainValidateActualNetDef(const virDomainNetDef *net,
                                virQEMUCapsPtr qemuCaps);
