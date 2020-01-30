@@ -39,7 +39,7 @@ profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
   deny /dev/mapper/ r,
   deny /dev/mapper/* r,
 
-  /usr/{lib,lib64}/libvirt/virt-aa-helper mr,
+  /usr/{lib,lib64,libexec}/libvirt/virt-aa-helper mr,
   /{usr/,}sbin/apparmor_parser Ux,
 
   /etc/apparmor.d/libvirt/* r,

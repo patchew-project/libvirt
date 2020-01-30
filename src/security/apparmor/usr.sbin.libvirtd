@@ -100,8 +100,8 @@ profile libvirtd /usr/sbin/libvirtd flags=(attach_disconnected) {
   audit deny /sys/kernel/security/apparmor/.* rwxl,
   /sys/kernel/security/apparmor/profiles r,
   /usr/{lib,lib64}/libvirt/* PUxr,
-  /usr/{lib,lib64}/libvirt/libvirt_parthelper ix,
-  /usr/{lib,lib64}/libvirt/libvirt_iohelper ix,
+  /usr/libexec/libvirt_parthelper ix,
+  /usr/libexec/libvirt_iohelper ix,
   /etc/libvirt/hooks/** rmix,
   /etc/xen/scripts/** rmix,
 
