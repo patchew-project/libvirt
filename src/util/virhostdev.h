@@ -198,6 +198,9 @@ bool
 virHostdevIsMdevDevice(const virDomainHostdevDef *hostdev)
     ATTRIBUTE_NONNULL(1);
 bool
+virHostdevIsPCIMultifunctionDevice(virDomainHostdevDefPtr hostdev)
+    ATTRIBUTE_NONNULL(1);
+bool
 virHostdevIsVFIODevice(const virDomainHostdevDef *hostdev)
     ATTRIBUTE_NONNULL(1);
 
