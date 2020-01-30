@@ -156,10 +156,15 @@ testQemuHotplugAttach(virDomainObjPtr vm,
 
 static int
 testQemuHotplugDetach(virDomainObjPtr vm,
-                      virDomainDeviceDefPtr dev,
+                      virDomainDeviceDefListPtr devlist,
                       bool async)
 {
     int ret = -1;
+    virDomainDeviceDefPtr dev;
+
+    if (devlist->count > 1)
+        return qemuDomainDetachMultifunctionDevice(vm, devlist, &driver);
+    dev = devlist->devs[0];
 
     switch (dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
@@ -249,7 +254,6 @@ testQemuHotplug(const void *data)
     bool keep = test->keep;
     unsigned int device_parse_flags = 0;
     virDomainObjPtr vm = NULL;
-    virDomainDeviceDefPtr dev = NULL; /* temporary */
     virDomainDeviceDefListPtr devlist = NULL;
     virDomainDeviceDefListData listdata;
     virCapsPtr caps = NULL;
@@ -296,8 +300,6 @@ testQemuHotplug(const void *data)
     if (!devlist)
         goto cleanup;
 
-    dev = devlist->devs[0]; /* temporary */
-
     /* Now is the best time to feed the spoofed monitor with predefined
      * replies. */
     if (!(test_mon = qemuMonitorTestNew(driver.xmlopt, vm, &driver,
@@ -338,14 +340,15 @@ testQemuHotplug(const void *data)
         break;
 
     case DETACH:
-        ret = testQemuHotplugDetach(vm, dev, false);
+        ret = testQemuHotplugDetach(vm, devlist, false);
+
         if (ret == 0 || fail)
             ret = testQemuHotplugCheckResult(vm, domain_xml,
                                              domain_filename, fail);
         break;
 
     case UPDATE:
-        ret = testQemuHotplugUpdate(vm, dev);
+        ret = testQemuHotplugUpdate(vm, devlist->devs[0]);
     }
 
  cleanup:
@@ -829,17 +832,26 @@ mymain(void)
                    "device_add", QMP_OK);
     DO_TEST_DETACH("pseries-base-live", "hostdev-pci", false, false,
                    "device_del", QMP_DEVICE_DELETED("hostdev0") QMP_OK);
-    DO_TEST_ATTACH("base-live", "multifunction-hostdev-pci", false, false,
+    DO_TEST_ATTACH("base-live", "multifunction-hostdev-pci", false, true,
                    "device_add", QMP_OK,
                    "device_add", QMP_OK,
                    "device_add", QMP_OK,
                    "device_add", QMP_OK);
+    DO_TEST_DETACH("base-live", "multifunction-hostdev-pci", false, false,
+                   "device_del", QMP_DEVICE_DELETED("hostdev3")
+                                 QMP_DEVICE_DELETED("hostdev2")
+                                 QMP_DEVICE_DELETED("hostdev1")
+                                 QMP_DEVICE_DELETED("hostdev0") QMP_OK);
 
     qemuTestSetHostArch(&driver, VIR_ARCH_PPC64);
-    DO_TEST_ATTACH("pseries-base-live", "multifunction-hostdev-pci-2", false, false,
-                   "device_add", QMP_OK,
+    DO_TEST_ATTACH("pseries-base-live", "multifunction-hostdev-pci-2", false, true,
                    "device_add", QMP_OK,
                    "device_add", QMP_OK);
+    DO_TEST_DETACH("pseries-base-live", "multifunction-hostdev-pci-2", false, false,
+                   "device_del", QMP_OK,
+                   "device_del", QMP_DEVICE_DELETED("hostdev1")
+                                 QMP_DEVICE_DELETED("hostdev0") QMP_OK);
+
     qemuTestSetHostArch(&driver, VIR_ARCH_X86_64);
 
     DO_TEST_ATTACH("base-live", "watchdog", false, true,

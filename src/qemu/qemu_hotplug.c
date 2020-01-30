@@ -5995,6 +5995,127 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
 }
 
 
+int
+qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
+                                    virDomainDeviceDefListPtr devlist,
+                                    virQEMUDriverPtr driver)
+{
+    size_t i;
+    int ret = -1;
+    virBitmapPtr tbdmap = NULL, onlinemap = NULL;
+    int *functions = NULL;
+    virDomainHostdevDefPtr hostdev, detach = NULL;
+    virDomainHostdevSubsysPtr subsys = NULL;
+    int slotaggridx = 0;
+    virDomainHostdevSubsysPCIPtr pcisrc = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    qsort(devlist->devs, devlist->count, sizeof(*devlist->devs),
+          qemuiHostdevPCIMultifunctionDevicesListSort);
+
+#define FOR_EACH_DEV_IN_DEVLIST() \
+    for (i = 0; i < devlist->count; i++) { \
+        hostdev = devlist->devs[i]->data.hostdev; \
+        subsys = &hostdev->source.subsys; \
+        pcisrc = &subsys->u.pci; \
+        virDomainHostdevFind(vm->def, hostdev, &detach);
+
+    FOR_EACH_DEV_IN_DEVLIST()
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("hot unplug is not supported for hostdev mode '%s'"),
+                           virDomainHostdevModeTypeToString(hostdev->mode));
+            goto cleanup;
+        }
+    }
+
+    FOR_EACH_DEV_IN_DEVLIST()
+        if (!detach) {
+            virReportError(VIR_ERR_DEVICE_MISSING,
+                           _("host pci device %.4x:%.2x:%.2x.%.1x not found"),
+                           pcisrc->addr.domain, pcisrc->addr.bus,
+                           pcisrc->addr.slot, pcisrc->addr.function);
+            goto cleanup;
+        }
+    }
+
+    /* Check if the devices belong to same guest slot.*/
+    FOR_EACH_DEV_IN_DEVLIST()
+        /* Pick one aggregateSlotIdx and compare against rest of them */
+        slotaggridx = slotaggridx ? slotaggridx : detach->info->aggregateSlotIdx;
+        if (slotaggridx != detach->info->aggregateSlotIdx) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("host pci device %.4x:%.2x:%.2x.%.1x does "
+                             "not belong to same slot"),
+                             pcisrc->addr.domain,
+                             pcisrc->addr.bus,
+                             pcisrc->addr.slot,
+                             pcisrc->addr.function);
+            goto cleanup;
+        }
+    }
+
+    /* Check if the whole slot is being removed or not */
+    onlinemap = virDomainDefHostdevGetPCIOnlineFunctionMap(vm->def, slotaggridx);
+    FOR_EACH_DEV_IN_DEVLIST()
+        ignore_value(virBitmapClearBit(onlinemap, pcisrc->addr.function));
+    }
+
+    if (!virBitmapIsAllClear(onlinemap)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("hot unplug of partial PCI slot not allowed"));
+        goto cleanup;
+    }
+
+    /* Mark all aliases for removal */
+    memset(&priv->unplug, 0, sizeof(priv->unplug));
+    FOR_EACH_DEV_IN_DEVLIST()
+        if (qemuAssignDeviceHostdevAlias(vm->def, &detach->info->alias, -1) < 0)
+            goto reset;
+
+        qemuDomainMarkDeviceAliasForRemoval(vm, detach->info->alias, false);
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    /* must plug non-zero first, zero at last */
+    for (i = devlist->count; i > 0;  i--) {
+        hostdev = devlist->devs[i -1]->data.hostdev;
+        subsys = &hostdev->source.subsys;
+        pcisrc = &subsys->u.pci;
+        virDomainHostdevFind(vm->def, hostdev, &detach);
+
+        if (qemuMonitorDelDevice(priv->mon, detach->info->alias) < 0) {
+            ignore_value(qemuDomainObjExitMonitor(driver, vm));
+            if (virDomainObjIsActive(vm))
+                virDomainAuditHostdev(vm, detach, "detach", false);
+            goto reset;
+        }
+        if (ARCH_IS_X86(vm->def->os.arch))
+            break; /* deleting any one is enough! */
+    }
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1) {
+        FOR_EACH_DEV_IN_DEVLIST()
+             ret = qemuDomainRemoveHostDevice(driver, vm, detach);
+        }
+    }
+ reset:
+    qemuDomainResetDeviceRemoval(vm);
+ cleanup:
+    VIR_FREE(functions);
+    virBitmapFree(onlinemap);
+    virBitmapFree(tbdmap);
+
+#undef FOR_EACH_DEV_IN_DEVLIST
+
+    return ret;
+}
+
+
 static int
 qemuDomainRemoveVcpu(virQEMUDriverPtr driver,
                      virDomainObjPtr vm,

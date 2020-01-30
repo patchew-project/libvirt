@@ -132,6 +132,11 @@ qemuDomainAttachMultifunctionDevice(virDomainObjPtr vm,
                                     virQEMUDriverPtr driver);
 
 int
+qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
+                                    virDomainDeviceDefListPtr devlist,
+                                    virQEMUDriverPtr driver);
+
+int
 qemuDomainChrInsert(virDomainDefPtr vmdef,
                     virDomainChrDefPtr chr);
 virDomainChrDefPtr
