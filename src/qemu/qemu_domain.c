@@ -8233,8 +8233,32 @@ qemuDomainDeviceDefValidateFS(virDomainFSDefPtr fs,
         return -1;
 
     case VIR_DOMAIN_FS_DRIVER_TYPE_VIRTIOFS:
-        /* TODO: vhost-user-fs-pci */
-        return 0;
+        if (fs->accessmode != VIR_DOMAIN_FS_ACCESSMODE_PASSTHROUGH) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs only supports passthrough accessmode"));
+            return -1;
+        }
+        if (fs->wrpolicy != VIR_DOMAIN_FS_WRPOLICY_DEFAULT) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs does not support wrpolicy"));
+            return -1;
+        }
+        if (fs->model != VIR_DOMAIN_FS_MODEL_DEFAULT) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs does not support model"));
+            return -1;
+        }
+        if (fs->format != VIR_STORAGE_FILE_NONE) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs does not support format"));
+            return -1;
+        }
+        if (def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs requires shared memory"));
+            return -1;
+        }
+        break;
 
     case VIR_DOMAIN_FS_DRIVER_TYPE_LAST:
     default:
