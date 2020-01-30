@@ -178,6 +178,11 @@ int virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
                                   virDomainPCIConnectFlags flags)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+int
+virDomainPCIAddressEnsureMultifunctionAddress(virDomainPCIAddressSetPtr addrs,
+                                              virDomainPCIMultifunctionAddressInfoPtr pcicard)
+   ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 void virDomainPCIAddressReleaseAddr(virDomainPCIAddressSetPtr addrs,
                                     virPCIDeviceAddressPtr addr)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);

@@ -148,6 +148,7 @@ virDomainCCWAddressSetFree;
 virDomainPCIAddressBusIsFullyReserved;
 virDomainPCIAddressBusSetModel;
 virDomainPCIAddressEnsureAddr;
+virDomainPCIAddressEnsureMultifunctionAddress;
 virDomainPCIAddressExtensionReleaseAddr;
 virDomainPCIAddressExtensionReserveAddr;
 virDomainPCIAddressExtensionReserveNextAddr;
