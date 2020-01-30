@@ -6033,6 +6033,7 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
     int slotaggridx = 0;
     virDomainHostdevSubsysPCIPtr pcisrc = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    int pSeriesEnhancedUnplugVersion;
 
     qsort(devlist->devs, devlist->count, sizeof(*devlist->devs),
           qemuiHostdevPCIMultifunctionDevicesListSort);
@@ -6108,15 +6109,16 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
 
     qemuDomainObjEnterMonitor(driver, vm);
 
-    /* must plug non-zero first, zero at last */
-    for (i = devlist->count; i > 0;  i--) {
-        hostdev = devlist->devs[i -1]->data.hostdev;
-        subsys = &hostdev->source.subsys;
-        pcisrc = &subsys->u.pci;
-        virDomainHostdevFind(vm->def, hostdev, &detach);
+    /* QEMU 4.2.0 introduced a new Pseries hotunplug mechanic, where
+     * the whole slot can be unplugged by hotunplugging function zero
+     * (see QEMU commit 02a1536eee for details). This makes it similar
+     * to what x86 does, as long as we hotunplug function zero first
+     * in all cases. */
+    pSeriesEnhancedUnplugVersion = 4 * 1000000 + 2 * 1000;
 
-        if (detach->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
-            continue;
+    if (virQEMUCapsGetVersion(priv->qemuCaps) >= pSeriesEnhancedUnplugVersion) {
+        hostdev = devlist->devs[0]->data.hostdev;
+        virDomainHostdevFind(vm->def, hostdev, &detach);
 
         if (qemuMonitorDelDevice(priv->mon, detach->info->alias) < 0) {
             ignore_value(qemuDomainObjExitMonitor(driver, vm));
@@ -6124,8 +6126,25 @@ qemuDomainDetachMultifunctionDevice(virDomainObjPtr vm,
                 virDomainAuditHostdev(vm, detach, "detach", false);
             goto reset;
         }
-        if (ARCH_IS_X86(vm->def->os.arch))
-            break; /* deleting any one is enough! */
+    } else {
+        /* We're running in an older QEMU, so we must plug non-zero first,
+         * zero at last. */
+        for (i = devlist->count; i > 0;  i--) {
+            hostdev = devlist->devs[i -1]->data.hostdev;
+            virDomainHostdevFind(vm->def, hostdev, &detach);
+
+            if (detach->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED)
+                continue;
+
+            if (qemuMonitorDelDevice(priv->mon, detach->info->alias) < 0) {
+                ignore_value(qemuDomainObjExitMonitor(driver, vm));
+                if (virDomainObjIsActive(vm))
+                    virDomainAuditHostdev(vm, detach, "detach", false);
+                goto reset;
+            }
+            if (ARCH_IS_X86(vm->def->os.arch))
+                break; /* deleting any one is enough! */
+        }
     }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
