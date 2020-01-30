@@ -1287,6 +1287,90 @@ virDomainXMLOptionDispose(void *obj)
         (xmlopt->config.privFree)(xmlopt->config.priv);
 }
 
+/* virDomainDeviceDefListAddCopy - add a *copy* of the device to this list */
+static int
+virDomainDeviceDefListAddCopy(virDomainDeviceDefListPtr list,
+                              virDomainDeviceDefPtr dev,
+                              virDomainDeviceDefListDataPtr data,
+                              void *parseOpaque)
+{
+    virDomainDeviceDefPtr copy = virDomainDeviceDefCopy(dev,
+                                                        data->def,
+                                                        data->xmlopt,
+                                                        parseOpaque);
+
+    if (!copy)
+        return -1;
+
+    if (VIR_APPEND_ELEMENT(list->devs, list->count, copy) < 0) {
+        virDomainDeviceDefFree(copy);
+        return -1;
+    }
+
+    return 0;
+}
+
+void virDomainDeviceDefListFree(virDomainDeviceDefListPtr list)
+{
+    size_t i;
+
+    if (!list)
+        return;
+    for (i = 0; i < list->count; i++)
+        virDomainDeviceDefFree(list->devs[i]);
+    VIR_FREE(list->devs);
+}
+
+void virDomainDeviceDefListFreeShallow(virDomainDeviceDefListPtr list)
+{
+    size_t i;
+
+    if (!list)
+        return;
+    for (i = 0; i < list->count; i++)
+        VIR_FREE(list->devs[i]);
+}
+
+
+/* virDomainDeviceDefListIter - Iterate through the list with the callback*/
+int
+virDomainDeviceDefListIterate(virDomainDeviceDefListPtr list,
+                              virDomainDeviceDefListIterCallback cb,
+                              void *data)
+{
+    size_t i;
+
+    for (i = 0; i < list->count; i++)
+        if (cb(list->devs[i], data))
+            return -1;
+
+    return 0;
+}
+
+virDomainDeviceDefListPtr
+virDomainDeviceDefListCopy(virDomainDeviceDefListPtr list,
+                           virDomainDeviceDefListDataPtr data,
+                           void *parseOpaque)
+{
+    size_t i;
+    virDomainDeviceDefListPtr devlist = NULL;
+
+    if (list && (VIR_ALLOC(devlist) < 0))
+        goto cleanup;
+
+    for (i = 0; i < list->count; i++) {
+        if (virDomainDeviceDefListAddCopy(devlist, list->devs[i],
+                                          data, parseOpaque) < 0)
+            goto cleanup;
+    }
+
+    return devlist;
+ cleanup:
+    virDomainDeviceDefListFree(devlist);
+    return NULL;
+}
+
+
 /**
  * virDomainKeyWrapCipherDefParseXML:
  *
@@ -16506,22 +16590,15 @@ virDomainVsockDefParseXML(virDomainXMLOptionPtr xmlopt,
     return g_steal_pointer(&vsock);
 }
 
-virDomainDeviceDefPtr
-virDomainDeviceDefParse(const char *xmlStr,
-                        const virDomainDef *def,
-                        virDomainXMLOptionPtr xmlopt,
-                        void *parseOpaque,
-                        unsigned int flags)
+static virDomainDeviceDefPtr
+virDomainDeviceDefParseXML(xmlNodePtr node,
+                           const virDomainDef *def,
+                           virDomainXMLOptionPtr xmlopt,
+                           xmlXPathContextPtr ctxt,
+                           void *parseOpaque,
+                           unsigned int flags)
 {
-    g_autoptr(xmlDoc) xml = NULL;
-    xmlNodePtr node;
-    g_autoptr(xmlXPathContext) ctxt = NULL;
     g_autofree virDomainDeviceDefPtr dev = NULL;
-
-    if (!(xml = virXMLParseStringCtxt(xmlStr, _("(device_definition)"), &ctxt)))
-        return NULL;
-
-    node = ctxt->node;
 
     if (VIR_ALLOC(dev) < 0)
         return NULL;
@@ -16676,6 +16753,32 @@ virDomainDeviceDefParse(const char *xmlStr,
 
     return g_steal_pointer(&dev);
 }
+
+
+virDomainDeviceDefPtr
+virDomainDeviceDefParse(const char *xmlStr,
+                        const virDomainDef *def,
+                        virDomainXMLOptionPtr xmlopt,
+                        void *parseOpaque,
+                        unsigned int flags)
+{
+    xmlDocPtr xml;
+    xmlNodePtr node;
+    xmlXPathContextPtr ctxt = NULL;
+    virDomainDeviceDefPtr dev = NULL;
+
+    if (!(xml = virXMLParseStringCtxt(xmlStr, _("(device_definition)"), &ctxt)))
+        return NULL;
+
+    node = ctxt->node;
+
+    dev = virDomainDeviceDefParseXML(node, def, xmlopt, ctxt, parseOpaque, flags);
+
+    xmlFreeDoc(xml);
+    xmlXPathFreeContext(ctxt);
+
+    return dev;
+ }
 
 
 virDomainDiskDefPtr
@@ -31617,6 +31720,46 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
     return 0;
 }
 
+virDomainDeviceDefListPtr
+virDomainDeviceDefParseXMLMany(const char *xml,
+                               const virDomainDef *def,
+                               virDomainXMLOptionPtr xmlopt,
+                               void *parseOpaque,
+                               unsigned int flags)
+{
+    xmlXPathContextPtr ctxt = NULL;
+    xmlDocPtr xmlPtr;
+    xmlNodePtr node, root;
+    virDomainDeviceDefPtr dev = NULL;
+    virDomainDeviceDefListPtr devlist;
+
+    if (!(xmlPtr = virXMLParseStringCtxt(xml, _("(device_definition)"), &ctxt)))
+        return NULL;
+
+    if (VIR_ALLOC(devlist) < 0)
+         goto exit;
+
+    root = xmlDocGetRootElement(xmlPtr);
+    node = root->children;
+    while (node) {
+        if (node->type == XML_ELEMENT_NODE) {
+            dev = virDomainDeviceDefParseXML(node, def, xmlopt, ctxt,
+                                             parseOpaque, flags);
+            if (VIR_APPEND_ELEMENT(devlist->devs, devlist->count, dev) < 0) {
+                virDomainDeviceDefFree(dev);
+                virDomainDeviceDefListFree(devlist);
+                goto exit;
+            }
+            dev = NULL;
+        }
+        node = node->next;
+    }
+
+ exit:
+    xmlFreeDoc(xmlPtr);
+    xmlXPathFreeContext(ctxt);
+    return devlist;
+}
 
 /**
  * virDomainDiskGetDetectZeroesMode:
