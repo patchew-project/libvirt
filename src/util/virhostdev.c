@@ -312,6 +312,35 @@ virHostdevIsVirtualFunction(virDomainHostdevDefPtr hostdev)
 }
 
 
+bool
+virHostdevPCIDevicesBelongToSameSlot(virDomainHostdevDefPtr dev1,
+                                     virDomainHostdevDefPtr dev2)
+{
+    virPCIDeviceAddressPtr devAddr1 = NULL, devAddr2 = NULL;
+
+    if (!dev1 || !dev2)
+        return false;
+
+    devAddr1 = &dev1->source.subsys.u.pci.addr;
+    devAddr2 = &dev2->source.subsys.u.pci.addr;
+    if ((devAddr1->domain != devAddr2->domain) ||
+        (devAddr1->bus != devAddr2->bus) ||
+        (devAddr1->slot != devAddr2->slot) ||
+        (virPCIDeviceAddressEqual(devAddr1, devAddr2))) {
+        return false;
+    }
+
+    /* The Virtual Functions have multifunction false even though they have same
+     * domain:bus:slot as the Physical function. They are to be treated
+     * like non-multifunction devices
+     */
+    if (virHostdevIsVirtualFunction(dev1) || virHostdevIsVirtualFunction(dev2))
+        return false;
+
+    return true;
+}
+
+
 static int
 virHostdevNetDevice(virDomainHostdevDefPtr hostdev,
                     int pfNetDevIdx,

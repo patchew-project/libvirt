@@ -214,6 +214,8 @@ int virHostdevPCINodeDeviceReAttach(virHostdevManagerPtr mgr,
 int virHostdevPCINodeDeviceReset(virHostdevManagerPtr mgr,
                                  virPCIDevicePtr pci)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+bool virHostdevPCIDevicesBelongToSameSlot(virDomainHostdevDefPtr dev1,
+                                          virDomainHostdevDefPtr dev2);
 
 int
 virHostdevPrepareOneNVMeDevice(virHostdevManagerPtr hostdev_mgr,

@@ -2166,6 +2166,7 @@ virHostdevIsPCIMultifunctionDevice;
 virHostdevIsSCSIDevice;
 virHostdevIsVFIODevice;
 virHostdevManagerGetDefault;
+virHostdevPCIDevicesBelongToSameSlot;
 virHostdevPCINodeDeviceDetach;
 virHostdevPCINodeDeviceReAttach;
 virHostdevPCINodeDeviceReset;
