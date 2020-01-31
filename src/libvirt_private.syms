@@ -2284,6 +2284,7 @@ virISCSIScanTargets;
 virJSONStringReformat;
 virJSONValueArrayAppend;
 virJSONValueArrayAppendString;
+virJSONValueArrayConcat;
 virJSONValueArrayForeachSteal;
 virJSONValueArrayGet;
 virJSONValueArraySize;
