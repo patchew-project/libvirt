@@ -1187,14 +1187,16 @@ qemuBlockStorageSourceGetFormatRawProps(virStorageSourcePtr src,
         secretalias = srcPriv->encinfo->s.aes.alias;
     }
 
-    /* currently unhandled properties for the 'raw' driver:
-     * 'offset'
-     * 'size'
-     */
-
     if (virJSONValueObjectAdd(props,
                               "s:driver", driver,
                               "S:key-secret", secretalias, NULL) < 0)
+        return -1;
+
+    if (src->sliceFormat &&
+        virJSONValueObjectAdd(props,
+                              "p:offset", src->sliceFormat->offset,
+                              "p:size", src->sliceFormat->size,
+                              NULL) < 0)
         return -1;
 
     return 0;
