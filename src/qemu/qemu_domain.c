@@ -6823,6 +6823,21 @@ qemuDomainValidateStorageSource(virStorageSourcePtr src,
         return -1;
     }
 
+    if (src->sliceStorage) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("storage slice is not supported for format '%s'"),
+                       virStorageFileFormatTypeToString(src->format));
+        return -1;
+    }
+
+    if (src->sliceFormat &&
+        src->format != VIR_STORAGE_FILE_RAW) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("format slice is not supported for format '%s'"),
+                       virStorageFileFormatTypeToString(src->format));
+        return -1;
+    }
+
     return 0;
 }
 
