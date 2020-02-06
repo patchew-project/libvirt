@@ -242,6 +242,15 @@ struct _virStorageSourceNVMeDef {
     /* Don't forget to update virStorageSourceNVMeDefCopy */
 };
 
+
+typedef struct _virStorageSourceSlice virStorageSourceSlice;
+typedef virStorageSourceSlice *virStorageSourceSlicePtr;
+struct _virStorageSourceSlice {
+    unsigned long long offset;
+    unsigned long long size;
+};
+
+
 typedef struct _virStorageDriverData virStorageDriverData;
 typedef virStorageDriverData *virStorageDriverDataPtr;
 
@@ -285,6 +294,9 @@ struct _virStorageSource {
     char *compat;
     bool nocow;
     bool sparse;
+
+    virStorageSourceSlicePtr sliceFormat;
+    virStorageSourceSlicePtr sliceStorage;
 
     virStoragePermsPtr perms;
     virStorageTimestampsPtr timestamps;
