@@ -337,8 +337,10 @@ static
 void virTestCaptureProgramExecChild(const char *const argv[],
                                     int pipefd)
 {
+# ifndef __FreeBSD__
     size_t i;
     int open_max;
+# endif /* ! __FreeBSD__ */
     int stdinfd = -1;
     const char *const env[] = {
         "LANG=C",
@@ -348,6 +350,7 @@ void virTestCaptureProgramExecChild(const char *const argv[],
     if ((stdinfd = open("/dev/null", O_RDONLY)) < 0)
         goto cleanup;
 
+# ifndef __FreeBSD__
     open_max = sysconf(_SC_OPEN_MAX);
     if (open_max < 0)
         goto cleanup;
@@ -360,6 +363,7 @@ void virTestCaptureProgramExecChild(const char *const argv[],
             VIR_FORCE_CLOSE(tmpfd);
         }
     }
+# endif /* __FreeBSD__ */
 
     if (dup2(stdinfd, STDIN_FILENO) != STDIN_FILENO)
         goto cleanup;
@@ -367,6 +371,11 @@ void virTestCaptureProgramExecChild(const char *const argv[],
         goto cleanup;
     if (dup2(pipefd, STDERR_FILENO) != STDERR_FILENO)
         goto cleanup;
+
+# ifdef __FreeBSD__
+    closefrom(STDERR_FILENO);
+    stdinfd = pipefd = -1;
+# endif
 
     /* SUS is crazy here, hence the cast */
     execve(argv[0], (char *const*)argv, (char *const*)env);
