@@ -84,6 +84,25 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          use of GNULIB has been completely eliminated
+        </summary>
+        <description>
+          Historically libvirt has embedded GNULIB to provide fixes for
+          various platform portability problems. This usage has now been
+          eliminated and alternative approaches for platform portability
+          problems adopted where required. This has been validated on the
+          set of platforms covered by automated CI build testing: Fedora
+          30, 31 and rawhide; CentOS 7 and 8; Debian 9 and 10; Ubuntu 18.04;
+          FreeBSD 11 and 12; Mingw-w64; macOS 10.14 with XCode 10.3 and 11.3.
+          Other Linux distros of a similar vintage using GLibC are expected
+          to work. Linux distros using non-GLibC packages, and other
+          non-Linux platforms may encounter regressions when building this
+          release. Please report any build problems encountered back to the
+          project maintainers for resolution.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
