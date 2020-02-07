@@ -11665,8 +11665,10 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
                                                net->bandwidth,
                                                false,
                                                !virDomainNetTypeSharesHostView(net)));
-            ignore_value(virDomainNetBandwidthUpdate(net,
-                                                     net->bandwidth));
+            if (net->bandwidth) {
+                ignore_value(virDomainNetBandwidthUpdate(net,
+                                                         net->bandwidth));
+            }
             goto endjob;
         }
 
