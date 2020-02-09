@@ -392,6 +392,14 @@ int virAdmClientClose(virAdmClientPtr client, unsigned int flags);
 
 # define VIR_SERVER_CLIENTS_UNAUTH_CURRENT "nclients_unauth"
 
+/* tls related filetype flags. */
+typedef enum {
+    VIR_TLS_FILE_TYPE_CA_CERT             = (1U << 0),
+    VIR_TLS_FILE_TYPE_CA_CRL              = (1U << 1),
+    VIR_TLS_FILE_TYPE_SERVER_CERT         = (1U << 2),
+    VIR_TLS_FILE_TYPE_SERVER_KEY          = (1U << 3),
+} virServerTlsFiletype;
+
 int virAdmServerGetClientLimits(virAdmServerPtr srv,
                                 virTypedParameterPtr *params,
                                 int *nparams,

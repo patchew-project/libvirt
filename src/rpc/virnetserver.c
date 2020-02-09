@@ -1207,3 +1207,75 @@ virNetServerSetClientLimits(virNetServerPtr srv,
     virObjectUnlock(srv);
     return ret;
 }
+
+static virNetTLSContextPtr
+virNetServerGetTLSContext(virNetServerPtr srv)
+{
+    size_t i;
+    virNetTLSContextPtr ctxt = NULL;
+    virNetServerServicePtr svc = NULL;
+
+    /* find svcTLS from srv, get svcTLS->tls */
+    for (i = 0; i < srv->nservices; i++) {
+        svc = srv->services[i];
+        ctxt = virNetServerServiceGetTLSContext(svc);
+        if (ctxt != NULL)
+            break;
+    }
+
+    return ctxt;
+}
+
+static int virNetServerUpdateTlsFilesCheckParams(unsigned int filetypes)
+{
+    bool haveSrvCert = filetypes & VIR_TLS_FILE_TYPE_SERVER_CERT;
+    bool haveSrvKey = filetypes & VIR_TLS_FILE_TYPE_SERVER_KEY;
+
+    if ((haveSrvCert && !haveSrvKey) ||
+        (!haveSrvCert && haveSrvKey)) {
+        virReportError(VIR_ERR_SYSTEM_ERROR,
+                       _("server cert/key must be updated together. "
+                       "filetypes: %d"), filetypes);
+        return -1;
+    }
+
+    return 0;
+}
+
+int
+virNetServerUpdateTlsFiles(virNetServerPtr srv,
+                           unsigned int filetypes)
+{
+    int ret = -1;
+#ifndef WITH_GNUTLS
+    virReportError(VIR_ERR_SYSTEM_ERROR,
+                   _("Don't support GNUTLS, can't to update filetypes: %d"),
+                   filetypes);
+#else
+    virNetTLSContextPtr ctxt = NULL;
+
+    if (virNetServerUpdateTlsFilesCheckParams(filetypes))
+        return -1;
+
+    virObjectLock(srv);
+
+    ctxt = virNetServerGetTLSContext(srv);
+    if (!ctxt) {
+        VIR_ERROR(_("no tls svc found, can't to update filetypes: %d"),
+                  filetypes);
+        goto cleanup;
+    }
+
+    if (virNetTLSContextReload(ctxt, filetypes)) {
+        VIR_ERROR(_("reload server's tls context fail"));
+        goto cleanup;
+    }
+
+    VIR_INFO("update all tls files complete, filetypes: %d", filetypes);
+    ret = 0;
+
+ cleanup:
+    virObjectUnlock(srv);
+#endif
+    return ret;
+}

@@ -65,6 +65,8 @@ virNetTLSContextPtr virNetTLSContextNewClient(const char *cacert,
 int virNetTLSContextCheckCertificate(virNetTLSContextPtr ctxt,
                                      virNetTLSSessionPtr sess);
 
+int virNetTLSContextReload(virNetTLSContextPtr ctxt,
+                           unsigned int filetypes);
 
 typedef ssize_t (*virNetTLSSessionWriteFunc)(const char *buf, size_t len,
                                              void *opaque);

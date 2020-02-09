@@ -1139,6 +1139,47 @@ void virNetTLSContextDispose(void *obj)
     gnutls_certificate_free_credentials(ctxt->x509cred);
 }
 
+int virNetTLSContextReload(virNetTLSContextPtr ctxt,
+                           unsigned int filetypes)
+{
+    int ret = -1;
+    char *cacert = NULL;
+    char *cacrl = NULL;
+    char *cert = NULL;
+    char *key = NULL;
+
+    virObjectLock(ctxt);
+
+    if (virNetTLSContextLocateCredentials(NULL, false, true,
+                                          &cacert, &cacrl, &cert, &key) < 0)
+        goto cleanup;
+
+    if (filetypes & VIR_TLS_FILE_TYPE_CA_CERT) {
+        if (virNetTLSContextSetCACert(ctxt, cacert, false))
+            goto cleanup;
+    }
+
+    if (filetypes & VIR_TLS_FILE_TYPE_CA_CRL) {
+        if (virNetTLSContextSetCACRL(ctxt, cacrl, false))
+            goto cleanup;
+    }
+
+    if (filetypes & VIR_TLS_FILE_TYPE_SERVER_CERT) {
+        gnutls_certificate_free_keys(ctxt->x509cred);
+        if (virNetTLSContextSetCertAndKey(ctxt, cert, key, false))
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virObjectUnlock(ctxt);
+    VIR_FREE(cacert);
+    VIR_FREE(cacrl);
+    VIR_FREE(key);
+    VIR_FREE(cert);
+    return ret;
+}
 
 static ssize_t
 virNetTLSSessionPush(void *opaque, const void *buf, size_t len)
