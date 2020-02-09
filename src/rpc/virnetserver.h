@@ -135,4 +135,5 @@ int virNetServerSetClientLimits(virNetServerPtr srv,
                                 long long int maxClientsUnauth);
 
 int virNetServerUpdateTlsFiles(virNetServerPtr srv,
-                               unsigned int filetypes);
+                               unsigned int filetypes,
+                               unsigned int flags);

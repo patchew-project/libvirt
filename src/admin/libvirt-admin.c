@@ -1086,11 +1086,16 @@ virAdmServerSetClientLimits(virAdmServerPtr srv,
  * virAdmServerUpdateTlsFiles:
  * @srv: a valid server object reference
  * @filetypes: bitwise-OR of virServerTlsFiletype
- * @flags: extra flags; not used yet, so callers should always pass 0
+ * @flags: mode that specifies the update method
  *
  * Notify server to update tls file, such as cacert, cacrl, server cert / key.
  * Mark the files that need to be updated by the @filetypes parameter.
  * See virServerTlsFiletype for detailed description of accepted filetypes.
+ *
+ * @flags specifies how to update server cert/key in tls service,
+ * and is either the value VIR_TLS_UPDATE_APPEND, or VIR_TLS_UPDATE_CLEAR.
+ * The default value is VIR_TLS_UPDATE_CLEAR. See virServerTlsUpdateFlag for
+ * detailed description.
  *
  * Returns 0 if the TLS files have been updated successfully or -1 in case of an
  * error.

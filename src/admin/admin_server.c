@@ -373,10 +373,5 @@ adminServerUpdateTlsFiles(virNetServerPtr srv,
                           unsigned int filetypes,
                           unsigned int flags)
 {
-    virCheckFlags(0, -1);
-
-    if (virNetServerUpdateTlsFiles(srv, filetypes) < 0)
-        return -1;
-
-    return 0;
+    return virNetServerUpdateTlsFiles(srv, filetypes, flags);
 }

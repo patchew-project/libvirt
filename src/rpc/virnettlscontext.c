@@ -1140,7 +1140,8 @@ void virNetTLSContextDispose(void *obj)
 }
 
 int virNetTLSContextReload(virNetTLSContextPtr ctxt,
-                           unsigned int filetypes)
+                           unsigned int filetypes,
+                           unsigned int flags)
 {
     int ret = -1;
     char *cacert = NULL;
@@ -1165,7 +1166,9 @@ int virNetTLSContextReload(virNetTLSContextPtr ctxt,
     }
 
     if (filetypes & VIR_TLS_FILE_TYPE_SERVER_CERT) {
-        gnutls_certificate_free_keys(ctxt->x509cred);
+        if (flags == VIR_TLS_UPDATE_CLEAR)
+            gnutls_certificate_free_keys(ctxt->x509cred);
+
         if (virNetTLSContextSetCertAndKey(ctxt, cert, key, false))
             goto cleanup;
     }

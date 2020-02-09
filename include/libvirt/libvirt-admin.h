@@ -392,6 +392,20 @@ int virAdmClientClose(virAdmClientPtr client, unsigned int flags);
 
 # define VIR_SERVER_CLIENTS_UNAUTH_CURRENT "nclients_unauth"
 
+typedef enum {
+    /* free old credentials and then set new tls context.
+     */
+    VIR_TLS_UPDATE_CLEAR                  = 0,
+
+    /* do not clear original certificates and keys.
+     */
+    VIR_TLS_UPDATE_APPEND                 = 1,
+
+    /* boundary value for flag check (unreachable).
+     */
+    VIR_TLS_UPDATE_FLAG_MAX               = 2,
+} virServerTlsUpdateFlag;
+
 /* tls related filetype flags. */
 typedef enum {
     VIR_TLS_FILE_TYPE_CA_CERT             = (1U << 0),

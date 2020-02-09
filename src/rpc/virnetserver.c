@@ -1226,7 +1226,8 @@ virNetServerGetTLSContext(virNetServerPtr srv)
     return ctxt;
 }
 
-static int virNetServerUpdateTlsFilesCheckParams(unsigned int filetypes)
+static int virNetServerUpdateTlsFilesCheckParams(unsigned int filetypes,
+                                                 unsigned int flags)
 {
     bool haveSrvCert = filetypes & VIR_TLS_FILE_TYPE_SERVER_CERT;
     bool haveSrvKey = filetypes & VIR_TLS_FILE_TYPE_SERVER_KEY;
@@ -1239,12 +1240,20 @@ static int virNetServerUpdateTlsFilesCheckParams(unsigned int filetypes)
         return -1;
     }
 
+    if (flags >= VIR_TLS_UPDATE_FLAG_MAX) {
+        virReportError(VIR_ERR_SYSTEM_ERROR,
+                       _("don not support flags: %d"),
+                       flags);
+        return -1;
+    }
+
     return 0;
 }
 
 int
 virNetServerUpdateTlsFiles(virNetServerPtr srv,
-                           unsigned int filetypes)
+                           unsigned int filetypes,
+                           unsigned int flags)
 {
     int ret = -1;
 #ifndef WITH_GNUTLS
@@ -1254,7 +1263,7 @@ virNetServerUpdateTlsFiles(virNetServerPtr srv,
 #else
     virNetTLSContextPtr ctxt = NULL;
 
-    if (virNetServerUpdateTlsFilesCheckParams(filetypes))
+    if (virNetServerUpdateTlsFilesCheckParams(filetypes, flags))
         return -1;
 
     virObjectLock(srv);
@@ -1266,7 +1275,7 @@ virNetServerUpdateTlsFiles(virNetServerPtr srv,
         goto cleanup;
     }
 
-    if (virNetTLSContextReload(ctxt, filetypes)) {
+    if (virNetTLSContextReload(ctxt, filetypes, flags)) {
         VIR_ERROR(_("reload server's tls context fail"));
         goto cleanup;
     }
