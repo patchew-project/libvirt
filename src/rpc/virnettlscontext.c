@@ -594,6 +594,85 @@ static int virNetTLSContextSanityCheckCredentials(bool isServer,
     return ret;
 }
 
+static int virNetTLSContextSetCACert(virNetTLSContextPtr ctxt,
+                                     const char *cacert,
+                                     bool allowMissing)
+{
+    int err;
+    if (virNetTLSContextCheckCertFile("CA certificate", cacert, allowMissing) < 0)
+        return -1;
+
+    VIR_DEBUG("loading CA cert from %s", cacert);
+    err = gnutls_certificate_set_x509_trust_file(ctxt->x509cred,
+                                                 cacert,
+                                                 GNUTLS_X509_FMT_PEM);
+    if (err < 0) {
+        virReportError(VIR_ERR_SYSTEM_ERROR,
+                       _("Unable to set x509 CA certificate: %s: %s"),
+                       cacert, gnutls_strerror(err));
+        return -1;
+    }
+
+    return 0;
+}
+
+static int virNetTLSContextSetCACRL(virNetTLSContextPtr ctxt,
+                                    const char *cacrl,
+                                    bool allowMissing)
+{
+    int rv, err;
+    if ((rv = virNetTLSContextCheckCertFile("CA revocation list", cacrl, allowMissing)) < 0)
+        return -1;
+
+    if (rv == 0) {
+        VIR_DEBUG("loading CRL from %s", cacrl);
+        err = gnutls_certificate_set_x509_crl_file(ctxt->x509cred,
+                                                   cacrl,
+                                                   GNUTLS_X509_FMT_PEM);
+        if (err < 0) {
+            virReportError(VIR_ERR_SYSTEM_ERROR,
+                           _("Unable to set x509 certificate revocation list: %s: %s"),
+                           cacrl, gnutls_strerror(err));
+            return -1;
+        }
+    } else {
+        VIR_DEBUG("Skipping non-existent CA CRL %s", cacrl);
+    }
+
+    return 0;
+}
+
+static int virNetTLSContextSetCertAndKey(virNetTLSContextPtr ctxt,
+                                         const char *cert,
+                                         const char *key,
+                                         bool allowMissing)
+{
+    int rv, err;
+    if ((rv = virNetTLSContextCheckCertFile("certificate", cert, allowMissing)) < 0)
+        return -1;
+    if (rv == 0 &&
+        (rv = virNetTLSContextCheckCertFile("private key", key, allowMissing)) < 0)
+        return -1;
+
+    if (rv == 0) {
+        VIR_DEBUG("loading cert and key from %s and %s", cert, key);
+        err =
+            gnutls_certificate_set_x509_key_file(ctxt->x509cred,
+                                                 cert, key,
+                                                 GNUTLS_X509_FMT_PEM);
+        if (err < 0) {
+            virReportError(VIR_ERR_SYSTEM_ERROR,
+                           _("Unable to set x509 key and certificate: %s, %s: %s"),
+                           key, cert, gnutls_strerror(err));
+            return -1;
+        }
+    } else {
+        VIR_DEBUG("Skipping non-existent cert %s key %s on client",
+                  cert, key);
+    }
+
+    return 0;
+}
 
 static int virNetTLSContextLoadCredentials(virNetTLSContextPtr ctxt,
                                            bool isServer,
@@ -602,69 +681,19 @@ static int virNetTLSContextLoadCredentials(virNetTLSContextPtr ctxt,
                                            const char *cert,
                                            const char *key)
 {
-    int err;
-
     if (cacert && cacert[0] != '\0') {
-        if (virNetTLSContextCheckCertFile("CA certificate", cacert, false) < 0)
+        if (virNetTLSContextSetCACert(ctxt, cacert, false))
             return -1;
-
-        VIR_DEBUG("loading CA cert from %s", cacert);
-        err = gnutls_certificate_set_x509_trust_file(ctxt->x509cred,
-                                                     cacert,
-                                                     GNUTLS_X509_FMT_PEM);
-        if (err < 0) {
-            virReportError(VIR_ERR_SYSTEM_ERROR,
-                           _("Unable to set x509 CA certificate: %s: %s"),
-                           cacert, gnutls_strerror(err));
-            return -1;
-        }
     }
 
     if (cacrl && cacrl[0] != '\0') {
-        int rv;
-        if ((rv = virNetTLSContextCheckCertFile("CA revocation list", cacrl, true)) < 0)
+        if (virNetTLSContextSetCACRL(ctxt, cacrl, true))
             return -1;
-
-        if (rv == 0) {
-            VIR_DEBUG("loading CRL from %s", cacrl);
-            err = gnutls_certificate_set_x509_crl_file(ctxt->x509cred,
-                                                       cacrl,
-                                                       GNUTLS_X509_FMT_PEM);
-            if (err < 0) {
-                virReportError(VIR_ERR_SYSTEM_ERROR,
-                               _("Unable to set x509 certificate revocation list: %s: %s"),
-                               cacrl, gnutls_strerror(err));
-                return -1;
-            }
-        } else {
-            VIR_DEBUG("Skipping non-existent CA CRL %s", cacrl);
-        }
     }
 
     if (cert && cert[0] != '\0' && key && key[0] != '\0') {
-        int rv;
-        if ((rv = virNetTLSContextCheckCertFile("certificate", cert, !isServer)) < 0)
+        if (virNetTLSContextSetCertAndKey(ctxt, cert, key, !isServer))
             return -1;
-        if (rv == 0 &&
-            (rv = virNetTLSContextCheckCertFile("private key", key, !isServer)) < 0)
-            return -1;
-
-        if (rv == 0) {
-            VIR_DEBUG("loading cert and key from %s and %s", cert, key);
-            err =
-                gnutls_certificate_set_x509_key_file(ctxt->x509cred,
-                                                     cert, key,
-                                                     GNUTLS_X509_FMT_PEM);
-            if (err < 0) {
-                virReportError(VIR_ERR_SYSTEM_ERROR,
-                               _("Unable to set x509 key and certificate: %s, %s: %s"),
-                               key, cert, gnutls_strerror(err));
-                return -1;
-            }
-        } else {
-            VIR_DEBUG("Skipping non-existent cert %s key %s on client",
-                      cert, key);
-        }
     }
 
     return 0;
