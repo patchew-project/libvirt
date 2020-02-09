@@ -957,6 +957,84 @@ cmdSrvClientsSet(vshControl *ctl, const vshCmd *cmd)
     goto cleanup;
 }
 
+/* ------------------------
+ *  Command srv-update-tls
+ * ------------------------
+ */
+static const vshCmdInfo info_srv_update_tls_file[] = {
+    {.name = "help",
+     .data = N_("notify server to update TLS related files online.")
+    },
+    {.name = "desc",
+     .data = N_("notify server to update the CA cert, "
+                "CA CRL, server cert / key without restarts. "
+                "See OPTIONS for currently supported attributes.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_srv_update_tls_file[] = {
+    {.name = "server",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("Available servers on a daemon. "
+                "Currently only supports 'libvirtd'.")
+    },
+    {.name = "filetypes",
+     .type = VSH_OT_INT,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("filetypes that need to be updated. "
+                "bitwise-OR of tls filetypes flags.\n"
+                "  parameter Description:\n"
+                "    --filetypes 1  ===>  cacert\n"
+                "    --filetypes 2  ===>  cacrl\n"
+                "    --filetypes 4  ===>  server-cert\n"
+                "    --filetypes 8  ===>  server-key\n"
+                "  or a combination of several values. eg:\n"
+                "    --filetypes 3  ===>  cacert | cacrl\n"
+                "  notice:\n"
+                "    server cert and key must be updated together.\n")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdSrvUpdateTlsFiles(vshControl *ctl, const vshCmd *cmd)
+{
+    bool ret = false;
+    const char *srvname = NULL;
+    unsigned int filetypes;
+
+    virAdmServerPtr srv = NULL;
+    vshAdmControlPtr priv = ctl->privData;
+
+    if (vshCommandOptStringReq(ctl, cmd, "server", &srvname) < 0)
+        return false;
+
+    if (vshCommandOptUInt(ctl, cmd, "filetypes", &filetypes) < 0)
+        return false;
+
+    if (filetypes == 0) {
+        vshError(ctl, "%s", _("filetypes can not be 0."));
+        goto cleanup;
+    }
+
+    if (!(srv = virAdmConnectLookupServer(priv->conn, srvname, 0)))
+        goto cleanup;
+
+    if (virAdmServerUpdateTlsFiles(srv, filetypes, VIR_TLS_UPDATE_CLEAR) < 0) {
+        vshError(ctl, "%s", _("Unable to update server's tls related files."));
+        goto cleanup;
+    }
+
+    ret = true;
+    vshPrint(ctl, "update tls related files succeed\n");
+
+ cleanup:
+    virAdmServerFree(srv);
+    return ret;
+}
+
 /* --------------------------
  * Command daemon-log-filters
  * --------------------------
@@ -1434,6 +1512,16 @@ static const vshCmdDef managementCmds[] = {
      .handler = cmdSrvClientsSet,
      .opts = opts_srv_clients_set,
      .info = info_srv_clients_set,
+     .flags = 0
+    },
+    {.name = "srv-update-tls",
+     .flags = VSH_CMD_FLAG_ALIAS,
+     .alias = "server-update-tls"
+    },
+    {.name = "server-update-tls",
+     .handler = cmdSrvUpdateTlsFiles,
+     .opts = opts_srv_update_tls_file,
+     .info = info_srv_update_tls_file,
      .flags = 0
     },
     {.name = "daemon-log-filters",
