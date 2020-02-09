@@ -442,6 +442,27 @@ Set new client-related limits on *server*.
   *--max-clients*.
 
 
+server-update-tls
+-----------------
+
+**Syntax:**
+
+.. code-block::
+
+   server-update-tls server [--filetypes types]
+
+Update tls context on *server*.
+
+- *server*
+
+  Available servers on a daemon. Currently only supports 'libvirtd'.
+
+- *--filetypes*
+
+  Indicate which TLS related files need to be updated, such as CA cert, CA CRL,
+  server cert/key. ``types`` is bitwise-OR of tls related files.
+
+
 CLIENT COMMANDS
 ===============
 
