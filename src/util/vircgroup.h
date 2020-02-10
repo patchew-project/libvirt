@@ -145,11 +145,8 @@ int virCgroupGetMemoryStat(virCgroupPtr group,
                            unsigned long long *unevictable);
 int virCgroupGetMemoryUsage(virCgroupPtr group, unsigned long *kb);
 
-int virCgroupSetMemoryHardLimit(virCgroupPtr group, unsigned long long kb);
 int virCgroupGetMemoryHardLimit(virCgroupPtr group, unsigned long long *kb);
-int virCgroupSetMemorySoftLimit(virCgroupPtr group, unsigned long long kb);
 int virCgroupGetMemorySoftLimit(virCgroupPtr group, unsigned long long *kb);
-int virCgroupSetMemSwapHardLimit(virCgroupPtr group, unsigned long long kb);
 int virCgroupGetMemSwapHardLimit(virCgroupPtr group, unsigned long long *kb);
 int virCgroupGetMemSwapUsage(virCgroupPtr group, unsigned long long *kb);
 
@@ -223,7 +220,6 @@ int virCgroupGetCpusetMems(virCgroupPtr group, char **mems);
 int virCgroupSetCpusetMemoryMigrate(virCgroupPtr group, bool migrate);
 int virCgroupGetCpusetMemoryMigrate(virCgroupPtr group, bool *migrate);
 
-int virCgroupSetCpusetCpus(virCgroupPtr group, const char *cpus);
 int virCgroupGetCpusetCpus(virCgroupPtr group, char **cpus);
 
 int virCgroupRemove(virCgroupPtr group);

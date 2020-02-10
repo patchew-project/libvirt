@@ -1653,7 +1653,7 @@ virCgroupGetMemoryUsage(virCgroupPtr group, unsigned long *kb)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetMemoryHardLimit(virCgroupPtr group, unsigned long long kb)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_MEMORY,
@@ -1685,7 +1685,7 @@ virCgroupGetMemoryHardLimit(virCgroupPtr group, unsigned long long *kb)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetMemorySoftLimit(virCgroupPtr group, unsigned long long kb)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_MEMORY,
@@ -1717,7 +1717,7 @@ virCgroupGetMemorySoftLimit(virCgroupPtr group, unsigned long long *kb)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetMemSwapHardLimit(virCgroupPtr group, unsigned long long kb)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_MEMORY,
@@ -1829,7 +1829,7 @@ virCgroupGetCpusetMemoryMigrate(virCgroupPtr group, bool *migrate)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetCpusetCpus(virCgroupPtr group, const char *cpus)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPUSET,
@@ -3129,7 +3129,7 @@ virCgroupGetMemoryUsage(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetMemoryHardLimit(virCgroupPtr group G_GNUC_UNUSED,
                             unsigned long long kb G_GNUC_UNUSED)
 {
@@ -3149,7 +3149,7 @@ virCgroupGetMemoryHardLimit(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetMemorySoftLimit(virCgroupPtr group G_GNUC_UNUSED,
                             unsigned long long kb G_GNUC_UNUSED)
 {
@@ -3169,7 +3169,7 @@ virCgroupGetMemorySoftLimit(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetMemSwapHardLimit(virCgroupPtr group G_GNUC_UNUSED,
                              unsigned long long kb G_GNUC_UNUSED)
 {
@@ -3239,7 +3239,7 @@ virCgroupGetCpusetMemoryMigrate(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetCpusetCpus(virCgroupPtr group G_GNUC_UNUSED,
                        const char *cpus G_GNUC_UNUSED)
 {
