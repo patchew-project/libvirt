@@ -10667,10 +10667,8 @@ qemuDomainSetSchedulerParametersFlags(virDomainPtr dom,
         if (STREQ(param->field, VIR_DOMAIN_SCHEDULER_CPU_SHARES)) {
             if (def) {
                 unsigned long long val;
-                if (virCgroupSetCpuShares(priv->cgroup, value_ul) < 0)
-                    goto endjob;
-
-                if (virCgroupGetCpuShares(priv->cgroup, &val) < 0)
+                if (virCgroupSetAndRetrieveCpuShares(priv->cgroup, value_ul,
+                                                     &val) < 0)
                     goto endjob;
 
                 def->cputune.shares = val;

@@ -290,3 +290,6 @@ bool virCgroupControllerAvailable(int controller);
 int virCgroupSetupBlkioTune(virCgroupPtr cgroup, virDomainBlkiotune blkio);
 int virCgroupSetupMemtune(virCgroupPtr cgroup, virDomainMemtune mem);
 int virCgroupSetupCpusetCpus(virCgroupPtr cgroup, virBitmapPtr cpumask);
+int virCgroupSetAndRetrieveCpuShares(virCgroupPtr cgroup,
+                                     unsigned long long shares,
+                                     unsigned long long *realValue);

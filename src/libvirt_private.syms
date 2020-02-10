@@ -1710,6 +1710,7 @@ virCgroupNewSelf;
 virCgroupNewThread;
 virCgroupPathOfController;
 virCgroupRemove;
+virCgroupSetAndRetrieveCpuShares;
 virCgroupSetBlkioDeviceReadBps;
 virCgroupSetBlkioDeviceReadIops;
 virCgroupSetBlkioDeviceWeight;
