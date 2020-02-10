@@ -293,3 +293,6 @@ int virCgroupSetupCpusetCpus(virCgroupPtr cgroup, virBitmapPtr cpumask);
 int virCgroupSetAndRetrieveCpuShares(virCgroupPtr cgroup,
                                      unsigned long long shares,
                                      unsigned long long *realValue);
+int virCgroupSetupCpuPeriodQuota(virCgroupPtr cgroup,
+                                 unsigned long long period,
+                                 long long quota);
