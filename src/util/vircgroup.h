@@ -24,6 +24,7 @@
 #include "virutil.h"
 #include "virbitmap.h"
 #include "virenum.h"
+#include "conf/virconftypes.h"
 
 struct _virCgroup;
 typedef struct _virCgroup virCgroup;
@@ -285,3 +286,5 @@ int virCgroupSetOwner(virCgroupPtr cgroup,
 int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 
 bool virCgroupControllerAvailable(int controller);
+
+int virCgroupSetupBlkioTune(virCgroupPtr cgroup, virDomainBlkiotune blkio);

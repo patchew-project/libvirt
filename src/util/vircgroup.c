@@ -35,6 +35,7 @@
 #define LIBVIRT_VIRCGROUPPRIV_H_ALLOW
 #include "vircgrouppriv.h"
 
+#include "conf/domain_conf.h"
 #include "virutil.h"
 #include "viralloc.h"
 #include "vircgroupbackend.h"
@@ -3577,6 +3578,60 @@ virCgroupDelThread(virCgroupPtr cgroup,
         /* Remove the offlined cgroup */
         virCgroupRemove(new_cgroup);
         virCgroupFree(&new_cgroup);
+    }
+
+    return 0;
+}
+
+
+int
+virCgroupSetupBlkioTune(virCgroupPtr cgroup, virDomainBlkiotune blkio)
+{
+    size_t i;
+
+    if (blkio.weight != 0 &&
+        virCgroupSetBlkioWeight(cgroup, blkio.weight) < 0)
+        return -1;
+
+    if (blkio.ndevices) {
+        for (i = 0; i < blkio.ndevices; i++) {
+            virBlkioDevicePtr dev = &blkio.devices[i];
+
+            if (dev->weight != 0 &&
+                (virCgroupSetBlkioDeviceWeight(cgroup, dev->path,
+                                               dev->weight) < 0 ||
+                 virCgroupGetBlkioDeviceWeight(cgroup, dev->path,
+                                               &dev->weight) < 0))
+                return -1;
+
+            if (dev->riops != 0 &&
+                (virCgroupSetBlkioDeviceReadIops(cgroup, dev->path,
+                                                 dev->riops) < 0 ||
+                 virCgroupGetBlkioDeviceReadIops(cgroup, dev->path,
+                                                 &dev->riops) < 0))
+                return -1;
+
+            if (dev->wiops != 0 &&
+                (virCgroupSetBlkioDeviceWriteIops(cgroup, dev->path,
+                                                  dev->wiops) < 0 ||
+                 virCgroupGetBlkioDeviceWriteIops(cgroup, dev->path,
+                                                  &dev->wiops) < 0))
+                return -1;
+
+            if (dev->rbps != 0 &&
+                (virCgroupSetBlkioDeviceReadBps(cgroup, dev->path,
+                                                dev->rbps) < 0 ||
+                 virCgroupGetBlkioDeviceReadBps(cgroup, dev->path,
+                                                &dev->rbps) < 0))
+                return -1;
+
+            if (dev->wbps != 0 &&
+                (virCgroupSetBlkioDeviceWriteBps(cgroup, dev->path,
+                                                 dev->wbps) < 0 ||
+                 virCgroupGetBlkioDeviceWriteBps(cgroup, dev->path,
+                                                 &dev->wbps) < 0))
+                return -1;
+        }
     }
 
     return 0;

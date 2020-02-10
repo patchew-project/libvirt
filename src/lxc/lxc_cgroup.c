@@ -101,54 +101,7 @@ static int virLXCCgroupSetupCpusetTune(virDomainDefPtr def,
 static int virLXCCgroupSetupBlkioTune(virDomainDefPtr def,
                                       virCgroupPtr cgroup)
 {
-    size_t i;
-
-    if (def->blkio.weight &&
-        virCgroupSetBlkioWeight(cgroup, def->blkio.weight) < 0)
-        return -1;
-
-    if (def->blkio.ndevices) {
-        for (i = 0; i < def->blkio.ndevices; i++) {
-            virBlkioDevicePtr dev = &def->blkio.devices[i];
-
-            if (dev->weight &&
-                (virCgroupSetBlkioDeviceWeight(cgroup, dev->path,
-                                               dev->weight) < 0 ||
-                 virCgroupGetBlkioDeviceWeight(cgroup, dev->path,
-                                               &dev->weight) < 0))
-                return -1;
-
-            if (dev->riops &&
-                (virCgroupSetBlkioDeviceReadIops(cgroup, dev->path,
-                                                 dev->riops) < 0 ||
-                 virCgroupGetBlkioDeviceReadIops(cgroup, dev->path,
-                                                 &dev->riops) < 0))
-                return -1;
-
-            if (dev->wiops &&
-                (virCgroupSetBlkioDeviceWriteIops(cgroup, dev->path,
-                                                  dev->wiops) < 0 ||
-                 virCgroupGetBlkioDeviceWriteIops(cgroup, dev->path,
-                                                  &dev->wiops) < 0))
-                return -1;
-
-            if (dev->rbps &&
-                (virCgroupSetBlkioDeviceReadBps(cgroup, dev->path,
-                                                dev->rbps) < 0 ||
-                 virCgroupGetBlkioDeviceReadBps(cgroup, dev->path,
-                                                &dev->rbps) < 0))
-                return -1;
-
-            if (dev->wbps &&
-                (virCgroupSetBlkioDeviceWriteBps(cgroup, dev->path,
-                                                 dev->wbps) < 0 ||
-                 virCgroupGetBlkioDeviceWriteBps(cgroup, dev->path,
-                                                 &dev->wbps) < 0))
-                return -1;
-        }
-    }
-
-    return 0;
+    return virCgroupSetupBlkioTune(cgroup, def->blkio);
 }
 
 
