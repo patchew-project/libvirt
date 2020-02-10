@@ -565,6 +565,7 @@ virDomainOSTypeFromString;
 virDomainOSTypeToString;
 virDomainParseBlkioDeviceStr;
 virDomainParseMemory;
+virDomainParseMergePersistentDefBlkioParams;
 virDomainPausedReasonTypeFromString;
 virDomainPausedReasonTypeToString;
 virDomainPMSuspendedReasonTypeFromString;

@@ -2218,6 +2218,10 @@ int virDomainMergeBlkioDevice(virBlkioDevicePtr *dest_array,
 int virDomainParseBlkioDeviceStr(char *blkioDeviceStr, const char *type,
                                  virBlkioDevicePtr *dev, size_t *size);
 
+int virDomainParseMergePersistentDefBlkioParams(virDomainDefPtr persistentDef,
+                                                virTypedParameterPtr params,
+                                                int nparams);
+
 struct _virDomainResourceDef {
     char *partition;
 };
