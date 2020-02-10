@@ -288,3 +288,4 @@ int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 bool virCgroupControllerAvailable(int controller);
 
 int virCgroupSetupBlkioTune(virCgroupPtr cgroup, virDomainBlkiotune blkio);
+int virCgroupSetupMemtune(virCgroupPtr cgroup, virDomainMemtune mem);
