@@ -2215,6 +2215,9 @@ int virDomainMergeBlkioDevice(virBlkioDevicePtr *dest_array,
                               size_t src_size,
                               const char *type);
 
+int virDomainParseBlkioDeviceStr(char *blkioDeviceStr, const char *type,
+                                 virBlkioDevicePtr *dev, size_t *size);
+
 struct _virDomainResourceDef {
     char *partition;
 };
