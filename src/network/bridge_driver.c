@@ -5062,8 +5062,25 @@ networkCheckBandwidth(virNetworkObjPtr obj,
     unsigned long long tmp_floor_sum = virNetworkObjGetFloorSum(obj);
     unsigned long long tmp_new_rate = 0;
     char ifmac[VIR_MAC_STRING_BUFLEN];
+    virNetworkForwardType fwdType;
+    bool floorSupported;
+    bool floorRequested;
 
     virMacAddrFormat(ifaceMac, ifmac);
+
+    fwdType = def->forward.type;
+    floorSupported = fwdType == VIR_NETWORK_FORWARD_NONE ||
+        fwdType == VIR_NETWORK_FORWARD_NAT ||
+        fwdType == VIR_NETWORK_FORWARD_ROUTE ||
+        fwdType == VIR_NETWORK_FORWARD_OPEN;
+
+    floorRequested = ifaceBand && ifaceBand->in && ifaceBand->in->floor != 0;
+
+    if (floorRequested && !floorSupported) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("'floor' is only supported for interface type 'network' with forward type 'nat', 'route', 'open' or none"));
+        return -1;
+    }
 
     if (ifaceBand && ifaceBand->in && ifaceBand->in->floor &&
         !(netBand && netBand->in)) {
