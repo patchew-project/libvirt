@@ -11672,9 +11672,16 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
                    sizeof(*newBandwidth->out));
         }
 
-        if (net->type == VIR_DOMAIN_NET_TYPE_NETWORK &&
-            virDomainNetBandwidthUpdate(net, newBandwidth) < 0)
-            goto endjob;
+        if (net->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
+            if (virDomainNetBandwidthUpdate(net, newBandwidth) < 0)
+                goto endjob;
+        } else {
+            if (bandwidth->in && bandwidth->in->floor != 0) {
+                virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                               _("'floor' is only supported for interface type 'network' with forward type 'nat', 'route', 'open' or none"));
+                goto endjob;
+            }
+        }
 
         if (virNetDevBandwidthSet(net->ifname, newBandwidth, false,
                                   !virDomainNetTypeSharesHostView(net)) < 0) {
