@@ -296,3 +296,7 @@ int virCgroupSetAndRetrieveCpuShares(virCgroupPtr cgroup,
 int virCgroupSetupCpuPeriodQuota(virCgroupPtr cgroup,
                                  unsigned long long period,
                                  long long quota);
+int virCgroupSetupDomainBlkioParameters(virCgroupPtr cgroup,
+                                        virDomainDefPtr def,
+                                        virTypedParameterPtr params,
+                                        int nparams);

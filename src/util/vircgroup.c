@@ -3729,3 +3729,118 @@ virCgroupSetupCpuPeriodQuota(virCgroupPtr cgroup,
 
     return -1;
 }
+
+
+int
+virCgroupSetupDomainBlkioParameters(virCgroupPtr cgroup, virDomainDefPtr def,
+                                    virTypedParameterPtr params, int nparams)
+{
+    size_t i;
+    int ret = 0;
+
+    for (i = 0; i < nparams; i++) {
+        virTypedParameterPtr param = &params[i];
+
+        if (STREQ(param->field, VIR_DOMAIN_BLKIO_WEIGHT)) {
+            if (virCgroupSetBlkioWeight(cgroup, param->value.ui) < 0)
+                ret = -1;
+        } else if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WEIGHT) ||
+                   STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_READ_IOPS) ||
+                   STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WRITE_IOPS) ||
+                   STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_READ_BPS) ||
+                   STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WRITE_BPS)) {
+            size_t ndevices;
+            virBlkioDevicePtr devices = NULL;
+            size_t j;
+
+            if (virDomainParseBlkioDeviceStr(param->value.s,
+                                             param->field,
+                                             &devices,
+                                             &ndevices) < 0) {
+                ret = -1;
+                continue;
+            }
+
+            if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WEIGHT)) {
+                for (j = 0; j < ndevices; j++) {
+                    if (virCgroupSetBlkioDeviceWeight(cgroup,
+                                                      devices[j].path,
+                                                      devices[j].weight) < 0 ||
+                        virCgroupGetBlkioDeviceWeight(cgroup,
+                                                      devices[j].path,
+                                                      &devices[j].weight) < 0) {
+                        ret = -1;
+                        break;
+                    }
+                }
+            } else if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_READ_IOPS)) {
+                for (j = 0; j < ndevices; j++) {
+                    if (virCgroupSetBlkioDeviceReadIops(cgroup,
+                                                        devices[j].path,
+                                                        devices[j].riops) < 0 ||
+                        virCgroupGetBlkioDeviceReadIops(cgroup,
+                                                        devices[j].path,
+                                                        &devices[j].riops) < 0) {
+                        ret = -1;
+                        break;
+                    }
+                }
+            } else if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WRITE_IOPS)) {
+                for (j = 0; j < ndevices; j++) {
+                    if (virCgroupSetBlkioDeviceWriteIops(cgroup,
+                                                         devices[j].path,
+                                                         devices[j].wiops) < 0 ||
+                        virCgroupGetBlkioDeviceWriteIops(cgroup,
+                                                         devices[j].path,
+                                                         &devices[j].wiops) < 0) {
+                        ret = -1;
+                        break;
+                    }
+                }
+            } else if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_READ_BPS)) {
+                for (j = 0; j < ndevices; j++) {
+                    if (virCgroupSetBlkioDeviceReadBps(cgroup,
+                                                       devices[j].path,
+                                                       devices[j].rbps) < 0 ||
+                        virCgroupGetBlkioDeviceReadBps(cgroup,
+                                                       devices[j].path,
+                                                       &devices[j].rbps) < 0) {
+                        ret = -1;
+                        break;
+                    }
+                }
+            } else if (STREQ(param->field, VIR_DOMAIN_BLKIO_DEVICE_WRITE_BPS)) {
+                for (j = 0; j < ndevices; j++) {
+                    if (virCgroupSetBlkioDeviceWriteBps(cgroup,
+                                                        devices[j].path,
+                                                        devices[j].wbps) < 0 ||
+                        virCgroupGetBlkioDeviceWriteBps(cgroup,
+                                                        devices[j].path,
+                                                        &devices[j].wbps) < 0) {
+                        ret = -1;
+                        break;
+                    }
+                }
+            } else {
+                virReportError(VIR_ERR_INVALID_ARG, _("Unknown blkio parameter %s"),
+                               param->field);
+                ret = -1;
+                virBlkioDeviceArrayClear(devices, ndevices);
+                VIR_FREE(devices);
+
+                continue;
+            }
+
+            if (j != ndevices ||
+                virDomainMergeBlkioDevice(&def->blkio.devices,
+                                          &def->blkio.ndevices,
+                                          devices, ndevices, param->field) < 0)
+                ret = -1;
+
+            virBlkioDeviceArrayClear(devices, ndevices);
+            VIR_FREE(devices);
+        }
+    }
+
+    return ret;
+}
