@@ -300,3 +300,9 @@ int virCgroupSetupDomainBlkioParameters(virCgroupPtr cgroup,
                                         virDomainDefPtr def,
                                         virTypedParameterPtr params,
                                         int nparams);
+int virCgroupSetMemoryLimitParameters(virCgroupPtr cgroup,
+                                      virDomainObjPtr vm,
+                                      virDomainDefPtr liveDef,
+                                      virDomainDefPtr persistentDef,
+                                      virTypedParameterPtr params,
+                                      int nparams);

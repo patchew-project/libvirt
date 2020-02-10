@@ -1729,6 +1729,7 @@ virCgroupSetCpuShares;
 virCgroupSetFreezerState;
 virCgroupSetMemory;
 virCgroupSetMemoryHardLimit;
+virCgroupSetMemoryLimitParameters;
 virCgroupSetMemorySoftLimit;
 virCgroupSetMemSwapHardLimit;
 virCgroupSetOwner;
