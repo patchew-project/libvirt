@@ -2249,7 +2249,7 @@ virCgroupGetDomainTotalCpuStats(virCgroupPtr group,
 }
 
 
-int
+static int
 virCgroupSetCpuShares(virCgroupPtr group, unsigned long long shares)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPU,
@@ -2273,7 +2273,7 @@ virCgroupGetCpuShares(virCgroupPtr group, unsigned long long *shares)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetCpuCfsPeriod(virCgroupPtr group, unsigned long long cfs_period)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPU,
@@ -2289,7 +2289,7 @@ virCgroupSetCpuCfsPeriod(virCgroupPtr group, unsigned long long cfs_period)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupGetCpuCfsPeriod(virCgroupPtr group, unsigned long long *cfs_period)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPU,
@@ -2306,7 +2306,7 @@ virCgroupGetCpuCfsPeriod(virCgroupPtr group, unsigned long long *cfs_period)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupSetCpuCfsQuota(virCgroupPtr group, long long cfs_quota)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPU,
@@ -2660,7 +2660,7 @@ virCgroupKillPainfully(virCgroupPtr group)
  *
  * Returns: 0 on success
  */
-int
+static int
 virCgroupGetCpuCfsQuota(virCgroupPtr group, long long *cfs_quota)
 {
     VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_CPU,
@@ -3326,7 +3326,7 @@ virCgroupDenyDevicePath(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetCpuShares(virCgroupPtr group G_GNUC_UNUSED,
                       unsigned long long shares G_GNUC_UNUSED)
 {
@@ -3346,7 +3346,7 @@ virCgroupGetCpuShares(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetCpuCfsPeriod(virCgroupPtr group G_GNUC_UNUSED,
                          unsigned long long cfs_period G_GNUC_UNUSED)
 {
@@ -3356,7 +3356,7 @@ virCgroupSetCpuCfsPeriod(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupGetCpuCfsPeriod(virCgroupPtr group G_GNUC_UNUSED,
                          unsigned long long *cfs_period G_GNUC_UNUSED)
 {
@@ -3366,7 +3366,7 @@ virCgroupGetCpuCfsPeriod(virCgroupPtr group G_GNUC_UNUSED,
 }
 
 
-int
+static int
 virCgroupSetCpuCfsQuota(virCgroupPtr group G_GNUC_UNUSED,
                         long long cfs_quota G_GNUC_UNUSED)
 {
@@ -3404,7 +3404,7 @@ virCgroupKillPainfully(virCgroupPtr group G_GNUC_UNUSED)
 }
 
 
-int
+static int
 virCgroupGetCpuCfsQuota(virCgroupPtr group G_GNUC_UNUSED,
                         long long *cfs_quota G_GNUC_UNUSED)
 {
