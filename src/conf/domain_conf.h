@@ -2209,6 +2209,12 @@ struct _virDomainPanicDef {
 void virBlkioDeviceArrayClear(virBlkioDevicePtr deviceWeights,
                               int ndevices);
 
+int virDomainMergeBlkioDevice(virBlkioDevicePtr *dest_array,
+                              size_t *dest_size,
+                              virBlkioDevicePtr src_array,
+                              size_t src_size,
+                              const char *type);
+
 struct _virDomainResourceDef {
     char *partition;
 };

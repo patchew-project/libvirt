@@ -491,6 +491,7 @@ virDomainMemoryModelTypeToString;
 virDomainMemoryRemove;
 virDomainMemorySourceTypeFromString;
 virDomainMemorySourceTypeToString;
+virDomainMergeBlkioDevice;
 virDomainNetAllocateActualDevice;
 virDomainNetAppendIPAddress;
 virDomainNetARPInterfaces;
