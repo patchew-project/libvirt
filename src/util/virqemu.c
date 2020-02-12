@@ -259,6 +259,11 @@ virQEMUBuildObjectCommandlineFromJSON(virBufferPtr buf,
     const char *type = virJSONValueObjectGetString(objprops, "qom-type");
     const char *alias = virJSONValueObjectGetString(objprops, "id");
     virJSONValuePtr props = virJSONValueObjectGetObject(objprops, "props");
+    if (!props) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("reply was missing return props data"));
+        return -1;
+    }
 
     return virQEMUBuildObjectCommandlineFromJSONInternal(buf, type, alias, props);
 }
