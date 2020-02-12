@@ -77,7 +77,6 @@ struct _qemuMonitor {
      * = 0: not registered
      * < 0: an error occurred during the registration of @fd */
     int watch;
-    int hasSendFD;
 
     virDomainObjPtr vm;
 
@@ -434,12 +433,6 @@ qemuMonitorIOWrite(qemuMonitorPtr mon)
     if (!mon->msg || mon->msg->txOffset == mon->msg->txLength)
         return 0;
 
-    if (mon->msg->txFD != -1 && !mon->hasSendFD) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Monitor does not support sending of file descriptors"));
-        return -1;
-    }
-
     buf = mon->msg->txBuffer + mon->msg->txOffset;
     len = mon->msg->txLength - mon->msg->txOffset;
     if (mon->msg->txFD == -1)
@@ -707,7 +700,6 @@ qemuMonitorIO(int watch, int fd, int events, void *opaque)
 static qemuMonitorPtr
 qemuMonitorOpenInternal(virDomainObjPtr vm,
                         int fd,
-                        bool hasSendFD,
                         qemuMonitorCallbacksPtr cb,
                         void *opaque)
 {
@@ -736,7 +728,6 @@ qemuMonitorOpenInternal(virDomainObjPtr vm,
         goto cleanup;
     }
     mon->fd = fd;
-    mon->hasSendFD = hasSendFD;
     mon->vm = virObjectRef(vm);
     mon->waitGreeting = true;
     mon->cb = cb;
@@ -810,7 +801,6 @@ qemuMonitorOpen(virDomainObjPtr vm,
                 void *opaque)
 {
     int fd = -1;
-    bool hasSendFD = false;
     qemuMonitorPtr ret = NULL;
 
     timeout += QEMU_DEFAULT_MONITOR_WAIT;
@@ -819,27 +809,17 @@ qemuMonitorOpen(virDomainObjPtr vm,
      * deleted until the monitor gets its own reference. */
     virObjectRef(vm);
 
-    switch (config->type) {
-    case VIR_DOMAIN_CHR_TYPE_UNIX:
-        hasSendFD = true;
-        virObjectUnlock(vm);
-        fd = qemuMonitorOpenUnix(config->data.nix.path,
-                                 vm->pid, retry, timeout);
-        virObjectLock(vm);
-        break;
-
-    case VIR_DOMAIN_CHR_TYPE_PTY:
-        virObjectUnlock(vm);
-        fd = qemuMonitorOpenPty(config->data.file.path);
-        virObjectLock(vm);
-        break;
-
-    default:
+    if (config->type != VIR_DOMAIN_CHR_TYPE_UNIX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unable to handle monitor type: %s"),
                        virDomainChrTypeToString(config->type));
-        break;
+        goto cleanup;
     }
+
+    virObjectUnlock(vm);
+    fd = qemuMonitorOpenUnix(config->data.nix.path,
+                             vm->pid, retry, timeout);
+    virObjectLock(vm);
 
     if (fd < 0)
         goto cleanup;
@@ -850,7 +830,7 @@ qemuMonitorOpen(virDomainObjPtr vm,
         goto cleanup;
     }
 
-    ret = qemuMonitorOpenInternal(vm, fd, hasSendFD, cb, opaque);
+    ret = qemuMonitorOpenInternal(vm, fd, cb, opaque);
  cleanup:
     if (!ret)
         VIR_FORCE_CLOSE(fd);
@@ -2672,13 +2652,6 @@ qemuMonitorSendFileHandle(qemuMonitorPtr mon,
     if (fd < 0) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("fd must be valid"));
-        return -1;
-    }
-
-    if (!mon->hasSendFD) {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
-                       _("qemu is not using a unix socket monitor, "
-                         "cannot send fd %s"), fdname);
         return -1;
     }
 
