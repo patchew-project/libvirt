@@ -3386,6 +3386,11 @@ virStorageSourceParseBackingJSONSheepdog(virStorageSourcePtr src,
     const char *filename;
     const char *vdi = virJSONValueObjectGetString(json, "vdi");
     virJSONValuePtr server = virJSONValueObjectGetObject(json, "server");
+    if (!server) {
+    virReportError(VIR_ERR_INVALID_ARG, "%s",
+                        _("missing server in JSON backing volume definition"));
+         return -1;    
+    }
 
     /* legacy URI based syntax passed via 'filename' option */
     if ((filename = virJSONValueObjectGetString(json, "filename"))) {
