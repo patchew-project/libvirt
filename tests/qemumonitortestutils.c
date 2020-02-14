@@ -1411,6 +1411,7 @@ qemuMonitorTestNewAgent(virDomainXMLOptionPtr xmlopt)
 
     if (!(test->agent = qemuAgentOpen(test->vm,
                                       &src,
+                                      virEventThreadGetContext(test->eventThread),
                                       &qemuMonitorTestAgentCallbacks)))
         goto error;
 
