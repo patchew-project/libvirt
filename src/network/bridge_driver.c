@@ -5065,8 +5065,7 @@ networkCheckBandwidth(virNetworkObjPtr obj,
 
     virMacAddrFormat(ifaceMac, ifmac);
 
-    if (ifaceBand && ifaceBand->in && ifaceBand->in->floor &&
-        !(netBand && netBand->in)) {
+    if (virNetDevBandwidthHasFloor(ifaceBand) && !(netBand && netBand->in)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("Invalid use of 'floor' on interface with MAC "
                          "address %s - network '%s' has no inbound QoS set"),
@@ -5079,8 +5078,9 @@ networkCheckBandwidth(virNetworkObjPtr obj,
         /* no QoS required, claim success */
         return 1;
     }
-    if (((!ifaceBand || !ifaceBand->in || !ifaceBand->in->floor) &&
-         (!oldBandwidth || !oldBandwidth->in || !oldBandwidth->in->floor))) {
+    if (!virNetDevBandwidthHasFloor(ifaceBand) &&
+        !virNetDevBandwidthHasFloor(oldBandwidth)) {
+
         VIR_DEBUG("No old/new interface bandwidth floor");
         /* no QoS required, claim success */
         return 1;
