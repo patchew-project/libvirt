@@ -824,16 +824,6 @@ qemuMonitorOpen(virDomainObjPtr vm,
 }
 
 
-qemuMonitorPtr
-qemuMonitorOpenFD(virDomainObjPtr vm,
-                  int sockfd,
-                  qemuMonitorCallbacksPtr cb,
-                  void *opaque)
-{
-    return qemuMonitorOpenInternal(vm, sockfd, cb, opaque);
-}
-
-
 /**
  * qemuMonitorRegister:
  * @mon: QEMU monitor
