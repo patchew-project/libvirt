@@ -1171,6 +1171,7 @@ qemuMonitorTestNew(virDomainXMLOptionPtr xmlopt,
                                       &src,
                                       true,
                                       0,
+                                      virEventThreadGetContext(test->eventThread),
                                       &qemuMonitorTestCallbacks,
                                       driver)))
         goto error;
