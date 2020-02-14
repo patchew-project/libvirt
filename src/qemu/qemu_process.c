@@ -515,13 +515,16 @@ qemuProcessShutdownOrReboot(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if (priv->fakeReboot) {
+        g_autofree char *name = g_strdup_printf("reboot-%s", vm->def->name);
         qemuDomainSetFakeReboot(driver, vm, false);
         virObjectRef(vm);
         virThread th;
-        if (virThreadCreate(&th,
-                            false,
-                            qemuProcessFakeReboot,
-                            vm) < 0) {
+        if (virThreadCreateFull(&th,
+                                false,
+                                qemuProcessFakeReboot,
+                                name,
+                                false,
+                                vm) < 0) {
             VIR_ERROR(_("Failed to create reboot thread, killing domain"));
             ignore_value(qemuProcessKill(vm, VIR_QEMU_PROCESS_KILL_NOWAIT));
             priv->pausedShutdown = false;
@@ -8220,6 +8223,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
     virThread thread;
     struct qemuProcessReconnectData *src = opaque;
     struct qemuProcessReconnectData *data;
+    g_autofree char *name = NULL;
 
     /* If the VM was inactive, we don't need to reconnect */
     if (!obj->pid)
@@ -8239,7 +8243,10 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
     virObjectLock(obj);
     virObjectRef(obj);
 
-    if (virThreadCreate(&thread, false, qemuProcessReconnect, data) < 0) {
+    name = g_strdup_printf("init-%s", obj->def->name);
+
+    if (virThreadCreateFull(&thread, false, qemuProcessReconnect,
+                            name, false, data) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Could not create thread. QEMU initialization "
                          "might be incomplete"));
