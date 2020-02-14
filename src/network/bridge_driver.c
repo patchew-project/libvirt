@@ -5065,6 +5065,16 @@ networkCheckBandwidth(virNetworkObjPtr obj,
 
     virMacAddrFormat(ifaceMac, ifmac);
 
+    if (virNetDevBandwidthHasFloor(ifaceBand) &&
+        !virNetDevSupportBandwidthFloor(def->forward.type)) {
+
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("Invalid use of 'floor' on interface with MAC address %s "
+                         "- 'floor' is only supported for interface type 'network' with forward type 'nat', 'route', 'open' or none"),
+                       ifmac);
+        return -1;
+    }
+
     if (virNetDevBandwidthHasFloor(ifaceBand) && !(netBand && netBand->in)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("Invalid use of 'floor' on interface with MAC "
