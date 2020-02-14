@@ -3263,6 +3263,7 @@ virThreadCreateFull;
 virThreadID;
 virThreadIsSelf;
 virThreadJoin;
+virThreadMaxName;
 virThreadSelf;
 virThreadSelfID;
 
