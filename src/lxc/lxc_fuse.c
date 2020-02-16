@@ -37,6 +37,7 @@
 #if WITH_FUSE
 
 static const char *fuse_meminfo_path = "/meminfo";
+static const char *fuse_cpuinfo_path = "/cpuinfo";
 
 static int lxcProcGetattr(const char *path, struct stat *stbuf)
 {
@@ -54,7 +55,8 @@ static int lxcProcGetattr(const char *path, struct stat *stbuf)
     if (STREQ(path, "/")) {
         stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
-    } else if (STREQ(path, fuse_meminfo_path)) {
+    } else if (STREQ(path, fuse_meminfo_path) ||
+               STREQ(path, fuse_cpuinfo_path)) {
         if (stat(mempath, &sb) < 0) {
             res = -errno;
             goto cleanup;
@@ -90,6 +92,7 @@ static int lxcProcReaddir(const char *path, void *buf,
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
     filler(buf, fuse_meminfo_path + 1, NULL, 0);
+    filler(buf, fuse_cpuinfo_path + 1, NULL, 0);
 
     return 0;
 }
@@ -97,7 +100,8 @@ static int lxcProcReaddir(const char *path, void *buf,
 static int lxcProcOpen(const char *path G_GNUC_UNUSED,
                        struct fuse_file_info *fi G_GNUC_UNUSED)
 {
-    if (STRNEQ(path, fuse_meminfo_path))
+    if (STRNEQ(path, fuse_meminfo_path) &&
+        STRNEQ(path, fuse_cpuinfo_path))
         return -ENOENT;
 
     if ((fi->flags & 3) != O_RDONLY)
@@ -125,7 +129,7 @@ static int lxcProcHostRead(char *path, char *buf, size_t size, off_t offset)
 static int lxcProcReadMeminfo(char *hostpath, virDomainDefPtr def,
                               char *buf, size_t size, off_t offset)
 {
-    int res;
+    int res = -1;
     FILE *fd = NULL;
     char *line = NULL;
     size_t n;
@@ -151,7 +155,6 @@ static int lxcProcReadMeminfo(char *hostpath, virDomainDefPtr def,
         goto cleanup;
     }
 
-    res = -1;
     while (getline(&line, &n, fd) > 0) {
         char *ptr = strchr(line, ':');
         if (!ptr)
@@ -235,6 +238,70 @@ static int lxcProcReadMeminfo(char *hostpath, virDomainDefPtr def,
     return res;
 }
 
+
+static int lxcProcReadCpuinfo(char *hostpath, virDomainDefPtr def,
+                              char *buf, size_t size, off_t offset)
+{
+    int res = -1;
+    FILE *fd = NULL;
+    char *line = NULL;
+    size_t n;
+    virBuffer buffer = VIR_BUFFER_INITIALIZER;
+    virBufferPtr new_cpuinfo = &buffer;
+    size_t cpu;
+    size_t nvcpu;
+    size_t curcpu = 0;
+    bool get_proc = false;
+
+    fd = fopen(hostpath, "r");
+    if (fd == NULL) {
+        virReportSystemError(errno, _("Cannot open %s"), hostpath);
+        res = -errno;
+        goto cleanup;
+    }
+
+    /* /proc/cpuinfo does not support fseek */
+    if (offset > 0) {
+        res = 0;
+        goto cleanup;
+    }
+
+    nvcpu = virDomainDefGetVcpus(def);
+    while (getline(&line, &n, fd) > 0) {
+        if (sscanf(line, "processor\t: %zu", &cpu) == 1) {
+            virDomainVcpuDefPtr vcpu = virDomainDefGetVcpu(def, cpu);
+            /* VCPU is mapped */
+            if (vcpu) {
+                if (curcpu == nvcpu)
+                    break;
+
+                virBufferAsprintf(new_cpuinfo, "processor\t: %zu\n",
+                                  curcpu);
+                curcpu++;
+                get_proc = true;
+            } else {
+                get_proc = false;
+            }
+        } else {
+            /* It is not a processor index */
+            if (get_proc)
+                virBufferAdd(new_cpuinfo, line, -1);
+        }
+    }
+
+    res = strlen(virBufferCurrentContent(new_cpuinfo));
+    if (res > size)
+        res = size;
+    memcpy(buf, virBufferCurrentContent(new_cpuinfo), res);
+
+ cleanup:
+    VIR_FREE(line);
+    virBufferFreeAndReset(new_cpuinfo);
+    VIR_FORCE_FCLOSE(fd);
+    return res;
+}
+
+
 static int lxcProcRead(const char *path G_GNUC_UNUSED,
                        char *buf G_GNUC_UNUSED,
                        size_t size G_GNUC_UNUSED,
@@ -253,6 +320,9 @@ static int lxcProcRead(const char *path G_GNUC_UNUSED,
 
     if (STREQ(path, fuse_meminfo_path)) {
         if ((res = lxcProcReadMeminfo(hostpath, def, buf, size, offset)) < 0)
+            res = lxcProcHostRead(hostpath, buf, size, offset);
+    } else if (STREQ(path, fuse_cpuinfo_path)) {
+        if ((res = lxcProcReadCpuinfo(hostpath, def, buf, size, offset)) < 0)
             res = lxcProcHostRead(hostpath, buf, size, offset);
     }
 

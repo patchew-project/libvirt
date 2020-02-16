@@ -999,6 +999,7 @@ static int lxcContainerMountProcFuse(virDomainDefPtr def,
 {
     int ret;
     char *meminfo_path = NULL;
+    char *cpuinfo_path = NULL;
 
     VIR_DEBUG("Mount /proc/meminfo stateDir=%s", stateDir);
 
@@ -1013,7 +1014,21 @@ static int lxcContainerMountProcFuse(virDomainDefPtr def,
                              meminfo_path);
     }
 
+    VIR_DEBUG("Mount /proc/cpuinfo stateDir=%s", stateDir);
+
+    cpuinfo_path = g_strdup_printf("/.oldroot/%s/%s.fuse/cpuinfo",
+                                   stateDir,
+                                   def->name);
+
+    if ((ret = mount(cpuinfo_path, "/proc/cpuinfo",
+                     NULL, MS_BIND, NULL)) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /proc/cpuinfo"),
+                             cpuinfo_path);
+    }
+
     VIR_FREE(meminfo_path);
+    VIR_FREE(cpuinfo_path);
     return ret;
 }
 #else

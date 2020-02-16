@@ -59,6 +59,34 @@ static int virLXCCgroupSetupCpuTune(virDomainDefPtr def,
 }
 
 
+static int virLXCCgroupSetupVcpuAuto(virDomainDefPtr def,
+                                     virCgroupPtr cgroup)
+{
+    size_t i;
+    int vcpumax;
+    virBuffer buffer = VIR_BUFFER_INITIALIZER;
+    virBufferPtr cpuset = &buffer;
+
+    vcpumax = virDomainDefGetVcpusMax(def);
+    for (i = 0; i < vcpumax; i++) {
+        virDomainVcpuDefPtr vcpu = virDomainDefGetVcpu(def, i);
+        /* Cgroup is smart enough to convert numbers separated
+         * by comma into ranges. Example: "0,1,2,5," -> "0-2,5".
+         * Libvirt does not need to process it here. */
+        if (vcpu)
+            virBufferAsprintf(cpuset, "%zu,", i);
+    }
+    if (virCgroupSetCpusetCpus(cgroup,
+                               virBufferCurrentContent(cpuset)) < 0) {
+        virBufferFreeAndReset(cpuset);
+        return -1;
+    }
+
+    virBufferFreeAndReset(cpuset);
+    return 0;
+}
+
+
 static int virLXCCgroupSetupCpusetTune(virDomainDefPtr def,
                                        virCgroupPtr cgroup,
                                        virBitmapPtr nodemask)
@@ -76,6 +104,9 @@ static int virLXCCgroupSetupCpusetTune(virDomainDefPtr def,
             goto cleanup;
         /* free mask to make sure we won't use it in a wrong way later */
         VIR_FREE(mask);
+    } else {
+        /* auto mode for VCPU limits */
+        virLXCCgroupSetupVcpuAuto(def, cgroup);
     }
 
     if (virDomainNumatuneGetMode(def->numa, -1, &mode) < 0 ||
