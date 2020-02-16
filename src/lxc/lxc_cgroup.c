@@ -410,6 +410,42 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
                              VIR_CGROUP_DEVICE_RWM) < 0)
         return -1;
 
+    VIR_DEBUG("Allowing timers char devices");
+
+    /* Sync'ed with Host clock */
+    if (def->clock.offset == VIR_DOMAIN_CLOCK_OFFSET_LOCALTIME) {
+        for (i = 0; i < def->clock.ntimers; i++) {
+            virDomainTimerDefPtr timer = def->clock.timers[i];
+
+            switch ((virDomainTimerNameType)timer->name) {
+            case VIR_DOMAIN_TIMER_NAME_PLATFORM:
+            case VIR_DOMAIN_TIMER_NAME_TSC:
+            case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
+            case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
+            case VIR_DOMAIN_TIMER_NAME_PIT:
+            case VIR_DOMAIN_TIMER_NAME_HPET:
+            case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
+            case VIR_DOMAIN_TIMER_NAME_LAST:
+                break;
+            case VIR_DOMAIN_TIMER_NAME_RTC:
+                if (!timer->present)
+                    break;
+
+                if (virFileExists("/dev/rtc")) {
+                    if (virCgroupAllowDevicePath(cgroup, "/dev/rtc",
+                                                 VIR_CGROUP_DEVICE_READ,
+                                                 false) < 0)
+                        return -1;
+                } else {
+                    VIR_DEBUG("Ignoring non-existent device /dev/rtc");
+                }
+                break;
+            }
+        }
+    } else {
+        VIR_DEBUG("Ignoring non-localtime clock");
+    }
+
     VIR_DEBUG("Device whitelist complete");
 
     return 0;
