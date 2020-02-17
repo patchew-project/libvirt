@@ -291,7 +291,9 @@ test_programs += qemuxml2argvtest qemuxml2xmltest \
 	qemufirmwaretest \
 	qemuvhostusertest \
 	$(NULL)
-test_helpers += qemucapsprobe
+test_helpers += qemucapsprobe \
+		qemublockprobe \
+		$(NULL)
 test_libraries += libqemumonitortestutils.la \
 		libqemutestdriver.la \
 		libqemuxml2argvmock.la \
@@ -652,6 +654,14 @@ qemublocktest_LDADD = \
 	$(qemu_LDADDS) \
 	$(NULL)
 
+qemublockprobe_SOURCES = \
+	qemublockprobe.c \
+	$(NULL)
+qemublockprobe_LDADD = \
+	../src/libvirt.la \
+	$(qemu_LDADDS) \
+	$(NULL)
+
 qemudomaincheckpointxml2xmltest_SOURCES = \
 	qemudomaincheckpointxml2xmltest.c testutilsqemu.c testutilsqemu.h \
 	testutils.c testutils.h
@@ -707,6 +717,7 @@ EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c \
 	qemucaps2xmltest.c qemucommandutiltest.c \
 	qemumemlocktest.c qemucpumock.c testutilshostcpus.h \
 	qemublocktest.c \
+	qemublockprobe.c \
 	qemumigparamstest.c \
 	qemusecuritytest.c qemusecuritytest.h \
 	qemusecuritymock.c \
