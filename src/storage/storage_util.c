@@ -82,6 +82,10 @@ VIR_LOG_INIT("storage.storage_util");
 # define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO)
 #endif
 
+#ifndef S_IALLUGO
+# define S_IALLUGO (S_ISUID | S_ISGID | S_ISVTX | S_IRWXUGO)
+#endif
+
 /* virStorageBackendNamespaceInit:
  * @poolType: virStoragePoolType
  * @xmlns: Storage Pool specific namespace callback methods
@@ -512,7 +516,7 @@ virStorageBackendCreateExecCommand(virStoragePoolObjPtr pool,
 
         virCommandSetUID(cmd, vol->target.perms->uid);
         virCommandSetGID(cmd, vol->target.perms->gid);
-        virCommandSetUmask(cmd, S_IRWXUGO ^ mode);
+        virCommandSetUmask(cmd, S_IALLUGO ^ mode);
 
         if (virCommandRun(cmd, NULL) == 0) {
             /* command was successfully run, check if the file was created */
@@ -523,7 +527,7 @@ virStorageBackendCreateExecCommand(virStoragePoolObjPtr pool,
                  * If that doesn't match what we expect, then let's try to
                  * re-open the file and attempt to force the mode change.
                  */
-                if (mode != (st.st_mode & S_IRWXUGO)) {
+                if (mode != (st.st_mode & S_IALLUGO)) {
                     VIR_AUTOCLOSE fd = -1;
                     int flags = VIR_FILE_OPEN_FORK | VIR_FILE_OPEN_FORCE_MODE;
 
@@ -569,7 +573,7 @@ virStorageBackendCreateExecCommand(virStoragePoolObjPtr pool,
         goto cleanup;
     }
 
-    if (mode != (st.st_mode & S_IRWXUGO) &&
+    if (mode != (st.st_mode & S_IALLUGO) &&
         chmod(vol->target.path, mode) < 0) {
         virReportSystemError(errno,
                              _("cannot set mode of '%s' to %04o"),
@@ -1825,7 +1829,7 @@ virStorageBackendUpdateVolTargetInfoFD(virStorageSourcePtr target,
 
     if (!target->perms && VIR_ALLOC(target->perms) < 0)
         return -1;
-    target->perms->mode = sb->st_mode & S_IRWXUGO;
+    target->perms->mode = sb->st_mode & S_IALLUGO;
     target->perms->uid = sb->st_uid;
     target->perms->gid = sb->st_gid;
 

@@ -746,7 +746,7 @@ virStorageDefParsePerms(xmlXPathContextPtr ctxt,
     if ((mode = virXPathString("string(./mode)", ctxt))) {
         int tmp;
 
-        if (virStrToLong_i(mode, NULL, 8, &tmp) < 0 || (tmp & ~0777)) {
+        if (virStrToLong_i(mode, NULL, 8, &tmp) < 0 || (tmp & ~07777)) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("malformed octal mode"));
             goto error;
@@ -1187,9 +1187,14 @@ virStoragePoolDefFormatBuf(virBufferPtr buf,
             def->target.perms.label) {
             virBufferAddLit(buf, "<permissions>\n");
             virBufferAdjustIndent(buf, 2);
-            if (def->target.perms.mode != (mode_t) -1)
-                virBufferAsprintf(buf, "<mode>0%o</mode>\n",
+            if (def->target.perms.mode != (mode_t) -1) {
+                if (def->target.perms.mode & (S_ISUID | S_ISGID | S_ISVTX))
+                    virBufferAsprintf(buf, "<mode>%4o</mode>\n",
                                   def->target.perms.mode);
+                else
+                    virBufferAsprintf(buf, "<mode>0%o</mode>\n",
+                                      def->target.perms.mode);
+            }
             if (def->target.perms.uid != (uid_t) -1)
                 virBufferAsprintf(buf, "<owner>%d</owner>\n",
                                   (int) def->target.perms.uid);
