@@ -298,3 +298,31 @@ qemuVirtioFSStop(virQEMUDriverPtr driver,
  cleanup:
     virErrorRestore(&orig_err);
 }
+
+
+int
+qemuVirtioFSSetupCgroup(virQEMUDriverPtr driver,
+                        virDomainDefPtr def,
+                        virDomainFSDefPtr fs,
+                        virCgroupPtr cgroup)
+{
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    g_autofree char *pidfile = NULL;
+    pid_t pid = -1;
+    int rc;
+
+    if (!(pidfile = qemuVirtioFSCreatePidFilename(cfg, def, fs->info.alias)))
+        return -1;
+
+    rc = virPidFileReadPathIfAlive(pidfile, &pid, NULL);
+    if (rc < 0 || pid == (pid_t) -1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("virtiofsd died unexpectedly"));
+        return -1;
+    }
+
+    if (virCgroupAddProcess(cgroup, pid) < 0)
+        return -1;
+
+    return 0;
+}
