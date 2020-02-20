@@ -28,6 +28,7 @@
 #include "qemu_conf.h"
 #include "qemu_extdevice.h"
 #include "qemu_security.h"
+#include "qemu_vhost_user.h"
 #include "qemu_virtiofs.h"
 #include "virpidfile.h"
 
@@ -325,4 +326,14 @@ qemuVirtioFSSetupCgroup(virQEMUDriverPtr driver,
         return -1;
 
     return 0;
+}
+
+int
+qemuVirtioFSPrepareDomain(virQEMUDriverPtr driver,
+                          virDomainFSDefPtr fs)
+{
+    if (fs->binary)
+        return 0;
+
+    return qemuVhostUserFillDomainFS(driver, fs);
 }
