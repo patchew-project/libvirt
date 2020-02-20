@@ -34,6 +34,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
+VIR_LOG_INIT("qemu.virtiofs");
 
 char *
 qemuVirtioFSCreatePidFilename(virQEMUDriverConfigPtr cfg,
@@ -227,7 +228,8 @@ qemuVirtioFSStart(virLogManagerPtr logManager,
     if (qemuExtDeviceLogCommand(driver, vm, cmd, "virtiofsd") < 0)
         goto cleanup;
 
-    rc = virCommandRun(cmd, NULL);
+    if (qemuSecurityStartVirtioFS(driver, vm, cmd, NULL, &rc) < 0)
+        goto error;
 
     if (rc < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

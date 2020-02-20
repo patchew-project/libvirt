@@ -84,6 +84,13 @@ int qemuSecurityStartVhostUserGPU(virQEMUDriverPtr driver,
                                   int *exitstatus,
                                   int *cmdret);
 
+int qemuSecurityStartVirtioFS(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              virCommandPtr cmd,
+                              int *exitstatus,
+                              int *cmdret);
+
+
 int qemuSecurityStartTPMEmulator(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
                                  virCommandPtr cmd,

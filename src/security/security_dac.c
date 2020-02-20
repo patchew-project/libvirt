@@ -2263,6 +2263,24 @@ virSecurityDACSetChildProcessLabel(virSecurityManagerPtr mgr,
     if (virSecurityDACGetIds(secdef, priv, &user, &group, NULL, NULL) < 0)
         return -1;
 
+     VIR_DEBUG("Setting child to drop privileges to %u:%u",
+               (unsigned int)user, (unsigned int)group);
+
+    virCommandSetUID(cmd, user);
+    virCommandSetGID(cmd, group);
+    return 0;
+}
+
+
+static int
+virSecurityDACSetVirtioFSProcessLabel(virSecurityManagerPtr mgr G_GNUC_UNUSED,
+                                      virDomainDefPtr def G_GNUC_UNUSED,
+                                      virCommandPtr cmd)
+{
+    /* only running as root:root is supported */
+    uid_t user = 0;
+    gid_t group = 0;
+
     VIR_DEBUG("Setting child to drop privileges to %u:%u",
               (unsigned int)user, (unsigned int)group);
 
@@ -2581,4 +2599,6 @@ virSecurityDriver virSecurityDriverDAC = {
 
     .domainSetSecurityChardevLabel      = virSecurityDACSetChardevLabel,
     .domainRestoreSecurityChardevLabel  = virSecurityDACRestoreChardevLabel,
+
+    .domainSetSecurityVirtioFSProcessLabel = virSecurityDACSetVirtioFSProcessLabel,
 };

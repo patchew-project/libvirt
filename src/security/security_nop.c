@@ -328,4 +328,5 @@ virSecurityDriver virSecurityDriverNop = {
 
     .domainSetSecurityChardevLabel      = virSecurityDomainSetChardevLabelNop,
     .domainRestoreSecurityChardevLabel  = virSecurityDomainRestoreChardevLabelNop,
+    .domainSetSecurityVirtioFSProcessLabel = virSecurityDomainSetChildProcessLabelNop,
 };

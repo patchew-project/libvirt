@@ -477,6 +477,23 @@ virSecurityStackSetChildProcessLabel(virSecurityManagerPtr mgr,
 }
 
 static int
+virSecurityStackSetVirtioFSProcessLabel(virSecurityManagerPtr mgr,
+                                     virDomainDefPtr vm,
+                                     virCommandPtr cmd)
+{
+    virSecurityStackDataPtr priv = virSecurityManagerGetPrivateData(mgr);
+    virSecurityStackItemPtr item = priv->itemsHead;
+    int rc = 0;
+
+    for (; item; item = item->next) {
+        if (virSecurityManagerSetVirtioFSProcessLabel(item->securityManager, vm, cmd) < 0)
+            rc = -1;
+    }
+
+    return rc;
+}
+
+static int
 virSecurityStackGetProcessLabel(virSecurityManagerPtr mgr,
                                 virDomainDefPtr vm,
                                 pid_t pid,
@@ -991,4 +1008,6 @@ virSecurityDriver virSecurityDriverStack = {
 
     .domainSetSecurityTPMLabels         = virSecurityStackSetTPMLabels,
     .domainRestoreSecurityTPMLabels     = virSecurityStackRestoreTPMLabels,
+
+    .domainSetSecurityVirtioFSProcessLabel = virSecurityStackSetVirtioFSProcessLabel,
 };

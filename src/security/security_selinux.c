@@ -2942,6 +2942,73 @@ virSecuritySELinuxSetChildProcessLabel(virSecurityManagerPtr mgr G_GNUC_UNUSED,
 }
 
 static int
+virSecuritySELinuxSetVirtioFSProcessLabel(virSecurityManagerPtr mgr G_GNUC_UNUSED,
+                                          virDomainDefPtr def,
+                                          virCommandPtr cmd)
+{
+    virSecurityLabelDefPtr secdef;
+    security_context_t daemon_ctx;
+    g_auto(GStrv) daemon_label = NULL;
+    g_auto(GStrv) domain_label = NULL;
+    g_autofree char *frankenlabel = NULL;
+
+    VIR_ERROR("WE got here");
+
+    secdef = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
+    if (!secdef || !secdef->label)
+        return 0;
+
+    if (getcon_raw(&daemon_ctx) == -1) {
+        virReportSystemError(errno, "%s",
+                             _("unable to get security context"));
+        return -1;
+    }
+
+    VIR_ERROR("domain_label=%s daemon_label=%s", secdef->label, (char *)daemon_ctx);
+
+    daemon_label = g_strsplit((char *)daemon_ctx, ":", 6);
+    domain_label = g_strsplit((char *)secdef->label, ":", 6);
+
+    freecon(daemon_ctx);
+
+    if (STRNEQ(SECURITY_SELINUX_NAME, secdef->model)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("security label driver mismatch: "
+                         "'%s' model configured for domain, but "
+                         "hypervisor driver is '%s'."),
+                       secdef->model, SECURITY_SELINUX_NAME);
+        if (security_getenforce() == 1)
+            return -1;
+    }
+
+    if (!domain_label || !daemon_label ||
+        g_strv_length(domain_label) != 5 || g_strv_length(daemon_label) != 5) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("malformed security label"));
+        return -1;
+    }
+
+    frankenlabel = g_strdup_printf("%s:%s:%s:%s:%s",
+                                   daemon_label[0],
+                                   daemon_label[1],
+                                   daemon_label[2],
+                                   domain_label[3],
+                                   domain_label[4]);
+
+    VIR_ERROR("frankenlabel=%s", frankenlabel);
+
+    if (strlen(frankenlabel) >= VIR_SECURITY_LABEL_BUFLEN) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("security label exceeds maximum length: %d"),
+                       VIR_SECURITY_LABEL_BUFLEN - 1);
+        return -1;
+    }
+
+    virCommandSetSELinuxLabel(cmd, frankenlabel);
+    return 0;
+}
+
+static int
 virSecuritySELinuxSetDaemonSocketLabel(virSecurityManagerPtr mgr G_GNUC_UNUSED,
                                        virDomainDefPtr def)
 {
@@ -3576,4 +3643,6 @@ virSecurityDriver virSecurityDriverSELinux = {
 
     .domainSetSecurityTPMLabels         = virSecuritySELinuxSetTPMLabels,
     .domainRestoreSecurityTPMLabels     = virSecuritySELinuxRestoreTPMLabels,
+
+    .domainSetSecurityVirtioFSProcessLabel = virSecuritySELinuxSetVirtioFSProcessLabel,
 };

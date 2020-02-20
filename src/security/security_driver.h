@@ -217,6 +217,8 @@ struct _virSecurityDriver {
 
     virSecurityDomainSetTPMLabels domainSetSecurityTPMLabels;
     virSecurityDomainRestoreTPMLabels domainRestoreSecurityTPMLabels;
+
+    virSecurityDomainSetChildProcessLabel domainSetSecurityVirtioFSProcessLabel;
 };
 
 virSecurityDriverPtr virSecurityDriverLookup(const char *name,

@@ -137,6 +137,10 @@ int virSecurityManagerSetProcessLabel(virSecurityManagerPtr mgr,
 int virSecurityManagerSetChildProcessLabel(virSecurityManagerPtr mgr,
                                            virDomainDefPtr def,
                                            virCommandPtr cmd);
+int virSecurityManagerSetVirtioFSProcessLabel(virSecurityManagerPtr mgr,
+                                              virDomainDefPtr def,
+                                              virCommandPtr cmd);
+
 int virSecurityManagerVerify(virSecurityManagerPtr mgr,
                              virDomainDefPtr def);
 int virSecurityManagerSetImageFDLabel(virSecurityManagerPtr mgr,

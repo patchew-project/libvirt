@@ -476,6 +476,46 @@ qemuSecurityStartVhostUserGPU(virQEMUDriverPtr driver,
 
 
 /*
+ * qemuSecurityStartVhostUserGPU:
+ *
+ * @driver: the QEMU driver
+ * @vm: the domain object
+ * @cmd: the command to run
+ * @existstatus: pointer to int returning exit status of process
+ * @cmdret: pointer to int returning result of virCommandRun
+ *
+ * Start the vhost-user-gpu process with approriate labels.
+ * This function returns -1 on security setup error, 0 if all the
+ * setup was done properly. In case the virCommand failed to run
+ * 0 is returned but cmdret is set appropriately with the process
+ * exitstatus also set.
+ */
+int
+qemuSecurityStartVirtioFS(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virCommandPtr cmd,
+                          int *exitstatus,
+                          int *cmdret)
+{
+    if (virSecurityManagerSetVirtioFSProcessLabel(driver->securityManager,
+                                                  vm->def, cmd) < 0)
+        return -1;
+
+    if (virSecurityManagerPreFork(driver->securityManager) < 0)
+        return -1;
+
+    *cmdret = virCommandRun(cmd, exitstatus);
+
+    virSecurityManagerPostFork(driver->securityManager);
+
+    if (*cmdret < 0)
+        return -1;
+
+    return 0;
+}
+
+
+/*
  * qemuSecurityStartTPMEmulator:
  *
  * @driver: the QEMU driver

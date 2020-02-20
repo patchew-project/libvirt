@@ -945,6 +945,18 @@ virSecurityManagerSetChildProcessLabel(virSecurityManagerPtr mgr,
 }
 
 
+int virSecurityManagerSetVirtioFSProcessLabel(virSecurityManagerPtr mgr,
+                                              virDomainDefPtr def,
+                                              virCommandPtr cmd)
+{
+    if (mgr->drv->domainSetSecurityVirtioFSProcessLabel)
+       return mgr->drv->domainSetSecurityVirtioFSProcessLabel(mgr, def, cmd);
+
+    virReportUnsupportedError();
+    return -1;
+}
+
+
 int
 virSecurityManagerVerify(virSecurityManagerPtr mgr,
                          virDomainDefPtr def)
