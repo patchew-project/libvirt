@@ -258,14 +258,17 @@ mymain(void)
         if (virTestRun(nodeData[i].testName, linuxTestHostCPU, &nodeData[i]) != 0)
             ret = -1;
 
-# define DO_TEST_CPU_STATS(name, ncpus) \
+# define DO_TEST_CPU_STATS(name, ncpus, shouldFail) \
     do { \
         static struct nodeCPUStatsData data = { name, ncpus }; \
-        if (virTestRun("CPU stats " name, linuxTestNodeCPUStats, &data) < 0) \
+        if ((virTestRun("CPU stats " name, \
+			linuxTestNodeCPUStats, \
+			&data) < 0) != shouldFail) \
             ret = -1; \
     } while (0)
 
-    DO_TEST_CPU_STATS("24cpu", 24);
+    DO_TEST_CPU_STATS("24cpu", 24, false);
+    DO_TEST_CPU_STATS("24cpu", 25, true);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
