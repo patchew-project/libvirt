@@ -1894,13 +1894,12 @@ virNetworkObjLoadAllPorts(virNetworkObjPtr net,
         file = g_strdup_printf("%s/%s.xml", dir, de->d_name);
 
         portdef = virNetworkPortDefParseFile(file);
-        VIR_FREE(file);
-        file = NULL;
-
         if (!portdef) {
             VIR_WARN("Cannot parse port %s", file);
+            VIR_FREE(file);
             continue;
         }
+        VIR_FREE(file);
 
         virUUIDFormat(portdef->uuid, uuidstr);
         if (virHashAddEntry(net->ports, uuidstr, portdef) < 0)
