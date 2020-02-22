@@ -1,0 +1,14 @@
+#!/sbin/openrc-run
+
+name=virtlogd
+
+command=@sbindir@/virtlogd
+pidfile="@runstatedir@/virtlogd.pid"
+command_args="--daemon --pid-file=${pidfile}"
+PATH="${PATH}:@sbindir@:@bindir@"
+supervisor=supervise-daemon
+
+depend() {
+    provide virtlogd
+    keyword -shutdown
+}
