@@ -1105,6 +1105,7 @@ qemuMigrationSrcIsAllowedHostdev(const virDomainDef *def)
                 continue;
 
             case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
+            case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
             case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
             case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
                 virReportError(VIR_ERR_OPERATION_UNSUPPORTED,

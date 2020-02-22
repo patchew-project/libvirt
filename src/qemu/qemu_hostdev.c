@@ -203,6 +203,7 @@ qemuHostdevPreparePCIDevicesCheckSupport(virDomainHostdevDefPtr *hostdevs,
             return false;
             break;
 
+        case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VMM:
         case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_XEN:
         case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_TYPE_LAST:
             break;
