@@ -32,6 +32,7 @@
 #include "vmx.h"
 #include "viruri.h"
 #include "virstring.h"
+#include "virutil.h"
 
 VIR_LOG_INIT("vmx.vmx");
 
