@@ -993,6 +993,24 @@ lxcSetCpusetTune(virDomainDefPtr def, virConfPtr properties)
     return 0;
 }
 
+
+static int
+lxcGetVCpuMax(virConfPtr properties)
+{
+    g_autofree char *value = NULL;
+    int vcpumax = 1;
+
+    if (virConfGetValueString(properties, "lxc.cgroup.cpuset.cpus",
+                              &value) > 0) {
+        vcpumax = lxcContainerGetMaxCpusInCpuset(value);
+        if (vcpumax > 0)
+            return vcpumax;
+    }
+
+    return vcpumax;
+}
+
+
 static int
 lxcBlkioDeviceWalkCallback(const char *name, virConfValuePtr value, void *data)
 {
@@ -1132,6 +1150,7 @@ lxcParseConfigString(const char *config,
     virDomainDefPtr vmdef = NULL;
     g_autoptr(virConf) properties = NULL;
     g_autofree char *value = NULL;
+    int vcpumax;
 
     if (!(properties = virConfReadString(config, VIR_CONF_FLAG_LXC_FORMAT)))
         return NULL;
@@ -1155,10 +1174,11 @@ lxcParseConfigString(const char *config,
 
     /* Value not handled by the LXC driver, setting to
      * minimum required to make XML parsing pass */
-    if (virDomainDefSetVcpusMax(vmdef, 1, xmlopt) < 0)
+    vcpumax = lxcGetVCpuMax(properties);
+    if (virDomainDefSetVcpusMax(vmdef, vcpumax, xmlopt) < 0)
         goto error;
 
-    if (virDomainDefSetVcpus(vmdef, 1) < 0)
+    if (virDomainDefSetVcpus(vmdef, vcpumax) < 0)
         goto error;
 
     vmdef->nfss = 0;

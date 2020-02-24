@@ -2487,3 +2487,26 @@ int lxcContainerChown(virDomainDefPtr def, const char *path)
 
     return 0;
 }
+
+
+int lxcContainerGetMaxCpusInCpuset(const char *cpuset)
+{
+    const char *c = cpuset;
+    int max_cpu = 0;
+
+    while (c) {
+        int a, b, ret;
+
+        ret = sscanf(c, "%d-%d", &a, &b);
+        if (ret == 1)
+            max_cpu++;
+        else if (ret == 2)
+            max_cpu +=  a > b ? a - b + 1 : b - a + 1;
+
+        if (!(c = strchr(c+1, ',')))
+            break;
+        c++;
+    }
+
+    return max_cpu;
+}
