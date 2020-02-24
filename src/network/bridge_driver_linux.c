@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include "viralloc.h"
+#include "virerror.h"
 #include "virfile.h"
 #include "viriptables.h"
 #include "virstring.h"
@@ -53,7 +54,7 @@ static void networkSetupPrivateChains(void)
     if (rc < 0) {
         VIR_DEBUG("Failed to create global IPv4 chains: %s",
                   virGetLastErrorMessage());
-        errInitV4 = virSaveLastError();
+        virErrorPreserveLast(&errInitV4);
         virResetLastError();
     } else {
         virFreeError(errInitV4);
@@ -70,7 +71,7 @@ static void networkSetupPrivateChains(void)
     if (rc < 0) {
         VIR_DEBUG("Failed to create global IPv6 chains: %s",
                   virGetLastErrorMessage());
-        errInitV6 = virSaveLastError();
+        virErrorPreserveLast(&errInitV6);
         virResetLastError();
     } else {
         virFreeError(errInitV6);
