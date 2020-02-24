@@ -63,3 +63,5 @@ virArch lxcContainerGetAlt32bitArch(virArch arch);
 int lxcContainerChown(virDomainDefPtr def, const char *path);
 
 bool lxcIsBasicMountLocation(const char *path);
+
+int lxcContainerGetMaxCpusInCpuset(const char *cpuset);

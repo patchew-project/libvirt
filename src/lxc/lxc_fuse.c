@@ -252,7 +252,7 @@ lxcProcReadCpuinfoParse(virDomainDefPtr def, char *base,
                     break;
 
                 if (curcpu > 0)
-                    virBufferAddLit(new_cpuinfo, "\n", -1);
+                    virBufferAddLit(new_cpuinfo, "\n");
 
                 virBufferAsprintf(new_cpuinfo, "processor\t: %zu\n",
                                   curcpu);
@@ -268,7 +268,7 @@ lxcProcReadCpuinfoParse(virDomainDefPtr def, char *base,
         }
     }
 
-    virBufferAddLit(new_cpuinfo, "\n", -1);
+    virBufferAddLit(new_cpuinfo, "\n");
 
     return strlen(virBufferCurrentContent(new_cpuinfo));
 }
