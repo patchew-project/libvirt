@@ -997,8 +997,7 @@ static int lxcContainerMountBasicFS(bool userns_enabled,
 static int lxcContainerMountProcFuse(virDomainDefPtr def,
                                      const char *stateDir)
 {
-    int ret;
-    char *meminfo_path = NULL;
+    g_autofree char *meminfo_path = NULL;
 
     VIR_DEBUG("Mount /proc/meminfo stateDir=%s", stateDir);
 
@@ -1006,15 +1005,29 @@ static int lxcContainerMountProcFuse(virDomainDefPtr def,
                                    stateDir,
                                    def->name);
 
-    if ((ret = mount(meminfo_path, "/proc/meminfo",
-                     NULL, MS_BIND, NULL)) < 0) {
+    if (mount(meminfo_path, "/proc/meminfo",
+                     NULL, MS_BIND, NULL) < 0) {
         virReportSystemError(errno,
                              _("Failed to mount %s on /proc/meminfo"),
                              meminfo_path);
+        return -1;
     }
 
-    VIR_FREE(meminfo_path);
-    return ret;
+    VIR_DEBUG("Mount /proc/cpuinfo stateDir=%s", stateDir);
+
+    cpuinfo_path = g_strdup_printf("/.oldroot/%s/%s.fuse/cpuinfo",
+                                   stateDir,
+                                   def->name);
+
+    if (mount(cpuinfo_path, "/proc/cpuinfo",
+                     NULL, MS_BIND, NULL) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /proc/cpuinfo"),
+                             cpuinfo_path);
+        return -1;
+    }
+
+    return 0;
 }
 #else
 static int lxcContainerMountProcFuse(virDomainDefPtr def G_GNUC_UNUSED,
@@ -1028,7 +1041,7 @@ static int lxcContainerMountFSDev(virDomainDefPtr def,
                                   const char *stateDir)
 {
     int ret = -1;
-    char *path = NULL;
+    g_autofree char *path = NULL;
     int flags = def->idmap.nuidmap ? MS_BIND : MS_MOVE;
 
     VIR_DEBUG("Mount /dev/ stateDir=%s", stateDir);
@@ -1038,7 +1051,7 @@ static int lxcContainerMountFSDev(virDomainDefPtr def,
     if (virFileMakePath("/dev") < 0) {
         virReportSystemError(errno, "%s",
                              _("Cannot create /dev"));
-        goto cleanup;
+        return -1;
     }
 
     VIR_DEBUG("Trying to %s %s to /dev", def->idmap.nuidmap ?
@@ -1048,14 +1061,10 @@ static int lxcContainerMountFSDev(virDomainDefPtr def,
         virReportSystemError(errno,
                              _("Failed to mount %s on /dev"),
                              path);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(path);
-    return ret;
+    return 0;
 }
 
 static int lxcContainerMountFSDevPTS(virDomainDefPtr def,
