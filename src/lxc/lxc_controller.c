@@ -1566,13 +1566,15 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
         dev_t dev;
         virDomainTimerDefPtr timer = def->clock.timers[i];
 
+        if (!timer->present)
+            continue;
+
         switch ((virDomainTimerNameType)timer->name) {
         case VIR_DOMAIN_TIMER_NAME_PLATFORM:
         case VIR_DOMAIN_TIMER_NAME_TSC:
         case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
         case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
         case VIR_DOMAIN_TIMER_NAME_PIT:
-        case VIR_DOMAIN_TIMER_NAME_HPET:
         case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
         case VIR_DOMAIN_TIMER_NAME_LAST:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -1580,9 +1582,6 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
                            virDomainTimerNameTypeToString(timer->name));
             return -1;
         case VIR_DOMAIN_TIMER_NAME_RTC:
-            if (!timer->present)
-                break;
-
             if (stat("/dev/rtc", &sb) < 0) {
                 if (errno == EACCES)
                     return -1;
@@ -1595,6 +1594,32 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
 
             path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
                                    ctrl->def->name, "/rtc");
+
+            dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
+            if (mknod(path, S_IFCHR, dev) < 0 ||
+                chmod(path, sb.st_mode)) {
+                virReportSystemError(errno,
+                                     _("Failed to make device %s"),
+                                     path);
+                return -1;
+            }
+
+            if (lxcContainerChown(ctrl->def, path) < 0)
+                return -1;
+            break;
+        case VIR_DOMAIN_TIMER_NAME_HPET:
+            if (stat("/dev/hpet", &sb) < 0) {
+                if (errno == EACCES)
+                    return -1;
+
+                virReportSystemError(errno,
+                                     _("Path '%s' is not accessible"),
+                                     path);
+                return -1;
+            }
+
+            path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
+                                   ctrl->def->name, "/hpet");
 
             dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
             if (mknod(path, S_IFCHR, dev) < 0 ||
