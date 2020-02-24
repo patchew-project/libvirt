@@ -83,6 +83,7 @@ mymain(void)
     DO_TEST_DIFFERENT("acpiapic");
     DO_TEST_DIFFERENT("base");
     DO_TEST_DIFFERENT("wired");
+    DO_TEST_DIFFERENT("passthru");
     DO_TEST_DIFFERENT("bhyveload-bootorder");
     DO_TEST_DIFFERENT("bhyveload-bootorder1");
     DO_TEST_DIFFERENT("bhyveload-bootorder2");
@@ -94,6 +95,7 @@ mymain(void)
     DO_TEST_DIFFERENT("disk-cdrom");
     DO_TEST_DIFFERENT("disk-cdrom-grub");
     DO_TEST_DIFFERENT("disk-virtio");
+    DO_TEST_DIFFERENT("virtio-scsi");
     DO_TEST_DIFFERENT("grub-bootorder");
     DO_TEST_DIFFERENT("grub-bootorder2");
     DO_TEST_DIFFERENT("grub-defaults");

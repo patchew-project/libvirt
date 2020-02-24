@@ -6674,8 +6674,11 @@ qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
                 return -1;
             }
             break;
+
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
             return qemuDomainMdevDefValidate(hostdev, def, qemuCaps);
+
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         default:
             virReportEnumRangeError(virDomainHostdevSubsysType,
@@ -14031,6 +14034,8 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
 
             perm = VIR_CGROUP_DEVICE_RW;
             break;
+
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             break;
         }

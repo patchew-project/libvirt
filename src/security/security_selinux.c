@@ -2149,6 +2149,10 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
         break;
     }
 
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
+        /* FreeBSD only */
+        return -1;
+
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST: {
         virSCSIVHostDevicePtr host = virSCSIVHostDeviceNew(hostsrc->wwpn);
 
@@ -2383,6 +2387,10 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
 
         break;
     }
+
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
+        /* FreeBSD only */
+        return -1;
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST: {
         virSCSIVHostDevicePtr host = virSCSIVHostDeviceNew(hostsrc->wwpn);

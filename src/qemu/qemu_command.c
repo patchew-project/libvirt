@@ -4677,6 +4677,7 @@ qemuBuildPCIHostdevDevStr(const virDomainDef *def,
 
     case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_KVM:
     case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_DEFAULT:
+    case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VMM:
     case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_XEN:
     case VIR_DOMAIN_HOSTDEV_PCI_BACKEND_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -5439,6 +5440,7 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
 
             break;
 
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_CTL:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             break;
         }
