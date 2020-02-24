@@ -1551,6 +1551,71 @@ static int virLXCControllerPopulateDevices(virLXCControllerPtr ctrl)
 
 
 static int
+virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
+{
+    g_autofree char *path = NULL;
+    size_t i;
+    struct stat sb;
+    virDomainDefPtr def = ctrl->def;
+
+    /* Not sync'ed with Host clock */
+    if (def->clock.offset != VIR_DOMAIN_CLOCK_OFFSET_LOCALTIME)
+        return 0;
+
+    for (i = 0; i < def->clock.ntimers; i++) {
+        dev_t dev;
+        virDomainTimerDefPtr timer = def->clock.timers[i];
+
+        switch ((virDomainTimerNameType)timer->name) {
+        case VIR_DOMAIN_TIMER_NAME_PLATFORM:
+        case VIR_DOMAIN_TIMER_NAME_TSC:
+        case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
+        case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
+        case VIR_DOMAIN_TIMER_NAME_PIT:
+        case VIR_DOMAIN_TIMER_NAME_HPET:
+        case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
+        case VIR_DOMAIN_TIMER_NAME_LAST:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported timer type (name) '%s'"),
+                           virDomainTimerNameTypeToString(timer->name));
+            return -1;
+        case VIR_DOMAIN_TIMER_NAME_RTC:
+            if (!timer->present)
+                break;
+
+            if (stat("/dev/rtc", &sb) < 0) {
+                if (errno == EACCES)
+                    return -1;
+
+                virReportSystemError(errno,
+                                     _("Path '%s' is not accessible"),
+                                     path);
+                return -1;
+            }
+
+            path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
+                                   ctrl->def->name, "/rtc");
+
+            dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
+            if (mknod(path, S_IFCHR, dev) < 0 ||
+                chmod(path, sb.st_mode)) {
+                virReportSystemError(errno,
+                                     _("Failed to make device %s"),
+                                     path);
+                return -1;
+            }
+
+            if (lxcContainerChown(ctrl->def, path) < 0)
+                return -1;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 virLXCControllerSetupHostdevSubsysUSB(virDomainDefPtr vmDef,
                                       virDomainHostdevDefPtr def,
                                       virSecurityManagerPtr securityDriver)
@@ -2350,6 +2415,9 @@ virLXCControllerRun(virLXCControllerPtr ctrl)
         goto cleanup;
 
     if (virLXCControllerPopulateDevices(ctrl) < 0)
+        goto cleanup;
+
+    if (virLXCControllerSetupTimers(ctrl) < 0)
         goto cleanup;
 
     if (virLXCControllerSetupAllDisks(ctrl) < 0)
