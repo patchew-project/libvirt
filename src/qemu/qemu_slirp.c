@@ -18,6 +18,7 @@
 
 #include <config.h>
 
+#include "qemu_dbus.h"
 #include "qemu_extdevice.h"
 #include "qemu_security.h"
 #include "qemu_slirp.h"
@@ -202,6 +203,16 @@ qemuSlirpGetFD(qemuSlirpPtr slirp)
 }
 
 
+static char *
+qemuSlirpGetDBusVMStateId(virDomainNetDefPtr net)
+{
+    char macstr[VIR_MAC_STRING_BUFLEN] = "";
+
+    /* can't use alias, because it's not stable across restarts */
+    return g_strdup_printf("slirp-%s", virMacAddrFormat(&net->mac, macstr));
+}
+
+
 void
 qemuSlirpStop(qemuSlirpPtr slirp,
               virDomainObjPtr vm,
@@ -209,10 +220,13 @@ qemuSlirpStop(qemuSlirpPtr slirp,
               virDomainNetDefPtr net)
 {
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    g_autofree char *id = qemuSlirpGetDBusVMStateId(net);
     g_autofree char *pidfile = NULL;
     virErrorPtr orig_err;
     pid_t pid;
     int rc;
+
+    qemuDBusVMStateRemove(vm, id);
 
     if (!(pidfile = qemuSlirpCreatePidFilename(cfg, vm->def, net->info.alias))) {
         VIR_WARN("Unable to construct slirp pidfile path");
@@ -307,6 +321,28 @@ qemuSlirpStart(qemuSlirpPtr slirp,
             }
             if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET6))
                 virCommandAddArgFormat(cmd, "--prefix-length-ipv6=%u", ip->prefix);
+        }
+    }
+
+    if (qemuSlirpHasFeature(slirp, QEMU_SLIRP_FEATURE_DBUS_ADDRESS)) {
+        g_autofree char *id = qemuSlirpGetDBusVMStateId(net);
+        g_autofree char *dbus_addr = qemuDBusGetAddress(driver, vm);
+
+        if (qemuDBusStart(driver, vm) < 0)
+            return -1;
+
+        virCommandAddArgFormat(cmd, "--dbus-id=%s", id);
+
+        virCommandAddArgFormat(cmd, "--dbus-address=%s", dbus_addr);
+
+        if (qemuSlirpHasFeature(slirp, QEMU_SLIRP_FEATURE_MIGRATE)) {
+            if (qemuDBusVMStateAdd(vm, id) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Failed to register slirp migration"));
+                return -1;
+            }
+            if (incoming)
+                virCommandAddArg(cmd, "--dbus-incoming");
         }
     }
 
