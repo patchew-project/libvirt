@@ -178,7 +178,7 @@ qemuExtDevicesStart(virQEMUDriverPtr driver,
         qemuSlirpPtr slirp = QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp;
 
         if (slirp &&
-            qemuSlirpStart(slirp, vm, driver, net, false, incomingMigration) < 0)
+            qemuSlirpStart(slirp, vm, driver, net, incomingMigration) < 0)
             return -1;
     }
 
@@ -211,7 +211,7 @@ qemuExtDevicesStop(virQEMUDriverPtr driver,
         qemuSlirpPtr slirp = QEMU_DOMAIN_NETWORK_PRIVATE(net)->slirp;
 
         if (slirp)
-            qemuSlirpStop(slirp, vm, driver, net, false);
+            qemuSlirpStop(slirp, vm, driver, net);
     }
 }
 
