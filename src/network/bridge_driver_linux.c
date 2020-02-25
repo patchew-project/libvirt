@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include "viralloc.h"
+#include "virerror.h"
 #include "virfile.h"
 #include "viriptables.h"
 #include "virstring.h"
@@ -53,7 +54,7 @@ static void networkSetupPrivateChains(void)
     if (rc < 0) {
         VIR_DEBUG("Failed to create global IPv4 chains: %s",
                   virGetLastErrorMessage());
-        errInitV4 = virSaveLastError();
+        virErrorPreserveLast(&errInitV4);
         virResetLastError();
     } else {
         virFreeError(errInitV4);
@@ -70,7 +71,7 @@ static void networkSetupPrivateChains(void)
     if (rc < 0) {
         VIR_DEBUG("Failed to create global IPv6 chains: %s",
                   virGetLastErrorMessage());
-        errInitV6 = virSaveLastError();
+        virErrorPreserveLast(&errInitV6);
         virResetLastError();
     } else {
         virFreeError(errInitV6);
@@ -790,7 +791,7 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     if (errInitV4 &&
         (virNetworkDefGetIPByIndex(def, AF_INET, 0) ||
          virNetworkDefGetRouteByIndex(def, AF_INET, 0))) {
-        virSetError(errInitV4);
+        virErrorRestore(&errInitV4);
         return -1;
     }
 
@@ -798,7 +799,7 @@ int networkAddFirewallRules(virNetworkDefPtr def)
         (virNetworkDefGetIPByIndex(def, AF_INET6, 0) ||
          virNetworkDefGetRouteByIndex(def, AF_INET6, 0) ||
          def->ipv6nogw)) {
-        virSetError(errInitV6);
+        virErrorRestore(&errInitV6);
         return -1;
     }
 
