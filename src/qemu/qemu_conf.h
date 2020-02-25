@@ -97,6 +97,7 @@ struct _virQEMUDriverConfig {
     char *stateDir;
     char *swtpmStateDir;
     char *slirpStateDir;
+    char *dbusStateDir;
     /* These two directories are ones QEMU processes use (so must match
      * the QEMU user/group */
     char *libDir;
