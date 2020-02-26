@@ -40,6 +40,11 @@ LimitNOFILE=8192
 # A conservative default of 8 tasks per guest results in a TasksMax of
 # 32k to support 4096 guests.
 TasksMax=32768
+# With cgroups v2 there is no devices controller anymore, we have to use
+# eBPF to control access to devices.  In order to do that we create a eBPF
+# hash MAP which locked memory.  The default map size for 64 devices together
+# with program takes 12k per guest which results in 49M to support 4096 guests.
+LimitMEMLOCK=49M
 
 [Install]
 WantedBy=multi-user.target
