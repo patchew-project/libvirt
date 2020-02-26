@@ -561,6 +561,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "virtio-net.failover",
               "tpm-spapr",
               "cpu.kvm-no-adjvtime",
+
+              /* 355 */
+              "query-named-block-nodes.flat",
     );
 
 
@@ -1436,6 +1439,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/+file/$dynamic-auto-read-only", QEMU_CAPS_BLOCK_FILE_AUTO_READONLY_DYNAMIC },
     { "human-monitor-command/$savevm-monitor-nodes", QEMU_CAPS_SAVEVM_MONITOR_NODES },
     { "blockdev-add/arg-type/+nvme", QEMU_CAPS_DRIVE_NVME },
+    { "query-named-block-nodes/arg-type/flat", QEMU_CAPS_QMP_QUERY_NAMED_BLOCK_NODES_FLAT },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;

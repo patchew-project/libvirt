@@ -543,6 +543,9 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_DEVICE_TPM_SPAPR, /* -device tpm-spapr */
     QEMU_CAPS_CPU_KVM_NO_ADJVTIME, /* cpu.kvm-no-adjvtime */
 
+    /* 355 */
+    QEMU_CAPS_QMP_QUERY_NAMED_BLOCK_NODES_FLAT, /* query-named-block-nodes supports the 'flat' option */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
