@@ -7851,7 +7851,7 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
                 (qemuDomainNamespaceSetupDisk(vm, disk->mirror) < 0 ||
                  qemuSetupImageChainCgroup(vm, disk->mirror) < 0 ||
                  qemuSecuritySetImageLabel(priv->driver, vm, disk->mirror,
-                                           true) < 0))
+                                           true, false) < 0))
                 goto cleanup;
         }
     }

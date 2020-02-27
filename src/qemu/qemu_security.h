@@ -36,7 +36,8 @@ void qemuSecurityRestoreAllLabel(virQEMUDriverPtr driver,
 int qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virStorageSourcePtr src,
-                              bool backingChain);
+                              bool backingChain,
+                              bool topparent);
 
 int qemuSecurityRestoreImageLabel(virQEMUDriverPtr driver,
                                   virDomainObjPtr vm,

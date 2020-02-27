@@ -15141,7 +15141,8 @@ qemuDomainSnapshotDiskPrepareOne(virQEMUDriverPtr driver,
     }
 
     /* set correct security, cgroup and locking options on the new image */
-    if (qemuDomainStorageSourceAccessAllow(driver, vm, dd->src, false, true) < 0)
+    if (qemuDomainStorageSourceAccessAllow(driver, vm, dd->src,
+                                           false, true, true) < 0)
         return -1;
 
     dd->prepared = true;
@@ -18489,9 +18490,11 @@ qemuDomainBlockCommit(virDomainPtr dom,
      * operation succeeds, but doing that requires tracking the
      * operation in XML across libvirtd restarts.  */
     clean_access = true;
-    if (qemuDomainStorageSourceAccessAllow(driver, vm, baseSource, false, false) < 0 ||
+    if (qemuDomainStorageSourceAccessAllow(driver, vm, baseSource,
+                                           false, false, false) < 0 ||
         (top_parent && top_parent != disk->src &&
-         qemuDomainStorageSourceAccessAllow(driver, vm, top_parent, false, false) < 0))
+         qemuDomainStorageSourceAccessAllow(driver, vm, top_parent,
+                                            false, false, false) < 0))
         goto endjob;
 
     if (!(job = qemuBlockJobDiskNewCommit(vm, disk, top_parent, topSource,
@@ -18551,9 +18554,11 @@ qemuDomainBlockCommit(virDomainPtr dom,
         virErrorPtr orig_err;
         virErrorPreserveLast(&orig_err);
         /* Revert access to read-only, if possible.  */
-        qemuDomainStorageSourceAccessAllow(driver, vm, baseSource, true, false);
+        qemuDomainStorageSourceAccessAllow(driver, vm, baseSource,
+                                           true, false, false);
         if (top_parent && top_parent != disk->src)
-            qemuDomainStorageSourceAccessAllow(driver, vm, top_parent, true, false);
+            qemuDomainStorageSourceAccessAllow(driver, vm, top_parent,
+                                               true, false, false);
 
         virErrorRestore(&orig_err);
     }
