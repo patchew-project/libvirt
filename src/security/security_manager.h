@@ -151,6 +151,7 @@ virSecurityManagerPtr* virSecurityManagerGetNested(virSecurityManagerPtr mgr);
 
 typedef enum {
     VIR_SECURITY_DOMAIN_IMAGE_LABEL_BACKING_CHAIN = 1 << 0,
+    VIR_SECURITY_DOMAIN_IMAGE_TOP_PARENT = 1 << 1,
 } virSecurityDomainImageLabelFlags;
 
 int virSecurityManagerSetImageLabel(virSecurityManagerPtr mgr,
