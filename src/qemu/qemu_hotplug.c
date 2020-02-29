@@ -2317,6 +2317,23 @@ qemuDomainAttachRNGDevice(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuDomainMemoryDimmIsAligned(const virDomainDef *def,
+                              virDomainMemoryDefPtr mem)
+{
+    unsigned long long align = qemuDomainGetMemoryModuleSizeAlignment(def);
+
+    if (mem->size % align != 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("dimm memory must be aligned with %llu MiB"),
+                       align / 1024);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /**
  * qemuDomainAttachMemory:
  * @driver: qemu driver data
@@ -2348,7 +2365,8 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     int id;
     int ret = -1;
 
-    qemuDomainMemoryDeviceAlignSize(vm->def, mem);
+    if (qemuDomainMemoryDimmIsAligned(vm->def, mem) < 0)
+        goto cleanup;
 
     if (qemuDomainDefValidateMemoryHotplug(vm->def, priv->qemuCaps, mem) < 0)
         goto cleanup;
@@ -5637,7 +5655,8 @@ qemuDomainDetachPrepMemory(virDomainObjPtr vm,
     virDomainMemoryDefPtr mem;
     int idx;
 
-    qemuDomainMemoryDeviceAlignSize(vm->def, match);
+    if (qemuDomainMemoryDimmIsAligned(vm->def, match) < 0)
+        return -1;
 
     if ((idx = virDomainMemoryFindByDef(vm->def, match)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
