@@ -996,6 +996,8 @@ int qemuDomainDefValidateMemoryHotplug(const virDomainDef *def,
                                        virQEMUCapsPtr qemuCaps,
                                        const virDomainMemoryDef *mem);
 
+unsigned long long qemuDomainGetMemoryModuleSizeAlignment(const virDomainDef *def);
+
 bool qemuDomainSupportsNewVcpuHotplug(virDomainObjPtr vm);
 bool qemuDomainHasVcpuPids(virDomainObjPtr vm);
 pid_t qemuDomainGetVcpuPid(virDomainObjPtr vm, unsigned int vcpuid);

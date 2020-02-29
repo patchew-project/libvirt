@@ -12308,9 +12308,8 @@ qemuDomainGetMemorySizeAlignment(virDomainDefPtr def)
 }
 
 
-static unsigned long long
-qemuDomainGetMemoryModuleSizeAlignment(const virDomainDef *def,
-                                       const virDomainMemoryDef *mem G_GNUC_UNUSED)
+unsigned long long
+qemuDomainGetMemoryModuleSizeAlignment(const virDomainDef *def)
 {
     /* PPC requires the memory sizes to be rounded to 256MiB increments, so
      * round them to the size always. */
@@ -12368,8 +12367,8 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
     }
 
     /* Align memory module sizes */
+    align = qemuDomainGetMemoryModuleSizeAlignment(def);
     for (i = 0; i < def->nmems; i++) {
-        align = qemuDomainGetMemoryModuleSizeAlignment(def, def->mems[i]);
         def->mems[i]->size = VIR_ROUND_UP(def->mems[i]->size, align);
         hotplugmem += def->mems[i]->size;
 
