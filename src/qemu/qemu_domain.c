@@ -12387,22 +12387,6 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
 
 
 /**
- * qemuDomainMemoryDeviceAlignSize:
- * @mem: memory device definition object
- *
- * Aligns the size of the memory module as qemu enforces it. The size is updated
- * inplace. Default rounding is now to 1 MiB (qemu requires rouding to page,
- * size so this should be safe).
- */
-void
-qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
-                                virDomainMemoryDefPtr mem)
-{
-    mem->size = VIR_ROUND_UP(mem->size, qemuDomainGetMemorySizeAlignment(def));
-}
-
-
-/**
  * qemuDomainGetMonitor:
  * @vm: domain object
  *
