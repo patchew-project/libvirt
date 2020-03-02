@@ -1538,6 +1538,7 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
     struct stat sb;
     virDomainDefPtr def = ctrl->def;
     const char *rtc_dev = "/dev/rtc";
+    const char *hpet_dev = "/dev/hpet";
 
     /* Not sync'ed with Host clock */
     if (def->clock.offset != VIR_DOMAIN_CLOCK_OFFSET_LOCALTIME)
@@ -1557,7 +1558,6 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
         case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
         case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
         case VIR_DOMAIN_TIMER_NAME_PIT:
-        case VIR_DOMAIN_TIMER_NAME_HPET:
         case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
         case VIR_DOMAIN_TIMER_NAME_LAST:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -1573,6 +1573,28 @@ virLXCControllerSetupTimers(virLXCControllerPtr ctrl)
 
             path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
                                    ctrl->def->name, "/rtc");
+
+            dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
+            if (mknod(path, S_IFCHR, dev) < 0 ||
+                chmod(path, sb.st_mode)) {
+                virReportSystemError(errno,
+                                     _("Failed to make device %s"),
+                                     path);
+                return -1;
+            }
+
+            if (lxcContainerChown(ctrl->def, path) < 0)
+                return -1;
+            break;
+        case VIR_DOMAIN_TIMER_NAME_HPET:
+            if (stat(hpet_dev, &sb) < 0) {
+                virReportSystemError(errno, _("Unable to access %s"),
+                                     hpet_dev);
+                return -1;
+            }
+
+            path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
+                                   ctrl->def->name, "/hpet");
 
             dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
             if (mknod(path, S_IFCHR, dev) < 0 ||

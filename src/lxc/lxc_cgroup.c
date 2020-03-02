@@ -349,7 +349,6 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
         case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
         case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
         case VIR_DOMAIN_TIMER_NAME_PIT:
-        case VIR_DOMAIN_TIMER_NAME_HPET:
         case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
         case VIR_DOMAIN_TIMER_NAME_LAST:
             break;
@@ -361,6 +360,16 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
                     return -1;
             } else {
                 VIR_DEBUG("Ignoring non-existent device /dev/rtc");
+            }
+            break;
+        case VIR_DOMAIN_TIMER_NAME_HPET:
+            if (virFileExists("/dev/hpet")) {
+                if (virCgroupAllowDevicePath(cgroup, "/dev/hpet",
+                                             VIR_CGROUP_DEVICE_READ,
+                                             false) < 0)
+                    return -1;
+            } else {
+                VIR_DEBUG("Ignoring non-existent device /dev/hpet");
             }
             break;
         }
