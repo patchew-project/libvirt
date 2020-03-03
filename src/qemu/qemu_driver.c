@@ -7644,6 +7644,9 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
         goto cleanup;
     def = NULL;
 
+    if (!oldDef && qemuDomainNamePathsCleanup(cfg, vm->def->name, true) < 0)
+        goto cleanup;
+
     if (virDomainDefSave(vm->newDef ? vm->newDef : vm->def,
                          driver->xmlopt, cfg->configDir) < 0)
         goto cleanup;
@@ -22028,6 +22031,9 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
                                                  new_dom_name)) ||
         !(old_dom_cfg_file = virDomainConfigFile(cfg->configDir,
                                                  vm->def->name)))
+        goto cleanup;
+
+    if (qemuDomainNamePathsCleanup(cfg, new_name, true) < 0)
         goto cleanup;
 
     if (vm->autostart) {
