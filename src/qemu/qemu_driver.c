@@ -21989,10 +21989,6 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
         }
     }
 
-    event_old = virDomainEventLifecycleNewFromObj(vm,
-                                            VIR_DOMAIN_EVENT_UNDEFINED,
-                                            VIR_DOMAIN_EVENT_UNDEFINED_RENAMED);
-
     /* Switch name in domain definition. */
     old_dom_name = vm->def->name;
     vm->def->name = new_dom_name;
@@ -22001,9 +21997,15 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     if (virDomainDefSave(vm->def, driver->xmlopt, cfg->configDir) < 0)
         goto cleanup;
 
+    event_old = virDomainEventLifecycleNew(vm->def->id, old_dom_name, vm->def->uuid,
+                                           VIR_DOMAIN_EVENT_UNDEFINED,
+                                           VIR_DOMAIN_EVENT_UNDEFINED_RENAMED);
     event_new = virDomainEventLifecycleNewFromObj(vm,
                                               VIR_DOMAIN_EVENT_DEFINED,
                                               VIR_DOMAIN_EVENT_DEFINED_RENAMED);
+    virObjectEventStateQueue(driver->domainEventState, event_old);
+    virObjectEventStateQueue(driver->domainEventState, event_new);
+
     ret = 0;
 
  cleanup:
@@ -22014,8 +22016,6 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     }
 
     qemuDomainNamePathsCleanup(cfg, ret < 0 ? new_dom_name : old_dom_name, false);
-    virObjectEventStateQueue(driver->domainEventState, event_old);
-    virObjectEventStateQueue(driver->domainEventState, event_new);
     return ret;
 }
 
