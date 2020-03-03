@@ -21938,6 +21938,30 @@ qemuDomainSetUserPassword(virDomainPtr dom,
 }
 
 
+struct qemuDomainMomentWriteMetadataData {
+    virQEMUDriverPtr driver;
+    virDomainObjPtr vm;
+};
+
+
+static int
+qemuDomainSnapshotWriteMetadataIter(void *payload,
+                                    const void *name G_GNUC_UNUSED,
+                                    void *opaque)
+{
+    struct qemuDomainMomentWriteMetadataData *data = opaque;
+    virQEMUDriverConfigPtr cfg =  virQEMUDriverGetConfig(data->driver);
+    int ret;
+
+    ret = qemuDomainSnapshotWriteMetadata(data->vm, payload,
+                                          data->driver->xmlopt,
+                                          cfg->snapshotDir);
+
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
 static int
 qemuDomainRenameCallback(virDomainObjPtr vm,
                          const char *new_name,
@@ -21955,6 +21979,10 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     g_autofree char *old_dom_cfg_file = NULL;
     g_autofree char *new_dom_autostart_link = NULL;
     g_autofree char *old_dom_autostart_link = NULL;
+    struct qemuDomainMomentWriteMetadataData data = {
+        .driver = driver,
+        .vm = vm,
+    };
 
     virCheckFlags(0, ret);
 
@@ -21993,6 +22021,11 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     old_dom_name = vm->def->name;
     vm->def->name = new_dom_name;
     new_dom_name = NULL;
+
+    if (virDomainSnapshotForEach(vm->snapshots,
+                                 qemuDomainSnapshotWriteMetadataIter,
+                                 &data) < 0)
+        goto cleanup;
 
     if (virDomainDefSave(vm->def, driver->xmlopt, cfg->configDir) < 0)
         goto cleanup;
