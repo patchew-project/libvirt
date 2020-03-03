@@ -21999,25 +21999,7 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     new_dom_name = NULL;
 
     if (virDomainDefSave(vm->def, driver->xmlopt, cfg->configDir) < 0)
-        goto rollback;
-
-    if (virFileExists(old_dom_cfg_file) &&
-        unlink(old_dom_cfg_file) < 0) {
-        virReportSystemError(errno,
-                             _("cannot remove old domain config file %s"),
-                             old_dom_cfg_file);
-        goto rollback;
-    }
-
-    if (vm->autostart) {
-        if (virFileIsLink(old_dom_autostart_link) &&
-            unlink(old_dom_autostart_link) < 0) {
-            virReportSystemError(errno,
-                                 _("Failed to delete symlink '%s'"),
-                                 old_dom_autostart_link);
-            goto rollback;
-        }
-    }
+        goto cleanup;
 
     event_new = virDomainEventLifecycleNewFromObj(vm,
                                               VIR_DOMAIN_EVENT_DEFINED,
@@ -22025,25 +22007,16 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     ret = 0;
 
  cleanup:
-    virObjectEventStateQueue(driver->domainEventState, event_old);
-    virObjectEventStateQueue(driver->domainEventState, event_new);
-    return ret;
-
- rollback:
-    if (old_dom_name) {
+    if (old_dom_name && ret < 0) {
         new_dom_name = vm->def->name;
         vm->def->name = old_dom_name;
         old_dom_name = NULL;
     }
 
-    if (virFileExists(new_dom_cfg_file))
-        unlink(new_dom_cfg_file);
-
-    if (vm->autostart &&
-        virFileExists(new_dom_autostart_link))
-        unlink(new_dom_autostart_link);
-
-    goto cleanup;
+    qemuDomainNamePathsCleanup(cfg, ret < 0 ? new_dom_name : old_dom_name, false);
+    virObjectEventStateQueue(driver->domainEventState, event_old);
+    virObjectEventStateQueue(driver->domainEventState, event_new);
+    return ret;
 }
 
 static int qemuDomainRename(virDomainPtr dom,

@@ -1263,3 +1263,8 @@ qemuDomainMakeCPUMigratable(virCPUDefPtr cpu);
 
 int
 qemuDomainInitializePflashStorageSource(virDomainObjPtr vm);
+
+int
+qemuDomainNamePathsCleanup(virQEMUDriverConfigPtr cfg,
+                           const char *name,
+                           bool reportError);
