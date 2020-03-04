@@ -17311,6 +17311,7 @@ static int
 qemuDomainBlockPullCommon(virDomainObjPtr vm,
                           const char *path,
                           const char *base,
+                          const char *top,
                           unsigned long bandwidth,
                           unsigned int flags)
 {
@@ -17322,6 +17323,9 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
     virStorageSourcePtr baseSource = NULL;
     unsigned int baseIndex = 0;
     g_autofree char *basePath = NULL;
+    virStorageSourcePtr topSource = NULL;
+    unsigned int topIndex = 0;
+    g_autofree char *topPath = NULL;
     g_autofree char *backingPath = NULL;
     unsigned long long speed = bandwidth;
     qemuBlockJobDataPtr job = NULL;
@@ -17353,6 +17357,12 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
         (virStorageFileParseChainIndex(disk->dst, base, &baseIndex) < 0 ||
          !(baseSource = virStorageFileChainLookup(disk->src, disk->src,
                                                   base, baseIndex, NULL))))
+        goto endjob;
+
+    if (top &&
+        (virStorageFileParseChainIndex(disk->dst, top, &topIndex) < 0 ||
+         !(topSource = virStorageFileChainLookup(disk->src, disk->src,
+                                                  top, topIndex, NULL))))
         goto endjob;
 
     if (baseSource) {
@@ -17388,7 +17398,7 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
         speed <<= 20;
     }
 
-    if (!(job = qemuBlockJobDiskNewPull(vm, disk, baseSource, flags)))
+    if (!(job = qemuBlockJobDiskNewPull(vm, disk, baseSource, /*topSource, */flags)))
         goto endjob;
 
     if (blockdev) {
@@ -18160,7 +18170,7 @@ qemuDomainBlockRebase(virDomainPtr dom, const char *path, const char *base,
     /* For normal rebase (enhanced blockpull), the common code handles
      * everything, including vm cleanup. */
     if (!(flags & VIR_DOMAIN_BLOCK_REBASE_COPY))
-        return qemuDomainBlockPullCommon(vm, path, base, bandwidth, flags);
+        return qemuDomainBlockPullCommon(vm, path, base, NULL, bandwidth, flags);
 
     /* If we got here, we are doing a block copy rebase. */
     if (!(dest = virStorageSourceNew()))
@@ -18311,7 +18321,7 @@ qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
     }
 
     /* qemuDomainBlockPullCommon consumes the reference on @vm */
-    return qemuDomainBlockPullCommon(vm, path, NULL, bandwidth, flags);
+    return qemuDomainBlockPullCommon(vm, path, NULL, NULL, bandwidth, flags);
 }
 
 
