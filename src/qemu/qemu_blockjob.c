@@ -253,6 +253,7 @@ qemuBlockJobDataPtr
 qemuBlockJobDiskNewPull(virDomainObjPtr vm,
                         virDomainDiskDefPtr disk,
                         virStorageSourcePtr base,
+                        virStorageSourcePtr top,
                         unsigned int jobflags)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -270,6 +271,7 @@ qemuBlockJobDiskNewPull(virDomainObjPtr vm,
         return NULL;
 
     job->data.pull.base = base;
+    job->data.pull.top = top;
     job->jobflags = jobflags;
 
     if (qemuBlockJobRegister(job, vm, disk, true) < 0)

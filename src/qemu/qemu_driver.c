@@ -17398,7 +17398,7 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
         speed <<= 20;
     }
 
-    if (!(job = qemuBlockJobDiskNewPull(vm, disk, baseSource, /*topSource, */flags)))
+    if (!(job = qemuBlockJobDiskNewPull(vm, disk, baseSource, topSource, flags)))
         goto endjob;
 
     if (blockdev) {

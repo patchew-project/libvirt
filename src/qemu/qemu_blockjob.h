@@ -77,6 +77,7 @@ typedef qemuBlockJobPullData *qemuBlockJobDataPullPtr;
 
 struct _qemuBlockJobPullData {
     virStorageSourcePtr base;
+    virStorageSourcePtr top;
 };
 
 
@@ -177,6 +178,7 @@ qemuBlockJobDataPtr
 qemuBlockJobDiskNewPull(virDomainObjPtr vm,
                         virDomainDiskDefPtr disk,
                         virStorageSourcePtr base,
+                        virStorageSourcePtr top,
                         unsigned int jobflags);
 
 qemuBlockJobDataPtr
