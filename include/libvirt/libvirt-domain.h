@@ -2560,8 +2560,8 @@ typedef enum {
 } virDomainBlockRebaseFlags;
 
 int virDomainBlockRebase(virDomainPtr dom, const char *disk,
-                         const char *base, unsigned long bandwidth,
-                         unsigned int flags);
+                         const char *base, const char *top,
+                         unsigned long bandwidth, unsigned int flags);
 
 /**
  * virDomainBlockCopyFlags:

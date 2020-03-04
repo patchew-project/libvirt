@@ -10150,6 +10150,7 @@ virDomainBlockPull(virDomainPtr dom, const char *disk,
  * @disk: path to the block device, or device shorthand
  * @base: path to backing file to keep, or device shorthand,
  *        or NULL for no backing file
+ * @top: path to top file, or device shorthand, or NULL for no top
  * @bandwidth: (optional) specify bandwidth limit; flags determine the unit
  * @flags: bitwise-OR of virDomainBlockRebaseFlags
  *
@@ -10257,8 +10258,8 @@ virDomainBlockPull(virDomainPtr dom, const char *disk,
  */
 int
 virDomainBlockRebase(virDomainPtr dom, const char *disk,
-                     const char *base, unsigned long bandwidth,
-                     unsigned int flags)
+                     const char *base, const char *top,
+                     unsigned long bandwidth, unsigned int flags)
 {
     virConnectPtr conn;
 

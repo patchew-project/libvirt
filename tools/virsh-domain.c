@@ -2436,7 +2436,7 @@ cmdBlockcopy(vshControl *ctl, const vshCmd *cmd)
         if (bytes)
             flags |= VIR_DOMAIN_BLOCK_REBASE_BANDWIDTH_BYTES;
 
-        if (virDomainBlockRebase(dom, path, dest, bandwidth, flags) < 0)
+        if (virDomainBlockRebase(dom, path, dest, NULL, bandwidth, flags) < 0)
             goto cleanup;
     }
 
@@ -2765,6 +2765,10 @@ static const vshCmdOptDef opts_blockpull[] = {
      .type = VSH_OT_STRING,
      .help = N_("path of backing file in chain for a partial pull")
     },
+    {.name = "top",
+     .type = VSH_OT_STRING,
+     .help = N_("path of top backing file in chain for a partial pull")
+    },
     {.name = "wait",
      .type = VSH_OT_BOOL,
      .help = N_("wait for job to finish")
@@ -2804,6 +2808,7 @@ cmdBlockpull(vshControl *ctl, const vshCmd *cmd)
     int timeout = 0;
     const char *path = NULL;
     const char *base = NULL;
+    const char *top = NULL;
     unsigned long bandwidth = 0;
     unsigned int flags = 0;
     virshBlockJobWaitDataPtr bjWait = NULL;
@@ -2815,6 +2820,9 @@ cmdBlockpull(vshControl *ctl, const vshCmd *cmd)
         return false;
 
     if (vshCommandOptStringReq(ctl, cmd, "base", &base) < 0)
+        return false;
+
+    if (vshCommandOptStringReq(ctl, cmd, "top", &top) < 0)
         return false;
 
     if (vshBlockJobOptionBandwidth(ctl, cmd, bytes, &bandwidth) < 0)
@@ -2834,11 +2842,11 @@ cmdBlockpull(vshControl *ctl, const vshCmd *cmd)
                                          verbose, timeout, async)))
         goto cleanup;
 
-    if (base || flags) {
+    if (base || top || flags) {
         if (bytes)
             flags |= VIR_DOMAIN_BLOCK_REBASE_BANDWIDTH_BYTES;
 
-        if (virDomainBlockRebase(dom, path, base, bandwidth, flags) < 0)
+        if (virDomainBlockRebase(dom, path, base, top, bandwidth, flags) < 0)
             goto cleanup;
     } else {
         if (bytes)
