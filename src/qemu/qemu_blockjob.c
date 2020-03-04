@@ -962,6 +962,7 @@ qemuBlockJobProcessEventCompletedPull(virQEMUDriverPtr driver,
     virDomainDiskDefPtr cfgdisk = NULL;
     virStorageSourcePtr cfgbase = NULL;
     virStorageSourcePtr cfgbaseparent = NULL;
+    virStorageSourcePtr cfgtop = NULL;
     virStorageSourcePtr n;
     virStorageSourcePtr tmp;
 
@@ -994,16 +995,40 @@ qemuBlockJobProcessEventCompletedPull(virQEMUDriverPtr driver,
         }
     }
 
-    tmp = job->disk->src->backingStore;
-    job->disk->src->backingStore = job->data.pull.base;
+    if (job->data.pull.top) {
+        cfgtop = cfgdisk->src->backingStore;
+        for (n = job->disk->src->backingStore; n && n != job->data.pull.top; n = n->backingStore) {
+            if (cfgtop)
+                cfgtop = cfgtop->backingStore;
+        }
+    }
+
+    if (job->data.pull.top && job->data.pull.top != job->disk->src) {
+        if (qemuDomainStorageSourceAccessAllow(driver, vm, job->data.pull.top, true, false) < 0) {
+            virReportError(VIR_ERR_ACCESS_DENIED, "can't reset 'top' to read-only");
+        }
+    }
+
+    if (job->data.pull.top) {
+        tmp = job->data.pull.top->backingStore;
+        job->data.pull.top->backingStore = job->data.pull.base;
+    } else {
+        tmp = job->disk->src->backingStore;
+        job->disk->src->backingStore = job->data.pull.base;
+    }
     if (baseparent)
         baseparent->backingStore = NULL;
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, tmp);
     virObjectUnref(tmp);
 
     if (cfgdisk) {
-        tmp = cfgdisk->src->backingStore;
-        cfgdisk->src->backingStore = cfgbase;
+        if (job->data.pull.top) {
+            tmp = cfgtop->backingStore;
+            cfgtop->backingStore = cfgbase;
+        } else {
+            tmp = cfgdisk->src->backingStore;
+            cfgdisk->src->backingStore = cfgbase;
+        }
         if (cfgbaseparent)
             cfgbaseparent->backingStore = NULL;
         virObjectUnref(tmp);
