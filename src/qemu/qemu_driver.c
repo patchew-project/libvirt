@@ -17410,7 +17410,15 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
                 !(backingPath = qemuBlockGetBackingStoreString(baseSource)))
                 goto endjob;
         }
-        device = disk->src->nodeformat;
+        if (topSource) {
+            device = topSource->nodeformat;
+            if (qemuDomainStorageSourceAccessAllow(driver, vm, topSource, false, false) < 0) {
+                virReportError(VIR_ERR_ACCESS_DENIED, "can't make 'top' writable");
+                goto endjob;
+            }
+        } else {
+            device = disk->src->nodeformat;
+        }
     } else {
         device = job->name;
     }
@@ -18171,7 +18179,7 @@ qemuDomainBlockRebase(virDomainPtr dom, const char *path, const char *base,
     /* For normal rebase (enhanced blockpull), the common code handles
      * everything, including vm cleanup. */
     if (!(flags & VIR_DOMAIN_BLOCK_REBASE_COPY))
-        return qemuDomainBlockPullCommon(vm, path, base, NULL, bandwidth, flags);
+        return qemuDomainBlockPullCommon(vm, path, base, top, bandwidth, flags);
 
     /* If we got here, we are doing a block copy rebase. */
     if (!(dest = virStorageSourceNew()))
@@ -18302,8 +18310,8 @@ qemuDomainBlockCopy(virDomainPtr dom, const char *disk, const char *destxml,
 
 
 static int
-qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
-                    unsigned int flags)
+qemuDomainBlockPull(virDomainPtr dom, const char *path,
+                    unsigned long bandwidth, unsigned int flags)
 {
     virDomainObjPtr vm;
     virCheckFlags(VIR_DOMAIN_BLOCK_PULL_BANDWIDTH_BYTES, -1);
