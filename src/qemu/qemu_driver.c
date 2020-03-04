@@ -18143,7 +18143,8 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
 
 static int
 qemuDomainBlockRebase(virDomainPtr dom, const char *path, const char *base,
-                      unsigned long bandwidth, unsigned int flags)
+                      const char *top, unsigned long bandwidth,
+                      unsigned int flags)
 {
     virDomainObjPtr vm;
     int ret = -1;

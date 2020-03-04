@@ -1414,6 +1414,7 @@ struct remote_domain_block_rebase_args {
     remote_nonnull_domain dom;
     remote_nonnull_string path;
     remote_string base;
+    remote_string top;
     unsigned hyper bandwidth;
     unsigned int flags;
 };

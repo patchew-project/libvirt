@@ -10287,7 +10287,7 @@ virDomainBlockRebase(virDomainPtr dom, const char *disk,
 
     if (conn->driver->domainBlockRebase) {
         int ret;
-        ret = conn->driver->domainBlockRebase(dom, disk, base, bandwidth,
+        ret = conn->driver->domainBlockRebase(dom, disk, base, top, bandwidth,
                                               flags);
         if (ret < 0)
             goto error;

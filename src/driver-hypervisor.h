@@ -1053,6 +1053,7 @@ typedef int
 (*virDrvDomainBlockRebase)(virDomainPtr dom,
                            const char *path,
                            const char *base,
+                           const char *top,
                            unsigned long bandwidth,
                            unsigned int flags);
 
