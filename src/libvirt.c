@@ -110,9 +110,8 @@ virConnectAuthCallbackDefault(virConnectCredentialPtr cred,
     size_t i;
 
     for (i = 0; i < ncred; i++) {
-        char buf[1024];
-        char *bufptr = buf;
-        size_t len;
+        char *buf = NULL;
+        size_t len = 0;
 
         switch (cred[i].type) {
         case VIR_CRED_EXTERNAL: {
@@ -136,16 +135,17 @@ virConnectAuthCallbackDefault(virConnectCredentialPtr cred,
             if (fflush(stdout) != 0)
                 return -1;
 
-            if (!fgets(buf, sizeof(buf), stdin)) {
-                if (feof(stdin)) { /* Treat EOF as "" */
-                    buf[0] = '\0';
-                    break;
+            if (getline(&buf, &len, stdin) < 0) {
+                if (!feof(stdin)) {
+                    return -1;
                 }
-                return -1;
+                /* Use creddefault on EOF */
+                buf = NULL;
+            } else {
+                len = strlen(buf);
+                if (len != 0 && buf[len-1] == '\n')
+                    buf[len-1] = '\0';
             }
-            len = strlen(buf);
-            if (len != 0 && buf[len-1] == '\n')
-                buf[len-1] = '\0';
             break;
 
         case VIR_CRED_PASSPHRASE:
@@ -155,9 +155,9 @@ virConnectAuthCallbackDefault(virConnectCredentialPtr cred,
             if (fflush(stdout) != 0)
                 return -1;
 
-            bufptr = virGetPassword();
-            if (STREQ(bufptr, ""))
-                VIR_FREE(bufptr);
+            buf = virGetPassword();
+            if (STREQ(buf, ""))
+                VIR_FREE(buf);
             break;
 
         default:
@@ -165,7 +165,7 @@ virConnectAuthCallbackDefault(virConnectCredentialPtr cred,
         }
 
         if (cred[i].type != VIR_CRED_EXTERNAL) {
-            cred[i].result = bufptr ? bufptr : g_strdup(cred[i].defresult ? cred[i].defresult : "");
+            cred[i].result = buf ? buf : g_strdup(cred[i].defresult ? cred[i].defresult : "");
             cred[i].resultlen = strlen(cred[i].result);
         }
     }
