@@ -237,7 +237,8 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
 
     agent = qemuAgentOpen(vm,
                           config->source,
-                          &agentCallbacks);
+                          &agentCallbacks,
+                          virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VSERPORT_CHANGE));
 
     virObjectLock(vm);
 

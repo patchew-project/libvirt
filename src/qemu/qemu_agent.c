@@ -104,6 +104,8 @@ struct _qemuAgent {
     int watch;
 
     bool running;
+    bool singleSync;
+    bool inSync;
 
     virDomainObjPtr vm;
 
@@ -655,7 +657,8 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
 qemuAgentPtr
 qemuAgentOpen(virDomainObjPtr vm,
               const virDomainChrSourceDef *config,
-              qemuAgentCallbacksPtr cb)
+              qemuAgentCallbacksPtr cb,
+              bool singleSync)
 {
     qemuAgentPtr mon;
 
@@ -681,6 +684,7 @@ qemuAgentOpen(virDomainObjPtr vm,
     }
     mon->vm = vm;
     mon->cb = cb;
+    mon->singleSync = singleSync;
 
     if (config->type != VIR_DOMAIN_CHR_TYPE_UNIX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -837,6 +841,7 @@ static int qemuAgentSend(qemuAgentPtr mon,
                                      _("Unable to wait on agent monitor "
                                        "condition"));
             }
+            mon->inSync = false;
             goto cleanup;
         }
     }
@@ -877,6 +882,9 @@ qemuAgentGuestSync(qemuAgentPtr mon)
     unsigned long long id;
     qemuAgentMessage sync_msg;
     int timeout = VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT;
+
+    if (mon->singleSync && mon->inSync)
+        return 0;
 
     /* if user specified a custom agent timeout that is lower than the
      * default timeout, use the shorter timeout instead */
@@ -922,6 +930,9 @@ qemuAgentGuestSync(qemuAgentPtr mon)
             goto cleanup;
         }
     }
+
+    if (mon->singleSync)
+        mon->inSync = true;
 
     ret = 0;
 
