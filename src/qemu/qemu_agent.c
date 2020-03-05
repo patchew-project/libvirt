@@ -1080,7 +1080,6 @@ static int
 qemuAgentCommand(qemuAgentPtr mon,
                  virJSONValuePtr cmd,
                  virJSONValuePtr *reply,
-                 bool needReply,
                  int seconds)
 {
     int ret = -1;
@@ -1089,17 +1088,16 @@ qemuAgentCommand(qemuAgentPtr mon,
     int await_event = mon->await_event;
 
     *reply = NULL;
+    memset(&msg, 0, sizeof(msg));
 
     if (!mon->running) {
         virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
                        _("Guest agent disappeared while executing command"));
-        return -1;
+        goto cleanup;
     }
 
     if (qemuAgentGuestSync(mon) < 0)
-        return -1;
-
-    memset(&msg, 0, sizeof(msg));
+        goto cleanup;
 
     if (!(cmdstr = virJSONValueToString(cmd, false)))
         goto cleanup;
@@ -1117,9 +1115,7 @@ qemuAgentCommand(qemuAgentPtr mon,
         /* If we haven't obtained any reply but we wait for an
          * event, then don't report this as error */
         if (!msg.rxObject) {
-            if (await_event && !needReply) {
-                VIR_DEBUG("Woken up by event %d", await_event);
-            } else {
+            if (!await_event) {
                 if (mon->running)
                     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                    _("Missing monitor reply object"));
@@ -1137,6 +1133,7 @@ qemuAgentCommand(qemuAgentPtr mon,
  cleanup:
     VIR_FREE(cmdstr);
     VIR_FREE(msg.txBuffer);
+    mon->await_event = QEMU_AGENT_EVENT_NONE;
 
     return ret;
 }
@@ -1237,7 +1234,7 @@ int qemuAgentShutdown(qemuAgentPtr mon,
         mon->await_event = QEMU_AGENT_EVENT_RESET;
     else
         mon->await_event = QEMU_AGENT_EVENT_SHUTDOWN;
-    ret = qemuAgentCommand(mon, cmd, &reply, false,
+    ret = qemuAgentCommand(mon, cmd, &reply,
                            VIR_DOMAIN_QEMU_AGENT_COMMAND_SHUTDOWN);
 
     virJSONValueFree(cmd);
@@ -1280,7 +1277,7 @@ int qemuAgentFSFreeze(qemuAgentPtr mon, const char **mountpoints,
     if (!cmd)
         goto cleanup;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     if (virJSONValueObjectGetNumberInt(reply, "return", &ret) < 0) {
@@ -1317,7 +1314,7 @@ int qemuAgentFSThaw(qemuAgentPtr mon)
     if (!cmd)
         return -1;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     if (virJSONValueObjectGetNumberInt(reply, "return", &ret) < 0) {
@@ -1354,7 +1351,7 @@ qemuAgentSuspend(qemuAgentPtr mon,
         return -1;
 
     mon->await_event = QEMU_AGENT_EVENT_SUSPEND;
-    ret = qemuAgentCommand(mon, cmd, &reply, false, mon->timeout);
+    ret = qemuAgentCommand(mon, cmd, &reply, mon->timeout);
 
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
@@ -1383,7 +1380,7 @@ qemuAgentArbitraryCommand(qemuAgentPtr mon,
     if (!(cmd = virJSONValueFromString(cmd_str)))
         goto cleanup;
 
-    if ((ret = qemuAgentCommand(mon, cmd, &reply, true, timeout)) < 0)
+    if ((ret = qemuAgentCommand(mon, cmd, &reply, timeout)) < 0)
         goto cleanup;
 
     if (!(*result = virJSONValueToString(reply, false)))
@@ -1410,7 +1407,7 @@ qemuAgentFSTrim(qemuAgentPtr mon,
     if (!cmd)
         return ret;
 
-    ret = qemuAgentCommand(mon, cmd, &reply, false, mon->timeout);
+    ret = qemuAgentCommand(mon, cmd, &reply, mon->timeout);
 
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
@@ -1431,7 +1428,7 @@ qemuAgentGetVCPUs(qemuAgentPtr mon,
     if (!(cmd = qemuAgentMakeCommand("guest-get-vcpus", NULL)))
         return -1;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     if (!(data = virJSONValueObjectGetArray(reply, "return"))) {
@@ -1544,7 +1541,7 @@ qemuAgentSetVCPUsCommand(qemuAgentPtr mon,
                                      NULL)))
         goto cleanup;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     /* All negative values are invalid. Return of 0 is bogus since we wouldn't
@@ -1699,7 +1696,7 @@ qemuAgentGetHostname(qemuAgentPtr mon,
     if (!cmd)
         return ret;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0) {
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0) {
         if (qemuAgentErrorCommandUnsupported(reply))
             ret = -2;
         goto cleanup;
@@ -1743,7 +1740,7 @@ qemuAgentGetTime(qemuAgentPtr mon,
     if (!cmd)
         return ret;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     if (virJSONValueObjectGetNumberUlong(reply, "return", &json_time) < 0) {
@@ -1808,7 +1805,7 @@ qemuAgentSetTime(qemuAgentPtr mon,
     if (!cmd)
         return ret;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     ret = 0;
@@ -1945,7 +1942,7 @@ qemuAgentGetFSInfo(qemuAgentPtr mon,
     if (!cmd)
         return ret;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0) {
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0) {
         if (qemuAgentErrorCommandUnsupported(reply))
             ret = -2;
         goto cleanup;
@@ -2096,7 +2093,7 @@ qemuAgentGetInterfaces(qemuAgentPtr mon,
     if (!(cmd = qemuAgentMakeCommand("guest-network-get-interfaces", NULL)))
         goto cleanup;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     if (!(ret_array = virJSONValueObjectGet(reply, "return"))) {
@@ -2273,7 +2270,7 @@ qemuAgentSetUserPassword(qemuAgentPtr mon,
                                      NULL)))
         goto cleanup;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0)
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0)
         goto cleanup;
 
     ret = 0;
@@ -2304,7 +2301,7 @@ qemuAgentGetUsers(qemuAgentPtr mon,
     if (!(cmd = qemuAgentMakeCommand("guest-get-users", NULL)))
         return -1;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0) {
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0) {
         if (qemuAgentErrorCommandUnsupported(reply))
             return -2;
         return -1;
@@ -2393,7 +2390,7 @@ qemuAgentGetOSInfo(qemuAgentPtr mon,
     if (!(cmd = qemuAgentMakeCommand("guest-get-osinfo", NULL)))
         return -1;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0) {
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0) {
         if (qemuAgentErrorCommandUnsupported(reply))
             return -2;
         return -1;
@@ -2448,7 +2445,7 @@ qemuAgentGetTimezone(qemuAgentPtr mon,
     if (!(cmd = qemuAgentMakeCommand("guest-get-timezone", NULL)))
         return -1;
 
-    if (qemuAgentCommand(mon, cmd, &reply, true, mon->timeout) < 0) {
+    if (qemuAgentCommand(mon, cmd, &reply, mon->timeout) < 0) {
         if (qemuAgentErrorCommandUnsupported(reply))
             return -2;
         return -1;
