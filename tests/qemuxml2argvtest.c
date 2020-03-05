@@ -2790,6 +2790,10 @@ mymain(void)
     DO_TEST_CAPS_LATEST("memory-hotplug-nvdimm-align");
     DO_TEST_CAPS_LATEST("memory-hotplug-nvdimm-pmem");
     DO_TEST_CAPS_LATEST("memory-hotplug-nvdimm-readonly");
+    DO_TEST("memory-hotplug-nvdimm-ppc64", QEMU_CAPS_KVM, QEMU_CAPS_DEVICE_NVDIMM,
+            QEMU_CAPS_NUMA, QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
+            QEMU_CAPS_OBJECT_MEMORY_RAM,
+            QEMU_CAPS_OBJECT_MEMORY_FILE);
 
     DO_TEST("machine-aeskeywrap-on-caps",
             QEMU_CAPS_AES_KEY_WRAP,
