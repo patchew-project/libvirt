@@ -37,6 +37,8 @@
 #include "virmdev.h"
 #include "virchrdev.h"
 #include "virobject.h"
+#include "internal.h"
+#include <glib-object.h>
 #include "logging/log_manager.h"
 #include "virdomainmomentobjlist.h"
 #include "virenum.h"
@@ -598,9 +600,9 @@ struct qemuProcessEvent {
 
 void qemuProcessEventFree(struct qemuProcessEvent *event);
 
-typedef struct _qemuDomainLogContext qemuDomainLogContext;
+#define QEMU_TYPE_DOMAIN_LOG_CONTEXT qemu_domain_log_context_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainLogContext, qemu_domain_log_context, QEMU, DOMAIN_LOG_CONTEXT, GObject);
 typedef qemuDomainLogContext *qemuDomainLogContextPtr;
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuDomainLogContext, virObjectUnref);
 
 typedef struct _qemuDomainSaveCookie qemuDomainSaveCookie;
 typedef qemuDomainSaveCookie *qemuDomainSaveCookiePtr;
