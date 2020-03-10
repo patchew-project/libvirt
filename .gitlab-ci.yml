@@ -50,19 +50,19 @@ ubuntu-1804:
 # platform, and s390x as an interesting big endian platform. We split
 # between Debian 10 and sid to help detect problems on the horizon.
 
-debian-10-cross-s390x:
+s390x-cross-debian-10:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-10-cross-s390x:latest
 
-debian-sid-cross-armv7l:
+armv7l-cross-debian-sid:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-armv7l:latest
 
-fedora-30-cross-mingw32:
+mingw32-cross-fedora-30:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw32:latest
 
-fedora-30-cross-mingw64:
+mingw64-cross-fedora-30:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw64:latest
 
