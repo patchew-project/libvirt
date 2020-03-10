@@ -1,6 +1,38 @@
 stages:
   - website
+  - native_build
   - cross_build
+
+
+.native_build_job_template: &native_build_job_definition
+  stage: native_build
+  script:
+    - mkdir build
+    - cd build
+    - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
+    - make -j $(getconf _NPROCESSORS_ONLN) syntax-check
+    - make -j $(getconf _NPROCESSORS_ONLN) distcheck
+
+debian-9:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-debian-9:latest
+
+centos-7:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-centos-7:latest
+
+fedora-31:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+
+fedora-rawhide:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-rawhide:latest
+
+ubuntu-1804:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-ubuntu-1804:latest
+
 
 .cross_build_job_template: &cross_build_job_definition
   stage: cross_build
@@ -9,6 +41,7 @@ stages:
     - cd build
     - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
     - make -j $(getconf _NPROCESSORS_ONLN)
+
 
 # There are many possible cross-arch jobs we could do, but to preserve
 # limited CI resource time allocated to users, we cut it down to two
@@ -24,6 +57,14 @@ debian-10-cross-s390x:
 debian-sid-cross-armv7l:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-armv7l:latest
+
+fedora-30-cross-mingw32:
+  <<: *cross_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw32:latest
+
+fedora-30-cross-mingw64:
+  <<: *cross_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw64:latest
 
 # This artifact published by this job is downloaded by libvirt.org to
 # be deployed to the web root:
