@@ -5,29 +5,12 @@
     - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
     - make -j $(getconf _NPROCESSORS_ONLN)
 
-# We could run every arch on every versions, but it is a little
-# overkill. Instead we split jobs evenly across 9, 10 and sid
-# to achieve reasonable cross-coverage.
-
-debian-9-cross-armv6l:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-9-cross-armv6l:latest
-
-debian-9-cross-mips64el:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-9-cross-mips64el:latest
-
-debian-9-cross-mips:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-9-cross-mips:latest
-
-debian-10-cross-aarch64:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-10-cross-aarch64:latest
-
-debian-10-cross-ppc64le:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-10-cross-ppc64le:latest
+# There are many possible cross-arch jobs we could do, but to preserve
+# limited CI resource time allocated to users, we cut it down to two
+# interesting variants. The default jobs are x86_64, which means 64-bit
+# and little endian. We thus pick armv7l as an interesting 32-bit
+# platform, and s390x as an interesting big endian platform. We split
+# between Debian 10 and sid to help detect problems on the horizon.
 
 debian-10-cross-s390x:
   <<: *job_definition
@@ -36,14 +19,6 @@ debian-10-cross-s390x:
 debian-sid-cross-armv7l:
   <<: *job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-armv7l:latest
-
-debian-sid-cross-i686:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-i686:latest
-
-debian-sid-cross-mipsel:
-  <<: *job_definition
-  image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-mipsel:latest
 
 # This artifact published by this job is downloaded by libvirt.org to
 # be deployed to the web root:
