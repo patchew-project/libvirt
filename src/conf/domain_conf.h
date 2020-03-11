@@ -3132,7 +3132,7 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);
 char *virDomainDefFormat(virDomainDefPtr def,
                          virDomainXMLOptionPtr xmlopt,
                          unsigned int flags)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+    ATTRIBUTE_NONNULL(1);
 char *virDomainObjFormat(virDomainObjPtr obj,
                          virDomainXMLOptionPtr xmlopt,
                          unsigned int flags)
