@@ -16582,6 +16582,13 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (virDomainMemoryTargetDefParseXML(node, ctxt, def) < 0)
         goto error;
 
+    if (def->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
+        ARCH_IS_PPC64(dom->os.arch) && def->labelsize == 0) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("label size is required for NVDIMM device"));
+        goto error;
+    }
+
     if (virDomainDeviceInfoParseXML(xmlopt, memdevNode,
                                     &def->info, flags) < 0)
         goto error;
