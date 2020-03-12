@@ -1930,7 +1930,7 @@ static void
 qemuProcessMonitorLogFree(void *opaque)
 {
     qemuDomainLogContextPtr logCtxt = opaque;
-    virObjectUnref(logCtxt);
+    g_clear_object(&logCtxt);
 }
 
 
@@ -1984,7 +1984,7 @@ qemuConnectMonitor(virQEMUDriverPtr driver, virDomainObjPtr vm, int asyncJob,
                           driver);
 
     if (mon && logCtxt) {
-        virObjectRef(logCtxt);
+        g_object_ref(logCtxt);
         qemuMonitorSetDomainLog(mon,
                                 qemuProcessMonitorReportLogError,
                                 logCtxt,
