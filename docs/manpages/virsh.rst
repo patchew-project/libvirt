@@ -1254,18 +1254,19 @@ phases.  Initially, the job must copy all data from the source, and
 during this phase, the job can only be canceled to revert back to the
 source disk, with no guarantees about the destination.  After this phase
 completes, both the source and the destination remain mirrored until a
-call to ``blockjob`` with the *--abort* and *--pivot* flags pivots over
-to the copy, or a call without *--pivot* leaves the destination as a
-faithful copy of that point in time.  However, if *--wait* is specified,
-then this command will block until the mirroring phase begins, or cancel
-the operation if the optional *timeout* in seconds elapses or SIGINT is
-sent (usually with ``Ctrl-C``).  Using *--verbose* along with *--wait*
-will produce periodic status updates.  Using *--pivot* (similar to
-``blockjob`` *--pivot*) or *--finish* (similar to ``blockjob`` *--abort*)
-implies *--wait*, and will additionally end the job cleanly rather than
-leaving things in the mirroring phase.  If job cancellation is triggered
-by timeout or by *--finish*, *--async* will return control to the user
-as fast as possible, otherwise the command may continue to block a little
+call is issued to ``blockjob`` with either the *--abort* flag, which
+leaves the destination as a faithful copy of that point in time; or the
+*--pivot* flag, which pivots over to the copy on the destination.
+However, if *--wait* is specified, then this command will block until
+the mirroring phase begins, or cancel the operation if the optional
+*--timeout* in seconds elapses or SIGINT is sent (usually with
+``Ctrl-C``).  Using *--verbose* along with *--wait* will produce
+periodic status updates.  Using *--pivot* (similar to ``blockjob``
+*--pivot*) or *--finish* (similar to ``blockjob`` *--abort*) implies
+*--wait*, and will additionally end the job cleanly rather than leaving
+things in the mirroring phase.  If job cancellation is triggered by
+timeout or by *--finish*, *--async* will return control to the user as
+fast as possible, otherwise the command may continue to block a little
 while longer until the job has actually cancelled.
 
 *path* specifies fully-qualified path of the disk.
