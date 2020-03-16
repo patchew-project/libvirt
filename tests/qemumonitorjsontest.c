@@ -3235,6 +3235,7 @@ mymain(void)
     DO_TEST_CPU_INFO("x86-full", 11);
     DO_TEST_CPU_INFO("x86-node-full", 8);
     DO_TEST_CPU_INFO_FAST("x86-full-fast", 11);
+    DO_TEST_CPU_INFO_FAST("x86-dies", 16);
 
     DO_TEST_CPU_INFO("ppc64-basic", 24);
     DO_TEST_CPU_INFO("ppc64-hotplug-1", 24);
