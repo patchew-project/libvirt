@@ -2406,7 +2406,7 @@ qemuAgentGetUsers(qemuAgentPtr agent,
             return -1;
     }
 
-    return ndata;
+    return 0;
 }
 
 /* Returns: 0 on success
