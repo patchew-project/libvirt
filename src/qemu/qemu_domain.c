@@ -5262,8 +5262,26 @@ qemuDomainDefValidateFeatures(const virDomainDef *def,
             }
             break;
 
-        case VIR_DOMAIN_FEATURE_ACPI:
         case VIR_DOMAIN_FEATURE_APIC:
+            /* the <apic/> declaration is harmless for ppc64, but
+             * its 'eoi' attribute isn't. To detect if 'eoi' was
+             * present in the XML we can check the tristate switch
+             * of def->apic_eoi */
+            if (def->features[i] != VIR_TRISTATE_SWITCH_ABSENT &&
+                def->apic_eoi != VIR_TRISTATE_SWITCH_ABSENT &&
+                ARCH_IS_PPC64(def->os.arch)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("The 'eoi' attribute of the '%s' feature "
+                                 "is not supported for architecture '%s' or "
+                                 "machine type '%s'"),
+                                 featureName,
+                                 virArchToString(def->os.arch),
+                                 def->os.machine);
+                 return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_FEATURE_ACPI:
         case VIR_DOMAIN_FEATURE_PAE:
         case VIR_DOMAIN_FEATURE_HAP:
         case VIR_DOMAIN_FEATURE_VIRIDIAN:
