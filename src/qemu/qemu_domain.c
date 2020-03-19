@@ -5282,6 +5282,7 @@ qemuDomainDefValidateFeatures(const virDomainDef *def,
             break;
 
         case VIR_DOMAIN_FEATURE_PVSPINLOCK:
+        case VIR_DOMAIN_FEATURE_PMU:
             if (def->features[i] != VIR_TRISTATE_SWITCH_ABSENT &&
                 ARCH_IS_PPC64(def->os.arch)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -5301,7 +5302,6 @@ qemuDomainDefValidateFeatures(const virDomainDef *def,
         case VIR_DOMAIN_FEATURE_PRIVNET:
         case VIR_DOMAIN_FEATURE_HYPERV:
         case VIR_DOMAIN_FEATURE_CAPABILITIES:
-        case VIR_DOMAIN_FEATURE_PMU:
         case VIR_DOMAIN_FEATURE_MSRS:
         case VIR_DOMAIN_FEATURE_LAST:
             break;
