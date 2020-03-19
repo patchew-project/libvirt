@@ -15862,18 +15862,18 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
             }
 
             tmpPath = g_strdup(next->path);
+
+            if (virDevMapperGetTargets(next->path, &targetPaths) < 0 &&
+                errno != ENOSYS && errno != EBADF) {
+                virReportSystemError(errno,
+                                     _("Unable to get devmapper targets for %s"),
+                                     next->path);
+                return -1;
+            }
         }
 
         if (virStringListAdd(&paths, tmpPath) < 0)
             return -1;
-
-        if (virDevMapperGetTargets(next->path, &targetPaths) < 0 &&
-            errno != ENOSYS && errno != EBADF) {
-            virReportSystemError(errno,
-                                 _("Unable to get devmapper targets for %s"),
-                                 next->path);
-            return -1;
-        }
 
         if (virStringListMerge(&paths, &targetPaths) < 0)
             return -1;
