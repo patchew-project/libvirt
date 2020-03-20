@@ -1261,10 +1261,12 @@ int virLXCProcessStart(virConnectPtr conn,
             goto cleanup;
 
         res->backend = VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT;
-        res->partition = g_strdup("/machine");
-
         vm->def->resource = res;
     }
+
+    if (vm->def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_NONE &&
+        !vm->def->resource->partition)
+        vm->def->resource->partition = g_strdup("/machine");
 
     logfile = g_strdup_printf("%s/%s.log", cfg->logDir, vm->def->name);
 

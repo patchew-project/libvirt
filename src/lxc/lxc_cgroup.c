@@ -380,6 +380,33 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
     return 0;
 }
 
+int virLXCCgroupMode(virDomainResourceBackend backend,
+                     virCgroupRegister *cgreg)
+{
+    switch (backend) {
+    case VIR_DOMAIN_RESOURCE_BACKEND_NONE:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Resource backend '%s' not available"),
+                       virDomainResourceBackendTypeToString(backend));
+        return -1;
+    case VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT:
+        *cgreg = VIR_CGROUP_REGISTER_DEFAULT;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_MACHINED:
+        *cgreg = VIR_CGROUP_REGISTER_MACHINED;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_CGROUPFS:
+        *cgreg = VIR_CGROUP_REGISTER_DIRECT;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_LAST:
+    default:
+        virReportEnumRangeError(virDomainResourceBackend, backend);
+        return -1;
+    }
+
+    return 0;
+}
+
 
 virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                                 pid_t initpid,
@@ -387,18 +414,14 @@ virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                                 int *nicindexes)
 {
     virCgroupPtr cgroup = NULL;
+    virCgroupRegister reg;
     char *machineName = virLXCDomainGetMachineName(def, 0);
 
     if (!machineName)
         goto cleanup;
 
-    if (def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Resource backend '%s' not available"),
-                       virDomainResourceBackendTypeToString(
-                           def->resource->backend));
+    if (virLXCCgroupMode(def->resource->backend, &reg) < 0)
         goto cleanup;
-    }
 
     if (def->resource->partition[0] != '/') {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -414,7 +437,7 @@ virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                             initpid,
                             true,
                             nnicindexes, nicindexes,
-                            VIR_CGROUP_REGISTER_DEFAULT,
+                            &reg,
                             def->resource->partition,
                             -1,
                             0,
