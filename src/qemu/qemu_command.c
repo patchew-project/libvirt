@@ -9662,7 +9662,8 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
     int spice = 0;
     int egl_headless = 0;
 
-    if (!virQEMUDriverIsPrivileged(driver)) {
+    if (!virQEMUDriverIsPrivileged(driver) ||
+        (def->resource && def->resource->backend == VIR_DOMAIN_RESOURCE_BACKEND_NONE)) {
         /* If we have no cgroups then we can have no tunings that
          * require them */
 
@@ -9670,13 +9671,13 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
             virMemoryLimitIsSet(def->mem.soft_limit) ||
             virMemoryLimitIsSet(def->mem.swap_hard_limit)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("Memory tuning is not available in session mode"));
+                           _("Memory tuning is not available without cgroups"));
             return -1;
         }
 
         if (def->blkio.weight) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("Block I/O tuning is not available in session mode"));
+                           _("Block I/O tuning is not available without cgroups"));
             return -1;
         }
 
@@ -9686,7 +9687,7 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
             def->cputune.emulator_quota || def->cputune.iothread_period ||
             def->cputune.iothread_quota) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("CPU tuning is not available in session mode"));
+                           _("CPU tuning is not available without cgroups"));
             return -1;
         }
     }

@@ -917,6 +917,46 @@ qemuSetupCpuCgroup(virDomainObjPtr vm)
 }
 
 
+static int qemuGetCgroupMode(virDomainObjPtr vm,
+                             virDomainResourceBackend backend,
+                             virCgroupRegister *cgreg)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool avail = virQEMUDriverIsPrivileged(priv->driver) &&
+        virCgroupAvailable();
+
+    switch (backend) {
+    case VIR_DOMAIN_RESOURCE_BACKEND_NONE:
+        return 0;
+    case VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT:
+        if (!avail)
+            return 0;
+        *cgreg = VIR_CGROUP_REGISTER_DEFAULT;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_MACHINED:
+        if (!avail)
+            goto unsupported;
+        *cgreg = VIR_CGROUP_REGISTER_MACHINED;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_CGROUPFS:
+        if (!avail)
+            goto unsupported;
+        *cgreg = VIR_CGROUP_REGISTER_DIRECT;
+        break;
+    case VIR_DOMAIN_RESOURCE_BACKEND_LAST:
+    default:
+        virReportEnumRangeError(virDomainResourceBackend, backend);
+    }
+
+    return 1;
+
+ unsupported:
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                   _("Resource backend '%s' not available"),
+                   virDomainResourceBackendTypeToString(backend));
+    return -1;
+}
+
 static int
 qemuInitCgroup(virDomainObjPtr vm,
                size_t nnicindexes,
@@ -925,11 +965,17 @@ qemuInitCgroup(virDomainObjPtr vm,
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
+    virCgroupRegister reg;
+    int rv;
 
-    if (!virQEMUDriverIsPrivileged(priv->driver))
-        goto done;
-
-    if (!virCgroupAvailable())
+    rv = qemuGetCgroupMode(vm,
+                           vm->def->resource ?
+                           vm->def->resource->backend :
+                           VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT,
+                           &reg);
+    if (rv < 0)
+        goto cleanup;
+    if (rv == 0)
         goto done;
 
     virCgroupFree(&priv->cgroup);
@@ -941,18 +987,12 @@ qemuInitCgroup(virDomainObjPtr vm,
             goto cleanup;
 
         res->backend = VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT;
-        res->partition = g_strdup("/machine");
-
         vm->def->resource = res;
     }
 
-    if (vm->def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Resource backend '%s' not available"),
-                       virDomainResourceBackendTypeToString(
-                           vm->def->resource->backend));
-        goto cleanup;
-    }
+    if (vm->def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_NONE &&
+        !vm->def->resource->partition)
+        vm->def->resource->partition = g_strdup("/machine");
 
     if (vm->def->resource->partition[0] != '/') {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -968,7 +1008,7 @@ qemuInitCgroup(virDomainObjPtr vm,
                             vm->pid,
                             false,
                             nnicindexes, nicindexes,
-                            VIR_CGROUP_REGISTER_DEFAULT,
+                            &reg,
                             vm->def->resource->partition,
                             cfg->cgroupControllers,
                             cfg->maxThreadsPerProc,
