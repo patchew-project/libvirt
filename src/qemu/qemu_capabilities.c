@@ -567,6 +567,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "query-named-block-nodes.flat",
               "blockdev-snapshot.allow-write-only-overlay",
               "blockdev-reopen",
+              "virtfs-multidevs",
     );
 
 
@@ -4837,6 +4838,10 @@ virQEMUCapsInitQMPVersionCaps(virQEMUCapsPtr qemuCaps)
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT);
     }
+
+    /* -virtfs multidevs option is supported since QEMU 4.2 */
+    if (qemuCaps->version >= 4002000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_VIRTFS_MULTIDEVS);
 }
 
 
