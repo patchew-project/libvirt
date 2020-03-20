@@ -502,6 +502,14 @@ VIR_ENUM_IMPL(virDomainFSModel,
               "virtio-non-transitional",
 );
 
+VIR_ENUM_IMPL(virDomainFSMultidevs,
+              VIR_DOMAIN_FS_MULTIDEVS_LAST,
+              "default",
+              "remap",
+              "forbid",
+              "warn",
+);
+
 VIR_ENUM_IMPL(virDomainFSCacheMode,
               VIR_DOMAIN_FS_CACHE_MODE_LAST,
               "default",
@@ -11385,6 +11393,7 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *usage = NULL;
     g_autofree char *units = NULL;
     g_autofree char *model = NULL;
+    g_autofree char *multidevs = NULL;
 
     ctxt->node = node;
 
@@ -11421,6 +11430,17 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
                            _("unknown model '%s'"), model);
             goto error;
         }
+    }
+
+    multidevs = virXMLPropString(node, "multidevs");
+    if (multidevs) {
+        if ((def->multidevs = virDomainFSMultidevsTypeFromString(multidevs)) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown multidevs '%s'"), multidevs);
+            goto error;
+        }
+    } else {
+        def->multidevs = VIR_DOMAIN_FS_MULTIDEVS_DEFAULT;
     }
 
     if (virDomainParseScaledValue("./space_hard_limit[1]",
@@ -25380,6 +25400,7 @@ virDomainFSDefFormat(virBufferPtr buf,
     const char *accessmode = virDomainFSAccessModeTypeToString(def->accessmode);
     const char *fsdriver = virDomainFSDriverTypeToString(def->fsdriver);
     const char *wrpolicy = virDomainFSWrpolicyTypeToString(def->wrpolicy);
+    const char *multidevs = virDomainFSMultidevsTypeToString(def->multidevs);
     const char *src = def->src->path;
     g_auto(virBuffer) driverAttrBuf = VIR_BUFFER_INITIALIZER;
     g_auto(virBuffer) driverBuf = VIR_BUFFER_INIT_CHILD(buf);
@@ -25398,6 +25419,12 @@ virDomainFSDefFormat(virBufferPtr buf,
         return -1;
     }
 
+    if (!multidevs) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected multidevs %d"), def->multidevs);
+        return -1;
+    }
+
     virBufferAsprintf(buf,
                       "<filesystem type='%s' accessmode='%s'",
                       type, accessmode);
@@ -25405,6 +25432,8 @@ virDomainFSDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, " model='%s'",
                           virDomainFSModelTypeToString(def->model));
     }
+    if (def->multidevs)
+        virBufferAsprintf(buf, " multidevs='%s'", multidevs);
     virBufferAddLit(buf, ">\n");
 
     virBufferAdjustIndent(buf, 2);
