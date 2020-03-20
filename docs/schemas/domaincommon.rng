@@ -1126,9 +1126,20 @@
 
   <define name="respartition">
     <element name="resource">
-      <element name="partition">
-        <ref name="absFilePath"/>
-      </element>
+      <optional>
+        <attribute name="backend">
+          <choice>
+            <value>none</value>
+            <value>cgroupfs</value>
+            <value>machined</value>
+          </choice>
+        </attribute>
+      </optional>
+      <optional>
+        <element name="partition">
+          <ref name="absFilePath"/>
+        </element>
+      </optional>
     </element>
   </define>
 

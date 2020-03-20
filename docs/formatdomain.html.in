@@ -1445,7 +1445,7 @@
     </p>
 <pre>
 ...
-&lt;resource&gt;
+&lt;resource backend='none|cgroupfs|machined'&gt;
   &lt;partition&gt;/virtualmachines/production&lt;/partition&gt;
 &lt;/resource&gt;
 ...
@@ -1455,7 +1455,29 @@
       Resource partitions are currently supported by the QEMU and
       LXC drivers, which map partition paths to cgroups directories,
       in all mounted controllers. <span class="since">Since 1.0.5</span>
+      There is a choice of implementations to use for resource partitions
+      controlled via the optional <code>backend</code> attribute.
+      <span class="since">Since 6.2.0</span>. It accepts the values
     </p>
+
+    <ul>
+      <dt>none</dt>
+      <dd>Resource management in libvirt is disabled, with the APIs
+        returning an error indicating the functionality is not available.
+        The QEMU will will remain in whatever cgroup the libvirt daemon
+        was in. On systemd hosts, this will result in QEMU being
+        terminated at the same time as the privileged libvirt management
+        daemon which launched them.</dd>
+      <dt>cgroupfs</dt>
+      <dd>Cgroups will be directly created via the cgroups virtual filesystem.
+        This is not recommended for use in scenarios where systemd is in
+        charge of the cgroup hierarchy, unless the resource partition points
+        to a subtree that systemd has delegated administrative for.</dd>
+      <dt>machined</dt>
+      <dd>Systemd machined will be called to indirectly create cgroups.
+        This is recommended for any host where systemd is managing the
+        cgroup hierarchy.</dd>
+    </ul>
 
     <h3><a id="elementsCPU">CPU model and topology</a></h3>
 

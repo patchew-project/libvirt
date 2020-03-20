@@ -4,7 +4,7 @@
   <memory unit='KiB'>1048576</memory>
   <currentMemory unit='KiB'>1048576</currentMemory>
   <vcpu placement='static'>1</vcpu>
-  <resource>
+  <resource backend='cgroupfs'>
     <partition>/machine</partition>
   </resource>
   <os>

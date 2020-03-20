@@ -575,6 +575,8 @@ virDomainRedirdevBusTypeToString;
 virDomainRedirdevDefFind;
 virDomainRedirdevDefFree;
 virDomainRedirdevDefRemove;
+virDomainResourceBackendTypeFromString;
+virDomainResourceBackendTypeToString;
 virDomainRNGBackendTypeToString;
 virDomainRNGDefFree;
 virDomainRNGFind;

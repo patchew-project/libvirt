@@ -1244,6 +1244,13 @@ VIR_ENUM_IMPL(virDomainOsDefFirmware,
               "efi",
 );
 
+VIR_ENUM_IMPL(virDomainResourceBackend,
+              VIR_DOMAIN_RESOURCE_BACKEND_LAST,
+              "default",
+              "none",
+              "cgroupfs",
+              "machined");
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob);
@@ -19100,17 +19107,24 @@ virDomainResourceDefParse(xmlNodePtr node,
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     virDomainResourceDefPtr def = NULL;
+    g_autofree char *reg = NULL;
 
     ctxt->node = node;
 
     if (VIR_ALLOC(def) < 0)
         goto error;
 
-    /* Find out what type of virtualization to use */
-    if (!(def->partition = virXPathString("string(./partition)", ctxt))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("missing resource partition attribute"));
-        goto error;
+    def->partition = virXPathString("string(./partition)", ctxt);
+
+    reg = virXMLPropString(node, "backend");
+    if (reg != NULL) {
+        if ((def->backend = virDomainResourceBackendTypeFromString(reg)) <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "%s", _("Invalid backend attribute"));
+            goto error;
+        }
+    } else {
+        def->backend = VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT;
     }
 
     return def;
@@ -27983,11 +27997,23 @@ static void
 virDomainResourceDefFormat(virBufferPtr buf,
                            virDomainResourceDefPtr def)
 {
-    virBufferAddLit(buf, "<resource>\n");
-    virBufferAdjustIndent(buf, 2);
-    virBufferEscapeString(buf, "<partition>%s</partition>\n", def->partition);
-    virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</resource>\n");
+    if (def->backend == VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT &&
+        def->partition == NULL)
+        return;
+
+    virBufferAddLit(buf, "<resource");
+    if (def->backend != VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT)
+        virBufferAsprintf(buf, " backend='%s'", virDomainResourceBackendTypeToString(def->backend));
+
+    if (def->partition) {
+        virBufferAddLit(buf, ">\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferEscapeString(buf, "<partition>%s</partition>\n", def->partition);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</resource>\n");
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
 }
 
 

@@ -940,9 +940,18 @@ qemuInitCgroup(virDomainObjPtr vm,
         if (VIR_ALLOC(res) < 0)
             goto cleanup;
 
+        res->backend = VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT;
         res->partition = g_strdup("/machine");
 
         vm->def->resource = res;
+    }
+
+    if (vm->def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Resource backend '%s' not available"),
+                       virDomainResourceBackendTypeToString(
+                           vm->def->resource->backend));
+        goto cleanup;
     }
 
     if (vm->def->resource->partition[0] != '/') {
@@ -1060,6 +1069,11 @@ qemuConnectCgroup(virDomainObjPtr vm)
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
     int ret = -1;
+
+    if (vm->def->resource &&
+        vm->def->resource->backend == VIR_DOMAIN_RESOURCE_BACKEND_NONE) {
+        goto done;
+    }
 
     if (!virQEMUDriverIsPrivileged(priv->driver))
         goto done;

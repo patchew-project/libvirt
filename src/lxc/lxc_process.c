@@ -1260,6 +1260,7 @@ int virLXCProcessStart(virConnectPtr conn,
         if (VIR_ALLOC(res) < 0)
             goto cleanup;
 
+        res->backend = VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT;
         res->partition = g_strdup("/machine");
 
         vm->def->resource = res;

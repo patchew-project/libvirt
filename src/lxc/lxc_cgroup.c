@@ -392,6 +392,14 @@ virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
     if (!machineName)
         goto cleanup;
 
+    if (def->resource->backend != VIR_DOMAIN_RESOURCE_BACKEND_DEFAULT) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Resource backend '%s' not available"),
+                       virDomainResourceBackendTypeToString(
+                           def->resource->backend));
+        goto cleanup;
+    }
+
     if (def->resource->partition[0] != '/') {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Resource partition '%s' must start with '/'"),
