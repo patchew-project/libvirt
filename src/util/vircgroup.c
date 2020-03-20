@@ -1228,6 +1228,7 @@ virCgroupNewMachine(const char *name,
                     bool isContainer,
                     size_t nnicindexes,
                     int *nicindexes,
+                    virCgroupRegister *reg,
                     const char *partition,
                     int controllers,
                     unsigned int maxthreads,
@@ -1237,29 +1238,43 @@ virCgroupNewMachine(const char *name,
 
     *group = NULL;
 
-    if ((rv = virCgroupNewMachineSystemd(name,
-                                         drivername,
-                                         uuid,
-                                         rootdir,
-                                         pidleader,
-                                         isContainer,
-                                         nnicindexes,
-                                         nicindexes,
-                                         partition,
-                                         controllers,
-                                         maxthreads,
-                                         group)) == 0)
-        return 0;
+    if (*reg == VIR_CGROUP_REGISTER_DEFAULT ||
+        *reg == VIR_CGROUP_REGISTER_MACHINED) {
+        if ((rv = virCgroupNewMachineSystemd(name,
+                                             drivername,
+                                             uuid,
+                                             rootdir,
+                                             pidleader,
+                                             isContainer,
+                                             nnicindexes,
+                                             nicindexes,
+                                             partition,
+                                             controllers,
+                                             maxthreads,
+                                             group)) == 0) {
+            *reg = VIR_CGROUP_REGISTER_MACHINED;
+            return 0;
+        }
 
-    if (rv == -1)
-        return -1;
+        if (rv == -1)
+            return -1;
 
-    return virCgroupNewMachineManual(name,
-                                     drivername,
-                                     pidleader,
-                                     partition,
-                                     controllers,
-                                     group);
+        if (*reg == VIR_CGROUP_REGISTER_MACHINED) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "%s", _("Systemd machined requested, but not available"));
+            return -1;
+        }
+    }
+
+    rv = virCgroupNewMachineManual(name,
+                                   drivername,
+                                   pidleader,
+                                   partition,
+                                   controllers,
+                                   group);
+    if (rv == 0)
+        *reg = VIR_CGROUP_REGISTER_DIRECT;
+    return rv;
 }
 
 

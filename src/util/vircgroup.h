@@ -87,6 +87,12 @@ virCgroupNewDetectMachine(const char *name,
                           virCgroupPtr *group)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+typedef enum {
+    VIR_CGROUP_REGISTER_DEFAULT,
+    VIR_CGROUP_REGISTER_DIRECT,
+    VIR_CGROUP_REGISTER_MACHINED,
+} virCgroupRegister;
+
 int virCgroupNewMachine(const char *name,
                         const char *drivername,
                         const unsigned char *uuid,
@@ -95,6 +101,7 @@ int virCgroupNewMachine(const char *name,
                         bool isContainer,
                         size_t nnicindexes,
                         int *nicindexes,
+                        virCgroupRegister *reg,
                         const char *partition,
                         int controllers,
                         unsigned int maxthreads,
