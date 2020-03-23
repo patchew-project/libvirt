@@ -5100,9 +5100,6 @@ virQEMUCapsInitQMPSingle(virQEMUCapsPtr qemuCaps,
         ret = virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon);
 
  cleanup:
-    if (ret < 0)
-        virQEMUCapsLogProbeFailure(qemuCaps->binary);
-
     qemuProcessQMPFree(proc);
     return ret;
 }
@@ -5114,17 +5111,18 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    uid_t runUid,
                    gid_t runGid)
 {
-    if (virQEMUCapsInitQMPSingle(qemuCaps, libDir, runUid, runGid, false) < 0)
+    if (virQEMUCapsInitQMPSingle(qemuCaps, libDir, runUid, runGid, false) < 0) {
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
         return -1;
+    }
 
     /*
      * If KVM was enabled during the first probe, we need to explicitly probe
      * for TCG capabilities by asking the same binary again and turning KVM
      * off.
      */
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
-        virQEMUCapsInitQMPSingle(qemuCaps, libDir, runUid, runGid, true) < 0)
-        return -1;
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+        virQEMUCapsInitQMPSingle(qemuCaps, libDir, runUid, runGid, true);
 
     return 0;
 }
