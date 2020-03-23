@@ -67,9 +67,9 @@ qemuVirtioFSCreateLogFilename(virQEMUDriverConfigPtr cfg,
 {
     g_autofree char *name = NULL;
 
-    name = g_strdup_printf("%s-%s", def->name, alias);
+    name = g_strdup_printf("%s-%s.log.fs", def->name, alias);
 
-    return virFileBuildPath(cfg->logDir, name, "-virtiofsd.log");
+    return virFileBuildPath(cfg->logDir, name, NULL);
 }
 
 
