@@ -285,7 +285,7 @@ qemuVirtioFSStop(virQEMUDriverPtr driver G_GNUC_UNUSED,
 
     rc = virPidFileReadPathIfAlive(pidfile, &pid, NULL);
     if (rc >= 0 && pid != (pid_t) -1)
-        virProcessKillPainfully(pid, true);
+        virProcessKillPainfully(-pid, true);
 
     if (unlink(pidfile) < 0 &&
         errno != ENOENT) {
