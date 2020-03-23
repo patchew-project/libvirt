@@ -232,7 +232,7 @@
       <dt><code>host-model</code></dt>
       <dd>
         If <code>host-model</code> is supported by the hypervisor, the
-        <code>mode</code> describes the guest CPU which will be used when
+        <code>model</code> describes the guest CPU which will be used when
         starting a domain with <code>host-model</code> CPU. The hypervisor
         specifics (such as unsupported CPU models or features, machine type,
         etc.) may be accounted for in this guest CPU specification and thus
