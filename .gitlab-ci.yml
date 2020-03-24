@@ -1,6 +1,34 @@
 stages:
   - prebuild
+  - native_build
   - cross_build
+  - native_build_extra
+
+
+# Common templates
+
+# Native jobs that run every time, pre/post merge and on any branch
+.native_build_job_template: &native_build_job_definition
+  stage: native_build
+  script:
+    - mkdir build
+    - cd build
+    - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
+    - make -j $(getconf _NPROCESSORS_ONLN) syntax-check
+    - make -j $(getconf _NPROCESSORS_ONLN) distcheck
+
+# Native jobs that will only run post merge on master branch
+# Switch to running against merge requests later
+.native_build_extra_job_template: &native_build_extra_job_definition
+  stage: native_build_extra
+  script:
+    - mkdir build
+    - cd build
+    - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
+    - $MAKE -j $(getconf _NPROCESSORS_ONLN) check
+  only:
+    refs:
+     - master
 
 .cross_build_job_template: &cross_build_job_definition
   stage: cross_build
@@ -9,6 +37,56 @@ stages:
     - cd build
     - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
     - make -j $(getconf _NPROCESSORS_ONLN)
+
+
+# Native architecture build + test jobs
+
+x64-debian-9:
+  <<: *native_build_extra_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-debian-9:latest
+
+x64-debian-10:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-debian-10:latest
+
+x64-debian-sid:
+  <<: *native_build_extra_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-debian-sid:latest
+
+x64-centos-7:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-centos-7:latest
+
+x64-centos-8:
+  <<: *native_build_extra_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-centos-8:latest
+
+x64-fedora-30:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-30:latest
+
+x64-fedora-31:
+  <<: *native_build_extra_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+
+x64-fedora-rawhide:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-rawhide:latest
+
+x64-opensuse-151:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-opensuse-151:latest
+
+x64-ubuntu-1604:
+  <<: *native_build_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-ubuntu-1604:latest
+
+x64-ubuntu-1804:
+  <<: *native_build_extra_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-ubuntu-1804:latest
+
+
+# Cross compiled build jobs
 
 # There are many possible cross-arch jobs we could do, but to preserve
 # limited CI resource time allocated to users, we cut it down to two
