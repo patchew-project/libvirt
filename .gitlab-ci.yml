@@ -17,11 +17,11 @@ stages:
 # platform, and s390x as an interesting big endian platform. We split
 # between Debian 10 and sid to help detect problems on the horizon.
 
-debian-10-cross-s390x:
+s390x-debian-10:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-10-cross-s390x:latest
 
-debian-sid-cross-armv7l:
+armv7l-debian-sid:
   <<: *cross_build_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-armv7l:latest
 
