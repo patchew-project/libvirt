@@ -6,6 +6,7 @@ stages:
 
 variables:
   MAKE: make
+  GIT_DEPTH: 100
 
 
 # Common templates
