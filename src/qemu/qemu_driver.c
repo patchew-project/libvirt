@@ -935,7 +935,7 @@ qemuStateInitialize(bool privileged,
             goto error;
     }
 
-    qemuGetMemoryBackingBasePath(cfg, &memoryBackingPath);
+    qemuGetMemoryBackingBasePath(qemu_driver, &memoryBackingPath);
 
     if (virFileMakePath(memoryBackingPath) < 0) {
         virReportSystemError(errno,

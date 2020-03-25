@@ -399,12 +399,12 @@ int qemuGetDomainHupageMemPath(virQEMUDriverPtr driver,
                                unsigned long long pagesize,
                                char **memPath);
 
-void qemuGetMemoryBackingBasePath(virQEMUDriverConfigPtr cfg,
+void qemuGetMemoryBackingBasePath(virQEMUDriverPtr driver,
                                   char **path);
-int qemuGetMemoryBackingDomainPath(const virDomainDef *def,
-                                   virQEMUDriverConfigPtr cfg,
+int qemuGetMemoryBackingDomainPath(virQEMUDriverPtr driver,
+                                   const virDomainDef *def,
                                    char **path);
-int qemuGetMemoryBackingPath(const virDomainDef *def,
-                             virQEMUDriverConfigPtr cfg,
+int qemuGetMemoryBackingPath(virQEMUDriverPtr driver,
+                             const virDomainDef *def,
                              const char *alias,
                              char **memPath);
