@@ -5,6 +5,7 @@
 @BUILDDIR@/src/admin/admin_server_dispatch_stubs.h
 @BUILDDIR@/src/remote/remote_client_bodies.h
 @BUILDDIR@/src/remote/remote_daemon_dispatch_stubs.h
+@SRCDIR@/rng2c/directive.py
 @SRCDIR@/src/access/viraccessdriverpolkit.c
 @SRCDIR@/src/access/viraccessmanager.c
 @SRCDIR@/src/admin/admin_server.c

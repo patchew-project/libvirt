@@ -1,0 +1,113 @@
+{
+    "definitions": {
+        "formal_arg": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "pointer": {"type": "boolean"},
+                "ctype": {"type": "string"}
+            }
+        },
+        "function": {
+            "output": {"type": ["string", "null"]},
+            "name": {"type": "string"},
+            "args": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/formal_arg"}
+            }
+        },
+        "actual_arg": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "value": {"type": "string"}
+            }
+        },
+        "member": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "opt": {"type": "boolean"},
+                "more": {"type": "boolean"},
+                "tag": {"type": "string"},
+                "type": {"type": "string"},
+                "pointer": {"type": "boolean"},
+                "specified": {"type": "boolean"},
+                "declare.comment": {"type": "string"},
+                "parse.disable": {"type": "boolean"},
+                "parse.args": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/actual_arg"}
+                },
+                "parse.instname": {"type": "string"},
+                "parse.default": {"type": "string"},
+                "format.disable": {"type": "boolean"},
+                "format.nocheck": {"type": "boolean"},
+                "format.precheck": {"type": "string"},
+                "format.fmt": {"type": "string"},
+                "format.args": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/actual_arg"}
+                },
+                "hint": {"type": "string"}
+            }
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "location": {"type": "string"},
+        "tag": {"type": "string"},
+        "name": {"type": "string"},
+        "meta": {"type": "string"},
+        "unpack": {"type": "boolean"},
+        "pack": {"type": "boolean"},
+        "union": {"type": "string"},
+        "structure": {
+            "type": "object",
+            "properties": {
+                "output": {"type": ["string", "null"]},
+                "enum.default": {"type": "string"},
+                "array.size": {"type": "string"}
+            }
+        },
+        "clearfunc": {
+            "type": "object",
+            "properties": {"$ref": "#/definitions/function"}
+        },
+        "parsefunc": {
+            "type": "object",
+            "properties": {
+                "$ref": "#/definitions/function",
+                "args.noctxt": {"type": "boolean"},
+                "args.instname": {"type": "boolean"},
+                "args.parent": {"type": "boolean"},
+                "post": {"type": "boolean"},
+                "post.notmpvars": {"type": "boolean"}
+            }
+        },
+        "formatfunc": {
+            "type": "object",
+            "properties": {
+                "$ref": "#/definitions/function",
+                "shorthand.ignore": {"type": "boolean"},
+                "order": {"type": "array", "items": {"type": "string"}}
+            }
+        },
+        "namespace": {"type": "boolean"},
+        "values": {
+            "type": "array",
+            "items": {"type": "string"}
+        },
+        "members": {
+            "type": "array",
+            "items": {"$ref": "#/definitions/member"}
+        },
+        "PRESERVE": {"type": "string"},
+        "APPLY": {"type": "string"},
+        "TOUCH": {"type": "boolean"}
+    }
+}

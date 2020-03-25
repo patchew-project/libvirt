@@ -1,0 +1,8 @@
+# This is a command-line tool
+
+WORK_DIR=$(cd $(dirname $0); pwd)
+export PYTHONDONTWRITEBYTECODE=1
+export topdir="${WORK_DIR}/.."
+export builddir="${WORK_DIR}/../build"
+export entries="network.rng"
+${WORK_DIR}/generator.py $@
