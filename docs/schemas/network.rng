@@ -322,6 +322,10 @@
                 </element>
               </zeroOrMore>
               <zeroOrMore>
+                <!-- VIRT:DIRECTIVE {
+                  "structure": {"output": "src/conf/network_conf"},
+                  "members": [{"id": "hostname", "name": "name"}]
+                } -->
                 <element name="host">
                   <attribute name="ip"><ref name="ipAddr"/></attribute>
                   <oneOrMore>
