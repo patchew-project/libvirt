@@ -292,7 +292,18 @@
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
                   "structure": {"output": "src/conf/network_conf"},
-                  "clearfunc": {"output": "src/conf/network_conf"}
+                  "clearfunc": {"output": "src/conf/network_conf"},
+                  "parsefunc": {
+                    "post": true,
+                    "args.noctxt": true,
+                    "args.instname": true,
+                    "args": [
+                      {"name": "partialOkay", "type": "Bool"}
+                    ]
+                  },
+                  "members": [
+                    {"id": "value", "opt": true}
+                  ]
                 } -->
                 <element name="txt">
                   <attribute name="name"><ref name="dnsName"/></attribute>
