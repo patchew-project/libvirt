@@ -385,6 +385,7 @@
                       {"name": "partialOkay", "type": "Bool"}
                     ]
                   },
+                  "formatfunc": {"output": "src/conf/network_conf"},
                   "members": [
                     {"id": "ip", "opt": true},
                     {"id": "hostname", "name": "name", "opt": true}

@@ -1926,7 +1926,7 @@ static int
 virNetworkDNSDefFormat(virBufferPtr buf,
                        const virNetworkDNSDef *def)
 {
-    size_t i, j;
+    size_t i;
 
     if (!(def->enable || def->forwardPlainNames || def->nforwarders || def->nhosts ||
           def->nsrvs || def->ntxts))
@@ -1981,17 +1981,8 @@ virNetworkDNSDefFormat(virBufferPtr buf,
 
     if (def->nhosts) {
         for (i = 0; i < def->nhosts; i++) {
-            char *ip = virSocketAddrFormat(&def->hosts[i].ip);
-
-            virBufferAsprintf(buf, "<host ip='%s'>\n", ip);
-            virBufferAdjustIndent(buf, 2);
-            for (j = 0; j < def->hosts[i].nnames; j++)
-                virBufferEscapeString(buf, "<hostname>%s</hostname>\n",
-                                      def->hosts[i].names[j]);
-
-            virBufferAdjustIndent(buf, -2);
-            virBufferAddLit(buf, "</host>\n");
-            VIR_FREE(ip);
+            if (virNetworkDNSHostDefFormatBuf(buf, "host", &def->hosts[i]) < 0)
+                return -1;
         }
     }
     virBufferAdjustIndent(buf, -2);
