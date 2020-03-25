@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "virbuffer.h"
 #include "virsocket.h"
 
 #define VIR_LOOPBACK_IPV4_ADDR "127.0.0.1"
@@ -43,6 +44,8 @@ typedef struct {
 
 #define VIR_SOCKET_ADDR_FAMILY(s) \
     ((s)->data.sa.sa_family)
+
+#define virSocketAddrCheck VIR_SOCKET_ADDR_VALID
 
 #define VIR_SOCKET_ADDR_IPV4_ALL "0.0.0.0"
 #define VIR_SOCKET_ADDR_IPV6_ALL "::"
@@ -70,6 +73,8 @@ int virSocketAddrParse(virSocketAddrPtr addr,
                        const char *val,
                        int family);
 
+int virSocketAddrParseXML(const char *val, virSocketAddrPtr addr);
+
 int virSocketAddrParseAny(virSocketAddrPtr addr,
                           const char *val,
                           int family,
@@ -92,6 +97,10 @@ char *virSocketAddrFormat(const virSocketAddr *addr);
 char *virSocketAddrFormatFull(const virSocketAddr *addr,
                               bool withService,
                               const char *separator);
+
+int virSocketAddrFormatBuf(virBufferPtr buf,
+                           const char *fmt,
+                           const virSocketAddr *addr);
 
 char *virSocketAddrGetPath(virSocketAddrPtr addr);
 
@@ -145,5 +154,6 @@ int virSocketAddrPTRDomain(const virSocketAddr *addr,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
 
 void virSocketAddrFree(virSocketAddrPtr addr);
+void virSocketAddrClear(virSocketAddrPtr addr);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virSocketAddr, virSocketAddrFree);

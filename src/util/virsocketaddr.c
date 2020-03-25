@@ -157,6 +157,11 @@ int virSocketAddrParse(virSocketAddrPtr addr, const char *val, int family)
     return len;
 }
 
+int virSocketAddrParseXML(const char *val, virSocketAddrPtr addr)
+{
+    return virSocketAddrParse(addr, val, AF_UNSPEC);
+}
+
 /**
  * virSocketAddrParseAny:
  * @addr: where to store the return value, optional.
@@ -444,6 +449,22 @@ virSocketAddrFormat(const virSocketAddr *addr)
     return virSocketAddrFormatFull(addr, false, NULL);
 }
 
+int
+virSocketAddrFormatBuf(virBufferPtr buf,
+                       const char *fmt,
+                       const virSocketAddr *addr)
+{
+    g_autofree char *str = NULL;
+    if (!VIR_SOCKET_ADDR_VALID(addr))
+        return 0;
+
+    str = virSocketAddrFormatFull(addr, false, NULL);
+    if (!str)
+        return -1;
+
+    virBufferAsprintf(buf, fmt, str);
+    return 0;
+}
 
 /*
  * virSocketAddrFormatFull:
@@ -1318,4 +1339,10 @@ void
 virSocketAddrFree(virSocketAddrPtr addr)
 {
     VIR_FREE(addr);
+}
+
+void
+virSocketAddrClear(virSocketAddrPtr addr)
+{
+    memset(addr, 0, sizeof(virSocketAddr));
 }
