@@ -571,6 +571,13 @@
   </define>
 
   <define name="virYesNo">
+    <!-- VIRT:DIRECTIVE {
+        "name": "virTristateBoolType",
+        "structure": {
+            "output": "src/util/virenum",
+            "enum.default": "absent"
+        }
+    } -->
     <choice>
       <value>yes</value>
       <value>no</value>
@@ -578,6 +585,13 @@
   </define>
 
   <define name="virOnOff">
+    <!-- VIRT:DIRECTIVE {
+        "name": "virTristateSwitchType",
+        "structure": {
+            "output": "src/util/virenum",
+            "enum.default": "absent"
+        }
+    } -->
     <choice>
       <value>on</value>
       <value>off</value>

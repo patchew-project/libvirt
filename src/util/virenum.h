@@ -19,6 +19,7 @@
 #pragma once
 
 #include "internal.h"
+#include "virenum.generated.h"
 
 int
 virEnumFromString(const char * const *types,
@@ -30,24 +31,8 @@ virEnumToString(const char * const *types,
                 unsigned int ntypes,
                 int type);
 
-typedef enum {
-    VIR_TRISTATE_BOOL_ABSENT = 0,
-    VIR_TRISTATE_BOOL_YES,
-    VIR_TRISTATE_BOOL_NO,
-
-    VIR_TRISTATE_BOOL_LAST
-} virTristateBool;
-
-typedef enum {
-    VIR_TRISTATE_SWITCH_ABSENT = 0,
-    VIR_TRISTATE_SWITCH_ON,
-    VIR_TRISTATE_SWITCH_OFF,
-
-    VIR_TRISTATE_SWITCH_LAST
-} virTristateSwitch;
-
-VIR_ENUM_DECL(virTristateBool);
-VIR_ENUM_DECL(virTristateSwitch);
+typedef virTristateBoolType virTristateBool;
+typedef virTristateSwitchType virTristateSwitch;
 
 virTristateBool virTristateBoolFromBool(bool val);
 virTristateSwitch virTristateSwitchFromBool(bool val);

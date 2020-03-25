@@ -238,6 +238,8 @@ UTIL_SOURCES = \
 
 
 UTIL_GENERATED_SOURCES = \
+	util/virenum.generated.h \
+	util/virenum.generated.c \
 	$(NULL)
 
 

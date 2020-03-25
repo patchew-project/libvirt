@@ -22,21 +22,6 @@
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
-VIR_ENUM_IMPL(virTristateBool,
-              VIR_TRISTATE_BOOL_LAST,
-              "default",
-              "yes",
-              "no",
-);
-
-VIR_ENUM_IMPL(virTristateSwitch,
-              VIR_TRISTATE_SWITCH_LAST,
-              "default",
-              "on",
-              "off",
-);
-
-
 virTristateBool
 virTristateBoolFromBool(bool val)
 {
