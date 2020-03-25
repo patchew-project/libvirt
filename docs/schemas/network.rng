@@ -258,7 +258,8 @@
              and other features in the <dns> element -->
         <optional>
           <!-- VIRT:DIRECTIVE {
-            "structure": {"output": "src/conf/network_conf"}
+            "structure": {"output": "src/conf/network_conf"},
+            "clearfunc": {"output": "src/conf/network_conf"}
           } -->
           <element name="dns">
             <optional>
@@ -275,7 +276,8 @@
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
                   "name": "virNetworkDNSForwarder",
-                  "structure": {"output": "src/conf/network_conf"}
+                  "structure": {"output": "src/conf/network_conf"},
+                  "clearfunc": {"output": "src/conf/network_conf"}
                 } -->
                 <element name="forwarder">
                   <optional>
@@ -289,7 +291,8 @@
               </zeroOrMore>
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
-                  "structure": {"output": "src/conf/network_conf"}
+                  "structure": {"output": "src/conf/network_conf"},
+                  "clearfunc": {"output": "src/conf/network_conf"}
                 } -->
                 <element name="txt">
                   <attribute name="name"><ref name="dnsName"/></attribute>
@@ -298,7 +301,8 @@
               </zeroOrMore>
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
-                  "structure": {"output": "src/conf/network_conf"}
+                  "structure": {"output": "src/conf/network_conf"},
+                  "clearfunc": {"output": "src/conf/network_conf"}
                 } -->
                 <element name="srv">
                   <attribute name="service"><text/></attribute>
@@ -331,6 +335,7 @@
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
                   "structure": {"output": "src/conf/network_conf"},
+                  "clearfunc": {"output": "src/conf/network_conf"},
                   "members": [{"id": "hostname", "name": "name"}]
                 } -->
                 <element name="host">

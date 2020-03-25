@@ -161,6 +161,8 @@ DEVICE_CONF_SOURCES = \
 	$(NULL)
 
 CONF_GENERATED_SOURCES = \
+	conf/network_conf.generated.c \
+	conf/network_conf.generated.h \
 	$(NULL)
 
 CONF_SOURCES = \

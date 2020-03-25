@@ -157,66 +157,6 @@ virNetworkIPDefClear(virNetworkIPDefPtr def)
 
 
 static void
-virNetworkDNSTxtDefClear(virNetworkDNSTxtDefPtr def)
-{
-    VIR_FREE(def->name);
-    VIR_FREE(def->value);
-}
-
-
-static void
-virNetworkDNSHostDefClear(virNetworkDNSHostDefPtr def)
-{
-    while (def->nnames)
-        VIR_FREE(def->names[--def->nnames]);
-    VIR_FREE(def->names);
-}
-
-
-static void
-virNetworkDNSSrvDefClear(virNetworkDNSSrvDefPtr def)
-{
-    VIR_FREE(def->domain);
-    VIR_FREE(def->service);
-    VIR_FREE(def->protocol);
-    VIR_FREE(def->target);
-}
-
-
-static void
-virNetworkDNSForwarderClear(virNetworkDNSForwarderPtr def)
-{
-    VIR_FREE(def->domain);
-}
-
-
-static void
-virNetworkDNSDefClear(virNetworkDNSDefPtr def)
-{
-    if (def->forwarders) {
-        while (def->nforwarders)
-            virNetworkDNSForwarderClear(&def->forwarders[--def->nforwarders]);
-        VIR_FREE(def->forwarders);
-    }
-    if (def->txts) {
-        while (def->ntxts)
-            virNetworkDNSTxtDefClear(&def->txts[--def->ntxts]);
-        VIR_FREE(def->txts);
-    }
-    if (def->hosts) {
-        while (def->nhosts)
-            virNetworkDNSHostDefClear(&def->hosts[--def->nhosts]);
-        VIR_FREE(def->hosts);
-    }
-    if (def->srvs) {
-        while (def->nsrvs)
-            virNetworkDNSSrvDefClear(&def->srvs[--def->nsrvs]);
-        VIR_FREE(def->srvs);
-    }
-}
-
-
-static void
 virNetworkForwardDefClear(virNetworkForwardDefPtr def)
 {
     size_t i;
