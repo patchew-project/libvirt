@@ -302,7 +302,18 @@
               <zeroOrMore>
                 <!-- VIRT:DIRECTIVE {
                   "structure": {"output": "src/conf/network_conf"},
-                  "clearfunc": {"output": "src/conf/network_conf"}
+                  "clearfunc": {"output": "src/conf/network_conf"},
+                  "parsefunc": {
+                    "post": true,
+                    "args.instname": true,
+                    "args": [
+                      {"name": "partialOkay", "type": "Bool"}
+                    ]
+                  },
+                  "members": [
+                    {"id": "service", "opt": true},
+                    {"id": "protocol", "opt": true}
+                  ]
                 } -->
                 <element name="srv">
                   <attribute name="service"><text/></attribute>

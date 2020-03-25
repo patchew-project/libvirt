@@ -214,6 +214,123 @@ virNetworkDefFree(virNetworkDefPtr def)
 }
 
 
+/* This includes all characters used in the names of current
+ * /etc/services and /etc/protocols files (on Fedora 20), except ".",
+ * which we can't allow because it would conflict with the use of "."
+ * as a field separator in the SRV record, there appears to be no way
+ * to escape it in, and the protocols/services that use "." in the
+ * name are obscure and unlikely to be used anyway.
+ */
+#define PROTOCOL_CHARS \
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" \
+    "-+/"
+
+#define SERVICE_CHARS \
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" \
+    "_-+/*"
+
+static int
+virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
+                                virNetworkDNSSrvDefPtr def,
+                                xmlXPathContextPtr ctxt G_GNUC_UNUSED,
+                                const char *networkName,
+                                bool partialOkay,
+                                const char *serviceStr G_GNUC_UNUSED,
+                                const char *protocolStr G_GNUC_UNUSED,
+                                const char *domainStr G_GNUC_UNUSED,
+                                const char *targetStr G_GNUC_UNUSED,
+                                bool has_port,
+                                bool has_priority,
+                                bool has_weight)
+{
+    if (!def->service && !partialOkay) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("missing required service attribute in DNS SRV record "
+                         "of network '%s'"), networkName);
+        return -1;
+    }
+    if (def->service) {
+        if (strlen(def->service) > DNS_RECORD_LENGTH_SRV) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("service attribute '%s' in network '%s' is too long, "
+                             "limit is %d bytes"),
+                           def->service, networkName, DNS_RECORD_LENGTH_SRV);
+            return -1;
+        }
+        if (strspn(def->service, SERVICE_CHARS) < strlen(def->service)) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("invalid character in service attribute '%s' "
+                             "in DNS SRV record of network '%s'"),
+                           def->service, networkName);
+            return -1;
+        }
+    }
+
+    if (!def->protocol && !partialOkay) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("missing required protocol attribute "
+                         "in DNS SRV record '%s' of network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+    if (def->protocol &&
+        strspn(def->protocol, PROTOCOL_CHARS) < strlen(def->protocol)) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("invalid character in protocol attribute '%s' "
+                         "in DNS SRV record of network '%s'"),
+                       def->protocol, networkName);
+        return -1;
+    }
+
+    if (has_port && !def->target) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("DNS SRV port attribute not permitted without "
+                         "target for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+    if (has_port && (def->port < 1 || def->port > 65535)) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("invalid DNS SRV port attribute "
+                         "for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+
+    if (has_priority && !def->target) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("DNS SRV priority attribute not permitted without "
+                         "target for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+    if (has_priority && def->priority > 65535) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("Invalid DNS SRV priority attribute "
+                         "for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+
+    if (has_weight && !def->target) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("DNS SRV weight attribute not permitted without "
+                         "target for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+    if (has_weight && def->weight > 65535) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("invalid DNS SRV weight attribute "
+                         "for service '%s' in network '%s'"),
+                       def->service, networkName);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /*
  * virNetworkDefCopy:
  * @def: NetworkDef to copy
@@ -594,21 +711,7 @@ virNetworkDNSHostDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
 }
 
 
-/* This includes all characters used in the names of current
- * /etc/services and /etc/protocols files (on Fedora 20), except ".",
- * which we can't allow because it would conflict with the use of "."
- * as a field separator in the SRV record, there appears to be no way
- * to escape it in, and the protocols/services that use "." in the
- * name are obscure and unlikely to be used anyway.
- */
-#define PROTOCOL_CHARS \
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" \
-    "-+/"
-
-#define SERVICE_CHARS \
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" \
-    "_-+/*"
-
+/* virNetworkDNSSrvDefParseXML will be replaced by generated namesake */
 static int
 virNetworkDNSSrvDefParseXML(const char *networkName,
                             xmlNodePtr node,
@@ -617,62 +720,23 @@ virNetworkDNSSrvDefParseXML(const char *networkName,
                             bool partialOkay)
 {
     int ret;
+    bool has_port = false;
+    bool has_priority = false;
+    bool has_weight = false;
     xmlNodePtr save_ctxt = ctxt->node;
-
     ctxt->node = node;
 
-    if (!(def->service = virXMLPropString(node, "service")) && !partialOkay) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("missing required service attribute in DNS SRV record "
-                         "of network '%s'"), networkName);
-        goto error;
-    }
-    if (def->service) {
-        if (strlen(def->service) > DNS_RECORD_LENGTH_SRV) {
-            virReportError(VIR_ERR_XML_DETAIL,
-                           _("service attribute '%s' in network '%s' is too long, "
-                             "limit is %d bytes"),
-                           def->service, networkName, DNS_RECORD_LENGTH_SRV);
-            goto error;
-        }
-        if (strspn(def->service, SERVICE_CHARS) < strlen(def->service)) {
-            virReportError(VIR_ERR_XML_DETAIL,
-                           _("invalid character in service attribute '%s' "
-                             "in DNS SRV record of network '%s'"),
-                           def->service, networkName);
-            goto error;
-        }
-    }
-
-    if (!(def->protocol = virXMLPropString(node, "protocol")) && !partialOkay) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("missing required protocol attribute "
-                         "in DNS SRV record '%s' of network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-    if (def->protocol &&
-        strspn(def->protocol, PROTOCOL_CHARS) < strlen(def->protocol)) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("invalid character in protocol attribute '%s' "
-                         "in DNS SRV record of network '%s'"),
-                       def->protocol, networkName);
-        goto error;
-    }
+    def->service = virXMLPropString(node, "service");
+    def->protocol = virXMLPropString(node, "protocol");
 
     /* Following attributes are optional */
     def->domain = virXMLPropString(node, "domain");
     def->target = virXMLPropString(node, "target");
 
     ret = virXPathUInt("string(./@port)", ctxt, &def->port);
-    if (ret >= 0 && !def->target) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("DNS SRV port attribute not permitted without "
-                         "target for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-    if (ret == -2 || (ret >= 0 && (def->port < 1 || def->port > 65535))) {
+    if (ret >= 0) {
+        has_port = true;
+    } else if (ret == -2) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("invalid DNS SRV port attribute "
                          "for service '%s' in network '%s'"),
@@ -681,14 +745,9 @@ virNetworkDNSSrvDefParseXML(const char *networkName,
     }
 
     ret = virXPathUInt("string(./@priority)", ctxt, &def->priority);
-    if (ret >= 0 && !def->target) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("DNS SRV priority attribute not permitted without "
-                         "target for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-    if (ret == -2 || (ret >= 0 && def->priority > 65535)) {
+    if (ret >= 0) {
+        has_priority = true;
+    } else if (ret == -2) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("Invalid DNS SRV priority attribute "
                          "for service '%s' in network '%s'"),
@@ -697,20 +756,23 @@ virNetworkDNSSrvDefParseXML(const char *networkName,
     }
 
     ret = virXPathUInt("string(./@weight)", ctxt, &def->weight);
-    if (ret >= 0 && !def->target) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("DNS SRV weight attribute not permitted without "
-                         "target for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-    if (ret == -2 || (ret >= 0 && def->weight > 65535)) {
+    if (ret >= 0) {
+        has_weight = true;
+    } else if (ret == -2) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("invalid DNS SRV weight attribute "
                          "for service '%s' in network '%s'"),
                        def->service, networkName);
         goto error;
     }
+
+    if (virNetworkDNSSrvDefParseXMLPost(node, def, ctxt,
+                                        networkName, partialOkay,
+                                        def->service, def->protocol,
+                                        def->domain, def->target,
+                                        has_port, has_priority,
+                                        has_weight) < 0)
+        goto error;
 
     ctxt->node = save_ctxt;
     return 0;
