@@ -1975,24 +1975,8 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     }
 
     for (i = 0; i < def->nsrvs; i++) {
-        if (def->srvs[i].service && def->srvs[i].protocol) {
-            virBufferEscapeString(buf, "<srv service='%s' ",
-                                  def->srvs[i].service);
-            virBufferEscapeString(buf, "protocol='%s'", def->srvs[i].protocol);
-
-            if (def->srvs[i].domain)
-                virBufferEscapeString(buf, " domain='%s'", def->srvs[i].domain);
-            if (def->srvs[i].target)
-                virBufferEscapeString(buf, " target='%s'", def->srvs[i].target);
-            if (def->srvs[i].port)
-                virBufferAsprintf(buf, " port='%d'", def->srvs[i].port);
-            if (def->srvs[i].priority)
-                virBufferAsprintf(buf, " priority='%d'", def->srvs[i].priority);
-            if (def->srvs[i].weight)
-                virBufferAsprintf(buf, " weight='%d'", def->srvs[i].weight);
-
-            virBufferAddLit(buf, "/>\n");
-        }
+        if (virNetworkDNSSrvDefFormatBuf(buf, "srv", &def->srvs[i]) < 0)
+            return -1;
     }
 
     if (def->nhosts) {
