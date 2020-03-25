@@ -160,7 +160,11 @@ DEVICE_CONF_SOURCES = \
 	conf/device_conf.h \
 	$(NULL)
 
+CONF_GENERATED_SOURCES = \
+	$(NULL)
+
 CONF_SOURCES = \
+	$(CONF_GENERATED_SOURCES) \
 	$(NETDEV_CONF_SOURCES) \
 	$(DOMAIN_CONF_SOURCES) \
 	$(OBJECT_EVENT_SOURCES) \
@@ -180,11 +184,15 @@ CONF_SOURCES = \
 	$(DEVICE_CONF_SOURCES) \
 	$(NULL)
 
+$(CONF_GENERATED_SOURCES): $(RNG2C_GENERATED_FILES_STAMP)
+MAINTAINERCLEANFILES += $(CONF_GENERATED_SOURCES)
+CLEANFILES += $(CONF_GENERATED_SOURCES)
+
 noinst_LTLIBRARIES += libvirt_conf.la
 libvirt_la_BUILT_LIBADD += libvirt_conf.la
 libvirt_conf_la_SOURCES = $(CONF_SOURCES)
 libvirt_conf_la_CFLAGS = \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_conf_la_LDFLAGS = $(AM_LDFLAGS)

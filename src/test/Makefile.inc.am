@@ -21,7 +21,7 @@ driver_test_assetdir = $(pkgdatadir)
 noinst_LTLIBRARIES += libvirt_driver_test.la
 libvirt_la_BUILT_LIBADD += libvirt_driver_test.la
 libvirt_driver_test_la_CFLAGS = \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_driver_test_la_SOURCES = $(TEST_DRIVER_SOURCES)

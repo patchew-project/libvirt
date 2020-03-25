@@ -237,6 +237,10 @@ UTIL_SOURCES = \
 	$(NULL)
 
 
+UTIL_GENERATED_SOURCES = \
+	$(NULL)
+
+
 EXTRA_DIST += \
 	$(srcdir)/keycodemapdb/data/keymaps.csv \
 	$(srcdir)/keycodemapdb/tools/keymap-gen \
@@ -251,8 +255,11 @@ KEYTABLES = \
 	$(KEYNAMES:%=util/virkeynametable_%.h) \
 	$(NULL)
 
-BUILT_SOURCES += $(KEYTABLES)
+UTIL_SOURCES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
+BUILT_SOURCES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
 CLEANFILES += $(KEYTABLES)
+CLEANFILES += $(KEYMANS) $(KEYPODS) $(UTIL_GENERATED_SOURCES)
+MAINTAINERCLEANFILES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
 
 UTIL_IO_HELPER_SOURCES = util/iohelper.c
 
@@ -297,6 +304,8 @@ libvirt_util_la_LIBADD = \
 	$(GNUTLS_LIBS) \
 	$(NULL)
 
+
+$(UTIL_GENERATED_SOURCES): $(RNG2C_GENERATED_FILES_STAMP)
 
 util/virkeycodetable_%.h: $(srcdir)/keycodemapdb/data/keymaps.csv \
 			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am

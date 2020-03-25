@@ -23,7 +23,7 @@ AM_CPPFLAGS =	-I$(top_srcdir) \
 		-I../include \
 		-I$(top_srcdir)/include \
 		-I$(srcdir)/util \
-		-I./util \
+		-I./util -I./conf \
 		-DIN_LIBVIRT \
 		-Dabs_top_builddir="\"$(abs_top_builddir)\"" \
 		-Dabs_top_srcdir="\"$(abs_top_srcdir)\"" \
@@ -86,6 +86,20 @@ SYSCONF_FILES =
 sbin_PROGRAMS =
 bin_PROGRAMS =
 DRIVER_SOURCES =
+
+RNG2C_GENERATED_FILES_STAMP = .rng2c_generator.stamp
+RNG_FILES = $(wildcard $(top_srcdir)/docs/schemas/*.rng)
+RNG2C_SOURCE = $(wildcard $(top_srcdir)/rng2c/*.py)
+RNG2C_ENTRIES = network.rng
+
+$(RNG2C_GENERATED_FILES_STAMP): $(RNG_FILES) $(RNG2C_SOURCE)
+	$(AM_V_GEN)topdir=$(top_srcdir) builddir=$(top_builddir) \
+		entries=$(RNG2C_ENTRIES) \
+		$(PYTHON) -B $(top_srcdir)/rng2c/generator.py generate -k scpf \
+		&& touch $@
+
+MAINTAINERCLEANFILES += $(RNG2C_GENERATED_FILES_STAMP)
+CLEANFILES += $(RNG2C_GENERATED_FILES_STAMP)
 
 COMMON_UNIT_VARS = \
 	-e 's|[@]runstatedir[@]|$(runstatedir)|g' \

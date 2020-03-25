@@ -55,7 +55,7 @@ nodist_libvirt_driver_access_la_SOURCES = \
 noinst_LTLIBRARIES += libvirt_driver_access.la
 libvirt_la_BUILT_LIBADD += libvirt_driver_access.la
 libvirt_driver_access_la_CFLAGS = \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_driver_access_la_LDFLAGS = $(AM_LDFLAGS)

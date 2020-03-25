@@ -52,7 +52,7 @@ mod_LTLIBRARIES += libvirt_driver_vbox.la
 libvirt_driver_vbox_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_vbox_impl_la_CFLAGS = \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	$(AM_CFLAGS) \
 	-DVBOX_DRIVER \
 	$(NULL)

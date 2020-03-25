@@ -78,7 +78,7 @@ noinst_LTLIBRARIES += libvirt_driver_esx.la
 libvirt_la_BUILT_LIBADD += libvirt_driver_esx.la
 libvirt_driver_esx_la_CFLAGS = \
 	$(CURL_CFLAGS) \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	-I$(builddir)/esx \
 	-I$(srcdir)/vmx \
 	$(AM_CFLAGS) \
