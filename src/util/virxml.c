@@ -503,6 +503,63 @@ virXMLCheckIllegalChars(const char *nodeName,
 
 
 /**
+ * virXMLChildNode:
+ * @node: Parent XML dom node pointer
+ * @name: Name of the child element
+ *
+ * Convenience function to return the child element of a XML node.
+ *
+ * Returns the pointer of child element node or NULL in case of failure.
+ * If there are many nodes match condition, it only returns the first node.
+ */
+xmlNodePtr
+virXMLChildNode(xmlNodePtr node, const char *name)
+{
+    xmlNodePtr cur = node->children;
+    while (cur) {
+        if (cur->type == XML_ELEMENT_NODE && virXMLNodeNameEqual(cur, name))
+            return cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+
+/**
+ * virXMLChildNodeSet:
+ * @node: Parent XML dom node pointer
+ * @name: Name of the children element
+ * @list: the returned list of nodes (or NULL if only count matters)
+ *
+ * Convenience function to evaluate a set of children elements
+ *
+ * Returns the number of nodes found in which case @list is set (and
+ *         must be freed) or -1 if the evaluation failed.
+ */
+int
+virXMLChildNodeSet(xmlNodePtr node, const char *name, xmlNodePtr **list)
+{
+    size_t count = 0;
+    if (list != NULL)
+        *list = NULL;
+
+    xmlNodePtr cur = node->children;
+    while (cur) {
+        if (cur->type == XML_ELEMENT_NODE && virXMLNodeNameEqual(cur, name)) {
+            if (list != NULL) {
+                if (VIR_APPEND_ELEMENT_COPY(*list, count, cur) < 0)
+                    return -1;
+            } else {
+                count++;
+            }
+        }
+        cur = cur->next;
+    }
+    return count;
+}
+
+
+/**
  * virXMLPropString:
  * @node: XML dom node pointer
  * @name: Name of the property (attribute) to get
