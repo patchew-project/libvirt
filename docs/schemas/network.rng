@@ -277,7 +277,12 @@
                 <!-- VIRT:DIRECTIVE {
                   "name": "virNetworkDNSForwarder",
                   "structure": {"output": "src/conf/network_conf"},
-                  "clearfunc": {"output": "src/conf/network_conf"}
+                  "clearfunc": {"output": "src/conf/network_conf"},
+                  "parsefunc": {
+                    "post": true,
+                    "args.noctxt": true,
+                    "args.instname": true
+                  }
                 } -->
                 <element name="forwarder">
                   <optional>

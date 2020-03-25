@@ -214,6 +214,53 @@ virNetworkDefFree(virNetworkDefPtr def)
 }
 
 
+static int
+virNetworkDNSForwarderParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
+                                   virNetworkDNSForwarderPtr def,
+                                   const char *networkName G_GNUC_UNUSED,
+                                   const char *addrStr,
+                                   const char *domainStr G_GNUC_UNUSED)
+{
+    if (!(addrStr || def->domain)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Invalid forwarder element, must contain "
+                         "at least one of addr or domain"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/* virNetworkDNSForwarderParseXML will be replaced by generated namesake */
+static int
+virNetworkDNSForwarderParseXML(xmlNodePtr curnode,
+                               virNetworkDNSForwarderPtr def,
+                               const char *networkName)
+{
+    char *addr = virXMLPropString(curnode, "addr");
+    if (addr && virSocketAddrParse(&def->addr, addr, AF_UNSPEC) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid forwarder IP address '%s' "
+                         "in network '%s'"),
+                       addr, networkName);
+        VIR_FREE(addr);
+        return -1;
+    }
+
+    def->domain = virXMLPropString(curnode, "domain");
+
+    if (virNetworkDNSForwarderParseXMLPost(curnode, def, networkName,
+                                           addr, def->domain) < 0) {
+        VIR_FREE(addr);
+        return -1;
+    }
+
+    VIR_FREE(addr);
+    return 0;
+}
+
+
 /* This includes all characters used in the names of current
  * /etc/services and /etc/protocols files (on Fedora 20), except ".",
  * which we can't allow because it would conflict with the use of "."
@@ -801,25 +848,11 @@ virNetworkDNSDefParseXML(const char *networkName,
             goto cleanup;
 
         for (i = 0; i < nfwds; i++) {
-            char *addr = virXMLPropString(fwdNodes[i], "addr");
+            if (virNetworkDNSForwarderParseXML(fwdNodes[i],
+                                               &def->forwarders[i],
+                                               networkName) < 0)
+                goto cleanup;
 
-            if (addr && virSocketAddrParse(&def->forwarders[i].addr,
-                                           addr, AF_UNSPEC) < 0) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("Invalid forwarder IP address '%s' "
-                                 "in network '%s'"),
-                               addr, networkName);
-                VIR_FREE(addr);
-                goto cleanup;
-            }
-            def->forwarders[i].domain = virXMLPropString(fwdNodes[i], "domain");
-            if (!(addr || def->forwarders[i].domain)) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("Invalid forwarder element, must contain "
-                                 "at least one of addr or domain"));
-                goto cleanup;
-            }
-            VIR_FREE(addr);
             def->nforwarders++;
         }
     }
