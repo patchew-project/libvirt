@@ -4114,6 +4114,7 @@ static char *
 getAutoDumpPath(virQEMUDriverPtr driver,
                 virDomainObjPtr vm)
 {
+    const char *root = virQEMUDriverGetEmbedRoot(driver);
     g_autofree char *domname = virDomainDefGetShortName(vm->def);
     g_autoptr(GDateTime) now = g_date_time_new_now_local();
     g_autofree char *nowstr = NULL;
@@ -4125,6 +4126,11 @@ getAutoDumpPath(virQEMUDriverPtr driver,
     cfg = virQEMUDriverGetConfig(driver);
 
     nowstr = g_date_time_format(now, "%Y-%m-%d-%H:%M:%S");
+
+    if (root) {
+        g_autofree char * hash = virDomainDriverHashRoot(QEMU_DRIVER_NAME, root);
+        return g_strdup_printf("%s/%s-%s-%s", cfg->autoDumpPath, hash, domname, nowstr);
+    }
 
     return g_strdup_printf("%s/%s-%s", cfg->autoDumpPath, domname, nowstr);
 }
