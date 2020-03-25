@@ -3,6 +3,7 @@
 @BUILDDIR@/src/access/viraccessapicheckqemu.c
 @BUILDDIR@/src/admin/admin_client.h
 @BUILDDIR@/src/admin/admin_server_dispatch_stubs.h
+@BUILDDIR@/src/conf/network_conf.generated.c
 @BUILDDIR@/src/remote/remote_client_bodies.h
 @BUILDDIR@/src/remote/remote_daemon_dispatch_stubs.h
 @SRCDIR@/rng2c/directive.py

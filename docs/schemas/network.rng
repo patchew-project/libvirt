@@ -337,14 +337,17 @@
                   "structure": {"output": "src/conf/network_conf"},
                   "clearfunc": {"output": "src/conf/network_conf"},
                   "parsefunc": {
-                    "args.noctxt": true,
+                    "output": "src/conf/network_conf",
                     "args.instname": true,
                     "post": true,
                     "args": [
                       {"name": "partialOkay", "type": "Bool"}
                     ]
                   },
-                  "members": [{"id": "hostname", "name": "name"}]
+                  "members": [
+                    {"id": "ip", "opt": true},
+                    {"id": "hostname", "name": "name", "opt": true}
+                  ]
                 } -->
                 <element name="host">
                   <attribute name="ip"><ref name="ipAddr"/></attribute>
