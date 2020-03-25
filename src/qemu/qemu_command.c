@@ -3465,7 +3465,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
             if (!priv->memPrealloc)
                 prealloc = true;
         } else if (useHugepage) {
-            if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &memPath) < 0)
+            if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &memPath) < 0)
                 return -1;
             if (!priv->memPrealloc)
                 prealloc = true;
@@ -7251,7 +7251,7 @@ qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
         if (!pagesize &&
             qemuBuildMemoryGetDefaultPagesize(cfg, &pagesize) < 0)
             return -1;
-        if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &mem_path) < 0)
+        if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &mem_path) < 0)
             return -1;
     } else if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
         if (qemuGetMemoryBackingPath(def, cfg, "ram", &mem_path) < 0)
