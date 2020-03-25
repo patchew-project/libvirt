@@ -1112,7 +1112,7 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
          */
         bool addNoResolv = false;
 
-        for (i = 0; i < def->dns.nfwds; i++) {
+        for (i = 0; i < def->dns.nforwarders; i++) {
             virNetworkDNSForwarderPtr fwd = &def->dns.forwarders[i];
 
             virBufferAddLit(&configbuf, "server=");

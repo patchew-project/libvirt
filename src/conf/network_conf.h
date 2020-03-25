@@ -104,21 +104,6 @@ struct _virNetworkDHCPHostDef {
     virSocketAddr ip;
 };
 
-typedef struct _virNetworkDNSDef virNetworkDNSDef;
-typedef virNetworkDNSDef *virNetworkDNSDefPtr;
-struct _virNetworkDNSDef {
-    int enable;            /* enum virTristateBool */
-    int forwardPlainNames; /* enum virTristateBool */
-    size_t ntxts;
-    virNetworkDNSTxtDefPtr txts;
-    size_t nhosts;
-    virNetworkDNSHostDefPtr hosts;
-    size_t nsrvs;
-    virNetworkDNSSrvDefPtr srvs;
-    size_t nfwds;
-    virNetworkDNSForwarderPtr forwarders;
-};
-
 typedef struct _virNetworkIPDef virNetworkIPDef;
 typedef virNetworkIPDef *virNetworkIPDefPtr;
 struct _virNetworkIPDef {

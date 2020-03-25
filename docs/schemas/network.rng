@@ -257,6 +257,9 @@
         <!-- Define the DNS related elements like TXT records
              and other features in the <dns> element -->
         <optional>
+          <!-- VIRT:DIRECTIVE {
+            "structure": {"output": "src/conf/network_conf"}
+          } -->
           <element name="dns">
             <optional>
               <attribute name="enable">

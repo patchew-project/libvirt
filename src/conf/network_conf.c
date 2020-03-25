@@ -194,8 +194,8 @@ static void
 virNetworkDNSDefClear(virNetworkDNSDefPtr def)
 {
     if (def->forwarders) {
-        while (def->nfwds)
-            virNetworkDNSForwarderClear(&def->forwarders[--def->nfwds]);
+        while (def->nforwarders)
+            virNetworkDNSForwarderClear(&def->forwarders[--def->nforwarders]);
         VIR_FREE(def->forwarders);
     }
     if (def->txts) {
@@ -931,7 +931,7 @@ virNetworkDNSDefParseXML(const char *networkName,
                 goto cleanup;
             }
             VIR_FREE(addr);
-            def->nfwds++;
+            def->nforwarders++;
         }
     }
 
@@ -2156,7 +2156,7 @@ virNetworkDNSDefFormat(virBufferPtr buf,
 {
     size_t i, j;
 
-    if (!(def->enable || def->forwardPlainNames || def->nfwds || def->nhosts ||
+    if (!(def->enable || def->forwardPlainNames || def->nforwarders || def->nhosts ||
           def->nsrvs || def->ntxts))
         return 0;
 
@@ -2183,7 +2183,7 @@ virNetworkDNSDefFormat(virBufferPtr buf,
         }
         virBufferAsprintf(buf, " forwardPlainNames='%s'", fwd);
     }
-    if (!(def->nfwds || def->nhosts || def->nsrvs || def->ntxts)) {
+    if (!(def->nforwarders || def->nhosts || def->nsrvs || def->ntxts)) {
         virBufferAddLit(buf, "/>\n");
         return 0;
     }
@@ -2191,7 +2191,7 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
 
-    for (i = 0; i < def->nfwds; i++) {
+    for (i = 0; i < def->nforwarders; i++) {
 
         virBufferAddLit(buf, "<forwarder");
         if (def->forwarders[i].domain) {
