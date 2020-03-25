@@ -30,24 +30,6 @@ virEnumToString(const char * const *types,
                 unsigned int ntypes,
                 int type);
 
-#define VIR_ENUM_IMPL(name, lastVal, ...) \
-    static const char *const name ## TypeList[] = { __VA_ARGS__ }; \
-    const char *name ## TypeToString(int type) { \
-        return virEnumToString(name ## TypeList, \
-                               G_N_ELEMENTS(name ## TypeList), \
-                               type); \
-    } \
-    int name ## TypeFromString(const char *type) { \
-        return virEnumFromString(name ## TypeList, \
-                                 G_N_ELEMENTS(name ## TypeList), \
-                                 type); \
-    } \
-    G_STATIC_ASSERT(G_N_ELEMENTS(name ## TypeList) == lastVal)
-
-#define VIR_ENUM_DECL(name) \
-    const char *name ## TypeToString(int type); \
-    int name ## TypeFromString(const char*type)
-
 typedef enum {
     VIR_TRISTATE_BOOL_ABSENT = 0,
     VIR_TRISTATE_BOOL_YES,

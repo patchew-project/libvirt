@@ -502,3 +502,22 @@ enum {
 # define fprintf(fh, ...) g_fprintf(fh, __VA_ARGS__)
 
 #endif /* VIR_NO_GLIB_STDIO */
+
+
+#define VIR_ENUM_IMPL(name, lastVal, ...) \
+    static const char *const name ## TypeList[] = { __VA_ARGS__ }; \
+    const char *name ## TypeToString(int type) { \
+        return virEnumToString(name ## TypeList, \
+                               G_N_ELEMENTS(name ## TypeList), \
+                               type); \
+    } \
+    int name ## TypeFromString(const char *type) { \
+        return virEnumFromString(name ## TypeList, \
+                                 G_N_ELEMENTS(name ## TypeList), \
+                                 type); \
+    } \
+    G_STATIC_ASSERT(G_N_ELEMENTS(name ## TypeList) == lastVal)
+
+#define VIR_ENUM_DECL(name) \
+    const char *name ## TypeToString(int type); \
+    int name ## TypeFromString(const char*type)
