@@ -336,6 +336,14 @@
                 <!-- VIRT:DIRECTIVE {
                   "structure": {"output": "src/conf/network_conf"},
                   "clearfunc": {"output": "src/conf/network_conf"},
+                  "parsefunc": {
+                    "args.noctxt": true,
+                    "args.instname": true,
+                    "post": true,
+                    "args": [
+                      {"name": "partialOkay", "type": "Bool"}
+                    ]
+                  },
                   "members": [{"id": "hostname", "name": "name"}]
                 } -->
                 <element name="host">
