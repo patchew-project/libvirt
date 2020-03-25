@@ -288,6 +288,10 @@
                     "post": true,
                     "args.noctxt": true,
                     "args.instname": true
+                  },
+                  "formatfunc": {
+                    "output": "src/conf/network_conf",
+                    "order": ["domain", "addr"]
                   }
                 } -->
                 <element name="forwarder">

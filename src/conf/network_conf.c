@@ -1964,22 +1964,9 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < def->nforwarders; i++) {
-
-        virBufferAddLit(buf, "<forwarder");
-        if (def->forwarders[i].domain) {
-            virBufferEscapeString(buf, " domain='%s'",
-                                  def->forwarders[i].domain);
-        }
-        if (VIR_SOCKET_ADDR_VALID(&def->forwarders[i].addr)) {
-        char *addr = virSocketAddrFormat(&def->forwarders[i].addr);
-
-        if (!addr)
+        if (virNetworkDNSForwarderFormatBuf(buf, "forwarder",
+                                            &def->forwarders[i]) < 0)
             return -1;
-
-        virBufferAsprintf(buf, " addr='%s'", addr);
-        VIR_FREE(addr);
-        }
-        virBufferAddLit(buf, "/>\n");
     }
 
     for (i = 0; i < def->ntxts; i++) {
