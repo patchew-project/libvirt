@@ -229,7 +229,7 @@ virNetworkDefFree(virNetworkDefPtr def)
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" \
     "_-+/*"
 
-static int
+int
 virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
                                 virNetworkDNSSrvDefPtr def,
                                 xmlXPathContextPtr ctxt G_GNUC_UNUSED,
@@ -239,9 +239,9 @@ virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
                                 const char *protocolStr G_GNUC_UNUSED,
                                 const char *domainStr G_GNUC_UNUSED,
                                 const char *targetStr G_GNUC_UNUSED,
-                                bool has_port,
-                                bool has_priority,
-                                bool has_weight)
+                                const char *portStr,
+                                const char *priorityStr,
+                                const char *weightStr)
 {
     if (!def->service && !partialOkay) {
         virReportError(VIR_ERR_XML_DETAIL,
@@ -282,14 +282,14 @@ virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
         return -1;
     }
 
-    if (has_port && !def->target) {
+    if (portStr && !def->target) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("DNS SRV port attribute not permitted without "
                          "target for service '%s' in network '%s'"),
                        def->service, networkName);
         return -1;
     }
-    if (has_port && (def->port < 1 || def->port > 65535)) {
+    if (portStr && (def->port < 1 || def->port > 65535)) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("invalid DNS SRV port attribute "
                          "for service '%s' in network '%s'"),
@@ -297,14 +297,14 @@ virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
         return -1;
     }
 
-    if (has_priority && !def->target) {
+    if (priorityStr && !def->target) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("DNS SRV priority attribute not permitted without "
                          "target for service '%s' in network '%s'"),
                        def->service, networkName);
         return -1;
     }
-    if (has_priority && def->priority > 65535) {
+    if (priorityStr && def->priority > 65535) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("Invalid DNS SRV priority attribute "
                          "for service '%s' in network '%s'"),
@@ -312,14 +312,14 @@ virNetworkDNSSrvDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
         return -1;
     }
 
-    if (has_weight && !def->target) {
+    if (weightStr && !def->target) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("DNS SRV weight attribute not permitted without "
                          "target for service '%s' in network '%s'"),
                        def->service, networkName);
         return -1;
     }
-    if (has_weight && def->weight > 65535) {
+    if (weightStr && def->weight > 65535) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("invalid DNS SRV weight attribute "
                          "for service '%s' in network '%s'"),
@@ -711,79 +711,6 @@ virNetworkDNSHostDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
 }
 
 
-/* virNetworkDNSSrvDefParseXML will be replaced by generated namesake */
-static int
-virNetworkDNSSrvDefParseXML(const char *networkName,
-                            xmlNodePtr node,
-                            xmlXPathContextPtr ctxt,
-                            virNetworkDNSSrvDefPtr def,
-                            bool partialOkay)
-{
-    int ret;
-    bool has_port = false;
-    bool has_priority = false;
-    bool has_weight = false;
-    xmlNodePtr save_ctxt = ctxt->node;
-    ctxt->node = node;
-
-    def->service = virXMLPropString(node, "service");
-    def->protocol = virXMLPropString(node, "protocol");
-
-    /* Following attributes are optional */
-    def->domain = virXMLPropString(node, "domain");
-    def->target = virXMLPropString(node, "target");
-
-    ret = virXPathUInt("string(./@port)", ctxt, &def->port);
-    if (ret >= 0) {
-        has_port = true;
-    } else if (ret == -2) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("invalid DNS SRV port attribute "
-                         "for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-
-    ret = virXPathUInt("string(./@priority)", ctxt, &def->priority);
-    if (ret >= 0) {
-        has_priority = true;
-    } else if (ret == -2) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("Invalid DNS SRV priority attribute "
-                         "for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-
-    ret = virXPathUInt("string(./@weight)", ctxt, &def->weight);
-    if (ret >= 0) {
-        has_weight = true;
-    } else if (ret == -2) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("invalid DNS SRV weight attribute "
-                         "for service '%s' in network '%s'"),
-                       def->service, networkName);
-        goto error;
-    }
-
-    if (virNetworkDNSSrvDefParseXMLPost(node, def, ctxt,
-                                        networkName, partialOkay,
-                                        def->service, def->protocol,
-                                        def->domain, def->target,
-                                        has_port, has_priority,
-                                        has_weight) < 0)
-        goto error;
-
-    ctxt->node = save_ctxt;
-    return 0;
-
- error:
-    virNetworkDNSSrvDefClear(def);
-    ctxt->node = save_ctxt;
-    return -1;
-}
-
-
 static int
 virNetworkDNSTxtDefParseXML(const char *networkName,
                             xmlNodePtr node,
@@ -937,8 +864,9 @@ virNetworkDNSDefParseXML(const char *networkName,
             goto cleanup;
 
         for (i = 0; i < nsrvs; i++) {
-            if (virNetworkDNSSrvDefParseXML(networkName, srvNodes[i], ctxt,
-                                            &def->srvs[def->nsrvs], false) < 0) {
+            if (virNetworkDNSSrvDefParseXML(srvNodes[i],
+                                            &def->srvs[def->nsrvs], ctxt,
+                                            networkName, false) < 0) {
                 goto cleanup;
             }
             def->nsrvs++;
@@ -3478,7 +3406,7 @@ virNetworkDefUpdateDNSSrv(virNetworkDefPtr def,
     if (virNetworkDefUpdateCheckElementName(def, ctxt->node, "srv") < 0)
         goto cleanup;
 
-    if (virNetworkDNSSrvDefParseXML(def->name, ctxt->node, ctxt, &srv, !isAdd) < 0)
+    if (virNetworkDNSSrvDefParseXML(ctxt->node, &srv, ctxt, def->name, !isAdd) < 0)
         goto cleanup;
 
     for (i = 0; i < dns->nsrvs; i++) {

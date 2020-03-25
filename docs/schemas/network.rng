@@ -304,6 +304,7 @@
                   "structure": {"output": "src/conf/network_conf"},
                   "clearfunc": {"output": "src/conf/network_conf"},
                   "parsefunc": {
+                    "output": "src/conf/network_conf",
                     "post": true,
                     "args.instname": true,
                     "args": [
