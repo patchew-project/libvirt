@@ -214,7 +214,7 @@ virNetworkDefFree(virNetworkDefPtr def)
 }
 
 
-static int
+int
 virNetworkDNSForwarderParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
                                    virNetworkDNSForwarderPtr def,
                                    const char *networkName G_GNUC_UNUSED,
@@ -228,35 +228,6 @@ virNetworkDNSForwarderParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
         return -1;
     }
 
-    return 0;
-}
-
-
-/* virNetworkDNSForwarderParseXML will be replaced by generated namesake */
-static int
-virNetworkDNSForwarderParseXML(xmlNodePtr curnode,
-                               virNetworkDNSForwarderPtr def,
-                               const char *networkName)
-{
-    char *addr = virXMLPropString(curnode, "addr");
-    if (addr && virSocketAddrParse(&def->addr, addr, AF_UNSPEC) < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Invalid forwarder IP address '%s' "
-                         "in network '%s'"),
-                       addr, networkName);
-        VIR_FREE(addr);
-        return -1;
-    }
-
-    def->domain = virXMLPropString(curnode, "domain");
-
-    if (virNetworkDNSForwarderParseXMLPost(curnode, def, networkName,
-                                           addr, def->domain) < 0) {
-        VIR_FREE(addr);
-        return -1;
-    }
-
-    VIR_FREE(addr);
     return 0;
 }
 
