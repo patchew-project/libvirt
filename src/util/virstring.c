@@ -460,6 +460,21 @@ virStrToLong_uip(char const *s, char **end_ptr, int base, unsigned int *result)
     return 0;
 }
 
+/* Just like virStrToLong_uip, above, but produce an "uint8_t" value.
+ * This version rejects any negative signs.  */
+int
+virStrToLong_u8p(char const *s, char **end_ptr, int base, uint8_t *result)
+{
+    unsigned int val;
+    int ret;
+    ret = virStrToLong_uip(s, end_ptr, base, &val);
+    if (ret < 0 || val > 0xff)
+        return -1;
+
+    *result = (uint8_t) val;
+    return 0;
+}
+
 /* Just like virStrToLong_i, above, but produce a "long" value.  */
 int
 virStrToLong_l(char const *s, char **end_ptr, int base, long *result)
