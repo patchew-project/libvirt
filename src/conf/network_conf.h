@@ -37,6 +37,7 @@
 #include "virmacmap.h"
 #include "virenum.h"
 #include "virxml.h"
+#include "network_conf.generated.h"
 
 struct _virNetworkXMLOption {
     virObject parent;
@@ -101,13 +102,6 @@ struct _virNetworkDHCPHostDef {
     char *id;
     char *name;
     virSocketAddr ip;
-};
-
-typedef struct _virNetworkDNSTxtDef virNetworkDNSTxtDef;
-typedef virNetworkDNSTxtDef *virNetworkDNSTxtDefPtr;
-struct _virNetworkDNSTxtDef {
-    char *name;
-    char *value;
 };
 
 typedef struct _virNetworkDNSSrvDef virNetworkDNSSrvDef;

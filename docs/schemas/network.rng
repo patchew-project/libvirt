@@ -281,6 +281,9 @@
                 </element>
               </zeroOrMore>
               <zeroOrMore>
+                <!-- VIRT:DIRECTIVE {
+                  "structure": {"output": "src/conf/network_conf"}
+                } -->
                 <element name="txt">
                   <attribute name="name"><ref name="dnsName"/></attribute>
                   <attribute name="value"><text/></attribute>
