@@ -290,6 +290,9 @@
                 </element>
               </zeroOrMore>
               <zeroOrMore>
+                <!-- VIRT:DIRECTIVE {
+                  "structure": {"output": "src/conf/network_conf"}
+                } -->
                 <element name="srv">
                   <attribute name="service"><text/></attribute>
                   <attribute name="protocol">

@@ -104,18 +104,6 @@ struct _virNetworkDHCPHostDef {
     virSocketAddr ip;
 };
 
-typedef struct _virNetworkDNSSrvDef virNetworkDNSSrvDef;
-typedef virNetworkDNSSrvDef *virNetworkDNSSrvDefPtr;
-struct _virNetworkDNSSrvDef {
-    char *domain;
-    char *service;
-    char *protocol;
-    char *target;
-    unsigned int port;
-    unsigned int priority;
-    unsigned int weight;
-};
-
 typedef struct _virNetworkDNSHostDef virNetworkDNSHostDef;
 typedef virNetworkDNSHostDef *virNetworkDNSHostDefPtr;
 struct _virNetworkDNSHostDef {

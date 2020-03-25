@@ -193,7 +193,7 @@
   </define>
 
   <define name='unsignedShort'>
-    <data type='integer'>
+    <data type='unsignedInt'>
       <param name="minInclusive">0</param>
       <param name="maxInclusive">65535</param>
     </data>
