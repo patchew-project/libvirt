@@ -185,6 +185,11 @@ int virStringParsePort(const char *str,
 int virStringParseYesNo(const char *str,
                         bool *result)
     G_GNUC_WARN_UNUSED_RESULT;
+
+int virStringParseOnOff(const char *str,
+                        bool *result)
+    G_GNUC_WARN_UNUSED_RESULT;
+
 /**
  * VIR_AUTOSTRINGLIST:
  *

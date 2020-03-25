@@ -1404,3 +1404,25 @@ int virStringParseYesNo(const char *str, bool *result)
 
     return 0;
 }
+
+
+/**
+ * virStringParseOnOff:
+ * @str: "on|off" to parse, must not be NULL.
+ * @result: pointer to the boolean result of @str conversion
+ *
+ * Parses a "on|off" string and converts it into a boolean.
+ *
+ * Returns 0 on success and -1 on error.
+ */
+int virStringParseOnOff(const char *str, bool *result)
+{
+    if (STREQ(str, "on"))
+        *result = true;
+    else if (STREQ(str, "off"))
+        *result = false;
+    else
+        return -1;
+
+    return 0;
+}
