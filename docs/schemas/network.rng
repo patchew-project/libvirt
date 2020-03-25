@@ -259,7 +259,11 @@
         <optional>
           <!-- VIRT:DIRECTIVE {
             "structure": {"output": "src/conf/network_conf"},
-            "clearfunc": {"output": "src/conf/network_conf"}
+            "clearfunc": {"output": "src/conf/network_conf"},
+            "parsefunc": {
+              "post": true,
+              "args.instname": true
+            }
           } -->
           <element name="dns">
             <optional>
