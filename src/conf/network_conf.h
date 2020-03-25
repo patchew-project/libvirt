@@ -104,13 +104,6 @@ struct _virNetworkDHCPHostDef {
     virSocketAddr ip;
 };
 
-typedef struct _virNetworkDNSForwarder virNetworkDNSForwarder;
-typedef virNetworkDNSForwarder *virNetworkDNSForwarderPtr;
-struct _virNetworkDNSForwarder {
-    virSocketAddr addr;
-    char *domain;
-};
-
 typedef struct _virNetworkDNSDef virNetworkDNSDef;
 typedef virNetworkDNSDef *virNetworkDNSDefPtr;
 struct _virNetworkDNSDef {

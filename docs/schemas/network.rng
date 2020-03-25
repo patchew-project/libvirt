@@ -270,6 +270,10 @@
             </optional>
             <interleave>
               <zeroOrMore>
+                <!-- VIRT:DIRECTIVE {
+                  "name": "virNetworkDNSForwarder",
+                  "structure": {"output": "src/conf/network_conf"}
+                } -->
                 <element name="forwarder">
                   <optional>
                     <attribute name="addr"><ref name="ipAddr"/></attribute>
