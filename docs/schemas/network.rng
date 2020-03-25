@@ -264,7 +264,8 @@
               "output": "src/conf/network_conf",
               "post": true,
               "args.instname": true
-            }
+            },
+            "formatfunc": {"output": "src/conf/network_conf"}
           } -->
           <element name="dns">
             <optional>
