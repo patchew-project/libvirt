@@ -488,7 +488,7 @@ virSocketAddrRangeParseXML(const char *networkName,
 }
 
 
-static int
+int
 virNetworkDNSTxtDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
                                 virNetworkDNSTxtDefPtr def,
                                 const char *networkName,
@@ -747,34 +747,6 @@ virNetworkDNSHostDefParseXMLPost(xmlNodePtr curnode G_GNUC_UNUSED,
 
 
 static int
-virNetworkDNSTxtDefParseXML(const char *networkName,
-                            xmlNodePtr node,
-                            virNetworkDNSTxtDefPtr def,
-                            bool partialOkay)
-{
-    if (!(def->name = virXMLPropString(node, "name"))) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("missing required name attribute in DNS TXT record "
-                         "of network %s"), networkName);
-        goto error;
-    }
-
-    def->value = virXMLPropString(node, "value");
-
-    if (virNetworkDNSTxtDefParseXMLPost(node, def,
-                                        networkName, partialOkay,
-                                        def->name, def->value) < 0)
-        goto error;
-
-    return 0;
-
- error:
-    virNetworkDNSTxtDefClear(def);
-    return -1;
-}
-
-
-static int
 virNetworkDNSDefParseXML(const char *networkName,
                          xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -907,8 +879,9 @@ virNetworkDNSDefParseXML(const char *networkName,
             goto cleanup;
 
         for (i = 0; i < ntxts; i++) {
-            if (virNetworkDNSTxtDefParseXML(networkName, txtNodes[i],
-                                            &def->txts[def->ntxts], false) < 0) {
+            if (virNetworkDNSTxtDefParseXML(txtNodes[i],
+                                            &def->txts[def->ntxts],
+                                            networkName, false) < 0) {
                 goto cleanup;
             }
             def->ntxts++;
@@ -3513,7 +3486,7 @@ virNetworkDefUpdateDNSTxt(virNetworkDefPtr def,
     if (virNetworkDefUpdateCheckElementName(def, ctxt->node, "txt") < 0)
         goto cleanup;
 
-    if (virNetworkDNSTxtDefParseXML(def->name, ctxt->node, &txt, !isAdd) < 0)
+    if (virNetworkDNSTxtDefParseXML(ctxt->node, &txt, def->name, !isAdd) < 0)
         goto cleanup;
 
     for (foundIdx = 0; foundIdx < dns->ntxts; foundIdx++) {
