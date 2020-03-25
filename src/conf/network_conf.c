@@ -1970,8 +1970,8 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     }
 
     for (i = 0; i < def->ntxts; i++) {
-        virBufferEscapeString(buf, "<txt name='%s' ", def->txts[i].name);
-        virBufferEscapeString(buf, "value='%s'/>\n", def->txts[i].value);
+        if (virNetworkDNSTxtDefFormatBuf(buf, "txt", &def->txts[i]) < 0)
+            return -1;
     }
 
     for (i = 0; i < def->nsrvs; i++) {

@@ -317,6 +317,7 @@
                       {"name": "partialOkay", "type": "Bool"}
                     ]
                   },
+                  "formatfunc": {"output": "src/conf/network_conf"},
                   "members": [
                     {"id": "value", "opt": true}
                   ]
