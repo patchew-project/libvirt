@@ -27,3 +27,19 @@
 
 int qemuValidateDomainDefFeatures(const virDomainDef *def,
                                   virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefClockTimers(const virDomainDef *def,
+                                     virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefPM(const virDomainDef *def,
+                            virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefBoot(const virDomainDef *def,
+                              virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainCpuCount(const virDomainDef *def,
+                               virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainCpuCount(const virDomainDef *def,
+                               virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefMemory(const virDomainDef *def,
+                                virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefNuma(const virDomainDef *def,
+                              virQEMUCapsPtr qemuCaps);
+int qemuValidateDomainDefConsole(const virDomainDef *def,
+                                 virQEMUCapsPtr qemuCaps);

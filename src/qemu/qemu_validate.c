@@ -22,6 +22,7 @@
 
 #include "qemu_validate.h"
 #include "qemu_domain.h"
+#include "virutil.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -303,6 +304,386 @@ qemuValidateDomainDefFeatures(const virDomainDef *def,
         case VIR_DOMAIN_FEATURE_MSRS:
         case VIR_DOMAIN_FEATURE_LAST:
             break;
+        }
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefClockTimers(const virDomainDef *def,
+                                 virQEMUCapsPtr qemuCaps)
+{
+    size_t i;
+
+    for (i = 0; i < def->clock.ntimers; i++) {
+        virDomainTimerDefPtr timer = def->clock.timers[i];
+
+        switch ((virDomainTimerNameType)timer->name) {
+        case VIR_DOMAIN_TIMER_NAME_PLATFORM:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported timer type (name) '%s'"),
+                           virDomainTimerNameTypeToString(timer->name));
+            return -1;
+
+        case VIR_DOMAIN_TIMER_NAME_TSC:
+        case VIR_DOMAIN_TIMER_NAME_KVMCLOCK:
+        case VIR_DOMAIN_TIMER_NAME_HYPERVCLOCK:
+        case VIR_DOMAIN_TIMER_NAME_LAST:
+            break;
+
+        case VIR_DOMAIN_TIMER_NAME_RTC:
+            switch (timer->track) {
+            case -1: /* unspecified - use hypervisor default */
+            case VIR_DOMAIN_TIMER_TRACK_GUEST:
+            case VIR_DOMAIN_TIMER_TRACK_WALL:
+                break;
+            case VIR_DOMAIN_TIMER_TRACK_BOOT:
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported rtc timer track '%s'"),
+                               virDomainTimerTrackTypeToString(timer->track));
+                return -1;
+            }
+
+            switch (timer->tickpolicy) {
+            case -1:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DELAY:
+                /* This is the default - missed ticks delivered when
+                   next scheduled, at normal rate */
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_CATCHUP:
+                /* deliver ticks at a faster rate until caught up */
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported rtc timer tickpolicy '%s'"),
+                               virDomainTimerTickpolicyTypeToString(
+                                   timer->tickpolicy));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_TIMER_NAME_PIT:
+            switch (timer->tickpolicy) {
+            case -1:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DELAY:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_CATCHUP:
+                if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM_PIT_TICK_POLICY)) {
+                    /* can't catchup if we don't have kvm-pit */
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("unsupported pit tickpolicy '%s'"),
+                                   virDomainTimerTickpolicyTypeToString(
+                                       timer->tickpolicy));
+                    return -1;
+                }
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
+                /* no way to support this mode for pit in qemu */
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported pit tickpolicy '%s'"),
+                               virDomainTimerTickpolicyTypeToString(
+                                   timer->tickpolicy));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_TIMER_NAME_HPET:
+            /* no hpet timer available. The only possible action
+              is to raise an error if present="yes" */
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_HPET) &&
+                timer->present == 1) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               "%s", _("hpet timer is not supported"));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_TIMER_NAME_ARMVTIMER:
+            if (def->virtType != VIR_DOMAIN_VIRT_KVM ||
+                !qemuDomainIsARMVirt(def)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Configuring the '%s' timer is not supported "
+                                 "for virtType=%s arch=%s machine=%s guests"),
+                               virDomainTimerNameTypeToString(timer->name),
+                               virDomainVirtTypeToString(def->virtType),
+                               virArchToString(def->os.arch),
+                               def->os.machine);
+                return -1;
+            }
+            if (timer->present == 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("The '%s' timer can't be disabled"),
+                               virDomainTimerNameTypeToString(timer->name));
+                return -1;
+            }
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CPU_KVM_NO_ADJVTIME)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Configuring the '%s' timer is not supported "
+                                 "with this QEMU binary"),
+                               virDomainTimerNameTypeToString(timer->name));
+                return -1;
+            }
+
+            switch (timer->tickpolicy) {
+            case -1:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DELAY:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_CATCHUP:
+            case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("The '%s' timer does not support tickpolicy '%s'"),
+                               virDomainTimerNameTypeToString(timer->name),
+                               virDomainTimerTickpolicyTypeToString(timer->tickpolicy));
+                return -1;
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefPM(const virDomainDef *def,
+                        virQEMUCapsPtr qemuCaps)
+{
+    bool q35Dom = qemuDomainIsQ35(def);
+
+    if (def->pm.s3) {
+        bool q35ICH9_S3 = q35Dom &&
+                          virQEMUCapsGet(qemuCaps, QEMU_CAPS_ICH9_DISABLE_S3);
+
+        if (!q35ICH9_S3 && !virQEMUCapsGet(qemuCaps, QEMU_CAPS_PIIX_DISABLE_S3)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "%s", _("setting ACPI S3 not supported"));
+            return -1;
+        }
+    }
+
+    if (def->pm.s4) {
+        bool q35ICH9_S4 = q35Dom &&
+                          virQEMUCapsGet(qemuCaps, QEMU_CAPS_ICH9_DISABLE_S4);
+
+        if (!q35ICH9_S4 && !virQEMUCapsGet(qemuCaps, QEMU_CAPS_PIIX_DISABLE_S4)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "%s", _("setting ACPI S4 not supported"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefBoot(const virDomainDef *def,
+                          virQEMUCapsPtr qemuCaps)
+{
+    if (def->os.bios.rt_set) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_REBOOT_TIMEOUT)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("reboot timeout is not supported "
+                             "by this QEMU binary"));
+            return -1;
+        }
+    }
+
+    if (def->os.bm_timeout_set) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPLASH_TIMEOUT)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("splash timeout is not supported "
+                             "by this QEMU binary"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainCpuCount(const virDomainDef *def, virQEMUCapsPtr qemuCaps)
+{
+    unsigned int maxCpus = virQEMUCapsGetMachineMaxCpus(qemuCaps, def->virtType,
+                                                        def->os.machine);
+
+    if (virDomainDefGetVcpus(def) == 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Domain requires at least 1 vCPU"));
+        return -1;
+    }
+
+    if (maxCpus > 0 && virDomainDefGetVcpusMax(def) > maxCpus) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Maximum CPUs greater than specified machine "
+                         "type limit %u"), maxCpus);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefMemory(const virDomainDef *def,
+                            virQEMUCapsPtr qemuCaps)
+{
+    const long system_page_size = virGetSystemPageSizeKB();
+    const virDomainMemtune *mem = &def->mem;
+
+    if (mem->nhugepages == 0)
+        return 0;
+
+    if (mem->allocation == VIR_DOMAIN_MEMORY_ALLOCATION_ONDEMAND) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("hugepages are not allowed with memory "
+                         "allocation ondemand"));
+        return -1;
+    }
+
+    if (mem->source == VIR_DOMAIN_MEMORY_SOURCE_ANONYMOUS) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("hugepages are not allowed with anonymous "
+                         "memory source"));
+        return -1;
+    }
+
+    if (mem->source == VIR_DOMAIN_MEMORY_SOURCE_MEMFD &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD_HUGETLB)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("hugepages is not supported with memfd memory source"));
+        return -1;
+    }
+
+    /* We can't guarantee any other mem.access
+     * if no guest NUMA nodes are defined. */
+    if (mem->hugepages[0].size != system_page_size &&
+        virDomainNumaGetNodeCount(def->numa) == 0 &&
+        mem->access != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT &&
+        mem->access != VIR_DOMAIN_MEMORY_ACCESS_PRIVATE) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("memory access mode '%s' not supported "
+                         "without guest numa node"),
+                       virDomainMemoryAccessTypeToString(mem->access));
+        return -1;
+    }
+
+    if (mem->nosharepages && !virQEMUCapsGet(qemuCaps, QEMU_CAPS_MEM_MERGE)) {
+         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                        _("disable shared memory is not available "
+                          "with this QEMU binary"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefNuma(const virDomainDef *def,
+                          virQEMUCapsPtr qemuCaps)
+{
+    const long system_page_size = virGetSystemPageSizeKB();
+    size_t ncells = virDomainNumaGetNodeCount(def->numa);
+    size_t i;
+    bool hasMemoryCap = virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
+                        virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE) ||
+                        virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD);
+
+    if (virDomainNumatuneHasPerNodeBinding(def->numa) && !hasMemoryCap) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Per-node memory binding is not supported "
+                         "with this QEMU"));
+        return -1;
+    }
+
+    if (def->mem.nhugepages &&
+        def->mem.hugepages[0].size != system_page_size &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("huge pages per NUMA node are not "
+                         "supported with this QEMU"));
+        return -1;
+    }
+
+    for (i = 0; i < ncells; i++) {
+        g_autofree char * cpumask = NULL;
+
+        if (!hasMemoryCap &&
+            virDomainNumaGetNodeMemoryAccessMode(def->numa, i)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Shared memory mapping is not supported "
+                             "with this QEMU"));
+            return -1;
+        }
+
+        if (!(cpumask = virBitmapFormat(virDomainNumaGetNodeCpumask(def->numa, i))))
+            return -1;
+
+        if (strchr(cpumask, ',') &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NUMA)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("disjoint NUMA cpu ranges are not supported "
+                             "with this QEMU"));
+            return -1;
+        }
+
+    }
+
+    if (virDomainNumaNodesDistancesAreBeingSet(def->numa) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NUMA_DIST)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("setting NUMA distances is not "
+                         "supported with this qemu"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+qemuValidateDomainDefConsole(const virDomainDef *def,
+                             virQEMUCapsPtr qemuCaps)
+{
+    size_t i;
+
+    /* Explicit console devices */
+    for (i = 0; i < def->nconsoles; i++) {
+        virDomainChrDefPtr console = def->consoles[i];
+
+        switch (console->targetType) {
+        case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SCLP:
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SCLPCONSOLE)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("sclpconsole is not supported in this QEMU binary"));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SCLPLM:
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SCLPLMCONSOLE)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("sclplmconsole is not supported in this QEMU binary"));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_VIRTIO:
+        case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SERIAL:
+            break;
+
+        default:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported console target type %s"),
+                           NULLSTR(virDomainChrConsoleTargetTypeToString(console->targetType)));
+            return -1;
         }
     }
 
