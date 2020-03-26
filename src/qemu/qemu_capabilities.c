@@ -567,6 +567,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "query-named-block-nodes.flat",
               "blockdev-snapshot.allow-write-only-overlay",
               "blockdev-reopen",
+              "virtio.packed",
     );
 
 
@@ -1291,6 +1292,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
     { "disable-legacy", QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY },
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
+    { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBlk[] = {
@@ -1304,6 +1306,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBlk[] = {
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
     { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE },
+    { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioNet[] = {
@@ -1316,6 +1319,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioNet[] = {
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
     { "failover", QEMU_CAPS_VIRTIO_NET_FAILOVER },
+    { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsSpaprPCIHostBridge[] = {
@@ -1327,6 +1331,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioSCSI[] = {
     { "disable-legacy", QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY },
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
+    { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVfioPCI[] = {
@@ -1395,6 +1400,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioGpu[] = {
     { "disable-legacy", QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY },
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
+    { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsICH9[] = {
