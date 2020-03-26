@@ -2404,6 +2404,7 @@ struct _virDomainVsockDef {
 struct _virDomainVirtioOptions {
     virTristateSwitch iommu;
     virTristateSwitch ats;
+    virTristateSwitch packed;
 };
 
 /*
