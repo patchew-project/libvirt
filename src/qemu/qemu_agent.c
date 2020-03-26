@@ -1083,7 +1083,7 @@ qemuAgentCommandFull(qemuAgentPtr agent,
 {
     int ret = -1;
     qemuAgentMessage msg;
-    char *cmdstr = NULL;
+    g_autofree char *cmdstr = NULL;
     int await_event = agent->await_event;
 
     *reply = NULL;
@@ -1133,7 +1133,6 @@ qemuAgentCommandFull(qemuAgentPtr agent,
     ret = qemuAgentCheckError(cmd, *reply, report_unsupported);
 
  cleanup:
-    VIR_FREE(cmdstr);
     VIR_FREE(msg.txBuffer);
     agent->await_event = QEMU_AGENT_EVENT_NONE;
 
