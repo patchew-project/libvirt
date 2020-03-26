@@ -963,7 +963,7 @@ qemuValidateDomainDeviceDefZPCIAddress(virDomainDeviceInfoPtr info,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefAddress(const virDomainDeviceDef *dev,
                                    virQEMUCapsPtr qemuCaps)
 {
@@ -1043,7 +1043,7 @@ qemuValidateNetSupportsCoalesce(virDomainNetType type)
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefNetwork(const virDomainNetDef *net,
                                    virQEMUCapsPtr qemuCaps)
 {
@@ -1360,7 +1360,7 @@ qemuValidateDomainChrSourceDef(const virDomainChrSourceDef *def,
 }
 
 
-int
+static int
 qemuValidateDomainChrDef(const virDomainChrDef *dev,
                          const virDomainDef *def,
                          virQEMUCapsPtr qemuCaps)
@@ -1420,7 +1420,7 @@ qemuValidateDomainChrDef(const virDomainChrDef *dev,
 }
 
 
-int
+static int
 qemuValidateDomainSmartcardDef(const virDomainSmartcardDef *def,
                                virQEMUCapsPtr qemuCaps)
 {
@@ -1465,7 +1465,7 @@ qemuValidateDomainSmartcardDef(const virDomainSmartcardDef *def,
 }
 
 
-int
+static int
 qemuValidateDomainRNGDef(const virDomainRNGDef *def,
                          virQEMUCapsPtr qemuCaps G_GNUC_UNUSED)
 {
@@ -1477,7 +1477,7 @@ qemuValidateDomainRNGDef(const virDomainRNGDef *def,
 }
 
 
-int
+static int
 qemuValidateDomainRedirdevDef(const virDomainRedirdevDef *def,
                               virQEMUCapsPtr qemuCaps)
 {
@@ -1488,7 +1488,7 @@ qemuValidateDomainRedirdevDef(const virDomainRedirdevDef *def,
 }
 
 
-int
+static int
 qemuValidateDomainWatchdogDef(const virDomainWatchdogDef *dev,
                               const virDomainDef *def)
 {
@@ -1667,7 +1667,7 @@ qemuValidateDomainMdevDef(const virDomainHostdevDef *hostdev,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefHostdev(const virDomainHostdevDef *hostdev,
                                    const virDomainDef *def,
                                    virQEMUCapsPtr qemuCaps)
@@ -1724,7 +1724,7 @@ qemuValidateDomainDeviceDefHostdev(const virDomainHostdevDef *hostdev,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefVideo(const virDomainVideoDef *video,
                                  virQEMUCapsPtr qemuCaps)
 {
@@ -2671,7 +2671,7 @@ qemuValidateDomainDeviceDefControllerPCI(const virDomainControllerDef *cont,
 #undef virReportControllerMissingOption
 
 
-int
+static int
 qemuValidateDomainDeviceDefController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
                                       virQEMUCapsPtr qemuCaps)
@@ -2795,7 +2795,7 @@ qemuValidateDomainDeviceDefSPICEGraphics(const virDomainGraphicsDef *graphics,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
                                     const virDomainDef *def,
                                     virQEMUDriverPtr driver,
@@ -2938,7 +2938,7 @@ qemuValidateDomainDefVirtioFSSharedMemory(const virDomainDef *def)
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefFS(virDomainFSDefPtr fs,
                               const virDomainDef *def,
                               virQEMUDriverPtr driver,
@@ -3031,7 +3031,7 @@ qemuSoundCodecTypeToCaps(int type)
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefSound(virDomainSoundDefPtr sound,
                                  virQEMUCapsPtr qemuCaps)
 {
@@ -3090,7 +3090,7 @@ qemuValidateDomainDeviceDefSound(virDomainSoundDefPtr sound,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefVsock(const virDomainVsockDef *vsock,
                                  const virDomainDef *def,
                                  virQEMUCapsPtr qemuCaps)
@@ -3110,7 +3110,7 @@ qemuValidateDomainDeviceDefVsock(const virDomainVsockDef *vsock,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
                                const virDomainDef *def,
                                virQEMUCapsPtr qemuCaps)
@@ -3190,7 +3190,7 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefInput(const virDomainInputDef *input,
                                  const virDomainDef *def,
                                  virQEMUCapsPtr qemuCaps)
@@ -3283,7 +3283,7 @@ qemuValidateDomainDeviceDefInput(const virDomainInputDef *input,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefMemballoon(const virDomainMemballoonDef *memballoon,
                                       virQEMUCapsPtr qemuCaps)
 {
@@ -3312,7 +3312,7 @@ qemuValidateDomainDeviceDefMemballoon(const virDomainMemballoonDef *memballoon,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefIOMMU(const virDomainIOMMUDef *iommu,
                                  const virDomainDef *def,
                                  virQEMUCapsPtr qemuCaps)
@@ -3397,7 +3397,7 @@ qemuValidateDomainDeviceDefIOMMU(const virDomainIOMMUDef *iommu,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefNVRAM(virDomainNVRAMDefPtr nvram,
                                  const virDomainDef *def,
                                  virQEMUCapsPtr qemuCaps)
@@ -3430,7 +3430,7 @@ qemuValidateDomainDeviceDefNVRAM(virDomainNVRAMDefPtr nvram,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefHub(virDomainHubDefPtr hub,
                                virQEMUCapsPtr qemuCaps)
 {
@@ -3451,7 +3451,7 @@ qemuValidateDomainDeviceDefHub(virDomainHubDefPtr hub,
 }
 
 
-int
+static int
 qemuValidateDomainDeviceDefMemory(virDomainMemoryDefPtr mem,
                                   virQEMUCapsPtr qemuCaps)
 {
@@ -3463,4 +3463,130 @@ qemuValidateDomainDeviceDefMemory(virDomainMemoryDefPtr mem,
     }
 
     return 0;
+}
+
+
+int
+qemuValidateDomainDeviceDef(const virDomainDeviceDef *dev,
+                            const virDomainDef *def,
+                            void *opaque)
+{
+    int ret = 0;
+    virQEMUDriverPtr driver = opaque;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
+    g_autoptr(virDomainCaps) domCaps = NULL;
+
+    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
+                                            def->emulator)))
+        return -1;
+
+    if (!(domCaps = virQEMUDriverGetDomainCapabilities(driver, qemuCaps,
+                                                       def->os.machine,
+                                                       def->os.arch,
+                                                       def->virtType)))
+        return -1;
+
+    if ((ret = qemuValidateDomainDeviceDefAddress(dev, qemuCaps)) < 0)
+        return ret;
+
+    if ((ret = virDomainCapsDeviceDefValidate(domCaps, dev, def)) < 0)
+        return ret;
+
+    switch ((virDomainDeviceType)dev->type) {
+    case VIR_DOMAIN_DEVICE_NET:
+        ret = qemuValidateDomainDeviceDefNetwork(dev->data.net, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_CHR:
+        ret = qemuValidateDomainChrDef(dev->data.chr, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+        ret = qemuValidateDomainSmartcardDef(dev->data.smartcard, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_RNG:
+        ret = qemuValidateDomainRNGDef(dev->data.rng, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+        ret = qemuValidateDomainRedirdevDef(dev->data.redirdev, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+        ret = qemuValidateDomainWatchdogDef(dev->data.watchdog, def);
+        break;
+
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+        ret = qemuValidateDomainDeviceDefHostdev(dev->data.hostdev, def,
+                                                 qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_VIDEO:
+        ret = qemuValidateDomainDeviceDefVideo(dev->data.video, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_DISK:
+        ret = qemuValidateDomainDeviceDefDisk(dev->data.disk, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+        ret = qemuValidateDomainDeviceDefController(dev->data.controller, def,
+                                                    qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_VSOCK:
+        ret = qemuValidateDomainDeviceDefVsock(dev->data.vsock, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_TPM:
+        ret = qemuValidateDomainDeviceDefTPM(dev->data.tpm, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+        ret = qemuValidateDomainDeviceDefGraphics(dev->data.graphics, def,
+                                                  driver, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_INPUT:
+        ret = qemuValidateDomainDeviceDefInput(dev->data.input, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+        ret = qemuValidateDomainDeviceDefMemballoon(dev->data.memballoon, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_IOMMU:
+        ret = qemuValidateDomainDeviceDefIOMMU(dev->data.iommu, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_FS:
+        ret = qemuValidateDomainDeviceDefFS(dev->data.fs, def, driver, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_NVRAM:
+        ret = qemuValidateDomainDeviceDefNVRAM(dev->data.nvram, def, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_HUB:
+        ret = qemuValidateDomainDeviceDefHub(dev->data.hub, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_SOUND:
+        ret = qemuValidateDomainDeviceDefSound(dev->data.sound, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_MEMORY:
+        ret = qemuValidateDomainDeviceDefMemory(dev->data.memory, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_LEASE:
+    case VIR_DOMAIN_DEVICE_SHMEM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_LAST:
+        break;
+    }
+
+    return ret;
 }
