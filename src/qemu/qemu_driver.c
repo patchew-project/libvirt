@@ -1173,7 +1173,7 @@ static virDrvOpenStatus qemuConnectOpen(virConnectPtr conn,
         return VIR_DRV_OPEN_ERROR;
     }
 
-    if (qemu_driver->embeddedRoot) {
+    if (virQEMUDriverGetEmbedRoot(qemu_driver)) {
         const char *root = virURIGetParam(conn->uri, "root");
         if (!root)
             return VIR_DRV_OPEN_ERROR;
@@ -1184,11 +1184,11 @@ static virDrvOpenStatus qemuConnectOpen(virConnectPtr conn,
             return VIR_DRV_OPEN_ERROR;
         }
 
-        if (STRNEQ(root, qemu_driver->embeddedRoot)) {
+        if (STRNEQ(root, virQEMUDriverGetEmbedRoot(qemu_driver))) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Cannot open embedded driver at path '%s', "
                              "already open with path '%s'"),
-                           root, qemu_driver->embeddedRoot);
+                           root, virQEMUDriverGetEmbedRoot(qemu_driver));
             return VIR_DRV_OPEN_ERROR;
         }
     } else {
