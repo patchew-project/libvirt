@@ -1230,6 +1230,18 @@ virQEMUDriverIsPrivileged(virQEMUDriverPtr driver)
     return driver->privileged;
 }
 
+/* virQEMUDriverGetEmbedRoot:
+ * @driver: the QEMU driver
+ *
+ * Returns root directory specified in connection URI for embed
+ * mode, NULL otherwise.
+ */
+const char *
+virQEMUDriverGetEmbedRoot(virQEMUDriverPtr driver)
+{
+    return driver->embeddedRoot;
+}
+
 virDomainXMLOptionPtr
 virQEMUDriverCreateXMLConf(virQEMUDriverPtr driver,
                            const char *defsecmodel)

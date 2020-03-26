@@ -334,6 +334,7 @@ virQEMUDriverConfigSetDefaults(virQEMUDriverConfigPtr cfg);
 
 virQEMUDriverConfigPtr virQEMUDriverGetConfig(virQEMUDriverPtr driver);
 bool virQEMUDriverIsPrivileged(virQEMUDriverPtr driver);
+const char *virQEMUDriverGetEmbedRoot(virQEMUDriverPtr driver);
 
 virCapsHostNUMAPtr virQEMUDriverGetHostNUMACaps(virQEMUDriverPtr driver);
 virCPUDefPtr virQEMUDriverGetHostCPU(virQEMUDriverPtr driver);
