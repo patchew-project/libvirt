@@ -26,6 +26,8 @@
 #include "cpu_map.h"
 #include "virstring.h"
 #include "virxml.h"
+#include "cpu_map.h"
+#include "cpu_arm.h"
 
 #define VIR_FROM_THIS VIR_FROM_CPU
 
@@ -34,6 +36,21 @@ static const virArch archs[] = {
     VIR_ARCH_ARMV7B,
     VIR_ARCH_ARMV7L,
     VIR_ARCH_AARCH64,
+};
+
+typedef struct _virCPUarmVendor virCPUarmVendor;
+typedef virCPUarmVendor *virCPUarmVendorPtr;
+struct _virCPUarmVendor {
+    char *name;
+    unsigned long value;
+};
+
+typedef struct _virCPUarmModel virCPUarmModel;
+typedef virCPUarmModel *virCPUarmModelPtr;
+struct _virCPUarmModel {
+    char *name;
+    virCPUarmVendorPtr vendor;
+    virCPUarmData data;
 };
 
 typedef struct _virCPUarmFeature virCPUarmFeature;
@@ -64,8 +81,52 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(virCPUarmFeature, virCPUarmFeatureFree);
 typedef struct _virCPUarmMap virCPUarmMap;
 typedef virCPUarmMap *virCPUarmMapPtr;
 struct _virCPUarmMap {
+    size_t nvendors;
+    virCPUarmVendorPtr *vendors;
+    size_t nmodels;
+    virCPUarmModelPtr *models;
     GPtrArray *features;
 };
+
+static void
+virCPUarmDataClear(virCPUarmData *data)
+{
+    if (!data)
+        return;
+
+    VIR_FREE(data->features);
+}
+
+static void
+virCPUarmDataFree(virCPUDataPtr cpuData)
+{
+    if (!cpuData)
+        return;
+
+    virCPUarmDataClear(&cpuData->data.arm);
+    VIR_FREE(cpuData);
+}
+
+static void
+armModelFree(virCPUarmModelPtr model)
+{
+    if (!model)
+        return;
+
+    virCPUarmDataClear(&model->data);
+    g_free(model->name);
+    g_free(model);
+}
+
+static void
+armVendorFree(virCPUarmVendorPtr vendor)
+{
+    if (!vendor)
+        return;
+
+    g_free(vendor->name);
+    g_free(vendor);
+}
 
 static virCPUarmMapPtr
 virCPUarmMapNew(void)
@@ -86,6 +147,16 @@ virCPUarmMapFree(virCPUarmMapPtr map)
 {
     if (!map)
         return;
+    
+    size_t i;
+
+    for (i = 0; i < map->nmodels; i++)
+        armModelFree(map->models[i]);
+    g_free(map->models);
+
+    for (i = 0; i < map->nvendors; i++)
+        armVendorFree(map->vendors[i]);
+    g_free(map->vendors);
 
     g_ptr_array_free(map->features, TRUE);
 
