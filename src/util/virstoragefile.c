@@ -2818,6 +2818,7 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
 {
     g_autoptr(virURI) uri = NULL;
     const char *path = NULL;
+    g_autofree char *pathquery = NULL;
     VIR_AUTOSTRINGLIST scheme = NULL;
 
     if (!(uri = virURIParse(uristr))) {
@@ -2851,16 +2852,22 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
         return -1;
     }
 
-    /* handle socket stored as a query */
-    if (uri->query)
-        src->hosts->socket = g_strdup(STRSKIP(uri->query, "socket="));
-
     /* uri->path is NULL if the URI does not contain slash after host:
      * transport://host:port */
     if (uri->path)
         path = uri->path;
     else
         path = "";
+
+    /* handle socket stored as a query */
+    if (uri->query) {
+        if (STRPREFIX(uri->query, "socket=")) {
+            src->hosts->socket = g_strdup(STRSKIP(uri->query, "socket="));
+        } else {
+            pathquery = g_strdup_printf("%s?%s", path, uri->query);
+            path = pathquery;
+        }
+    }
 
     /* possibly skip the leading slash  */
     if (path[0] == '/')
