@@ -1501,11 +1501,966 @@
 }
 
 {
+  "execute": "qom-list-types",
+  "id": "libvirt-7"
+}
+
+{
+  "return": [
+    {
+      "name": "vhost-vsock-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "s390-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "z890.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-tablet-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "s390-storage_attributes-qemu",
+      "parent": "s390-storage_attributes"
+    },
+    {
+      "name": "cryptodev-backend",
+      "parent": "object"
+    },
+    {
+      "name": "s390-ccw-virtio-2.12-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "virtio-rng-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "iothread",
+      "parent": "object"
+    },
+    {
+      "name": "z990.4-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-gpu-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "z10BC.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z196.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z14-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "vhost-scsi-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "s390-flic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-vsock-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "z9BC-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "zEC12-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z196-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z13-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z990.3-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "sclplmconsole",
+      "parent": "s390-sclp-event-type"
+    },
+    {
+      "name": "host-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "scsi-cd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "container",
+      "parent": "object"
+    },
+    {
+      "name": "chardev-null",
+      "parent": "chardev"
+    },
+    {
+      "name": "z9EC-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-pcibus",
+      "parent": "bus"
+    },
+    {
+      "name": "zBC12-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "scsi-generic",
+      "parent": "scsi-device"
+    },
+    {
+      "name": "z9EC.3-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-net-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-9p-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "z196.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "qemu-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-mouse-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "virtio-mouse-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "throttle-group",
+      "parent": "object"
+    },
+    {
+      "name": "zEC12.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "rng-egd",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "z800-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-blk-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "s390-ipl",
+      "parent": "device"
+    },
+    {
+      "name": "s390-sclp-events-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "irq",
+      "parent": "object"
+    },
+    {
+      "name": "s390-ccw-virtio-2.8-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "filter-buffer",
+      "parent": "netfilter"
+    },
+    {
+      "name": "virtconsole",
+      "parent": "virtserialport"
+    },
+    {
+      "name": "z9EC.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-rng-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "PCIE",
+      "parent": "PCI"
+    },
+    {
+      "name": "chardev-pty",
+      "parent": "chardev"
+    },
+    {
+      "name": "z900.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "vhost-user-blk",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "chardev-memory",
+      "parent": "chardev-ringbuf"
+    },
+    {
+      "name": "sclp-cpu-hotplug",
+      "parent": "s390-sclp-event-type"
+    },
+    {
+      "name": "s390-skeys-kvm",
+      "parent": "s390-skeys"
+    },
+    {
+      "name": "s390-ccw-virtio-2.9-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "x-terminal3270",
+      "parent": "emulated-ccw-3270"
+    },
+    {
+      "name": "chardev-serial",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "virtio-keyboard-ccw",
+      "parent": "virtio-input-hid-ccw"
+    },
+    {
+      "name": "usb-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "vhost-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "filter-rewriter",
+      "parent": "netfilter"
+    },
+    {
+      "name": "sclp",
+      "parent": "device"
+    },
+    {
+      "name": "z900.3-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-crypto-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "z890-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z890-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "or-irq",
+      "parent": "device"
+    },
+    {
+      "name": "virtual-css-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "qio-net-listener",
+      "parent": "object"
+    },
+    {
+      "name": "virtio-tablet-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "filter-redirector",
+      "parent": "netfilter"
+    },
+    {
+      "name": "chardev-pipe",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "unimplemented-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sclpquiesce",
+      "parent": "s390-sclp-event-type"
+    },
+    {
+      "name": "z990.4-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z10BC.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "split-irq",
+      "parent": "device"
+    },
+    {
+      "name": "scsi-disk",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "virtio-9p-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "vfio-pci-igd-lpc-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "z900.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "qio-channel-buffer",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "virtio-mmio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "z9BC.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z800-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-pci-iommu",
+      "parent": "object"
+    },
+    {
+      "name": "filter-dump",
+      "parent": "netfilter"
+    },
+    {
+      "name": "virtio-scsi-device",
+      "parent": "virtio-scsi-common"
+    },
+    {
+      "name": "virtio-blk-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-9p-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "z114-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-ccw-virtio-2.4-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "z13-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "chardev-ringbuf",
+      "parent": "chardev"
+    },
+    {
+      "name": "vhost-user-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "System",
+      "parent": "bus"
+    },
+    {
+      "name": "z13s-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "filter-mirror",
+      "parent": "netfilter"
+    },
+    {
+      "name": "qemu-console",
+      "parent": "object"
+    },
+    {
+      "name": "virtio-net-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "colo-compare",
+      "parent": "object"
+    },
+    {
+      "name": "z990-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z990.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-ccw-virtio-2.5-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "chardev-testdev",
+      "parent": "chardev"
+    },
+    {
+      "name": "z14-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "chardev-hci",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-keyboard-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "z890.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "input-linux",
+      "parent": "object"
+    },
+    {
+      "name": "virtual-css-bridge",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-stdio",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "qio-dns-resolver",
+      "parent": "object"
+    },
+    {
+      "name": "tls-creds-anon",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "z196-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "diag288",
+      "parent": "device"
+    },
+    {
+      "name": "memory-backend-file",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "z10EC-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-keyboard-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "z13s-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-crypto-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "qemu:memory-region",
+      "parent": "object"
+    },
+    {
+      "name": "rng-random",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "z900-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "chardev-mux",
+      "parent": "chardev"
+    },
+    {
+      "name": "chardev-udp",
+      "parent": "chardev"
+    },
+    {
+      "name": "z10EC.3-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "chardev-gdb",
+      "parent": "chardev"
+    },
+    {
+      "name": "vhost-user-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-ccw-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "z10EC.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z114-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-balloon-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "virtio-scsi-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "z990.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z9EC.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "fw_cfg_io",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "s390-ccw-virtio-2.10-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "virtio-crypto-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "z890.3-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "chardev-file",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "chardev-wctablet",
+      "parent": "chardev"
+    },
+    {
+      "name": "z900.3-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z9BC.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "vhost-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "pci-bridge-seat",
+      "parent": "pci-bridge"
+    },
+    {
+      "name": "z10BC-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z990.5-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "tcg-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "virtio-mmio-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "zEC12.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "mmio_interface",
+      "parent": "device"
+    },
+    {
+      "name": "qio-channel-command",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "s390-ccw-virtio-2.11-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "accel",
+      "parent": "object"
+    },
+    {
+      "name": "z10EC-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "pr-manager-helper",
+      "parent": "pr-manager"
+    },
+    {
+      "name": "loader",
+      "parent": "device"
+    },
+    {
+      "name": "z9EC-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z9EC.3-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-serial-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "tpm-emulator",
+      "parent": "tpm-backend"
+    },
+    {
+      "name": "s390-storage_attributes-kvm",
+      "parent": "s390-storage_attributes"
+    },
+    {
+      "name": "virtio-balloon-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "chardev-vc",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-serial-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "s390-sclp-event-facility",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-socket",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-serial-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "qio-channel-file",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "zEC12-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-flic-kvm",
+      "parent": "s390-flic"
+    },
+    {
+      "name": "migration",
+      "parent": "device"
+    },
+    {
+      "name": "virtio-input-host-device",
+      "parent": "virtio-input-device"
+    },
+    {
+      "name": "vfio-ccw",
+      "parent": "s390-ccw"
+    },
+    {
+      "name": "virtio-gpu-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "z990.5-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z10BC-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "none-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "SCSI",
+      "parent": "bus"
+    },
+    {
+      "name": "tls-creds-x509",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "vhost-vsock-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "kvm-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "virtio-tablet-ccw",
+      "parent": "virtio-input-hid-ccw"
+    },
+    {
+      "name": "secret",
+      "parent": "object"
+    },
+    {
+      "name": "scsi-hd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "qtest-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "z900-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-balloon-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "scsi-block",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "virtio-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "fw_cfg_mem",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "s390-ccw-virtio-2.6-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "PCI",
+      "parent": "bus"
+    },
+    {
+      "name": "cryptodev-vhost-user",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "sclpconsole",
+      "parent": "s390-sclp-event-type"
+    },
+    {
+      "name": "z13.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z890.3-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-skeys-qemu",
+      "parent": "s390-skeys"
+    },
+    {
+      "name": "zpci",
+      "parent": "device"
+    },
+    {
+      "name": "qio-channel-websock",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "virtio-input-host-pci",
+      "parent": "virtio-input-pci"
+    },
+    {
+      "name": "cryptodev-backend-builtin",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "qemu,register",
+      "parent": "device"
+    },
+    {
+      "name": "zBC12-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-ccw-virtio-2.7-machine",
+      "parent": "s390-ccw-machine"
+    },
+    {
+      "name": "z13.2-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-pci-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "s390-flic-qemu",
+      "parent": "s390-flic"
+    },
+    {
+      "name": "vhost-user-blk-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "filter-replay",
+      "parent": "netfilter"
+    },
+    {
+      "name": "chardev-parallel",
+      "parent": "chardev"
+    },
+    {
+      "name": "chardev-msmouse",
+      "parent": "chardev"
+    },
+    {
+      "name": "qio-channel-tls",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "memory-backend-ram",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "virtio-serial-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtserialport",
+      "parent": "virtio-serial-port"
+    },
+    {
+      "name": "z990-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-net-ccw",
+      "parent": "virtio-ccw-device"
+    },
+    {
+      "name": "z10EC.2-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "memory-backend-memfd",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "virtio-rng-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "vfio-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-gpu-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-mouse-ccw",
+      "parent": "virtio-input-hid-ccw"
+    },
+    {
+      "name": "z9BC-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "z10EC.3-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "s390-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "qio-channel-socket",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "z990.3-base-s390x-cpu",
+      "parent": "s390x-cpu"
+    },
+    {
+      "name": "virtio-blk-device",
+      "parent": "virtio-device"
+    }
+  ],
+  "id": "libvirt-7"
+}
+
+{
   "execute": "device-list-properties",
   "arguments": {
     "typename": "virtio-blk-pci"
   },
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -1737,7 +2692,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -1745,7 +2700,7 @@
   "arguments": {
     "typename": "virtio-net-pci"
   },
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -2040,7 +2995,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -2048,7 +3003,7 @@
   "arguments": {
     "typename": "virtio-scsi-pci"
   },
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -2213,7 +3168,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -2221,7 +3176,7 @@
   "arguments": {
     "typename": "virtio-blk-ccw"
   },
-  "id": "libvirt-10"
+  "id": "libvirt-11"
 }
 
 {
@@ -2363,7 +3318,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-10"
+  "id": "libvirt-11"
 }
 
 {
@@ -2371,7 +3326,7 @@
   "arguments": {
     "typename": "virtio-net-ccw"
   },
-  "id": "libvirt-11"
+  "id": "libvirt-12"
 }
 
 {
@@ -2580,7 +3535,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-11"
+  "id": "libvirt-12"
 }
 
 {
@@ -2588,7 +3543,7 @@
   "arguments": {
     "typename": "virtio-scsi-ccw"
   },
-  "id": "libvirt-12"
+  "id": "libvirt-13"
 }
 
 {
@@ -2667,7 +3622,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-12"
+  "id": "libvirt-13"
 }
 
 {
@@ -2675,11 +3630,11 @@
   "arguments": {
     "typename": "virtio-net-s390"
   },
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
-  "id": "libvirt-13",
+  "id": "libvirt-14",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-s390' not found"
@@ -2691,7 +3646,7 @@
   "arguments": {
     "typename": "vfio-pci"
   },
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -2817,7 +3772,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -2825,7 +3780,7 @@
   "arguments": {
     "typename": "scsi-hd"
   },
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -2943,7 +3898,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -2951,11 +3906,11 @@
   "arguments": {
     "typename": "ide-hd"
   },
-  "id": "libvirt-16"
+  "id": "libvirt-17"
 }
 
 {
-  "id": "libvirt-16",
+  "id": "libvirt-17",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ide-drive' not found"
@@ -2967,11 +3922,11 @@
   "arguments": {
     "typename": "PIIX4_PM"
   },
-  "id": "libvirt-17"
+  "id": "libvirt-18"
 }
 
 {
-  "id": "libvirt-17",
+  "id": "libvirt-18",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'PIIX4_PM' not found"
@@ -2983,11 +3938,11 @@
   "arguments": {
     "typename": "i440FX-pcihost"
   },
-  "id": "libvirt-18"
+  "id": "libvirt-19"
 }
 
 {
-  "id": "libvirt-18",
+  "id": "libvirt-19",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'i440FX-pcihost' not found"
@@ -2999,11 +3954,11 @@
   "arguments": {
     "typename": "q35-pcihost"
   },
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
-  "id": "libvirt-19",
+  "id": "libvirt-20",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'q35-pcihost' not found"
@@ -3015,11 +3970,11 @@
   "arguments": {
     "typename": "kvm-pit"
   },
-  "id": "libvirt-20"
+  "id": "libvirt-21"
 }
 
 {
-  "id": "libvirt-20",
+  "id": "libvirt-21",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'kvm-pit' not found"
@@ -3031,7 +3986,7 @@
   "arguments": {
     "typename": "virtio-gpu-pci"
   },
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -3182,7 +4137,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -3190,7 +4145,7 @@
   "arguments": {
     "typename": "virtio-gpu-device"
   },
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -3237,7 +4192,7 @@
       "type": "size"
     }
   ],
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -3245,11 +4200,11 @@
   "arguments": {
     "typename": "ICH9-LPC"
   },
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
-  "id": "libvirt-23",
+  "id": "libvirt-24",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ICH9-LPC' not found"
@@ -3261,7 +4216,7 @@
   "arguments": {
     "typename": "virtio-balloon-pci"
   },
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -3404,7 +4359,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -3412,7 +4367,7 @@
   "arguments": {
     "typename": "virtio-balloon-ccw"
   },
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -3474,7 +4429,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -3482,7 +4437,7 @@
   "arguments": {
     "typename": "virtio-balloon-device"
   },
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -3526,7 +4481,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -3534,7 +4489,7 @@
   "arguments": {
     "typename": "virtio-gpu-ccw"
   },
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -3599,7 +4554,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -3607,7 +4562,7 @@
   "arguments": {
     "typename": "virtual-css-bridge"
   },
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -3622,7 +4577,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -3630,7 +4585,7 @@
   "arguments": {
     "typename": "memory-backend-file"
   },
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
@@ -3684,7 +4639,7 @@
       "type": "string"
     }
   ],
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
@@ -3692,7 +4647,7 @@
   "arguments": {
     "typename": "memory-backend-memfd"
   },
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
@@ -3742,12 +4697,12 @@
       "type": "string"
     }
   ],
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
   "execute": "query-machines",
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
@@ -3805,12 +4760,12 @@
       "alias": "s390-ccw-virtio"
     }
   ],
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
   "execute": "query-cpu-definitions",
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
@@ -4345,35 +5300,35 @@
       "migration-safe": true
     }
   ],
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
   "execute": "query-tpm-models",
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
   "execute": "query-tpm-types",
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
   "return": [
     "emulator"
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
   "execute": "query-command-line-options",
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
@@ -5498,12 +6453,12 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
   "execute": "query-migrate-capabilities",
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
@@ -5565,12 +6520,12 @@
       "capability": "dirty-bitmaps"
     }
   ],
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
   "execute": "query-qmp-schema",
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -16938,7 +17893,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -16949,7 +17904,7 @@
       "name": "host"
     }
   },
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
@@ -16987,7 +17942,7 @@
       }
     }
   },
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
@@ -17001,11 +17956,11 @@
       }
     }
   },
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
-  "id": "libvirt-39",
+  "id": "libvirt-40",
   "error": {
     "class": "GenericError",
     "desc": "Property '.migratable' not found"
