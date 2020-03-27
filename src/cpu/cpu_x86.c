@@ -2701,21 +2701,20 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
                   bool migratable)
 {
     virCPUx86MapPtr map = NULL;
-    virCPUx86ModelPtr base_model = NULL;
-    virCPUDefPtr cpu = NULL;
+    g_autoptr(virCPUx86Model) base_model = NULL;
+    g_autoptr(virCPUDef) cpu = NULL;
     size_t i;
     virCPUx86VendorPtr vendor = NULL;
-    virCPUx86ModelPtr model = NULL;
     bool outputVendor = true;
     const char *modelName;
     bool matchingNames = true;
-    virCPUDataPtr featData = NULL;
+    g_autoptr(virCPUData) featData = NULL;
 
     if (!(map = virCPUx86GetMap()))
-        goto error;
+        return NULL;
 
     if (!(base_model = x86ModelFromCPU(cpus[0], map, -1)))
-        goto error;
+        return NULL;
 
     cpu = virCPUDefNew();
 
@@ -2727,11 +2726,12 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
     } else if (!(vendor = x86VendorFind(map, cpus[0]->vendor))) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("Unknown CPU vendor %s"), cpus[0]->vendor);
-        goto error;
+        return NULL;
     }
 
     modelName = cpus[0]->model;
     for (i = 1; i < ncpus; i++) {
+        g_autoptr(virCPUx86Model) model = NULL;
         const char *vn = NULL;
 
         if (matchingNames && cpus[i]->model) {
@@ -2744,14 +2744,14 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
         }
 
         if (!(model = x86ModelFromCPU(cpus[i], map, -1)))
-            goto error;
+            return NULL;
 
         if (cpus[i]->vendor && model->vendor &&
             STRNEQ(cpus[i]->vendor, model->vendor->name)) {
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("CPU vendor %s of model %s differs from vendor %s"),
                            model->vendor->name, model->name, cpus[i]->vendor);
-            goto error;
+            return NULL;
         }
 
         if (cpus[i]->vendor) {
@@ -2767,30 +2767,28 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
                 if (!(vendor = x86VendorFind(map, vn))) {
                     virReportError(VIR_ERR_OPERATION_FAILED,
                                    _("Unknown CPU vendor %s"), vn);
-                    goto error;
+                    return NULL;
                 }
             } else if (STRNEQ(vendor->name, vn)) {
                 virReportError(VIR_ERR_OPERATION_FAILED,
                                "%s", _("CPU vendors do not match"));
-                goto error;
+                return NULL;
             }
         }
 
         x86DataIntersect(&base_model->data, &model->data);
-        x86ModelFree(model);
-        model = NULL;
     }
 
     if (features) {
         virCPUx86FeaturePtr feat;
 
         if (!(featData = virCPUDataNew(archs[0])))
-            goto cleanup;
+            return NULL;
 
         for (i = 0; features[i]; i++) {
             if ((feat = x86FeatureFind(map, features[i])) &&
                 x86DataAdd(&featData->data.x86, &feat->data) < 0)
-                goto cleanup;
+                return NULL;
         }
 
         x86DataIntersect(&base_model->data, &featData->data.x86);
@@ -2799,15 +2797,15 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
     if (x86DataIsEmpty(&base_model->data)) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        "%s", _("CPUs are incompatible"));
-        goto error;
+        return NULL;
     }
 
     if (vendor &&
         virCPUx86DataAddItem(&base_model->data, &vendor->data) < 0)
-        goto error;
+        return NULL;
 
     if (x86Decode(cpu, &base_model->data, models, modelName, migratable) < 0)
-        goto error;
+        return NULL;
 
     if (STREQ_NULLABLE(cpu->model, modelName))
         cpu->fallback = VIR_CPU_FALLBACK_FORBID;
@@ -2815,17 +2813,7 @@ virCPUx86Baseline(virCPUDefPtr *cpus,
     if (!outputVendor)
         VIR_FREE(cpu->vendor);
 
- cleanup:
-    x86ModelFree(base_model);
-    virCPUx86DataFree(featData);
-
-    return cpu;
-
- error:
-    x86ModelFree(model);
-    virCPUDefFree(cpu);
-    cpu = NULL;
-    goto cleanup;
+    return g_steal_pointer(&cpu);
 }
 
 
