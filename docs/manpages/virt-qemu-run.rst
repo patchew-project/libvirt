@@ -71,6 +71,12 @@ is a path to the XML description of the secret, whose UUID should
 match a secret referenced in the guest domain XML. The ``VALUE-FILE``
 is a path containing the raw value of the secret.
 
+``-c``, ``--with-config``
+
+Copy the libvirt qemu.conf configuration to the root directory.  If
+there is already a qemu.conf file in the $ROOT/etc directory, exit
+with failure.
+
 EXIT STATUS
 ===========
 

@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "virconf.h"
 #include "virfile.h"
 #include "virstring.h"
 #include "virgettext.h"
@@ -99,6 +100,7 @@ int main(int argc, char **argv)
     g_auto(GStrv) secrets = NULL;
     gboolean verbose = false;
     gboolean debug = false;
+    gboolean with_config = false;
     GStrv tmpsecrets;
     GOptionContext *ctx;
     GOptionEntry entries[] = {
@@ -106,6 +108,7 @@ int main(int argc, char **argv)
         { "root", 'r', 0, G_OPTION_ARG_STRING, &root, "Root directory", "DIR" },
         { "debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Debug output", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose output", NULL },
+        { "with-config", 'c', 0, G_OPTION_ARG_NONE, &with_config, "Use system/home qemu.conf", NULL },
         { 0 }
     };
     int quitfd[2] = {-1, -1};
@@ -163,6 +166,39 @@ int main(int argc, char **argv)
         if (chmod(root, 0755) < 0) {
             g_printerr("%s: cannot chown temporary dir: %s\n",
                        argv[0], g_strerror(errno));
+            goto cleanup;
+        }
+    }
+
+    if (with_config) {
+        g_autofree char *src = virConfLoadConfigPath("qemu.conf");
+        g_autofree char *dir = g_build_filename(root, "etc", NULL);
+        g_autofree char *dst = g_build_filename(dir, "qemu.conf", NULL);
+        g_autofree char *contents = NULL;
+        gsize len;
+
+        if (g_mkdir_with_parents(dir, 0755) < 0) {
+            g_printerr("%s: cannot create %s dir: %s\n",
+                       argv[0], dir, g_strerror(errno));
+            goto cleanup;
+        }
+
+
+        if (g_file_test(dst, G_FILE_TEST_EXISTS)) {
+            g_printerr("%s: %s file already exists\n",
+                       argv[0], dst);
+            goto cleanup;
+        }
+
+        if (!g_file_get_contents(src, &contents, &len, &error)) {
+            g_printerr("%s: cannot read %s: %s\n",
+                       argv[0], src, error->message);
+            goto cleanup;
+        }
+
+        if (!g_file_set_contents(dst, contents, len, &error)) {
+            g_printerr("%s: cannot write %s: %s\n",
+                       argv[0], dst, error->message);
             goto cleanup;
         }
     }
