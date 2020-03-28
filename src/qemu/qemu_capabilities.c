@@ -5046,12 +5046,10 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* Some capabilities may differ depending on KVM state */
     if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
         return -1;
+    if (virQEMUCapsProbeQMPTCGState(qemuCaps, mon) < 0)
+        return -1;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
-        type = VIR_DOMAIN_VIRT_KVM;
-    else
-        type = VIR_DOMAIN_VIRT_QEMU;
-
+    type = virQEMUCapsGetVirtType(qemuCaps);
     accel = virQEMUCapsGetAccel(qemuCaps, type);
 
     if (virQEMUCapsProbeQMPEvents(qemuCaps, mon) < 0)
@@ -5544,10 +5542,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
         goto cleanup;
     }
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
-        capsType = VIR_DOMAIN_VIRT_KVM;
-    else
-        capsType = VIR_DOMAIN_VIRT_QEMU;
+    capsType = virQEMUCapsGetVirtType(qemuCaps);
 
     if (virttype == VIR_DOMAIN_VIRT_NONE)
         virttype = capsType;
