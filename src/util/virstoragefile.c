@@ -2418,6 +2418,7 @@ virStorageSourceCopy(const virStorageSource *src,
     def->compat = g_strdup(src->compat);
     def->tlsAlias = g_strdup(src->tlsAlias);
     def->tlsCertdir = g_strdup(src->tlsCertdir);
+    def->query = g_strdup(src->query);
 
     if (src->sliceStorage)
         def->sliceStorage = virStorageSourceSliceCopy(src->sliceStorage);
