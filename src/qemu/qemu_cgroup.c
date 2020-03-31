@@ -62,7 +62,7 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int perms = VIR_CGROUP_DEVICE_READ;
-    char **targetPaths = NULL;
+    VIR_AUTOSTRINGLIST targetPaths = NULL;
     size_t i;
     int rv;
     int ret = -1;
@@ -82,12 +82,11 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
                              virCgroupGetDevicePermsString(perms),
                              rv);
     if (rv < 0)
-        goto cleanup;
+        return ret;
 
     if (rv > 0) {
         /* @path is neither character device nor block device. */
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     if (virDevMapperGetTargets(path, &targetPaths) < 0 &&
@@ -95,7 +94,7 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
         virReportSystemError(errno,
                              _("Unable to get devmapper targets for %s"),
                              path);
-        goto cleanup;
+        return ret;
     }
 
     for (i = 0; targetPaths && targetPaths[i]; i++) {
@@ -105,13 +104,10 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
                                  virCgroupGetDevicePermsString(perms),
                                  rv);
         if (rv < 0)
-            goto cleanup;
+            return ret;
     }
 
-    ret = 0;
- cleanup:
-    virStringListFree(targetPaths);
-    return ret;
+    return 0;
 }
 
 
@@ -739,7 +735,7 @@ static int
 qemuSetupDevicesCgroup(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virQEMUDriverConfigPtr cfg = NULL;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
     const char *const *deviceACL = NULL;
     int rv = -1;
     int ret = -1;
@@ -757,15 +753,15 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
             return 0;
         }
 
-        goto cleanup;
+        return ret;
     }
 
     if (qemuSetupFirmwareCgroup(vm) < 0)
-        goto cleanup;
+        return ret;
 
     for (i = 0; i < vm->def->ndisks; i++) {
         if (qemuSetupImageChainCgroup(vm, vm->def->disks[i]->src) < 0)
-            goto cleanup;
+            return ret;
     }
 
     rv = virCgroupAllowDevice(priv->cgroup, 'c', DEVICE_PTY_MAJOR, -1,
@@ -773,9 +769,8 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
     virDomainAuditCgroupMajor(vm, priv->cgroup, "allow", DEVICE_PTY_MAJOR,
                               "pty", "rw", rv == 0);
     if (rv < 0)
-        goto cleanup;
+        return ret;
 
-    cfg = virQEMUDriverGetConfig(priv->driver);
     deviceACL = cfg->cgroupDeviceACL ?
                 (const char *const *)cfg->cgroupDeviceACL :
                 defaultDeviceACL;
@@ -791,7 +786,7 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
         virDomainAuditCgroupMajor(vm, priv->cgroup, "allow", DEVICE_SND_MAJOR,
                                   "sound", "rw", rv == 0);
         if (rv < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; deviceACL[i] != NULL; i++) {
@@ -805,57 +800,54 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
         virDomainAuditCgroupPath(vm, priv->cgroup, "allow", deviceACL[i], "rw", rv);
         if (rv < 0 &&
             !virLastErrorIsSystemErrno(ENOENT))
-            goto cleanup;
+            return ret;
     }
 
     if (virDomainChrDefForeach(vm->def,
                                true,
                                qemuSetupChardevCgroupCB,
                                vm) < 0)
-        goto cleanup;
+        return ret;
 
     if (vm->def->tpm && qemuSetupTPMCgroup(vm) < 0)
-        goto cleanup;
+        return ret;
 
     for (i = 0; i < vm->def->nhostdevs; i++) {
         /* This may allow /dev/vfio/vfio multiple times, but that
          * is not a problem. Kernel will have only one record. */
         if (qemuSetupHostdevCgroup(vm, vm->def->hostdevs[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; i < vm->def->nmems; i++) {
         if (qemuSetupMemoryDevicesCgroup(vm, vm->def->mems[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; i < vm->def->ngraphics; i++) {
         if (qemuSetupGraphicsCgroup(vm, vm->def->graphics[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; i < vm->def->nvideos; i++) {
         if (qemuSetupVideoCgroup(vm, vm->def->videos[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; i < vm->def->ninputs; i++) {
         if (qemuSetupInputCgroup(vm, vm->def->inputs[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     for (i = 0; i < vm->def->nrngs; i++) {
         if (qemuSetupRNGCgroup(vm, vm->def->rngs[i]) < 0)
-            goto cleanup;
+            return ret;
     }
 
     if (vm->def->sev && qemuSetupSEVCgroup(vm) < 0)
-        goto cleanup;
+        return ret;
 
-    ret = 0;
- cleanup:
-    virObjectUnref(cfg);
-    return ret;
+    return 0;
 }
 
 
@@ -924,13 +916,13 @@ qemuInitCgroup(virDomainObjPtr vm,
 {
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
 
     if (!virQEMUDriverIsPrivileged(priv->driver))
-        goto done;
+        return 0;
 
     if (!virCgroupAvailable())
-        goto done;
+        return 0;
 
     virCgroupFree(&priv->cgroup);
 
@@ -938,7 +930,7 @@ qemuInitCgroup(virDomainObjPtr vm,
         virDomainResourceDefPtr res;
 
         if (VIR_ALLOC(res) < 0)
-            goto cleanup;
+            return ret;
 
         res->partition = g_strdup("/machine");
 
@@ -949,7 +941,7 @@ qemuInitCgroup(virDomainObjPtr vm,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Resource partition '%s' must start with '/'"),
                        vm->def->resource->partition);
-        goto cleanup;
+        return ret;
     }
 
     if (virCgroupNewMachine(priv->machineName,
@@ -964,16 +956,9 @@ qemuInitCgroup(virDomainObjPtr vm,
                             cfg->maxThreadsPerProc,
                             &priv->cgroup) < 0) {
         if (virCgroupNewIgnoreError())
-            goto done;
-
-        goto cleanup;
+            return 0;
     }
-
- done:
-    ret = 0;
- cleanup:
-    virObjectUnref(cfg);
-    return ret;
+  return ret;
 }
 
 static void
@@ -1058,14 +1043,14 @@ int
 qemuConnectCgroup(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
     int ret = -1;
 
     if (!virQEMUDriverIsPrivileged(priv->driver))
-        goto done;
+        return 0;
 
     if (!virCgroupAvailable())
-        goto done;
+        return 0;
 
     virCgroupFree(&priv->cgroup);
 
@@ -1075,14 +1060,9 @@ qemuConnectCgroup(virDomainObjPtr vm)
                                   cfg->cgroupControllers,
                                   priv->machineName,
                                   &priv->cgroup) < 0)
-        goto cleanup;
+        return ret;
 
     qemuRestoreCgroupState(vm);
-
- done:
-    ret = 0;
- cleanup:
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -1269,7 +1249,7 @@ qemuCgroupEmulatorAllNodesAllow(virCgroupPtr cgroup,
                                 qemuCgroupEmulatorAllNodesDataPtr *retData)
 {
     qemuCgroupEmulatorAllNodesDataPtr data = NULL;
-    char *all_nodes_str = NULL;
+    g_autofree char *all_nodes_str = NULL;
     virBitmapPtr all_nodes = NULL;
     int ret = -1;
 
@@ -1298,7 +1278,6 @@ qemuCgroupEmulatorAllNodesAllow(virCgroupPtr cgroup,
     ret = 0;
 
  cleanup:
-    VIR_FREE(all_nodes_str);
     virBitmapFree(all_nodes);
     qemuCgroupEmulatorAllNodesDataFree(data);
 
