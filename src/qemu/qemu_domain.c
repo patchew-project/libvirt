@@ -44,6 +44,7 @@
 #include "virfile.h"
 #include "domain_addr.h"
 #include "domain_capabilities.h"
+#include "domain_driver.h"
 #include "domain_event.h"
 #include "virtime.h"
 #include "virnetdevopenvswitch.h"
@@ -16544,9 +16545,9 @@ qemuDomainGetMachineName(virDomainObjPtr vm)
     }
 
     if (!ret)
-        ret = virDomainGenerateMachineName("qemu", cfg->root,
-                                           vm->def->id, vm->def->name,
-                                           driver->privileged);
+        ret = virDomainDriverGenerateMachineName("qemu", cfg->root,
+                                                 vm->def->id, vm->def->name,
+                                                 driver->privileged);
 
     return ret;
 }
