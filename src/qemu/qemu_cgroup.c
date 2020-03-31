@@ -926,7 +926,7 @@ qemuInitCgroup(virDomainObjPtr vm,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
 
-    if (!virQEMUDriverIsPrivileged(priv->driver))
+    if (!priv->driver->privileged)
         goto done;
 
     if (!virCgroupAvailable())
@@ -1061,7 +1061,7 @@ qemuConnectCgroup(virDomainObjPtr vm)
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
     int ret = -1;
 
-    if (!virQEMUDriverIsPrivileged(priv->driver))
+    if (!priv->driver->privileged)
         goto done;
 
     if (!virCgroupAvailable())
