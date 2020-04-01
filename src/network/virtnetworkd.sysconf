@@ -1,0 +1,3 @@
+#
+# Pass extra arguments to virtnetworkd
+#VIRTNETWORKD_ARGS=

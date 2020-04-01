@@ -1,0 +1,3 @@
+#
+# Pass extra arguments to virtvboxd
+#VIRTVBOXD_ARGS=

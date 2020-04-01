@@ -1,0 +1,3 @@
+#
+# Pass extra arguments to virtstoraged
+#VIRTSTORAGED_ARGS=
