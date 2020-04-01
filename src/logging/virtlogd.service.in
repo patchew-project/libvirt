@@ -8,7 +8,7 @@ Documentation=https://libvirt.org
 
 [Service]
 EnvironmentFile=-@sysconfdir@/sysconfig/virtlogd
-ExecStart=@sbindir@/virtlogd $VIRTLOGD_ARGS
+ExecStart=@sbindir@/virtlogd --timeout 120 $VIRTLOGD_ARGS
 ExecReload=/bin/kill -USR1 $MAINPID
 # Loosing the logs is a really bad thing that will
 # cause the machine to be fenced (rebooted), so make
