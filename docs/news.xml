@@ -114,6 +114,17 @@
           malfunctioning VM could affect all those running on the same host.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support migration with SLIRP interface
+        </summary>
+        <description>
+          As <code>libslirp</code> evolves, so does QEMU. The recent change is
+          that instead of peer-to-peer connection between QEMU and
+          <code>slirp-helper</code> process a separate D-BUS bus is created.
+          This enables QEMU to migrate with a SLIRP interface.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
