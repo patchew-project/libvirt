@@ -5,9 +5,6 @@
 # NB. must setup TLS/SSL keys prior to using this
 #LIBVIRTD_ARGS="--listen"
 
-# Override Kerberos service keytab for SASL/GSSAPI
-#KRB5_KTNAME=/etc/libvirt/krb5.tab
-
 # Override the QEMU/SDL default audio driver probing when
 # starting virtual machines using SDL graphics
 #
