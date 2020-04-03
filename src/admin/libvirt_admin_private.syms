@@ -34,7 +34,6 @@ xdr_admin_server_set_threadpool_parameters_args;
 xdr_admin_server_update_tls_files_args;
 
 # datatypes.h
-virAdmClientClass;
 virAdmConnectClass;
 virAdmConnectCloseCallbackDataRegister;
 virAdmConnectCloseCallbackDataReset;

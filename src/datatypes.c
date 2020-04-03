@@ -71,8 +71,21 @@ virClassPtr virAdmConnectCloseCallbackDataClass;
 static void virAdmConnectDispose(void *obj);
 static void virAdmConnectCloseCallbackDataDispose(void *obj);
 
-virClassPtr virAdmClientClass;
-static void virAdmClientDispose(void *obj);
+G_DEFINE_TYPE(virAdmClient, vir_adm_client, G_TYPE_OBJECT);
+static void virAdmClientFinalize(GObject *obj);
+
+static void
+vir_adm_client_init(virAdmClient *clt G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_adm_client_class_init(virAdmClientClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virAdmClientFinalize;
+}
 
 G_DEFINE_TYPE(virAdmServer, vir_adm_server, G_TYPE_OBJECT);
 static void virAdmServerFinalize(GObject *obj);
@@ -119,7 +132,6 @@ virDataTypesOnceInit(void)
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
-    DECLARE_CLASS(virAdmClient);
 
 #undef DECLARE_CLASS_COMMON
 #undef DECLARE_CLASS_LOCKABLE
@@ -1216,30 +1228,28 @@ virAdmClientPtr
 virAdmGetClient(virAdmServerPtr srv, const unsigned long long id,
                 unsigned long long timestamp, unsigned int transport)
 {
-    virAdmClientPtr ret = NULL;
+    g_autoptr(virAdmClient) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
-        goto error;
+        return NULL;
 
-    if (!(ret = virObjectNew(virAdmClientClass)))
-        goto error;
+    ret = VIR_ADM_CLIENT(g_object_new(VIR_TYPE_ADM_CLIENT, NULL));
 
     ret->id = id;
     ret->timestamp = timestamp;
     ret->transport = transport;
     ret->srv = g_object_ref(srv);
 
-    return ret;
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 static void
-virAdmClientDispose(void *obj)
+virAdmClientFinalize(GObject *obj)
 {
-    virAdmClientPtr clt = obj;
+    virAdmClientPtr clt = VIR_ADM_CLIENT(obj);
     VIR_DEBUG("release client clt=%p, id=%llu", clt, clt->id);
 
     g_object_unref(clt->srv);
+
+    G_OBJECT_CLASS(vir_adm_client_parent_class)->finalize(obj);
 }
