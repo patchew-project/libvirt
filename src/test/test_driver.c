@@ -7496,7 +7496,7 @@ testNodeDeviceCreateXML(virConnectPtr conn,
  cleanup:
     virNodeDeviceObjEndAPI(&obj);
     virNodeDeviceDefFree(def);
-    virObjectUnref(dev);
+    g_object_unref(dev);
     return ret;
 }
 

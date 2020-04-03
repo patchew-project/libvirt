@@ -5536,7 +5536,7 @@ remoteNodeDeviceBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virNodeDeviceEventLifecycleNew(dev->name, msg->event,
                                            msg->detail);
-    virObjectUnref(dev);
+    g_object_unref(dev);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5557,7 +5557,7 @@ remoteNodeDeviceBuildEventUpdate(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virNodeDeviceEventUpdateNew(dev->name);
-    virObjectUnref(dev);
+    g_object_unref(dev);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }

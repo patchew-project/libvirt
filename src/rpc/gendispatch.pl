@@ -575,7 +575,7 @@ elsif ($mode eq "server") {
                      "        goto cleanup;\n");
                 push(@args_list, "dev");
                 push(@free_list,
-                     "    virObjectUnref(dev);");
+                     "    g_object_unref(dev);");
             }
 
             foreach my $args_member (@{$call->{args_members}}) {

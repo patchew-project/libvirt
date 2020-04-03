@@ -110,7 +110,7 @@ virNodeDeviceEventDispatchDefaultFunc(virConnectPtr conn,
                                       virConnectObjectEventGenericCallback cb,
                                       void *cbopaque)
 {
-    virNodeDevicePtr dev = virGetNodeDevice(conn,
+    g_autoptr(virNodeDevice) dev = virGetNodeDevice(conn,
                                             event->meta.name);
 
     if (!dev)
@@ -126,23 +126,20 @@ virNodeDeviceEventDispatchDefaultFunc(virConnectPtr conn,
                                                              nodeDeviceLifecycleEvent->type,
                                                              nodeDeviceLifecycleEvent->detail,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_NODE_DEVICE_EVENT_ID_UPDATE:
         {
             ((virConnectNodeDeviceEventGenericCallback)cb)(conn, dev,
                                                            cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_NODE_DEVICE_EVENT_ID_LAST:
         break;
     }
     VIR_WARN("Unexpected event ID %d", event->eventID);
-
- cleanup:
-    virObjectUnref(dev);
 }
 
 
