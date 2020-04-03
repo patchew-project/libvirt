@@ -286,8 +286,10 @@ virDomainListSnapshots(virDomainSnapshotObjListPtr snapshots,
         VIR_FREE(names[i]);
     VIR_FREE(names);
     if (ret < 0 && list) {
-        for (i = 0; i < count; i++)
-            virObjectUnref(list[i]);
+        for (i = 0; i < count; i++) {
+            if (list[i])
+                g_object_unref(list[i]);
+        }
         VIR_FREE(list);
     }
     return ret;

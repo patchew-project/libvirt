@@ -1350,7 +1350,6 @@ virConnectCloseCallbackDataGetCallback;
 virConnectCloseCallbackDataRegister;
 virConnectCloseCallbackDataUnregister;
 virDomainClass;
-virDomainSnapshotClass;
 virGetConnect;
 virGetDomain;
 virGetDomainCheckpoint;
