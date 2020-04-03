@@ -30,6 +30,7 @@
 #include "virsecret.h"
 #include "virenum.h"
 #include "virpci.h"
+#include <glib-object.h>
 
 /* Minimum header size required to probe all known formats with
  * virStorageFileProbeFormat, or obtain metadata from a known format.
@@ -304,7 +305,7 @@ struct _virStorageSource {
 
     virStorageSourceInitiatorDef initiator;
 
-    virObjectPtr privateData;
+    GObject *privateData;
 
     int format; /* virStorageFileFormat in domain backing chains, but
                  * pool-specific enum for storage volumes */

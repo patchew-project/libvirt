@@ -1129,38 +1129,32 @@ qemuDomainSecretInfoDestroy(qemuDomainSecretInfoPtr secinfo)
 }
 
 
-static virClassPtr qemuDomainDiskPrivateClass;
-static void qemuDomainDiskPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainDiskPrivate, qemu_domain_disk_private, G_TYPE_OBJECT);
+static void qemuDomainDiskPrivateFinalize(GObject *obj);
 
-static int
-qemuDomainDiskPrivateOnceInit(void)
+static void
+qemu_domain_disk_private_init(qemuDomainDiskPrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainDiskPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-VIR_ONCE_GLOBAL_INIT(qemuDomainDiskPrivate);
-
-static virObjectPtr
-qemuDomainDiskPrivateNew(void)
-{
-    qemuDomainDiskPrivatePtr priv;
-
-    if (qemuDomainDiskPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainDiskPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
 }
 
 static void
-qemuDomainDiskPrivateDispose(void *obj)
+qemu_domain_disk_private_class_init(qemuDomainDiskPrivateClass *klass)
 {
-    qemuDomainDiskPrivatePtr priv = obj;
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = qemuDomainDiskPrivateFinalize;
+}
+
+static GObject *
+qemuDomainDiskPrivateNew(void)
+{
+    return g_object_new(QEMU_TYPE_DOMAIN_DISK_PRIVATE, NULL);
+}
+
+static void
+qemuDomainDiskPrivateFinalize(GObject *obj)
+{
+    qemuDomainDiskPrivatePtr priv = QEMU_DOMAIN_DISK(obj);
 
     virObjectUnref(priv->migrSource);
     VIR_FREE(priv->qomName);
@@ -1171,323 +1165,282 @@ qemuDomainDiskPrivateDispose(void *obj)
     G_OBJECT_CLASS(qemu_domain_disk_private_parent_class)->finalize(obj);
 }
 
-static virClassPtr qemuDomainStorageSourcePrivateClass;
-static void qemuDomainStorageSourcePrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainStorageSourcePrivate, qemu_domain_storage_source_private, G_TYPE_OBJECT);
+static void qemuDomainStorageSourcePrivateFinalize(GObject *obj);
 
-static int
-qemuDomainStorageSourcePrivateOnceInit(void)
+static void
+qemu_domain_storage_source_private_init(qemuDomainStorageSourcePrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainStorageSourcePrivate, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainStorageSourcePrivate);
+static void
+qemu_domain_storage_source_private_class_init(qemuDomainStorageSourcePrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-virObjectPtr
+    obj->finalize = qemuDomainStorageSourcePrivateFinalize;
+}
+
+GObject *
 qemuDomainStorageSourcePrivateNew(void)
 {
-    qemuDomainStorageSourcePrivatePtr priv;
-
-    if (qemuDomainStorageSourcePrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainStorageSourcePrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_STORAGE_SOURCE_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainStorageSourcePrivateDispose(void *obj)
+qemuDomainStorageSourcePrivateFinalize(GObject *obj)
 {
-    qemuDomainStorageSourcePrivatePtr priv = obj;
+    qemuDomainStorageSourcePrivatePtr priv = QEMU_DOMAIN_STORAGE_SOURCE(obj);
 
     g_clear_pointer(&priv->secinfo, qemuDomainSecretInfoFree);
     g_clear_pointer(&priv->encinfo, qemuDomainSecretInfoFree);
+
+    G_OBJECT_CLASS(qemu_domain_storage_source_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainVcpuPrivateClass;
-static void qemuDomainVcpuPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainVcpuPrivate, qemu_domain_vcpu_private, G_TYPE_OBJECT);
+static void qemuDomainVcpuPrivateFinalize(GObject *obj);
 
-static int
-qemuDomainVcpuPrivateOnceInit(void)
+static void
+qemu_domain_vcpu_private_init(qemuDomainVcpuPrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainVcpuPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainVcpuPrivate);
+static void
+qemu_domain_vcpu_private_class_init(qemuDomainVcpuPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-static virObjectPtr
+    obj->finalize = qemuDomainVcpuPrivateFinalize;
+}
+
+static GObject *
 qemuDomainVcpuPrivateNew(void)
 {
-    qemuDomainVcpuPrivatePtr priv;
-
-    if (qemuDomainVcpuPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainVcpuPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_VCPU_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainVcpuPrivateDispose(void *obj)
+qemuDomainVcpuPrivateFinalize(GObject *obj)
 {
-    qemuDomainVcpuPrivatePtr priv = obj;
+    qemuDomainVcpuPrivatePtr priv = QEMU_DOMAIN_VCPU(obj);
 
     VIR_FREE(priv->type);
     VIR_FREE(priv->alias);
     virJSONValueFree(priv->props);
-    return;
+
+    G_OBJECT_CLASS(qemu_domain_vcpu_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainChrSourcePrivateClass;
-static void qemuDomainChrSourcePrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainChrSourcePrivate, qemu_domain_chr_source_private, G_TYPE_OBJECT);
+static void qemuDomainChrSourcePrivateFinalize(GObject *obj);
 
-static int
-qemuDomainChrSourcePrivateOnceInit(void)
+static void
+qemu_domain_chr_source_private_init(qemuDomainChrSourcePrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainChrSourcePrivate, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainChrSourcePrivate);
+static void
+qemu_domain_chr_source_private_class_init(qemuDomainChrSourcePrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-static virObjectPtr
+    obj->finalize = qemuDomainChrSourcePrivateFinalize;
+}
+
+static GObject *
 qemuDomainChrSourcePrivateNew(void)
 {
-    qemuDomainChrSourcePrivatePtr priv;
-
-    if (qemuDomainChrSourcePrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainChrSourcePrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_CHR_SOURCE_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainChrSourcePrivateDispose(void *obj)
+qemuDomainChrSourcePrivateFinalize(GObject *obj)
 {
-    qemuDomainChrSourcePrivatePtr priv = obj;
+    qemuDomainChrSourcePrivatePtr priv = QEMU_DOMAIN_CHR_SOURCE(obj);
 
     g_clear_pointer(&priv->secinfo, qemuDomainSecretInfoFree);
+
+    G_OBJECT_CLASS(qemu_domain_chr_source_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainVsockPrivateClass;
-static void qemuDomainVsockPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainVsockPrivate, qemu_domain_vsock_private, G_TYPE_OBJECT);
+static void qemuDomainVsockPrivateFinalize(GObject *obj);
 
-static int
-qemuDomainVsockPrivateOnceInit(void)
+static void
+qemu_domain_vsock_private_init(qemuDomainVsockPrivate *priv)
 {
-    if (!VIR_CLASS_NEW(qemuDomainVsockPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
+    priv->vhostfd = -1;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainVsockPrivate);
+static void
+qemu_domain_vsock_private_class_init(qemuDomainVsockPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-static virObjectPtr
+    obj->finalize = qemuDomainVsockPrivateFinalize;
+}
+
+static GObject *
 qemuDomainVsockPrivateNew(void)
 {
-    qemuDomainVsockPrivatePtr priv;
-
-    if (qemuDomainVsockPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainVsockPrivateClass)))
-        return NULL;
-
-    priv->vhostfd = -1;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_VSOCK_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainVsockPrivateDispose(void *obj G_GNUC_UNUSED)
+qemuDomainVsockPrivateFinalize(GObject *obj)
 {
-    qemuDomainVsockPrivatePtr priv = obj;
+    qemuDomainVsockPrivatePtr priv = QEMU_DOMAIN_VSOCK(obj);
 
     VIR_FORCE_CLOSE(priv->vhostfd);
+
+    G_OBJECT_CLASS(qemu_domain_vsock_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainGraphicsPrivateClass;
-static void qemuDomainGraphicsPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainGraphicsPrivate, qemu_domain_graphics_private, G_TYPE_OBJECT);
+static void qemuDomainGraphicsPrivateFinalize(GObject *obj);
 
-static int
-qemuDomainGraphicsPrivateOnceInit(void)
+static void
+qemu_domain_graphics_private_init(qemuDomainGraphicsPrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainGraphicsPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainGraphicsPrivate);
+static void
+qemu_domain_graphics_private_class_init(qemuDomainGraphicsPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-static virObjectPtr
+    obj->finalize = qemuDomainGraphicsPrivateFinalize;
+}
+
+static GObject *
 qemuDomainGraphicsPrivateNew(void)
 {
-    qemuDomainGraphicsPrivatePtr priv;
-
-    if (qemuDomainGraphicsPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainGraphicsPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_GRAPHICS_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainGraphicsPrivateDispose(void *obj)
+qemuDomainGraphicsPrivateFinalize(GObject *obj)
 {
-    qemuDomainGraphicsPrivatePtr priv = obj;
+    qemuDomainGraphicsPrivatePtr priv = QEMU_DOMAIN_GRAPHICS(obj);
 
     VIR_FREE(priv->tlsAlias);
     g_clear_pointer(&priv->secinfo, qemuDomainSecretInfoFree);
+
+    G_OBJECT_CLASS(qemu_domain_graphics_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainNetworkPrivateClass;
-static void qemuDomainNetworkPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainNetworkPrivate, qemu_domain_network_private, G_TYPE_OBJECT);
+static void qemuDomainNetworkPrivateFinalize(GObject *obj);
 
-
-static int
-qemuDomainNetworkPrivateOnceInit(void)
+static void
+qemu_domain_network_private_init(qemuDomainNetworkPrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainNetworkPrivate, virClassForObject()))
-        return -1;
+}
 
-    return 0;
+static void
+qemu_domain_network_private_class_init(qemuDomainNetworkPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = qemuDomainNetworkPrivateFinalize;
 }
 
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainNetworkPrivate);
-
-
-static virObjectPtr
+static GObject *
 qemuDomainNetworkPrivateNew(void)
 {
-    qemuDomainNetworkPrivatePtr priv;
-
-    if (qemuDomainNetworkPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainNetworkPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_NETWORK_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainNetworkPrivateDispose(void *obj G_GNUC_UNUSED)
+qemuDomainNetworkPrivateFinalize(GObject *obj)
 {
-    qemuDomainNetworkPrivatePtr priv = obj;
+    qemuDomainNetworkPrivatePtr priv = QEMU_DOMAIN_NETWORK(obj);
 
     qemuSlirpFree(priv->slirp);
+
+    G_OBJECT_CLASS(qemu_domain_network_private_parent_class)->finalize(obj);
 }
 
 
-static virClassPtr qemuDomainFSPrivateClass;
-static void qemuDomainFSPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainFSPrivate, qemu_domain_fs_private, G_TYPE_OBJECT);
+static void qemuDomainFSPrivateFinalize(GObject *obj);
 
-
-static int
-qemuDomainFSPrivateOnceInit(void)
+static void
+qemu_domain_fs_private_init(qemuDomainFSPrivate *priv G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(qemuDomainFSPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
+static void
+qemu_domain_fs_private_class_init(qemuDomainFSPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainFSPrivate);
+    obj->finalize = qemuDomainFSPrivateFinalize;
+}
 
-
-static virObjectPtr
+static GObject *
 qemuDomainFSPrivateNew(void)
 {
-    qemuDomainFSPrivatePtr priv;
-
-    if (qemuDomainFSPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainFSPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_FS_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainFSPrivateDispose(void *obj)
+qemuDomainFSPrivateFinalize(GObject *obj)
 {
-    qemuDomainFSPrivatePtr priv = obj;
+    qemuDomainFSPrivatePtr priv = QEMU_DOMAIN_FS(obj);
 
     g_free(priv->vhostuser_fs_sock);
+
+    G_OBJECT_CLASS(qemu_domain_fs_private_parent_class)->finalize(obj);
 }
 
-static virClassPtr qemuDomainVideoPrivateClass;
-static void qemuDomainVideoPrivateDispose(void *obj);
+G_DEFINE_TYPE(qemuDomainVideoPrivate, qemu_domain_video_private, G_TYPE_OBJECT);
+static void qemuDomainVideoPrivateFinalize(GObject *obj);
 
-
-static int
-qemuDomainVideoPrivateOnceInit(void)
+static void
+qemu_domain_video_private_init(qemuDomainVideoPrivate *priv)
 {
-    if (!VIR_CLASS_NEW(qemuDomainVideoPrivate, virClassForObject()))
-        return -1;
-
-    return 0;
+    priv->vhost_user_fd = -1;
 }
 
-VIR_ONCE_GLOBAL_INIT(qemuDomainVideoPrivate);
+static void
+qemu_domain_video_private_class_init(qemuDomainVideoPrivateClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = qemuDomainVideoPrivateFinalize;
+}
 
 
-static virObjectPtr
+static GObject *
 qemuDomainVideoPrivateNew(void)
 {
-    qemuDomainVideoPrivatePtr priv;
-
-    if (qemuDomainVideoPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainVideoPrivateClass)))
-        return NULL;
-
-    priv->vhost_user_fd = -1;
-
-    return (virObjectPtr) priv;
+    return g_object_new(QEMU_TYPE_DOMAIN_VIDEO_PRIVATE, NULL);
 }
 
 
 static void
-qemuDomainVideoPrivateDispose(void *obj)
+qemuDomainVideoPrivateFinalize(GObject *obj)
 {
-    qemuDomainVideoPrivatePtr priv = obj;
+    qemuDomainVideoPrivatePtr priv = QEMU_DOMAIN_VIDEO(obj);
 
     VIR_FORCE_CLOSE(priv->vhost_user_fd);
+
+    G_OBJECT_CLASS(qemu_domain_video_private_parent_class)->finalize(obj);
 }
 
 
