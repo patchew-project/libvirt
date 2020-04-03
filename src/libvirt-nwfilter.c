@@ -281,7 +281,7 @@ virNWFilterFree(virNWFilterPtr nwfilter)
 
     virCheckNWFilterReturn(nwfilter, -1);
 
-    virObjectUnref(nwfilter);
+    g_object_unref(nwfilter);
     return 0;
 }
 
@@ -503,14 +503,13 @@ virNWFilterGetXMLDesc(virNWFilterPtr nwfilter, unsigned int flags)
 int
 virNWFilterRef(virNWFilterPtr nwfilter)
 {
-    VIR_DEBUG("nwfilter=%p refs=%d", nwfilter,
-              nwfilter ? nwfilter->parent.u.s.refs : 0);
+    VIR_DEBUG("nwfilter=%p", nwfilter);
 
     virResetLastError();
 
     virCheckNWFilterReturn(nwfilter, -1);
 
-    virObjectRef(nwfilter);
+    g_object_ref(nwfilter);
     return 0;
 }
 
