@@ -33,7 +33,6 @@
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
 extern virClassPtr virInterfaceClass;
-extern virClassPtr virNetworkClass;
 extern virClassPtr virNetworkPortClass;
 extern virClassPtr virNodeDeviceClass;
 extern virClassPtr virSecretClass;
@@ -49,13 +48,6 @@ G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
                      DOMAIN_CHECKPOINT,
                      GObject);
 
-#define VIR_TYPE_NW_FILTER_BINDING vir_nw_filter_binding_get_type()
-G_DECLARE_FINAL_TYPE(virNWFilterBinding,
-                     vir_nw_filter_binding,
-                     VIR,
-                     NW_FILTER_BINDING,
-                     GObject);
-
 #define VIR_TYPE_DOMAIN_SNAPSHOT vir_domain_snapshot_get_type()
 G_DECLARE_FINAL_TYPE(virDomainSnapshot,
                      vir_domain_snapshot,
@@ -63,8 +55,18 @@ G_DECLARE_FINAL_TYPE(virDomainSnapshot,
                      DOMAIN_SNAPSHOT,
                      GObject);
 
+#define VIR_TYPE_NETWORK vir_network_get_type()
+G_DECLARE_FINAL_TYPE(virNetwork, vir_network, VIR, NETWORK, GObject);
+
 #define VIR_TYPE_NW_FILTER vir_nw_filter_get_type()
 G_DECLARE_FINAL_TYPE(virNWFilter, vir_nw_filter, VIR, NW_FILTER, GObject);
+
+#define VIR_TYPE_NW_FILTER_BINDING vir_nw_filter_binding_get_type()
+G_DECLARE_FINAL_TYPE(virNWFilterBinding,
+                     vir_nw_filter_binding,
+                     VIR,
+                     NW_FILTER_BINDING,
+                     GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -119,8 +121,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNetworkReturn(obj, retval) \
     do { \
-        virNetworkPtr _net = (obj); \
-        if (!virObjectIsClass(_net, virNetworkClass) || \
+        virNetworkPtr _net = VIR_NETWORK(obj); \
+        if (!G_IS_OBJECT(_net) || !(G_OBJECT_TYPE(_net) == VIR_TYPE_NETWORK) || \
             !virObjectIsClass(_net->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK, \
@@ -132,8 +134,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     } while (0)
 #define virCheckNetworkGoto(obj, label) \
     do { \
-        virNetworkPtr _net = (obj); \
-        if (!virObjectIsClass(_net, virNetworkClass) || \
+        virNetworkPtr _net = VIR_NETWORK(obj); \
+        if (!G_IS_OBJECT(_net) || !(G_OBJECT_TYPE(_net) == VIR_TYPE_NETWORK) || \
             !virObjectIsClass(_net->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK, \
@@ -147,7 +149,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     do { \
         virNetworkPortPtr _port = (obj); \
         if (!virObjectIsClass(_port, virNetworkPortClass) || \
-            !virObjectIsClass(_port->net, virNetworkClass)) { \
+            !G_IS_OBJECT(_port->net) || !(G_OBJECT_TYPE(_port->net) == VIR_TYPE_NETWORK)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK_PORT, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -161,7 +163,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     do { \
         virNetworkPortPtr _port = (obj); \
         if (!virObjectIsClass(_port, virNetworkPortClass) || \
-            !virObjectIsClass(_port->net, virNetworkClass)) { \
+            !G_IS_OBJECT(_port->net) || !(G_OBJECT_TYPE(_port->net) == VIR_TYPE_NETWORK)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK_PORT, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -639,13 +641,12 @@ struct _virDomain {
 * Internal structure associated to a network
 */
 struct _virNetwork {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *name;                          /* the network external name */
     unsigned char uuid[VIR_UUID_BUFLEN]; /* the network unique identifier */
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virNetwork, virObjectUnref);
 
 
 /**

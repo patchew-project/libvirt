@@ -1429,9 +1429,10 @@ virNetworkObjListExport(virConnectPtr conn,
     ret = data.nnets;
  cleanup:
     virObjectRWUnlock(netobjs);
-    while (data.nets && data.nnets)
-        virObjectUnref(data.nets[--data.nnets]);
-
+    while (data.nets && data.nnets) {
+        if (data.nets[--data.nnets])
+            g_object_unref(data.nets[data.nnets]);
+    }
     VIR_FREE(data.nets);
     return ret;
 }

@@ -6075,7 +6075,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(net);
+    g_object_unref(net);
     return rv;
 }
 
@@ -6807,7 +6807,7 @@ remoteDispatchNetworkGetDHCPLeases(virNetServerPtr server G_GNUC_UNUSED,
         for (i = 0; i < nleases; i++)
             virNetworkDHCPLeaseFree(leases[i]);
     VIR_FREE(leases);
-    virObjectUnref(net);
+    g_object_unref(net);
     return rv;
 }
 
@@ -7234,7 +7234,7 @@ get_nonnull_network_port(virConnectPtr conn, remote_nonnull_network_port port)
     if (!net)
         return NULL;
     ret = virGetNetworkPort(net, BAD_CAST port.uuid);
-    virObjectUnref(net);
+    g_object_unref(net);
     return ret;
 }
 

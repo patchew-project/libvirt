@@ -31540,7 +31540,7 @@ virDomainNetReleaseActualDevice(virConnectPtr conn,
                                 virDomainDefPtr dom G_GNUC_UNUSED,
                                 virDomainNetDefPtr iface)
 {
-    virNetworkPtr net = NULL;
+    g_autoptr(virNetwork) net = NULL;
     virNetworkPortPtr port = NULL;
     int ret = -1;
 
@@ -31561,7 +31561,6 @@ virDomainNetReleaseActualDevice(virConnectPtr conn,
 
  cleanup:
     virObjectUnref(port);
-    virObjectUnref(net);
     return ret;
 }
 
@@ -31614,7 +31613,7 @@ int
 virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
                             virNetDevBandwidthPtr newBandwidth)
 {
-    virNetworkPtr net = NULL;
+    g_autoptr(virNetwork) net = NULL;
     virNetworkPortPtr port = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
@@ -31641,7 +31640,6 @@ virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
     virObjectUnref(conn);
     virTypedParamsFree(params, nparams);
     virObjectUnref(port);
-    virObjectUnref(net);
     return ret;
 }
 
