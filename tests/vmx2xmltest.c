@@ -282,7 +282,8 @@ mymain(void)
     DO_TEST("datacenterpath", "datacenterpath");
 
     g_object_unref(caps);
-    virObjectUnref(xmlopt);
+    if (xmlopt)
+        g_object_unref(xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

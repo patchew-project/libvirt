@@ -160,7 +160,8 @@ testDriverDispose(void *obj)
 
     if (driver->caps)
         g_object_unref(driver->caps);
-    virObjectUnref(driver->xmlopt);
+    if (driver->xmlopt)
+        g_object_unref(driver->xmlopt);
     virObjectUnref(driver->domains);
     virNodeDeviceObjListFree(driver->devs);
     virObjectUnref(driver->networks);

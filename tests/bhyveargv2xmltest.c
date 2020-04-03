@@ -196,7 +196,7 @@ mymain(void)
     DO_TEST_FAIL("extraargs");
 
     g_object_unref(driver.caps);
-    virObjectUnref(driver.xmlopt);
+    g_object_unref(driver.xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

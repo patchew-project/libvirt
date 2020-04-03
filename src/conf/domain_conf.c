@@ -71,7 +71,7 @@ VIR_LOG_INIT("conf.domain_conf");
 /* This structure holds various callbacks and data needed
  * while parsing and creating domain XMLs */
 struct _virDomainXMLOption {
-    virObject parent;
+    GObject parent;
 
     /* XML parser callbacks and defaults */
     virDomainDefParserConfig config;
@@ -1273,16 +1273,24 @@ VIR_ENUM_IMPL(virDomainLaunchSecurity,
 );
 
 static virClassPtr virDomainObjClass;
-static virClassPtr virDomainXMLOptionClass;
 static void virDomainObjDispose(void *obj);
-static void virDomainXMLOptionDispose(void *obj);
+G_DEFINE_TYPE(virDomainXMLOption, vir_domain_xml_option, G_TYPE_OBJECT);
+static void virDomainXMLOptionFinalize(GObject *obj);
+
+static void vir_domain_xml_option_init(virDomainXMLOption *option G_GNUC_UNUSED)
+{
+}
+
+static void vir_domain_xml_option_class_init(virDomainXMLOptionClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virDomainXMLOptionFinalize;
+}
 
 static int virDomainObjOnceInit(void)
 {
     if (!VIR_CLASS_NEW(virDomainObj, virClassForObjectLockable()))
-        return -1;
-
-    if (!VIR_CLASS_NEW(virDomainXMLOption, virClassForObject()))
         return -1;
 
     return 0;
@@ -1292,12 +1300,14 @@ VIR_ONCE_GLOBAL_INIT(virDomainObj);
 
 
 static void
-virDomainXMLOptionDispose(void *obj)
+virDomainXMLOptionFinalize(GObject *obj)
 {
-    virDomainXMLOptionPtr xmlopt = obj;
+    virDomainXMLOptionPtr xmlopt = VIR_DOMAIN_XML_OPTION(obj);
 
     if (xmlopt->config.privFree)
         (xmlopt->config.privFree)(xmlopt->config.priv);
+
+    G_OBJECT_CLASS(vir_domain_xml_option_parent_class)->finalize(obj);
 }
 
 /**
@@ -1424,8 +1434,7 @@ virDomainXMLOptionNew(virDomainDefParserConfigPtr config,
     if (virDomainObjInitialize() < 0)
         return NULL;
 
-    if (!(xmlopt = virObjectNew(virDomainXMLOptionClass)))
-        return NULL;
+    xmlopt = VIR_DOMAIN_XML_OPTION(g_object_new(VIR_TYPE_DOMAIN_XML_OPTION, NULL));
 
     if (priv)
         xmlopt->privateData = *priv;

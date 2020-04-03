@@ -61,7 +61,8 @@ testCapsInit(void)
  failure:
     if (caps)
         g_clear_object(&caps);
-    virObjectUnref(xmlopt);
+    if (xmlopt)
+        g_object_unref(xmlopt);
 }
 
 static int
@@ -292,7 +293,8 @@ mymain(void)
     DO_TEST("datacenterpath", "datacenterpath", 4);
 
     g_object_unref(caps);
-    virObjectUnref(xmlopt);
+    if (xmlopt)
+        g_object_unref(xmlopt);
 
     return result == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

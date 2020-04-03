@@ -81,7 +81,8 @@ vahDeinit(vahControl * ctl)
     VIR_FREE(ctl->def);
     if (ctl->caps)
         g_object_unref(ctl->caps);
-    virObjectUnref(ctl->xmlopt);
+    if (ctl->xmlopt)
+        g_object_unref(ctl->xmlopt);
     VIR_FREE(ctl->files);
     VIR_FREE(ctl->virtType);
     VIR_FREE(ctl->os);
