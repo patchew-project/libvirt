@@ -34,7 +34,7 @@ VIR_LOG_INIT("conf.savecookie");
 
 static int
 virSaveCookieParseNode(xmlXPathContextPtr ctxt,
-                       virObjectPtr *obj,
+                       GObject **obj,
                        virSaveCookieCallbacksPtr saveCookie)
 {
     *obj = NULL;
@@ -54,7 +54,7 @@ virSaveCookieParseNode(xmlXPathContextPtr ctxt,
 
 int
 virSaveCookieParse(xmlXPathContextPtr ctxt,
-                   virObjectPtr *obj,
+                   GObject **obj,
                    virSaveCookieCallbacksPtr saveCookie)
 {
     xmlNodePtr node = ctxt->node;
@@ -77,7 +77,7 @@ virSaveCookieParse(xmlXPathContextPtr ctxt,
 
 int
 virSaveCookieParseString(const char *xml,
-                         virObjectPtr *obj,
+                         GObject **obj,
                          virSaveCookieCallbacksPtr saveCookie)
 {
     xmlDocPtr doc = NULL;
@@ -105,7 +105,7 @@ virSaveCookieParseString(const char *xml,
 
 int
 virSaveCookieFormatBuf(virBufferPtr buf,
-                       virObjectPtr obj,
+                       GObject *obj,
                        virSaveCookieCallbacksPtr saveCookie)
 {
     if (!obj || !saveCookie || !saveCookie->format)
@@ -125,7 +125,7 @@ virSaveCookieFormatBuf(virBufferPtr buf,
 
 
 char *
-virSaveCookieFormat(virObjectPtr obj,
+virSaveCookieFormat(GObject *obj,
                     virSaveCookieCallbacksPtr saveCookie)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;

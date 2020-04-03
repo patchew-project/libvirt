@@ -162,20 +162,11 @@ struct _qemuDomainLogContext {
 };
 
 G_DEFINE_TYPE(qemuDomainLogContext, qemu_domain_log_context, G_TYPE_OBJECT);
-static virClassPtr qemuDomainSaveCookieClass;
+G_DEFINE_TYPE(qemuDomainSaveCookie, qemu_domain_save_cookie, G_TYPE_OBJECT);
 
 static void qemuDomainLogContextFinalize(GObject *obj);
-static void qemuDomainSaveCookieDispose(void *obj);
+static void qemuDomainSaveCookieFinalize(GObject *obj);
 
-
-static int
-qemuDomainOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(qemuDomainSaveCookie, virClassForObject()))
-        return -1;
-
-    return 0;
-}
 
 static void qemu_domain_log_context_init(qemuDomainLogContext *logctxt G_GNUC_UNUSED)
 {
@@ -187,8 +178,6 @@ static void qemu_domain_log_context_class_init(qemuDomainLogContextClass *klass)
 
     obj->finalize = qemuDomainLogContextFinalize;
 }
-
-VIR_ONCE_GLOBAL_INIT(qemuDomain);
 
 static void
 qemuDomainLogContextFinalize(GObject *object)
@@ -202,6 +191,20 @@ qemuDomainLogContextFinalize(GObject *object)
     VIR_FORCE_CLOSE(ctxt->readfd);
     G_OBJECT_CLASS(qemu_domain_log_context_parent_class)->finalize(object);
 }
+
+static void
+qemu_domain_save_cookie_init(qemuDomainSaveCookie *cookie G_GNUC_UNUSED)
+{
+}
+
+static void
+qemu_domain_save_cookie_class_init(qemuDomainSaveCookieClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = qemuDomainSaveCookieFinalize;
+}
+
 
 const char *
 qemuDomainAsyncJobPhaseToString(qemuDomainAsyncJob job,
@@ -12736,13 +12739,15 @@ qemuDomainGetStorageSourceByDevstr(const char *devstr,
 
 
 static void
-qemuDomainSaveCookieDispose(void *obj)
+qemuDomainSaveCookieFinalize(GObject *obj)
 {
-    qemuDomainSaveCookiePtr cookie = obj;
+    qemuDomainSaveCookiePtr cookie = QEMU_DOMAIN_SAVE_COOKIE(obj);
 
     VIR_DEBUG("cookie=%p", cookie);
 
     virCPUDefFree(cookie->cpu);
+
+    G_OBJECT_CLASS(qemu_domain_save_cookie_parent_class)->finalize(obj);
 }
 
 
@@ -12752,11 +12757,7 @@ qemuDomainSaveCookieNew(virDomainObjPtr vm)
     qemuDomainObjPrivatePtr priv = vm->privateData;
     g_autoptr(qemuDomainSaveCookie) cookie = NULL;
 
-    if (qemuDomainInitialize() < 0)
-        return NULL;
-
-    if (!(cookie = virObjectNew(qemuDomainSaveCookieClass)))
-        return NULL;
+    cookie = QEMU_DOMAIN_SAVE_COOKIE(g_object_new(QEMU_TYPE_DOMAIN_SAVE_COOKIE, NULL));
 
     if (priv->origCPU && !(cookie->cpu = virCPUDefCopy(vm->def->cpu)))
         return NULL;
@@ -12772,15 +12773,11 @@ qemuDomainSaveCookieNew(virDomainObjPtr vm)
 
 static int
 qemuDomainSaveCookieParse(xmlXPathContextPtr ctxt G_GNUC_UNUSED,
-                          virObjectPtr *obj)
+                          GObject **obj)
 {
     g_autoptr(qemuDomainSaveCookie) cookie = NULL;
 
-    if (qemuDomainInitialize() < 0)
-        return -1;
-
-    if (!(cookie = virObjectNew(qemuDomainSaveCookieClass)))
-        return -1;
+    cookie = QEMU_DOMAIN_SAVE_COOKIE(g_object_new(QEMU_TYPE_DOMAIN_SAVE_COOKIE, NULL));
 
     if (virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST,
                           &cookie->cpu) < 0)
@@ -12788,14 +12785,14 @@ qemuDomainSaveCookieParse(xmlXPathContextPtr ctxt G_GNUC_UNUSED,
 
     cookie->slirpHelper = virXPathBoolean("boolean(./slirpHelper)", ctxt) > 0;
 
-    *obj = (virObjectPtr) g_steal_pointer(&cookie);
+    *obj = (GObject *)g_steal_pointer(&cookie);
     return 0;
 }
 
 
 static int
 qemuDomainSaveCookieFormat(virBufferPtr buf,
-                           virObjectPtr obj)
+                           GObject *obj)
 {
     qemuDomainSaveCookiePtr cookie = (qemuDomainSaveCookiePtr) obj;
 

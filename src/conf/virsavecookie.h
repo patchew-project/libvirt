@@ -23,14 +23,14 @@
 #include <libxml/xpath.h>
 
 #include "internal.h"
-#include "virobject.h"
 #include "virbuffer.h"
+#include <glib-object.h>
 
 
 typedef int (*virSaveCookieParseFunc)(xmlXPathContextPtr ctxt,
-                                      virObjectPtr *obj);
+                                      GObject **obj);
 typedef int (*virSaveCookieFormatFunc)(virBufferPtr buf,
-                                       virObjectPtr obj);
+                                       GObject *obj);
 
 typedef struct _virSaveCookieCallbacks virSaveCookieCallbacks;
 typedef virSaveCookieCallbacks *virSaveCookieCallbacksPtr;
@@ -42,19 +42,19 @@ struct _virSaveCookieCallbacks {
 
 int
 virSaveCookieParse(xmlXPathContextPtr ctxt,
-                   virObjectPtr *obj,
+                   GObject **obj,
                    virSaveCookieCallbacksPtr saveCookie);
 
 int
 virSaveCookieParseString(const char *xml,
-                         virObjectPtr *obj,
+                         GObject **obj,
                          virSaveCookieCallbacksPtr saveCookie);
 
 int
 virSaveCookieFormatBuf(virBufferPtr buf,
-                       virObjectPtr obj,
+                       GObject *obj,
                        virSaveCookieCallbacksPtr saveCookie);
 
 char *
-virSaveCookieFormat(virObjectPtr obj,
+virSaveCookieFormat(GObject *obj,
                     virSaveCookieCallbacksPtr saveCookie);
