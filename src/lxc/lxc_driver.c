@@ -1603,7 +1603,8 @@ static int lxcStateCleanup(void)
 
     virSysinfoDefFree(lxc_driver->hostsysinfo);
 
-    virObjectUnref(lxc_driver->hostdevMgr);
+    if (lxc_driver->hostdevMgr)
+        g_object_unref(lxc_driver->hostdevMgr);
     if (lxc_driver->caps)
         g_object_unref(lxc_driver->caps);
     virObjectUnref(lxc_driver->securityManager);

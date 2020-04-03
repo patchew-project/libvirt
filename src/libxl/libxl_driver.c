@@ -505,7 +505,8 @@ libxlStateCleanup(void)
     if (!libxl_driver)
         return -1;
 
-    virObjectUnref(libxl_driver->hostdevMgr);
+    if (libxl_driver->hostdevMgr)
+        g_object_unref(libxl_driver->hostdevMgr);
     if (libxl_driver->xmlopt)
         g_object_unref(libxl_driver->xmlopt);
     virObjectUnref(libxl_driver->domains);
