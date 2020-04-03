@@ -39,7 +39,7 @@
 VIR_LOG_INIT("bhyve.bhyve_monitor");
 
 struct _bhyveMonitor {
-    virObject parent;
+    GObject parent;
 
     bhyveConnPtr driver;
     virDomainObjPtr vm;
@@ -48,34 +48,38 @@ struct _bhyveMonitor {
     bool reboot;
 };
 
-static virClassPtr bhyveMonitorClass;
+G_DEFINE_TYPE(bhyveMonitor, bhyve_monitor, G_TYPE_OBJECT);
 
 static void
-bhyveMonitorDispose(void *obj)
+bhyveMonitorFinalize(GObject *obj)
 {
-    bhyveMonitorPtr mon = obj;
+    bhyveMonitorPtr mon = BHYVE_MONITOR(obj);
 
     VIR_FORCE_CLOSE(mon->kq);
     virObjectUnref(mon->vm);
+
+    G_OBJECT_CLASS(bhyve_monitor_parent_class)->finalize(obj);
 }
 
-static int
-bhyveMonitorOnceInit(void)
+static void
+bhyve_monitor_init(bhyveMonitor *mon G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(bhyveMonitor, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(bhyveMonitor);
+static void
+bhyve_monitor_class_init(bhyveMonitorClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = bhyveMonitorFinalize;
+}
 
 static void bhyveMonitorIO(int, int, int, void *);
 
 static bool
 bhyveMonitorRegister(bhyveMonitorPtr mon)
 {
-    virObjectRef(mon);
+    g_object_ref(mon);
     mon->watch = virEventAddHandle(mon->kq,
                                    VIR_EVENT_HANDLE_READABLE |
                                    VIR_EVENT_HANDLE_ERROR |
@@ -85,7 +89,7 @@ bhyveMonitorRegister(bhyveMonitorPtr mon)
                                    virObjectFreeCallback);
     if (mon->watch < 0) {
         VIR_DEBUG("failed to add event handle for mon %p", mon);
-        virObjectUnref(mon);
+        g_object_unref(mon);
         return false;
     }
     return true;
@@ -181,8 +185,7 @@ bhyveMonitorOpenImpl(virDomainObjPtr vm, bhyveConnPtr driver)
     if (bhyveMonitorInitialize() < 0)
         return NULL;
 
-    if (!(mon = virObjectNew(bhyveMonitorClass)))
-        return NULL;
+    mon = BHYVE_MONITOR(g_object_new(BHYVE_TYPE_MONITOR, NULL));
 
     mon->driver = driver;
     mon->reboot = false;
@@ -238,5 +241,5 @@ bhyveMonitorClose(bhyveMonitorPtr mon)
     VIR_DEBUG("cleaning up bhyveMonitor %p", mon);
 
     bhyveMonitorUnregister(mon);
-    virObjectUnref(mon);
+    g_object_unref(mon);
 }
