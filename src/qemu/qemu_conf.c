@@ -1350,7 +1350,7 @@ virCapsPtr virQEMUDriverCreateCapabilities(virQEMUDriverPtr driver)
  * driver. If @refresh is true, the capabilities will be
  * rebuilt first
  *
- * The caller must release the reference with virObjetUnref
+ * The caller must release the reference with g_object_unref
  *
  * Returns: a reference to a virCapsPtr instance or NULL
  */
@@ -1364,7 +1364,8 @@ virCapsPtr virQEMUDriverGetCapabilities(virQEMUDriverPtr driver,
             return NULL;
 
         qemuDriverLock(driver);
-        virObjectUnref(driver->caps);
+        if (driver->caps)
+            g_object_unref(driver->caps);
         driver->caps = caps;
     } else {
         qemuDriverLock(driver);
@@ -1378,7 +1379,8 @@ virCapsPtr virQEMUDriverGetCapabilities(virQEMUDriverPtr driver,
         }
     }
 
-    ret = virObjectRef(driver->caps);
+    if (driver->caps)
+        ret = g_object_ref(driver->caps);
     qemuDriverUnlock(driver);
     return ret;
 }

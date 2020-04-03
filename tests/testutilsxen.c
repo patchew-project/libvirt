@@ -11,7 +11,7 @@
 static virCapsPtr
 testXLInitCaps(void)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
     virCapsGuestMachinePtr *machines;
     int nmachines;
@@ -78,7 +78,6 @@ testXLInitCaps(void)
 
  cleanup:
     virCapabilitiesFreeMachines(machines, nmachines);
-    virObjectUnref(caps);
     return NULL;
 }
 

@@ -59,14 +59,12 @@ VIR_ONCE_GLOBAL_INIT(virLXCConfig);
 /* Functions */
 virCapsPtr virLXCDriverCapsInit(virLXCDriverPtr driver)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
     virArch altArch;
     char *lxc_path = NULL;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        goto error;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     /* Some machines have problematic NUMA topology causing
      * unexpected failures. We don't want to break the lxc
@@ -164,11 +162,10 @@ virCapsPtr virLXCDriverCapsInit(virLXCDriverPtr driver)
         VIR_INFO("No driver, not initializing security driver");
     }
 
-    return caps;
+    return g_steal_pointer(&caps);
 
  error:
     VIR_FREE(lxc_path);
-    virObjectUnref(caps);
     return NULL;
 }
 
@@ -180,7 +177,7 @@ virCapsPtr virLXCDriverCapsInit(virLXCDriverPtr driver)
  * driver. If @refresh is true, the capabilities will be
  * rebuilt first
  *
- * The caller must release the reference with virObjetUnref
+ * The caller must release the reference with g_object_unref
  *
  * Returns: a reference to a virCapsPtr instance or NULL
  */
@@ -194,7 +191,8 @@ virCapsPtr virLXCDriverGetCapabilities(virLXCDriverPtr driver,
             return NULL;
 
         lxcDriverLock(driver);
-        virObjectUnref(driver->caps);
+        if (driver->caps)
+            g_object_unref(driver->caps);
         driver->caps = caps;
     } else {
         lxcDriverLock(driver);
@@ -207,7 +205,7 @@ virCapsPtr virLXCDriverGetCapabilities(virLXCDriverPtr driver,
         }
     }
 
-    ret = virObjectRef(driver->caps);
+    ret = g_object_ref(driver->caps);
     lxcDriverUnlock(driver);
     return ret;
 }

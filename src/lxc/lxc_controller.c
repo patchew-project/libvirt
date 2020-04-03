@@ -181,7 +181,8 @@ virLXCControllerDriverFree(virLXCDriverPtr driver)
     if (!driver)
         return;
     virObjectUnref(driver->xmlopt);
-    virObjectUnref(driver->caps);
+    if (driver->caps)
+        g_object_unref(driver->caps);
     virMutexDestroy(&driver->lock);
     g_free(driver);
 }

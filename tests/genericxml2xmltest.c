@@ -195,7 +195,8 @@ mymain(void)
     DO_TEST_BACKUP("backup-push");
     DO_TEST_BACKUP("backup-push-seclabel");
 
-    virObjectUnref(caps);
+    if (caps)
+        g_object_unref(caps);
     virObjectUnref(xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

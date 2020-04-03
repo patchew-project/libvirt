@@ -1062,13 +1062,11 @@ virQEMUCapsProbeHostCPU(virArch hostArch,
 virCapsPtr
 virQEMUCapsInit(virFileCachePtr cache)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     size_t i;
     virArch hostarch = virArchFromHost();
 
-    if ((caps = virCapabilitiesNew(hostarch,
-                                   true, true)) == NULL)
-        goto error;
+    caps = virCapabilitiesNew(hostarch, true, true);
 
     if (virCapabilitiesInitCaches(caps) < 0)
         VIR_WARN("Failed to get host CPU cache info");
@@ -1096,13 +1094,9 @@ virQEMUCapsInit(virFileCachePtr cache)
         if (virQEMUCapsInitGuest(caps, cache,
                                  hostarch,
                                  i) < 0)
-            goto error;
+            return NULL;
 
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 

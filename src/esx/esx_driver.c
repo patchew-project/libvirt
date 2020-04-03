@@ -69,7 +69,8 @@ esxFreePrivate(esxPrivate **priv)
     esxVI_Context_Free(&(*priv)->host);
     esxVI_Context_Free(&(*priv)->vCenter);
     esxUtil_FreeParsedUri(&(*priv)->parsedUri);
-    virObjectUnref((*priv)->caps);
+    if ((*priv)->caps)
+        g_object_unref((*priv)->caps);
     virObjectUnref((*priv)->xmlopt);
     VIR_FREE(*priv);
 }
@@ -540,7 +541,7 @@ static virCapsPtr
 esxCapsInit(esxPrivate *priv)
 {
     esxVI_Boolean supportsLongMode = esxSupportsLongMode(priv);
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest = NULL;
 
     if (supportsLongMode == esxVI_Boolean_Undefined)
@@ -552,14 +553,11 @@ esxCapsInit(esxPrivate *priv)
         caps = virCapabilitiesNew(VIR_ARCH_I686, true, true);
     }
 
-    if (!caps)
-        return NULL;
-
     virCapabilitiesAddHostMigrateTransport(caps, "vpxmigr");
 
 
     if (esxLookupHostSystemBiosUuid(priv, caps->host.host_uuid) < 0)
-        goto failure;
+        return NULL;
 
     /* i686 */
     guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_HVM,
@@ -568,10 +566,10 @@ esxCapsInit(esxPrivate *priv)
                                     NULL);
 
     if (!guest)
-        goto failure;
+        return NULL;
 
     if (!virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_VMWARE, NULL, NULL, 0, NULL))
-        goto failure;
+        return NULL;
 
     /* x86_64 */
     if (supportsLongMode == esxVI_Boolean_True) {
@@ -581,18 +579,13 @@ esxCapsInit(esxPrivate *priv)
                                         0, NULL);
 
         if (!guest)
-            goto failure;
+            return NULL;
 
         if (!virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_VMWARE, NULL, NULL, 0, NULL))
-            goto failure;
+            return NULL;
     }
 
-    return caps;
-
- failure:
-    virObjectUnref(caps);
-
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 

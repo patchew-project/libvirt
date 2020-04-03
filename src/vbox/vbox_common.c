@@ -89,9 +89,7 @@ vboxCapsInit(void)
     g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest = NULL;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        return NULL;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     if (!(caps->host.numa = virCapabilitiesHostNUMANewHost()))
         return NULL;
@@ -124,7 +122,8 @@ vboxDriverDispose(void *obj)
 {
     vboxDriverPtr driver = obj;
 
-    virObjectUnref(driver->caps);
+    if (driver->caps)
+        g_object_unref(driver->caps);
     virObjectUnref(driver->xmlopt);
 }
 

@@ -151,9 +151,7 @@ virCapsPtr openvzCapsInit(void)
     g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        return NULL;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     if (!(caps->host.numa = virCapabilitiesHostNUMANewHost()))
         return NULL;
@@ -483,7 +481,8 @@ openvzFreeDriver(struct openvz_driver *driver)
 
     virObjectUnref(driver->xmlopt);
     virObjectUnref(driver->domains);
-    virObjectUnref(driver->caps);
+    if (driver->caps)
+        g_object_unref(driver->caps);
     VIR_FREE(driver);
 }
 

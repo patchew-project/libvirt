@@ -132,7 +132,7 @@ testReadNetworkConf(const void *data G_GNUC_UNUSED)
 
  cleanup:
     virObjectUnref(driver.xmlopt);
-    virObjectUnref(driver.caps);
+    g_object_unref(driver.caps);
     VIR_FREE(actual);
     virDomainDefFree(def);
 

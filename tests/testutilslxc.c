@@ -11,7 +11,7 @@
 virCapsPtr
 testLXCCapsInit(void)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
 
     if ((caps = virCapabilitiesNew(VIR_ARCH_X86_64,
@@ -22,20 +22,20 @@ testLXCCapsInit(void)
                                          VIR_ARCH_I686,
                                          "/usr/libexec/libvirt_lxc", NULL,
                                          0, NULL)) == NULL)
-        goto error;
+        return NULL;
 
     if (!virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_LXC, NULL, NULL, 0, NULL))
-        goto error;
+        return NULL;
 
 
     if ((guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_EXE,
                                          VIR_ARCH_X86_64,
                                          "/usr/libexec/libvirt_lxc", NULL,
                                          0, NULL)) == NULL)
-        goto error;
+        return NULL;
 
     if (!virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_LXC, NULL, NULL, 0, NULL))
-        goto error;
+        return NULL;
 
 
     if (virTestGetDebug()) {
@@ -43,18 +43,14 @@ testLXCCapsInit(void)
 
         caps_str = virCapabilitiesFormatXML(caps);
         if (!caps_str)
-            goto error;
+            return NULL;
 
         VIR_TEST_DEBUG("LXC driver capabilities:\n%s", caps_str);
 
         VIR_FREE(caps_str);
     }
 
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 
@@ -81,7 +77,8 @@ void
 testLXCDriverFree(virLXCDriverPtr driver)
 {
     virObjectUnref(driver->xmlopt);
-    virObjectUnref(driver->caps);
+    if (driver->caps)
+        g_object_unref(driver->caps);
     virMutexDestroy(&driver->lock);
     g_free(driver);
 }

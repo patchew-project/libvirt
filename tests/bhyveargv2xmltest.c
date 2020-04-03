@@ -195,7 +195,7 @@ mymain(void)
     DO_TEST("bhyveload-bootorder");
     DO_TEST_FAIL("extraargs");
 
-    virObjectUnref(driver.caps);
+    g_object_unref(driver.caps);
     virObjectUnref(driver.xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

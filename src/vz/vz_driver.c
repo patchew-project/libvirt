@@ -98,7 +98,7 @@ vzCapsAddGuestDomain(virCapsPtr caps,
 static virCapsPtr
 vzBuildCapabilities(void)
 {
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     virNodeInfo nodeinfo;
     virDomainOSType ostypes[] = {
         VIR_DOMAIN_OSTYPE_HVM,
@@ -112,15 +112,13 @@ vzBuildCapabilities(void)
     };
     size_t i, j, k;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        return NULL;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     if (!(caps->host.numa = virCapabilitiesHostNUMANewHost()))
-        goto error;
+        return NULL;
 
     if (virCapabilitiesInitCaches(caps) < 0)
-        goto error;
+        return NULL;
 
     G_STATIC_ASSERT(G_N_ELEMENTS(archs) == G_N_ELEMENTS(emulators));
 
@@ -129,23 +127,19 @@ vzBuildCapabilities(void)
             for (k = 0; k < G_N_ELEMENTS(emulators); k++)
                 if (vzCapsAddGuestDomain(caps, ostypes[i], archs[j],
                                          emulators[k], virt_types[k]) < 0)
-                    goto error;
+                    return NULL;
 
     if (virCapabilitiesGetNodeInfo(&nodeinfo))
-        goto error;
+        return NULL;
 
     if (!(caps->host.cpu = virCPUGetHost(caps->host.arch, VIR_CPU_TYPE_HOST,
                                          &nodeinfo, NULL)))
-        goto error;
+        return NULL;
 
     if (virCapabilitiesAddHostMigrateTransport(caps, "vzmigr") < 0)
-        goto error;
+        return NULL;
 
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 static void vzDriverDispose(void * obj)
@@ -154,7 +148,8 @@ static void vzDriverDispose(void * obj)
 
     prlsdkDisconnect(driver);
     virObjectUnref(driver->domains);
-    virObjectUnref(driver->caps);
+    if (driver->caps)
+        g_object_unref(driver->caps);
     virObjectUnref(driver->xmlopt);
     virObjectUnref(driver->domainEventState);
     virSysinfoDefFree(driver->hostsysinfo);

@@ -25,9 +25,6 @@ testCapsInit(void)
 
     caps = virCapabilitiesNew(VIR_ARCH_I686, true, true);
 
-    if (caps == NULL)
-        return;
-
     virCapabilitiesAddHostMigrateTransport(caps, "esx");
 
 
@@ -62,9 +59,9 @@ testCapsInit(void)
     return;
 
  failure:
-    virObjectUnref(caps);
+    if (caps)
+        g_clear_object(&caps);
     virObjectUnref(xmlopt);
-    caps = NULL;
 }
 
 static int
@@ -294,7 +291,7 @@ mymain(void)
 
     DO_TEST("datacenterpath", "datacenterpath", 4);
 
-    virObjectUnref(caps);
+    g_object_unref(caps);
     virObjectUnref(xmlopt);
 
     return result == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

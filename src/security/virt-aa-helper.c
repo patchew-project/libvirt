@@ -79,7 +79,8 @@ vahDeinit(vahControl * ctl)
         return -1;
 
     VIR_FREE(ctl->def);
-    virObjectUnref(ctl->caps);
+    if (ctl->caps)
+        g_object_unref(ctl->caps);
     virObjectUnref(ctl->xmlopt);
     VIR_FREE(ctl->files);
     VIR_FREE(ctl->virtType);
@@ -632,10 +633,7 @@ get_definition(vahControl * ctl, const char *xmlStr)
     if (caps_mockup(ctl, xmlStr) != 0)
         return -1;
 
-    if ((ctl->caps = virCapabilitiesNew(ctl->arch, true, true)) == NULL) {
-        vah_error(ctl, 0, _("could not allocate memory"));
-        return -1;
-    }
+    ctl->caps = virCapabilitiesNew(ctl->arch, true, true);
 
     if (!(ctl->xmlopt = virDomainXMLOptionNew(&virAAHelperDomainDefParserConfig,
                                               NULL, NULL, NULL, NULL))) {

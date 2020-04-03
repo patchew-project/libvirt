@@ -70,7 +70,8 @@ libxlDriverConfigDispose(void *obj)
 {
     libxlDriverConfigPtr cfg = obj;
 
-    virObjectUnref(cfg->caps);
+    if (cfg->caps)
+        g_object_unref(cfg->caps);
     libxl_ctx_free(cfg->ctx);
     if (cfg->logger)
         libxlLoggerFree(cfg->logger);
