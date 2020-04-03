@@ -48,14 +48,12 @@
 #include "virfile.h"
 #include "virfilecache.h"
 #include "virfirmware.h"
+#include <glib-object.h>
 
 #define QEMU_DRIVER_NAME "QEMU"
 
 typedef struct _virQEMUDriver virQEMUDriver;
 typedef virQEMUDriver *virQEMUDriverPtr;
-
-typedef struct _virQEMUDriverConfig virQEMUDriverConfig;
-typedef virQEMUDriverConfig *virQEMUDriverConfigPtr;
 
 /* Main driver config. The data in these object
  * instances is immutable, so can be accessed
@@ -65,15 +63,15 @@ typedef virQEMUDriverConfig *virQEMUDriverConfigPtr;
  *
  * eg
  *  qemuDriverLock(driver);
- *  virQEMUDriverConfigPtr cfg = virObjectRef(driver->config);
+ *  virQEMUDriverConfigPtr cfg = g_object_ref(driver->config);
  *  qemuDriverUnlock(driver);
  *
  *  ...do stuff with 'cfg'..
  *
- *  virObjectUnref(cfg);
+ *  g_object_unref(cfg);
  */
 struct _virQEMUDriverConfig {
-    virObject parent;
+    GObject parent;
 
     char *uri;
     char *root; /* The root directory for embed driver,
@@ -222,7 +220,14 @@ struct _virQEMUDriverConfig {
     char **capabilityfilters;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virQEMUDriverConfig, virObjectUnref);
+#define VIR_TYPE_QEMU_DRIVER_CONFIG vir_qemu_driver_config_get_type()
+G_DECLARE_FINAL_TYPE(virQEMUDriverConfig,
+                     vir_qemu_driver_config,
+                     VIR,
+                     QEMU_DRIVER_CONFIG,
+                     GObject);
+typedef virQEMUDriverConfig *virQEMUDriverConfigPtr;
+
 
 
 /* Main driver state */

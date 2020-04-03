@@ -307,11 +307,12 @@ void qemuTestDriverFree(virQEMUDriver *driver)
         virFileDeleteTree(driver->config->configDir);
     }
     virObjectUnref(driver->qemuCapsCache);
+    if (driver->config)
+        g_object_unref(driver->config);
     if (driver->xmlopt)
         g_object_unref(driver->xmlopt);
     if (driver->caps)
         g_object_unref(driver->caps);
-    virObjectUnref(driver->config);
     virObjectUnref(driver->securityManager);
 }
 

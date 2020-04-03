@@ -68,18 +68,21 @@ VIR_LOG_INIT("qemu.qemu_conf");
 #define QEMU_MIGRATION_PORT_MIN 49152
 #define QEMU_MIGRATION_PORT_MAX 49215
 
-static virClassPtr virQEMUDriverConfigClass;
-static void virQEMUDriverConfigDispose(void *obj);
+G_DEFINE_TYPE(virQEMUDriverConfig, vir_qemu_driver_config, G_TYPE_OBJECT);
+static void virQEMUDriverConfigFinalize(GObject *obj);
 
-static int virQEMUConfigOnceInit(void)
+static void
+vir_qemu_driver_config_init(virQEMUDriverConfig *cfg G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virQEMUDriverConfig, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virQEMUConfig);
+static void
+vir_qemu_driver_config_class_init(virQEMUDriverConfigClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virQEMUDriverConfigFinalize;
+}
 
 
 static void
@@ -105,13 +108,8 @@ qemuDriverUnlock(virQEMUDriverPtr driver)
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
                                               const char *root)
 {
-    g_autoptr(virQEMUDriverConfig) cfg = NULL;
-
-    if (virQEMUConfigInitialize() < 0)
-        return NULL;
-
-    if (!(cfg = virObjectNew(virQEMUDriverConfigClass)))
-        return NULL;
+    g_autoptr(virQEMUDriverConfig) cfg =
+        VIR_QEMU_DRIVER_CONFIG(g_object_new(VIR_TYPE_QEMU_DRIVER_CONFIG, NULL));
 
     if (root) {
         cfg->uri = g_strdup_printf("qemu:///embed?root=%s", root);
@@ -294,9 +292,9 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
 }
 
 
-static void virQEMUDriverConfigDispose(void *obj)
+static void virQEMUDriverConfigFinalize(GObject *obj)
 {
-    virQEMUDriverConfigPtr cfg = obj;
+    virQEMUDriverConfigPtr cfg = VIR_QEMU_DRIVER_CONFIG(obj);
 
     virBitmapFree(cfg->namespaces);
 
@@ -370,6 +368,8 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->swtpmStorageDir);
 
     virStringListFree(cfg->capabilityfilters);
+
+    G_OBJECT_CLASS(vir_qemu_driver_config_parent_class)->finalize(obj);
 }
 
 
@@ -1219,7 +1219,7 @@ virQEMUDriverConfigPtr virQEMUDriverGetConfig(virQEMUDriverPtr driver)
 {
     virQEMUDriverConfigPtr conf;
     qemuDriverLock(driver);
-    conf = virObjectRef(driver->config);
+    conf = g_object_ref(driver->config);
     qemuDriverUnlock(driver);
     return conf;
 }
