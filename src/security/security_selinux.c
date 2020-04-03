@@ -3233,7 +3233,7 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
 
     if (stdin_path &&
         virSecuritySELinuxSetFilecon(mgr, stdin_path,
-                                     data->content_context, true) < 0)
+                                     data->content_context, false) < 0)
         return -1;
 
     return 0;
