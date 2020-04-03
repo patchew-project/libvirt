@@ -535,14 +535,13 @@ virDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 int
 virDomainCheckpointRef(virDomainCheckpointPtr checkpoint)
 {
-    VIR_DEBUG("checkpoint=%p, refs=%d", checkpoint,
-              checkpoint ? checkpoint->parent.u.s.refs : 0);
+    VIR_DEBUG("checkpoint=%p", checkpoint);
 
     virResetLastError();
 
     virCheckDomainCheckpointReturn(checkpoint, -1);
 
-    virObjectRef(checkpoint);
+    g_object_ref(checkpoint);
     return 0;
 }
 
@@ -565,6 +564,6 @@ virDomainCheckpointFree(virDomainCheckpointPtr checkpoint)
 
     virCheckDomainCheckpointReturn(checkpoint, -1);
 
-    virObjectUnref(checkpoint);
+    g_object_unref(checkpoint);
     return 0;
 }

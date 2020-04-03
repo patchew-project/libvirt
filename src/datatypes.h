@@ -32,7 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virDomainCheckpointClass;
 extern virClassPtr virDomainSnapshotClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
@@ -44,6 +43,13 @@ extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 extern virClassPtr virStorageVolClass;
 extern virClassPtr virStoragePoolClass;
+
+#define VIR_TYPE_DOMAIN_CHECKPOINT vir_domain_checkpoint_get_type()
+G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
+                     vir_domain_checkpoint,
+                     VIR,
+                     DOMAIN_CHECKPOINT,
+                     GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -327,8 +333,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckDomainCheckpointReturn(obj, retval) \
     do { \
-        virDomainCheckpointPtr _check = (obj); \
-        if (!virObjectIsClass(_check, virDomainCheckpointClass) || \
+        virDomainCheckpointPtr _check = VIR_DOMAIN_CHECKPOINT(obj); \
+        if (!G_IS_OBJECT(_check) || !(G_OBJECT_TYPE(_check) == VIR_TYPE_DOMAIN_CHECKPOINT) || \
             !virObjectIsClass(_check->domain, virDomainClass) || \
             !virObjectIsClass(_check->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_CHECKPOINT, \
@@ -749,7 +755,7 @@ struct _virStream {
  * Internal structure associated with a domain checkpoint
  */
 struct _virDomainCheckpoint {
-    virObject parent;
+    GObject parent;
     char *name;
     virDomainPtr domain;
 };

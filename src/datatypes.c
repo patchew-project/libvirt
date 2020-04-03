@@ -36,7 +36,6 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virDomainCheckpointClass;
 virClassPtr virDomainSnapshotClass;
 virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
@@ -52,7 +51,6 @@ virClassPtr virStoragePoolClass;
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virDomainCheckpointDispose(void *obj);
 static void virDomainSnapshotDispose(void *obj);
 static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
@@ -64,6 +62,22 @@ static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 static void virStorageVolDispose(void *obj);
 static void virStoragePoolDispose(void *obj);
+
+G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
+static void virDomainCheckpointFinalize(GObject *obj);
+
+static void
+vir_domain_checkpoint_init(virDomainCheckpoint *dc G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_domain_checkpoint_class_init(virDomainCheckpointClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virDomainCheckpointFinalize;
+}
 
 virClassPtr virAdmConnectClass;
 virClassPtr virAdmConnectCloseCallbackDataClass;
@@ -117,7 +131,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virDomainCheckpoint);
     DECLARE_CLASS(virDomainSnapshot);
     DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNetwork);
@@ -984,7 +997,7 @@ virNWFilterBindingDispose(void *obj)
  * @name: pointer to the domain checkpoint name
  *
  * Allocates a new domain checkpoint object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the domain checkpoint object, or NULL on error.
  */
@@ -992,30 +1005,25 @@ virDomainCheckpointPtr
 virGetDomainCheckpoint(virDomainPtr domain,
                        const char *name)
 {
-    virDomainCheckpointPtr ret = NULL;
+    g_autoptr(virDomainCheckpoint) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckDomainGoto(domain, error);
-    virCheckNonNullArgGoto(name, error);
+    virCheckDomainReturn(domain, NULL);
+    virCheckNonNullArgReturn(name, NULL);
 
-    if (!(ret = virObjectNew(virDomainCheckpointClass)))
-        goto error;
+    ret = VIR_DOMAIN_CHECKPOINT(g_object_new(VIR_TYPE_DOMAIN_CHECKPOINT, NULL));
     ret->name = g_strdup(name);
 
     ret->domain = virObjectRef(domain);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
 /**
- * virDomainCheckpointDispose:
+ * virDomainCheckpointFinalize:
  * @obj: the domain checkpoint to release
  *
  * Unconditionally release all memory associated with a checkpoint.
@@ -1025,13 +1033,15 @@ virGetDomainCheckpoint(virDomainPtr domain,
  * which may also be released if its ref count hits zero.
  */
 static void
-virDomainCheckpointDispose(void *obj)
+virDomainCheckpointFinalize(GObject *obj)
 {
-    virDomainCheckpointPtr checkpoint = obj;
+    virDomainCheckpointPtr checkpoint = VIR_DOMAIN_CHECKPOINT(obj);
     VIR_DEBUG("release checkpoint %p %s", checkpoint, checkpoint->name);
 
     VIR_FREE(checkpoint->name);
     virObjectUnref(checkpoint->domain);
+
+    G_OBJECT_CLASS(vir_domain_checkpoint_parent_class)->finalize(obj);
 }
 
 
