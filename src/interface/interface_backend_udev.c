@@ -421,7 +421,7 @@ udevConnectListAllInterfaces(virConnectPtr conn,
 
     if (ifaces) {
         for (tmp_count = 0; tmp_count < count; tmp_count++)
-            virObjectUnref(ifaces_list[tmp_count]);
+            g_object_unref(ifaces_list[tmp_count]);
     }
 
     VIR_FREE(ifaces_list);

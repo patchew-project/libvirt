@@ -338,9 +338,10 @@ virInterfaceObjListExport(virConnectPtr conn,
     ret = data.nifaces;
  cleanup:
     virObjectRWUnlock(ifaceobjs);
-    while (data.ifaces && data.nifaces)
-        virObjectUnref(data.ifaces[--data.nifaces]);
-
+    while (data.ifaces && data.nifaces) {
+        if (data.ifaces[--data.nifaces])
+            g_object_unref(data.ifaces[data.nifaces]);
+    }
     VIR_FREE(data.ifaces);
     return ret;
 }

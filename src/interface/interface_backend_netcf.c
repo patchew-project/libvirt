@@ -740,7 +740,7 @@ netcfConnectListAllInterfaces(virConnectPtr conn,
 
     if (tmp_iface_objs) {
         for (i = 0; i < niface_objs; i++)
-            virObjectUnref(tmp_iface_objs[i]);
+            g_object_unref(tmp_iface_objs[i]);
         VIR_FREE(tmp_iface_objs);
     }
 

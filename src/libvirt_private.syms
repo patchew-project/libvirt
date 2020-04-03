@@ -1364,7 +1364,6 @@ virGetSecret;
 virGetStoragePool;
 virGetStorageVol;
 virGetStream;
-virInterfaceClass;
 virNewConnectCloseCallbackData;
 virNodeDeviceClass;
 virSecretClass;
