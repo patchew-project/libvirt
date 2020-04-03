@@ -52,23 +52,27 @@
 VIR_LOG_INIT("libxl.libxl_conf");
 
 
-static virClassPtr libxlDriverConfigClass;
-static void libxlDriverConfigDispose(void *obj);
+G_DEFINE_TYPE(libxlDriverConfig, libxl_driver_config, G_TYPE_OBJECT);
 
-static int libxlConfigOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(libxlDriverConfig, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-VIR_ONCE_GLOBAL_INIT(libxlConfig);
+static void libxlDriverConfigFinalize(GObject *obj);
 
 static void
-libxlDriverConfigDispose(void *obj)
+libxl_driver_config_init(libxlDriverConfig *cfg G_GNUC_UNUSED)
 {
-    libxlDriverConfigPtr cfg = obj;
+}
+
+static void
+libxl_driver_config_class_init(libxlDriverConfigClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = libxlDriverConfigFinalize;
+}
+
+static void
+libxlDriverConfigFinalize(GObject *obj)
+{
+    libxlDriverConfigPtr cfg = LIBXL_DRIVER_CONFIG(obj);
 
     if (cfg->caps)
         g_object_unref(cfg->caps);
@@ -87,6 +91,8 @@ libxlDriverConfigDispose(void *obj)
     VIR_FREE(cfg->lockManagerName);
     VIR_FREE(cfg->channelDir);
     virFirmwareFreeList(cfg->firmwares, cfg->nfirmwares);
+
+    G_OBJECT_CLASS(libxl_driver_config_parent_class)->finalize(obj);
 }
 
 
@@ -1685,13 +1691,8 @@ libxlGetAutoballoonConf(libxlDriverConfigPtr cfg,
 libxlDriverConfigPtr
 libxlDriverConfigNew(void)
 {
-    libxlDriverConfigPtr cfg;
-
-    if (libxlConfigInitialize() < 0)
-        return NULL;
-
-    if (!(cfg = virObjectNew(libxlDriverConfigClass)))
-        return NULL;
+    g_autoptr(libxlDriverConfig) cfg =
+        LIBXL_DRIVER_CONFIG(g_object_new(LIBXL_TYPE_DRIVER_CONFIG, NULL));
 
     cfg->configBaseDir = g_strdup(LIBXL_CONFIG_BASE_DIR);
     cfg->configDir = g_strdup(LIBXL_CONFIG_DIR);
@@ -1707,34 +1708,30 @@ libxlDriverConfigNew(void)
     if (virFirmwareParseList(DEFAULT_LOADER_NVRAM,
                              &cfg->firmwares,
                              &cfg->nfirmwares) < 0)
-        goto error;
+        return NULL;
 
 #else
     if (VIR_ALLOC_N(cfg->firmwares, 1) < 0)
-        goto error;
+        return NULL;
     cfg->nfirmwares = 1;
     if (VIR_ALLOC(cfg->firmwares[0]) < 0)
-        goto error;
+        return NULL;
     cfg->firmwares[0]->name = g_strdup(LIBXL_FIRMWARE_DIR "/ovmf.bin");
 #endif
 
     /* Always add hvmloader to firmwares */
     if (VIR_REALLOC_N(cfg->firmwares, cfg->nfirmwares + 1) < 0)
-        goto error;
+        return NULL;
     cfg->nfirmwares++;
     if (VIR_ALLOC(cfg->firmwares[cfg->nfirmwares - 1]) < 0)
-        goto error;
+        return NULL;
     cfg->firmwares[cfg->nfirmwares - 1]->name = g_strdup(LIBXL_FIRMWARE_DIR "/hvmloader");
 
     /* defaults for keepalive messages */
     cfg->keepAliveInterval = 5;
     cfg->keepAliveCount = 5;
 
-    return cfg;
-
- error:
-    virObjectUnref(cfg);
-    return NULL;
+    return g_steal_pointer(&cfg);
 }
 
 int

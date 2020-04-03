@@ -348,7 +348,7 @@ libxlDoMigrateSrcSend(libxlDriverPrivatePtr driver,
                       unsigned long flags,
                       int sockfd)
 {
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     int xl_flags = 0;
     int ret;
 
@@ -363,7 +363,6 @@ libxlDoMigrateSrcSend(libxlDriverPrivatePtr driver,
         ret = -1;
     }
 
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -388,7 +387,7 @@ libxlDomainMigrationSrcBegin(virConnectPtr conn,
                              int *cookieoutlen)
 {
     libxlDriverPrivatePtr driver = conn->privateData;
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     libxlMigrationCookiePtr mig = NULL;
     virDomainDefPtr tmpdef = NULL;
     virDomainDefPtr def;
@@ -438,7 +437,6 @@ libxlDomainMigrationSrcBegin(virConnectPtr conn,
  cleanup:
     libxlMigrationCookieFree(mig);
     virDomainDefFree(tmpdef);
-    virObjectUnref(cfg);
     return xml;
 }
 
@@ -447,7 +445,7 @@ libxlDomainMigrationDstPrepareDef(libxlDriverPrivatePtr driver,
                                   const char *dom_xml,
                                   const char *dname)
 {
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     virDomainDefPtr def;
     char *name = NULL;
 
@@ -469,7 +467,6 @@ libxlDomainMigrationDstPrepareDef(libxlDriverPrivatePtr driver,
     }
 
  cleanup:
-    virObjectUnref(cfg);
     VIR_FREE(name);
     return def;
 }
@@ -657,7 +654,7 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
                                unsigned int flags)
 {
     libxlDriverPrivatePtr driver = dconn->privateData;
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     libxlMigrationCookiePtr mig = NULL;
     virDomainObjPtr vm = NULL;
     char *hostname = NULL;
@@ -828,7 +825,6 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
         virURIFree(uri);
     virObjectUnref(args);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -1158,7 +1154,7 @@ libxlDomainMigrationSrcPerformP2P(libxlDriverPrivatePtr driver,
     bool useParams;
     virConnectPtr dconn = NULL;
     virErrorPtr orig_err = NULL;
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
 
     virObjectUnlock(vm);
     dconn = virConnectOpenAuth(dconnuri, &virConnectAuthConfig, 0);
@@ -1201,7 +1197,6 @@ libxlDomainMigrationSrcPerformP2P(libxlDriverPrivatePtr driver,
     virErrorPreserveLast(&orig_err);
     virObjectUnlock(vm);
     virObjectUnref(dconn);
-    virObjectUnref(cfg);
     virObjectLock(vm);
     virErrorRestore(&orig_err);
     return ret;
@@ -1278,7 +1273,7 @@ libxlDomainMigrationDstFinish(virConnectPtr dconn,
                               int cancelled)
 {
     libxlDriverPrivatePtr driver = dconn->privateData;
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     libxlDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
     virDomainPtr dom = NULL;
@@ -1368,7 +1363,6 @@ libxlDomainMigrationDstFinish(virConnectPtr dconn,
     /* EndJob for corresponding BeginJob in prepare phase */
     libxlDomainObjEndJob(driver, vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     return dom;
 }
 
@@ -1378,7 +1372,7 @@ libxlDomainMigrationSrcConfirm(libxlDriverPrivatePtr driver,
                                unsigned int flags,
                                int cancelled)
 {
-    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+    g_autoptr(libxlDriverConfig) cfg = libxlDriverConfigGet(driver);
     libxlDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
     int ret = -1;
@@ -1424,6 +1418,5 @@ libxlDomainMigrationSrcConfirm(libxlDriverPrivatePtr driver,
     /* EndJob for corresponding BeginJob in begin phase */
     libxlDomainObjEndJob(driver, vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     return ret;
 }
