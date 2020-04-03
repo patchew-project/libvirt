@@ -611,7 +611,13 @@ virSecretObjListExport(virConnectPtr conn,
     return data.nsecrets;
 
  error:
-    virObjectListFree(data.secrets);
+    if (data.secrets) {
+        while (data.nsecrets--) {
+            if (data.secrets[data.nsecrets])
+                g_object_unref(data.secrets[data.nsecrets]);
+        }
+        VIR_FREE(data.secrets);
+    }
     return -1;
 }
 

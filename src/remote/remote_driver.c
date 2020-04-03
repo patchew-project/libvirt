@@ -5579,7 +5579,7 @@ remoteSecretBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virSecretEventLifecycleNew(secret->uuid, secret->usageType, secret->usageID,
                                        msg->event, msg->detail);
-    virObjectUnref(secret);
+    g_object_unref(secret);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5600,7 +5600,7 @@ remoteSecretBuildEventValueChanged(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virSecretEventValueChangedNew(secret->uuid, secret->usageType, secret->usageID);
-    virObjectUnref(secret);
+    g_object_unref(secret);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }

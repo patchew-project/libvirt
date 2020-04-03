@@ -2172,7 +2172,7 @@ virStorageBackendVolDeleteLocal(virStoragePoolObjPtr pool G_GNUC_UNUSED,
 static int
 storageBackendLoadDefaultSecrets(virStorageVolDefPtr vol)
 {
-    virSecretPtr sec;
+    g_autoptr(virSecret) sec = NULL;
     virStorageEncryptionSecretPtr encsec = NULL;
     virConnectPtr conn = NULL;
 
@@ -2199,7 +2199,6 @@ storageBackendLoadDefaultSecrets(virStorageVolDefPtr vol)
     if (VIR_ALLOC_N(vol->target.encryption->secrets, 1) < 0 ||
         VIR_ALLOC(encsec) < 0) {
         VIR_FREE(vol->target.encryption->secrets);
-        virObjectUnref(sec);
         return -1;
     }
 
@@ -2209,7 +2208,6 @@ storageBackendLoadDefaultSecrets(virStorageVolDefPtr vol)
     encsec->type = VIR_STORAGE_ENCRYPTION_SECRET_TYPE_PASSPHRASE;
     encsec->seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
     virSecretGetUUID(sec, encsec->seclookupdef.u.uuid);
-    virObjectUnref(sec);
 
     return 0;
 }

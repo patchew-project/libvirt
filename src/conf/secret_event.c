@@ -109,7 +109,7 @@ virSecretEventDispatchDefaultFunc(virConnectPtr conn,
                                   virConnectObjectEventGenericCallback cb,
                                   void *cbopaque)
 {
-    virSecretPtr secret = virGetSecret(conn,
+    g_autoptr(virSecret) secret = virGetSecret(conn,
                                        event->meta.uuid,
                                        event->meta.id,
                                        event->meta.name);
@@ -127,23 +127,20 @@ virSecretEventDispatchDefaultFunc(virConnectPtr conn,
                                                          secretLifecycleEvent->type,
                                                          secretLifecycleEvent->detail,
                                                          cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_SECRET_EVENT_ID_VALUE_CHANGED:
         {
             ((virConnectSecretEventGenericCallback)cb)(conn, secret,
                                                        cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_SECRET_EVENT_ID_LAST:
         break;
     }
     VIR_WARN("Unexpected event ID %d", event->eventID);
-
- cleanup:
-    virObjectUnref(secret);
 }
 
 

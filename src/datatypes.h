@@ -32,7 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 
 
@@ -71,6 +70,9 @@ G_DECLARE_FINAL_TYPE(virNWFilterBinding,
                      VIR,
                      NW_FILTER_BINDING,
                      GObject);
+
+#define VIR_TYPE_SECRET vir_secret_get_type()
+G_DECLARE_FINAL_TYPE(virSecret, vir_secret, VIR, SECRET, GObject);
 
 #define VIR_TYPE_STORAGE_POOL vir_storage_pool_get_type()
 G_DECLARE_FINAL_TYPE(virStoragePool, vir_storage_pool, VIR, STORAGE_POOL, GObject);
@@ -278,8 +280,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckSecretReturn(obj, retval) \
     do { \
-        virSecretPtr _secret = (obj); \
-        if (!virObjectIsClass(_secret, virSecretClass) || \
+        virSecretPtr _secret = VIR_SECRET(obj); \
+        if (!G_IS_OBJECT(_secret) || !(G_OBJECT_TYPE(_secret) == VIR_TYPE_SECRET) || \
             !virObjectIsClass(_secret->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_SECRET, \
                                  VIR_ERR_INVALID_SECRET, \
@@ -292,8 +294,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckSecretGoto(obj, label) \
     do { \
-        virSecretPtr _secret = (obj); \
-        if (!virObjectIsClass(_secret, virSecretClass) || \
+        virSecretPtr _secret = VIR_SECRET(obj); \
+        if (!G_IS_OBJECT(_secret) || !(G_OBJECT_TYPE(_secret) == VIR_TYPE_SECRET) || \
             !virObjectIsClass(_secret->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_SECRET, \
                                  VIR_ERR_INVALID_SECRET, \
@@ -745,7 +747,7 @@ struct _virNodeDevice {
  * Internal structure associated with a secret
  */
 struct _virSecret {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     unsigned char uuid[VIR_UUID_BUFLEN]; /* the secret unique identifier */
     int usageType;                       /* the type of usage */

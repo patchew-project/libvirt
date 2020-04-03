@@ -4406,7 +4406,7 @@ remoteDispatchSecretGetValue(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(secret);
+    g_object_unref(secret);
     return rv;
 }
 
@@ -6436,7 +6436,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(secret);
+    g_object_unref(secret);
     return rv;
 }
 
