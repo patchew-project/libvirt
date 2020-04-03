@@ -1188,7 +1188,8 @@ bhyveStateCleanup(void)
     virSysinfoDefFree(bhyve_driver->hostsysinfo);
     virObjectUnref(bhyve_driver->closeCallbacks);
     virObjectUnref(bhyve_driver->domainEventState);
-    virObjectUnref(bhyve_driver->config);
+    if (bhyve_driver->config)
+        g_object_unref(bhyve_driver->config);
     virPortAllocatorRangeFree(bhyve_driver->remotePorts);
 
     if (bhyve_driver->lockFD != -1)
