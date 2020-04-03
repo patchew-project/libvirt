@@ -38,7 +38,7 @@
 VIR_LOG_INIT("rpc.netclientprogram");
 
 struct _virNetClientProgram {
-    virObject parent;
+    GObject parent;
 
     unsigned program;
     unsigned version;
@@ -47,19 +47,19 @@ struct _virNetClientProgram {
     void *eventOpaque;
 };
 
-static virClassPtr virNetClientProgramClass;
-static void virNetClientProgramDispose(void *obj);
+G_DEFINE_TYPE(virNetClientProgram, vir_net_client_program, G_TYPE_OBJECT);
+static void virNetClientProgramFinalize(GObject *obj);
 
-static int virNetClientProgramOnceInit(void)
+static void vir_net_client_program_init(virNetClientProgram *prg G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virNetClientProgram, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virNetClientProgram);
+static void vir_net_client_program_class_init(virNetClientProgramClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
+    obj->finalize = virNetClientProgramFinalize;
+}
 
 virNetClientProgramPtr virNetClientProgramNew(unsigned program,
                                               unsigned version,
@@ -67,13 +67,9 @@ virNetClientProgramPtr virNetClientProgramNew(unsigned program,
                                               size_t nevents,
                                               void *eventOpaque)
 {
-    virNetClientProgramPtr prog;
+    virNetClientProgramPtr prog =
+        VIR_NET_CLIENT_PROGRAM(g_object_new(VIR_TYPE_NET_CLIENT_PROGRAM, NULL));
 
-    if (virNetClientProgramInitialize() < 0)
-        return NULL;
-
-    if (!(prog = virObjectNew(virNetClientProgramClass)))
-        return NULL;
 
     prog->program = program;
     prog->version = version;
@@ -85,8 +81,9 @@ virNetClientProgramPtr virNetClientProgramNew(unsigned program,
 }
 
 
-void virNetClientProgramDispose(void *obj G_GNUC_UNUSED)
+void virNetClientProgramFinalize(GObject *obj)
 {
+    G_OBJECT_CLASS(vir_net_client_program_parent_class)->finalize(obj);
 }
 
 

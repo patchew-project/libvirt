@@ -41,7 +41,8 @@ remoteAdminPrivDispose(void *opaque)
 {
     remoteAdminPrivPtr priv = opaque;
 
-    virObjectUnref(priv->program);
+    if (priv->program)
+        g_object_unref(priv->program);
     virObjectUnref(priv->client);
 }
 
@@ -227,10 +228,9 @@ remoteAdminPrivNew(const char *sock_path)
     if (!(priv->client = virNetClientNewUNIX(sock_path, false, NULL)))
         goto error;
 
-    if (!(priv->program = virNetClientProgramNew(ADMIN_PROGRAM,
-                                                 ADMIN_PROTOCOL_VERSION,
-                                                 NULL, 0, NULL)))
-        goto error;
+    priv->program = virNetClientProgramNew(ADMIN_PROGRAM,
+                                           ADMIN_PROTOCOL_VERSION,
+                                           NULL, 0, NULL);
 
     if (virNetClientAddProgram(priv->client, priv->program) < 0)
         goto error;

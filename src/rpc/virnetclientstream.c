@@ -145,7 +145,7 @@ virNetClientStreamPtr virNetClientStreamNew(virNetClientProgramPtr prog,
     if (!(st = virObjectLockableNew(virNetClientStreamClass)))
         return NULL;
 
-    st->prog = virObjectRef(prog);
+    st->prog = g_object_ref(prog);
     st->proc = proc;
     st->serial = serial;
     st->allowSkip = allowSkip;
@@ -163,7 +163,8 @@ void virNetClientStreamDispose(void *obj)
         virNetMessageQueueServe(&st->rx);
         virNetMessageFree(msg);
     }
-    virObjectUnref(st->prog);
+    if (st->prog)
+        g_object_unref(st->prog);
 }
 
 bool virNetClientStreamMatches(virNetClientStreamPtr st,

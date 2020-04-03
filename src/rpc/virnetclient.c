@@ -685,7 +685,7 @@ void virNetClientDispose(void *obj)
         client->closeFf(client->closeOpaque);
 
     for (i = 0; i < client->nprograms; i++)
-        virObjectUnref(client->programs[i]);
+        g_object_unref(client->programs[i]);
     VIR_FREE(client->programs);
 
     g_main_loop_unref(client->eventLoop);
@@ -1010,7 +1010,7 @@ int virNetClientAddProgram(virNetClientPtr client,
     if (VIR_EXPAND_N(client->programs, client->nprograms, 1) < 0)
         goto error;
 
-    client->programs[client->nprograms-1] = virObjectRef(prog);
+    client->programs[client->nprograms-1] = g_object_ref(prog);
 
     virObjectUnlock(client);
     return 0;
