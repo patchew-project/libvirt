@@ -1078,6 +1078,35 @@ virSecurityManagerDomainSetPathLabel(virSecurityManagerPtr mgr,
 
 
 /**
+ * virSecurityManagerDomainSetIncomingPathLabel:
+ * @mgr: security manager object
+ * @vm: domain definition object
+ * @path: path to label
+ *
+ * This function relabels given @path so that @vm can restore for
+ * it.  This allows the driver backend to use different label than
+ * virSecurityManagerDomainSetPathLabel().
+ *
+ * Returns: 0 on success, -1 on error.
+ */
+int
+virSecurityManagerDomainSetIncomingPathLabel(virSecurityManagerPtr mgr,
+                                             virDomainDefPtr vm,
+                                             const char *path)
+{
+    if (mgr->drv->domainSetIncomingPathLabel) {
+        int ret;
+        virObjectLock(mgr);
+        ret = mgr->drv->domainSetIncomingPathLabel(mgr, vm, path);
+        virObjectUnlock(mgr);
+        return ret;
+    }
+
+    return 0;
+}
+
+
+/**
  * virSecurityManagerSetMemoryLabel:
  * @mgr: security manager object
  * @vm: domain definition object

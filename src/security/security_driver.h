@@ -140,6 +140,9 @@ typedef int (*virSecurityDomainSetPathLabel) (virSecurityManagerPtr mgr,
                                               virDomainDefPtr def,
                                               const char *path,
                                               bool allowSubtree);
+typedef int (*virSecurityDomainSetIncomingPathLabel) (virSecurityManagerPtr mgr,
+                                                      virDomainDefPtr def,
+                                                      const char *path);
 typedef int (*virSecurityDomainSetChardevLabel) (virSecurityManagerPtr mgr,
                                                  virDomainDefPtr def,
                                                  virDomainChrSourceDefPtr dev_source,
@@ -211,6 +214,7 @@ struct _virSecurityDriver {
     virSecurityDriverGetBaseLabel getBaseLabel;
 
     virSecurityDomainSetPathLabel domainSetPathLabel;
+    virSecurityDomainSetIncomingPathLabel domainSetIncomingPathLabel;
 
     virSecurityDomainSetChardevLabel domainSetSecurityChardevLabel;
     virSecurityDomainRestoreChardevLabel domainRestoreSecurityChardevLabel;
