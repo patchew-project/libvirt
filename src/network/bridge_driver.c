@@ -117,7 +117,7 @@ networkGetDnsmasqCaps(virNetworkDriverStatePtr driver)
 {
     dnsmasqCapsPtr ret;
     networkDriverLock(driver);
-    ret = virObjectRef(driver->dnsmasqCaps);
+    ret = g_object_ref(driver->dnsmasqCaps);
     networkDriverUnlock(driver);
     return ret;
 }
@@ -132,7 +132,8 @@ networkDnsmasqCapsRefresh(virNetworkDriverStatePtr driver)
         return -1;
 
     networkDriverLock(driver);
-    virObjectUnref(driver->dnsmasqCaps);
+    if (driver->dnsmasqCaps)
+        g_object_unref(driver->dnsmasqCaps);
     driver->dnsmasqCaps = caps;
     networkDriverUnlock(driver);
     return 0;
@@ -543,7 +544,7 @@ networkUpdateState(virNetworkObjPtr obj,
 {
     virNetworkDefPtr def;
     virNetworkDriverStatePtr driver = opaque;
-    dnsmasqCapsPtr dnsmasq_caps = networkGetDnsmasqCaps(driver);
+    g_autoptr(dnsmasqCaps) dnsmasq_caps = networkGetDnsmasqCaps(driver);
     virMacMapPtr macmap;
     char *macMapFile = NULL;
     int ret = -1;
@@ -629,7 +630,6 @@ networkUpdateState(virNetworkObjPtr obj,
     ret = 0;
  cleanup:
     virObjectUnlock(obj);
-    virObjectUnref(dnsmasq_caps);
     VIR_FREE(macMapFile);
     return ret;
 }
@@ -905,7 +905,8 @@ networkStateCleanup(void)
     VIR_FREE(network_driver->dnsmasqStateDir);
     VIR_FREE(network_driver->radvdStateDir);
 
-    virObjectUnref(network_driver->dnsmasqCaps);
+    if (network_driver->dnsmasqCaps)
+        g_object_unref(network_driver->dnsmasqCaps);
 
     virMutexDestroy(&network_driver->lock);
 
@@ -1544,7 +1545,7 @@ networkBuildDhcpDaemonCommandLine(virNetworkDriverStatePtr driver,
                                   dnsmasqContext *dctx)
 {
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
-    dnsmasqCapsPtr dnsmasq_caps = networkGetDnsmasqCaps(driver);
+    g_autoptr(dnsmasqCaps) dnsmasq_caps = networkGetDnsmasqCaps(driver);
     virCommandPtr cmd = NULL;
     int ret = -1;
     char *configfile = NULL;
@@ -1587,7 +1588,6 @@ networkBuildDhcpDaemonCommandLine(virNetworkDriverStatePtr driver,
     *cmdout = cmd;
     ret = 0;
  cleanup:
-    virObjectUnref(dnsmasq_caps);
     VIR_FREE(configfile);
     VIR_FREE(configstr);
     VIR_FREE(leaseshelper_path);
@@ -1911,7 +1911,7 @@ networkStartRadvd(virNetworkDriverStatePtr driver,
                   virNetworkObjPtr obj)
 {
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
-    dnsmasqCapsPtr dnsmasq_caps = networkGetDnsmasqCaps(driver);
+    g_autoptr(dnsmasqCaps) dnsmasq_caps = networkGetDnsmasqCaps(driver);
     pid_t radvdPid;
     char *pidfile = NULL;
     char *radvdpidbase = NULL;
@@ -1989,7 +1989,6 @@ networkStartRadvd(virNetworkDriverStatePtr driver,
 
     ret = 0;
  cleanup:
-    virObjectUnref(dnsmasq_caps);
     virCommandFree(cmd);
     VIR_FREE(configfile);
     VIR_FREE(radvdpidbase);
@@ -2003,14 +2002,13 @@ networkRefreshRadvd(virNetworkDriverStatePtr driver,
                     virNetworkObjPtr obj)
 {
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
-    dnsmasqCapsPtr dnsmasq_caps = networkGetDnsmasqCaps(driver);
+    g_autoptr(dnsmasqCaps) dnsmasq_caps = networkGetDnsmasqCaps(driver);
     g_autofree char *radvdpidbase = NULL;
     g_autofree char *pidfile = NULL;
     pid_t radvdPid;
 
     /* Is dnsmasq handling RA? */
     if (DNSMASQ_RA_SUPPORT(dnsmasq_caps)) {
-        virObjectUnref(dnsmasq_caps);
         if ((radvdpidbase = networkRadvdPidfileBasename(def->name)) &&
             (pidfile = virPidFileBuildPath(driver->pidDir, radvdpidbase))) {
             /* radvd should not be running but in case it is */
@@ -2019,7 +2017,6 @@ networkRefreshRadvd(virNetworkDriverStatePtr driver,
         }
         return 0;
     }
-    virObjectUnref(dnsmasq_caps);
 
     /* if there's no running radvd, just start it */
     radvdPid = virNetworkObjGetRadvdPid(obj);
