@@ -33,17 +33,23 @@
 #include "device_conf.h"
 #include "virbitmap.h"
 #include "networkcommon_conf.h"
-#include "virobject.h"
 #include "virmacmap.h"
 #include "virenum.h"
 #include "virxml.h"
+#include <glib-object.h>
 
 struct _virNetworkXMLOption {
-    virObject parent;
+    GObject parent;
 
     virXMLNamespace ns;
 };
-typedef struct _virNetworkXMLOption virNetworkXMLOption;
+
+#define VIR_TYPE_NETWORK_XML_OPTION vir_network_xml_option_get_type()
+G_DECLARE_FINAL_TYPE(virNetworkXMLOption,
+                     vir_network_xml_option,
+                     VIR,
+                     NETWORK_XML_OPTION,
+                     GObject);
 typedef virNetworkXMLOption *virNetworkXMLOptionPtr;
 
 
