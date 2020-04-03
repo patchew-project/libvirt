@@ -85,14 +85,13 @@ virStreamNew(virConnectPtr conn,
 int
 virStreamRef(virStreamPtr stream)
 {
-    VIR_DEBUG("stream=%p refs=%d", stream,
-              stream ? stream->parent.u.s.refs : 0);
+    VIR_DEBUG("stream=%p", stream);
 
     virResetLastError();
 
     virCheckStreamReturn(stream, -1);
 
-    virObjectRef(stream);
+    g_object_ref(stream);
     return 0;
 }
 
@@ -1273,6 +1272,6 @@ virStreamFree(virStreamPtr stream)
 
     /* XXX Enforce shutdown before free'ing resources ? */
 
-    virObjectUnref(stream);
+    g_object_unref(stream);
     return 0;
 }

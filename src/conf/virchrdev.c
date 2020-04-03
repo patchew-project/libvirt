@@ -205,7 +205,8 @@ static void virChrdevHashEntryFree(void *data)
         return;
 
     /* free stream reference */
-    virObjectUnref(ent->st);
+    if (ent->st)
+        g_object_unref(ent->st);
 
     /* delete lock file */
     virChrdevLockFileRemove(ent->dev);
@@ -435,7 +436,7 @@ int virChrdevOpen(virChrdevsPtr devs,
     if (added)
         virHashRemoveEntry(devs->hash, path);
     else
-        virObjectUnref(st);
+        g_object_unref(st);
 
     if (cbdata)
         VIR_FREE(cbdata->path);

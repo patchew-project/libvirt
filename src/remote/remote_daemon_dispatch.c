@@ -5690,7 +5690,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UN
             virStreamAbort(st);
             daemonFreeClientStream(client, stream);
         } else {
-            virObjectUnref(st);
+            g_object_unref(st);
         }
     }
     return rv;

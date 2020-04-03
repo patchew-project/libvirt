@@ -32,8 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virStreamClass;
-
 
 #define VIR_TYPE_DOMAIN_CHECKPOINT vir_domain_checkpoint_get_type()
 G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
@@ -79,6 +77,9 @@ G_DECLARE_FINAL_TYPE(virStoragePool, vir_storage_pool, VIR, STORAGE_POOL, GObjec
 
 #define VIR_TYPE_STORAGE_VOL vir_storage_vol_get_type()
 G_DECLARE_FINAL_TYPE(virStorageVol, vir_storage_vol, VIR, STORAGE_VOL, GObject);
+
+#define VIR_TYPE_STREAM vir_stream_get_type()
+G_DECLARE_FINAL_TYPE(virStream, vir_stream, VIR, STREAM, GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -308,8 +309,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckStreamReturn(obj, retval) \
     do { \
-        virStreamPtr _st = (obj); \
-        if (!virObjectIsClass(_st, virStreamClass) || \
+        virStreamPtr _st = VIR_STREAM(obj); \
+        if (!G_IS_OBJECT(_st) || !(G_OBJECT_TYPE(_st) == VIR_TYPE_STREAM) || \
             !virObjectIsClass(_st->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STREAMS, \
                                  VIR_ERR_INVALID_STREAM, \
@@ -321,8 +322,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     } while (0)
 #define virCheckStreamGoto(obj, label) \
     do { \
-        virStreamPtr _st = (obj); \
-        if (!virObjectIsClass(_st, virStreamClass) || \
+        virStreamPtr _st = VIR_STREAM(obj); \
+        if (!G_IS_OBJECT(_st) || !(G_OBJECT_TYPE(_st) == VIR_TYPE_STREAM) || \
             !virObjectIsClass(_st->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STREAMS, \
                                  VIR_ERR_INVALID_STREAM, \
@@ -764,7 +765,7 @@ typedef int (*virStreamFinishFunc)(virStreamPtr, void *opaque);
  * Internal structure associated with an input stream
  */
 struct _virStream {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;
     unsigned int flags;
 

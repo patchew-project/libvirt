@@ -1110,7 +1110,7 @@ libxlDoMigrateSrcP2P(libxlDriverPrivatePtr driver,
  cleanup:
     if (flags & VIR_MIGRATE_TUNNELLED) {
         libxlMigrationSrcStopTunnel(tc);
-        virObjectUnref(st);
+        g_object_unref(st);
     }
 
     if (ddomain) {

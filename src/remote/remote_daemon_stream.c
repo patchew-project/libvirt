@@ -420,7 +420,8 @@ int daemonFreeClientStream(virNetServerClientPtr client,
         msg = tmp;
     }
 
-    virObjectUnref(stream->st);
+    if (stream->st)
+        g_object_unref(stream->st);
     VIR_FREE(stream);
 
     return ret;

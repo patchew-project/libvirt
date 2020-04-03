@@ -407,7 +407,8 @@ virFDStreamThreadDataFree(virFDStreamThreadDataPtr data)
     if (!data)
         return;
 
-    virObjectUnref(data->st);
+    if (data->st)
+        g_object_unref(data->st);
     VIR_FREE(data->fdinname);
     VIR_FREE(data->fdoutname);
     VIR_FREE(data);
@@ -1282,7 +1283,7 @@ virFDStreamOpenFileInternal(virStreamPtr st,
         if (VIR_ALLOC(threadData) < 0)
             goto error;
 
-        threadData->st = virObjectRef(st);
+        threadData->st = g_object_ref(st);
         threadData->length = length;
         threadData->sparse = sparse;
 

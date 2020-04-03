@@ -1365,7 +1365,6 @@ virGetStoragePool;
 virGetStorageVol;
 virGetStream;
 virNewConnectCloseCallbackData;
-virStreamClass;
 
 
 # driver.h
