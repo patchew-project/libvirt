@@ -79,7 +79,7 @@ fillQemuCaps(virDomainCapsPtr domCaps,
 {
     int ret = -1;
     char *path = NULL;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     virDomainCapsLoaderPtr loader = &domCaps->os.loader;
     virDomainVirtType virtType;
 
@@ -131,7 +131,6 @@ fillQemuCaps(virDomainCapsPtr domCaps,
 
     ret = 0;
  cleanup:
-    virObjectUnref(qemuCaps);
     VIR_FREE(path);
     return ret;
 }

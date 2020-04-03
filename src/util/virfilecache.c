@@ -34,6 +34,7 @@
 #include "virlog.h"
 #include "virobject.h"
 #include "virstring.h"
+#include <glib-object.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -169,7 +170,8 @@ virFileCacheLoad(virFileCachePtr cache,
     *data = g_steal_pointer(&loadData);
 
  cleanup:
-    virObjectUnref(loadData);
+    if (loadData)
+        g_object_unref(loadData);
     return ret;
 }
 
@@ -206,7 +208,7 @@ virFileCacheNewData(virFileCachePtr cache,
             return NULL;
 
         if (virFileCacheSave(cache, name, data) < 0) {
-            virObjectUnref(data);
+            g_object_unref(data);
             data = NULL;
         }
     }
@@ -275,8 +277,7 @@ virFileCacheValidate(virFileCachePtr cache,
         if (*data) {
             VIR_DEBUG("Caching data '%p' for '%s'", *data, name);
             if (virHashAddEntry(cache->table, name, *data) < 0) {
-                virObjectUnref(*data);
-                *data = NULL;
+                g_clear_object(data);
             }
         }
     }
@@ -306,7 +307,7 @@ virFileCacheLookup(virFileCachePtr cache,
     data = virHashLookup(cache->table, name);
     virFileCacheValidate(cache, name, &data);
 
-    virObjectRef(data);
+    g_object_ref(data);
     virObjectUnlock(cache);
 
     return data;
@@ -337,7 +338,7 @@ virFileCacheLookupByFunc(virFileCachePtr cache,
     data = virHashSearch(cache->table, iter, iterData, (void **)&name);
     virFileCacheValidate(cache, name, &data);
 
-    virObjectRef(data);
+    g_object_ref(data);
     virObjectUnlock(cache);
 
     return data;

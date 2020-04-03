@@ -286,20 +286,16 @@ virQEMUCapsPtr
 qemuTestParseCapabilitiesArch(virArch arch,
                               const char *capsFile)
 {
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     g_autofree char *binary = g_strdup_printf("/usr/bin/qemu-system-%s",
                                               virArchToString(arch));
 
     if (!(qemuCaps = virQEMUCapsNewBinary(binary)) ||
         virQEMUCapsLoadCache(arch, qemuCaps, capsFile) < 0)
-        goto error;
+        return NULL;
 
     virQEMUCapsSetInvalidation(qemuCaps, false);
-    return qemuCaps;
-
- error:
-    virObjectUnref(qemuCaps);
-    return NULL;
+    return g_steal_pointer(&qemuCaps);
 }
 
 
@@ -359,7 +355,7 @@ int qemuTestCapsCacheInsert(virFileCachePtr cache,
         }
 
         if (virFileCacheInsertData(cache, qemu_emulators[i], tmpCaps) < 0) {
-            virObjectUnref(tmpCaps);
+            g_object_unref(tmpCaps);
             return -1;
         }
     }
@@ -663,7 +659,7 @@ testQemuInfoSetArgs(struct testQemuInfo *info,
 {
     va_list argptr;
     testQemuInfoArgName argname;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     int gic = GIC_NONE;
     char *capsarch = NULL;
     char *capsver = NULL;
@@ -780,7 +776,6 @@ testQemuInfoSetArgs(struct testQemuInfo *info,
     ret = 0;
 
  cleanup:
-    virObjectUnref(qemuCaps);
     va_end(argptr);
 
     return ret;
@@ -792,5 +787,6 @@ testQemuInfoClear(struct testQemuInfo *info)
 {
     VIR_FREE(info->infile);
     VIR_FREE(info->outfile);
-    virObjectUnref(info->qemuCaps);
+    if (info->qemuCaps)
+        g_object_unref(info->qemuCaps);
 }

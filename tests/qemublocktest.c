@@ -1450,7 +1450,8 @@ mymain(void)
  cleanup:
     qemuTestDriverFree(&driver);
     VIR_FREE(capslatest_x86_64);
-    virObjectUnref(caps_x86_64);
+    if (caps_x86_64)
+        g_object_unref(caps_x86_64);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

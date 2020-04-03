@@ -639,7 +639,7 @@ static void virQEMUDomainCapsCacheDispose(void *obj)
  * And don't forget to update virQEMUCapsNewCopy.
  */
 struct _virQEMUCaps {
-    virObject parent;
+    GObject parent;
 
     bool kvmSupportsNesting;
 
@@ -677,14 +677,23 @@ struct virQEMUCapsSearchData {
 };
 
 
-static virClassPtr virQEMUCapsClass;
-static void virQEMUCapsDispose(void *obj);
+G_DEFINE_TYPE(virQEMUCaps, vir_qemu_caps, G_TYPE_OBJECT);
+
+static void virQEMUCapsFinalize(GObject *obj);
+
+static void vir_qemu_caps_init(virQEMUCaps *caps G_GNUC_UNUSED)
+{
+}
+
+static void vir_qemu_caps_class_init(virQEMUCapsClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virQEMUCapsFinalize;
+}
 
 static int virQEMUCapsOnceInit(void)
 {
-    if (!VIR_CLASS_NEW(virQEMUCaps, virClassForObject()))
-        return -1;
-
     if (!(VIR_CLASS_NEW(virQEMUDomainCapsCache, virClassForObjectLockable())))
         return -1;
 
@@ -864,7 +873,7 @@ virQEMUCapsInitGuest(virCapsPtr caps,
                      virArch guestarch)
 {
     char *binary = NULL;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     int ret = -1;
 
     binary = virQEMUCapsGetDefaultEmulator(hostarch, guestarch);
@@ -882,7 +891,6 @@ virQEMUCapsInitGuest(virCapsPtr caps,
                                          guestarch);
 
     VIR_FREE(binary);
-    virObjectUnref(qemuCaps);
 
     return ret;
 }
@@ -1633,7 +1641,7 @@ int virQEMUCapsGetDefaultVersion(virCapsPtr caps,
                                  virFileCachePtr capsCache,
                                  unsigned int *version)
 {
-    virQEMUCapsPtr qemucaps;
+    g_autoptr(virQEMUCaps) qemucaps = NULL;
     virArch hostarch;
     virCapsDomainDataPtr capsdata;
 
@@ -1656,7 +1664,6 @@ int virQEMUCapsGetDefaultVersion(virCapsPtr caps,
         return -1;
 
     *version = virQEMUCapsGetVersion(qemucaps);
-    virObjectUnref(qemucaps);
     return 0;
 }
 
@@ -1682,26 +1689,17 @@ virQEMUDomainCapsCacheNew(void)
 virQEMUCapsPtr
 virQEMUCapsNew(void)
 {
-    virQEMUCapsPtr qemuCaps;
-
-    if (virQEMUCapsInitialize() < 0)
-        return NULL;
-
-    if (!(qemuCaps = virObjectNew(virQEMUCapsClass)))
-        return NULL;
+    g_autoptr(virQEMUCaps) qemuCaps =
+        VIR_QEMU_CAPS(g_object_new(VIR_TYPE_QEMU_CAPS, NULL));
 
     qemuCaps->invalidation = true;
     if (!(qemuCaps->flags = virBitmapNew(QEMU_CAPS_LAST)))
-        goto error;
+        return NULL;
 
     if (!(qemuCaps->domCapsCache = virQEMUDomainCapsCacheNew()))
-        goto error;
+        return NULL;
 
-    return qemuCaps;
-
- error:
-    virObjectUnref(qemuCaps);
-    return NULL;
+    return g_steal_pointer(&qemuCaps);
 }
 
 
@@ -1709,6 +1707,8 @@ virQEMUCapsPtr
 virQEMUCapsNewBinary(const char *binary)
 {
     virQEMUCapsPtr qemuCaps = virQEMUCapsNew();
+    if (!qemuCaps)
+        return NULL;
 
     if (qemuCaps)
         qemuCaps->binary = g_strdup(binary);
@@ -1818,7 +1818,7 @@ virQEMUCapsAccelCopy(virQEMUCapsAccelPtr dst,
 
 virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
 {
-    virQEMUCapsPtr ret = virQEMUCapsNewBinary(qemuCaps->binary);
+    g_autoptr(virQEMUCaps) ret = virQEMUCapsNewBinary(qemuCaps->binary);
     size_t i;
 
     if (!ret)
@@ -1842,10 +1842,10 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
 
     if (virQEMUCapsAccelCopy(&ret->kvm, &qemuCaps->kvm) < 0 ||
         virQEMUCapsAccelCopy(&ret->tcg, &qemuCaps->tcg) < 0)
-        goto error;
+        return NULL;
 
     if (VIR_ALLOC_N(ret->gicCapabilities, qemuCaps->ngicCapabilities) < 0)
-        goto error;
+        return NULL;
     ret->ngicCapabilities = qemuCaps->ngicCapabilities;
     for (i = 0; i < qemuCaps->ngicCapabilities; i++)
         ret->gicCapabilities[i] = qemuCaps->gicCapabilities[i];
@@ -1853,13 +1853,9 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEV_GUEST) &&
         virQEMUCapsSEVInfoCopy(&ret->sevCapabilities,
                                qemuCaps->sevCapabilities) < 0)
-        goto error;
+        return NULL;
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
@@ -1880,9 +1876,9 @@ virQEMUCapsAccelClear(virQEMUCapsAccelPtr caps)
 }
 
 
-void virQEMUCapsDispose(void *obj)
+void virQEMUCapsFinalize(GObject *obj)
 {
-    virQEMUCapsPtr qemuCaps = obj;
+    virQEMUCapsPtr qemuCaps = VIR_QEMU_CAPS(obj);
 
     virObjectUnref(qemuCaps->domCapsCache);
     virBitmapFree(qemuCaps->flags);
@@ -1897,6 +1893,8 @@ void virQEMUCapsDispose(void *obj)
 
     virQEMUCapsAccelClear(&qemuCaps->kvm);
     virQEMUCapsAccelClear(&qemuCaps->tcg);
+
+    G_OBJECT_CLASS(vir_qemu_caps_parent_class)->finalize(obj);
 }
 
 void
@@ -5142,18 +5140,18 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
                                 unsigned int microcodeVersion,
                                 const char *kernelVersion)
 {
-    virQEMUCapsPtr qemuCaps;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     struct stat sb;
 
     if (!(qemuCaps = virQEMUCapsNewBinary(binary)))
-        goto error;
+        return NULL;
 
     /* We would also want to check faccessat if we cared about ACLs,
      * but we don't.  */
     if (stat(binary, &sb) < 0) {
         virReportSystemError(errno, _("Cannot check QEMU binary %s"),
                              binary);
-        goto error;
+        return NULL;
     }
     qemuCaps->ctime = sb.st_ctime;
 
@@ -5164,11 +5162,11 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     if (!virFileIsExecutable(binary)) {
         virReportSystemError(errno, _("QEMU binary %s is not executable"),
                              binary);
-        goto error;
+        return NULL;
     }
 
     if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid) < 0)
-        goto error;
+        return NULL;
 
     qemuCaps->libvirtCtime = virGetSelfLastChanged();
     qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
@@ -5184,11 +5182,7 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
         qemuCaps->kvmSupportsNesting = virQEMUCapsKVMSupportsNesting();
     }
 
-    return qemuCaps;
-
- error:
-    virObjectUnref(qemuCaps);
-    return NULL;
+    return g_steal_pointer(&qemuCaps);
 }
 
 static void *
@@ -5212,20 +5206,16 @@ virQEMUCapsLoadFile(const char *filename,
                     const char *binary,
                     void *privData)
 {
-    virQEMUCapsPtr qemuCaps = virQEMUCapsNewBinary(binary);
+    g_autoptr(virQEMUCaps) qemuCaps = virQEMUCapsNewBinary(binary);
     virQEMUCapsCachePrivPtr priv = privData;
 
     if (!qemuCaps)
         return NULL;
 
     if (virQEMUCapsLoadCache(priv->hostArch, qemuCaps, filename) < 0)
-        goto error;
+        return NULL;
 
-    return qemuCaps;
-
- error:
-    virObjectUnref(qemuCaps);
-    return NULL;
+    return g_steal_pointer(&qemuCaps);
 }
 
 
@@ -5341,15 +5331,13 @@ virQEMUCapsCacheLookupCopy(virFileCachePtr cache,
                            const char *binary,
                            const char *machineType)
 {
-    virQEMUCapsPtr qemuCaps = virQEMUCapsCacheLookup(cache, binary);
+    g_autoptr(virQEMUCaps) qemuCaps = virQEMUCapsCacheLookup(cache, binary);
     virQEMUCapsPtr ret;
 
     if (!qemuCaps)
         return NULL;
 
     ret = virQEMUCapsNewCopy(qemuCaps);
-    virObjectUnref(qemuCaps);
-
     if (!ret)
         return NULL;
 
@@ -5453,8 +5441,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     virArch hostarch = virArchFromHost();
     virArch arch = hostarch;
     virDomainVirtType capsType;
-    virQEMUCapsPtr qemuCaps = NULL;
-    virQEMUCapsPtr ret = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     virArch arch_from_caps;
     g_autofree char *probedbinary = NULL;
 
@@ -5462,14 +5449,14 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
         (virttype = virDomainVirtTypeFromString(virttypeStr)) < 0) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("unknown virttype: %s"), virttypeStr);
-        goto cleanup;
+        return NULL;
     }
 
     if (archStr &&
         (arch = virArchFromString(archStr)) == VIR_ARCH_NONE) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("unknown architecture: %s"), archStr);
-        goto cleanup;
+        return NULL;
     }
 
     if (!binary) {
@@ -5478,7 +5465,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     }
 
     if (!(qemuCaps = virQEMUCapsCacheLookup(cache, binary)))
-        goto cleanup;
+        return NULL;
 
     arch_from_caps = virQEMUCapsGetArch(qemuCaps);
 
@@ -5492,7 +5479,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
                          "match given architecture '%s'"),
                        virArchToString(arch_from_caps),
                        virArchToString(arch));
-        goto cleanup;
+        return NULL;
     }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
@@ -5507,7 +5494,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
         virReportError(VIR_ERR_INVALID_ARG,
                        _("KVM is not supported by '%s' on this host"),
                        binary);
-        goto cleanup;
+        return NULL;
     }
 
     if (machine) {
@@ -5518,7 +5505,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
             virReportError(VIR_ERR_INVALID_ARG,
                            _("the machine '%s' is not supported by emulator '%s'"),
                            machine, binary);
-            goto cleanup;
+            return NULL;
         }
     } else {
         machine = virQEMUCapsGetPreferredMachine(qemuCaps, virttype);
@@ -5531,11 +5518,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     if (retMachine)
         *retMachine = machine;
 
-    ret = g_steal_pointer(&qemuCaps);
-
- cleanup:
-    virObjectUnref(qemuCaps);
-    return ret;
+    return g_steal_pointer(&qemuCaps);
 }
 
 bool

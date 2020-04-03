@@ -58,7 +58,7 @@ mymain(void)
 {
     int ret = 0;
     char *fakerootdir;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
 
     fakerootdir = g_strdup(FAKEROOTDIRTEMPLATE);
 
@@ -148,7 +148,6 @@ mymain(void)
     DO_TEST("pseries-locked+hostdev", VIR_DOMAIN_MEMORY_PARAM_UNLIMITED);
 
  cleanup:
-    virObjectUnref(qemuCaps);
 
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);

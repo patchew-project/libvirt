@@ -2249,8 +2249,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     VIR_FREE(priv->machineName);
 
-    virObjectUnref(priv->qemuCaps);
-    priv->qemuCaps = NULL;
+    if (priv->qemuCaps)
+        g_clear_object(&priv->qemuCaps);
 
     VIR_FREE(priv->pidfile);
 
@@ -6024,7 +6024,7 @@ qemuDomainPostParseDataFree(void *parseOpaque)
 {
     virQEMUCapsPtr qemuCaps = parseOpaque;
 
-    virObjectUnref(qemuCaps);
+    g_object_unref(qemuCaps);
 }
 
 
@@ -6867,7 +6867,7 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
         g_autoptr(virQEMUCaps) qCaps = NULL;
 
         if (qemuCaps) {
-            qCaps = virObjectRef(qemuCaps);
+            qCaps = g_object_ref(qemuCaps);
         } else {
             if (!(qCaps = virQEMUCapsCacheLookupCopy(driver->qemuCapsCache,
                                                      def->virtType,

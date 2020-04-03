@@ -21,7 +21,9 @@
 
 #pragma once
 
-#include "virobject.h"
+#include "internal.h"
+#include <glib-object.h>
+
 #include "capabilities.h"
 #include "vircommand.h"
 #include "qemu_monitor.h"
@@ -553,10 +555,11 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
-typedef struct _virQEMUCaps virQEMUCaps;
+#define VIR_TYPE_QEMU_CAPS vir_qemu_caps_get_type()
+G_DECLARE_FINAL_TYPE(virQEMUCaps, vir_qemu_caps, VIR, QEMU_CAPS, GObject);
+
 typedef virQEMUCaps *virQEMUCapsPtr;
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virQEMUCaps, virObjectUnref);
 
 virQEMUCapsPtr virQEMUCapsNew(void);
 virQEMUCapsPtr virQEMUCapsNewBinary(const char *binary);
