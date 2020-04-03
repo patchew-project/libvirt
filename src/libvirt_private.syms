@@ -1367,7 +1367,6 @@ virGetStream;
 virNewConnectCloseCallbackData;
 virNodeDeviceClass;
 virSecretClass;
-virStorageVolClass;
 virStreamClass;
 
 

@@ -39,7 +39,6 @@ virClassPtr virDomainClass;
 virClassPtr virNodeDeviceClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
-virClassPtr virStorageVolClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
@@ -47,7 +46,6 @@ static void virDomainDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
-static void virStorageVolDispose(void *obj);
 
 G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
 static void virDomainCheckpointFinalize(GObject *obj);
@@ -177,6 +175,22 @@ vir_storage_pool_class_init(virStoragePoolClass *klass)
     obj->finalize = virStoragePoolFinalize;
 }
 
+G_DEFINE_TYPE(virStorageVol, vir_storage_vol, G_TYPE_OBJECT);
+static void virStorageVolFinalize(GObject *obj);
+
+static void
+vir_storage_vol_init(virStorageVol *vol G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_storage_vol_class_init(virStorageVolClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virStorageVolFinalize;
+}
+
 virClassPtr virAdmConnectClass;
 virClassPtr virAdmConnectCloseCallbackDataClass;
 
@@ -232,7 +246,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virNodeDevice);
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
-    DECLARE_CLASS(virStorageVol);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
@@ -713,7 +726,7 @@ virStoragePoolFinalize(GObject *obj)
  * @freeFunc: private data cleanup function pointer specific to driver
  *
  * Allocates a new storage volume object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the storage volume object, or NULL on error.
  */
@@ -721,18 +734,17 @@ virStorageVolPtr
 virGetStorageVol(virConnectPtr conn, const char *pool, const char *name,
                  const char *key, void *privateData, virFreeCallback freeFunc)
 {
-    virStorageVolPtr ret = NULL;
+    g_autoptr(virStorageVol) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(pool, error);
-    virCheckNonNullArgGoto(name, error);
-    virCheckNonNullArgGoto(key, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(pool, NULL);
+    virCheckNonNullArgReturn(name, NULL);
+    virCheckNonNullArgReturn(key, NULL);
 
-    if (!(ret = virObjectNew(virStorageVolClass)))
-        goto error;
+    ret = VIR_STORAGE_VOL(g_object_new(VIR_TYPE_STORAGE_VOL, NULL));
 
     ret->pool = g_strdup(pool);
     ret->name = g_strdup(name);
@@ -744,16 +756,12 @@ virGetStorageVol(virConnectPtr conn, const char *pool, const char *name,
     ret->privateData = privateData;
     ret->privateDataFreeFunc = freeFunc;
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
 /**
- * virStorageVolDispose:
+ * virStorageVolFinalize:
  * @obj: the storage volume to release
  *
  * Unconditionally release all memory associated with a volume.
@@ -763,9 +771,9 @@ virGetStorageVol(virConnectPtr conn, const char *pool, const char *name,
  * which may also be released if its ref count hits zero.
  */
 static void
-virStorageVolDispose(void *obj)
+virStorageVolFinalize(GObject *obj)
 {
-    virStorageVolPtr vol = obj;
+    virStorageVolPtr vol = VIR_STORAGE_VOL(obj);
     VIR_DEBUG("release vol %p %s", vol, vol->name);
 
     if (vol->privateDataFreeFunc)
@@ -775,6 +783,8 @@ virStorageVolDispose(void *obj)
     VIR_FREE(vol->name);
     VIR_FREE(vol->pool);
     virObjectUnref(vol->conn);
+
+    G_OBJECT_CLASS(vir_storage_vol_parent_class)->finalize(obj);
 }
 
 

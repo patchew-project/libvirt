@@ -35,7 +35,6 @@ extern virClassPtr virDomainClass;
 extern virClassPtr virNodeDeviceClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
-extern virClassPtr virStorageVolClass;
 
 
 #define VIR_TYPE_DOMAIN_CHECKPOINT vir_domain_checkpoint_get_type()
@@ -73,6 +72,9 @@ G_DECLARE_FINAL_TYPE(virNWFilterBinding,
 
 #define VIR_TYPE_STORAGE_POOL vir_storage_pool_get_type()
 G_DECLARE_FINAL_TYPE(virStoragePool, vir_storage_pool, VIR, STORAGE_POOL, GObject);
+
+#define VIR_TYPE_STORAGE_VOL vir_storage_vol_get_type()
+G_DECLARE_FINAL_TYPE(virStorageVol, vir_storage_vol, VIR, STORAGE_VOL, GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -221,8 +223,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckStorageVolReturn(obj, retval) \
     do { \
-        virStorageVolPtr _vol = (obj); \
-        if (!virObjectIsClass(_vol, virStorageVolClass) || \
+        virStorageVolPtr _vol = VIR_STORAGE_VOL(obj); \
+        if (!G_IS_OBJECT(_vol) || !(G_OBJECT_TYPE(_vol) == VIR_TYPE_STORAGE_VOL) || \
             !virObjectIsClass(_vol->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_VOL, \
@@ -234,8 +236,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     } while (0)
 #define virCheckStorageVolGoto(obj, label) \
     do { \
-        virStorageVolPtr _vol = (obj); \
-        if (!virObjectIsClass(_vol, virStorageVolClass) || \
+        virStorageVolPtr _vol = VIR_STORAGE_VOL(obj); \
+        if (!G_IS_OBJECT(_vol) || !(G_OBJECT_TYPE(_vol) == VIR_TYPE_STORAGE_VOL) || \
             !virObjectIsClass(_vol->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_VOL, \
@@ -707,7 +709,7 @@ struct _virStoragePool {
 * Internal structure associated to a storage volume
 */
 struct _virStorageVol {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *pool;                          /* Pool name of owner */
     char *name;                          /* the storage vol external name */
@@ -721,7 +723,6 @@ struct _virStorageVol {
     virFreeCallback privateDataFreeFunc;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStorageVol, virObjectUnref);
 
 
 /**
