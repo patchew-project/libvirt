@@ -2315,7 +2315,8 @@ qemuDomainObjPrivateFree(void *data)
 
     qemuDomainObjPrivateDataClear(priv);
 
-    virObjectUnref(priv->monConfig);
+    if (priv->monConfig)
+        g_object_unref(priv->monConfig);
     qemuDomainObjFreeJob(priv);
     VIR_FREE(priv->lockState);
     VIR_FREE(priv->origname);
@@ -3934,8 +3935,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
  error:
     virBitmapFree(priv->namespaces);
     priv->namespaces = NULL;
-    virObjectUnref(priv->monConfig);
-    priv->monConfig = NULL;
+    if (priv->monConfig)
+        g_clear_object(&priv->monConfig);
     virStringListFree(priv->qemuDevices);
     priv->qemuDevices = NULL;
     return -1;

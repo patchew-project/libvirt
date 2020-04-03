@@ -2421,8 +2421,7 @@ virDomainNetDefClear(virDomainNetDefPtr def)
 
     switch (def->type) {
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
-        virObjectUnref(def->data.vhostuser);
-        def->data.vhostuser = NULL;
+        g_clear_object(&def->data.vhostuser);
         break;
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
@@ -2497,6 +2496,7 @@ virDomainNetDefFree(virDomainNetDefPtr def)
     VIR_FREE(def);
 }
 
+G_DEFINE_TYPE(virDomainChrSourceDef, vir_domain_chr_source_def, G_TYPE_OBJECT);
 
 const char *
 virDomainChrSourceDefGetPath(virDomainChrSourceDefPtr chr)
@@ -2629,9 +2629,9 @@ virDomainChrSourceDefCopy(virDomainChrSourceDefPtr dest,
 }
 
 static void
-virDomainChrSourceDefDispose(void *obj)
+virDomainChrSourceDefFinalize(GObject *obj)
 {
-    virDomainChrSourceDefPtr def = obj;
+    virDomainChrSourceDefPtr def = VIR_DOMAIN_CHR_SOURCE_DEF(obj);
     size_t i;
 
     virDomainChrSourceDefClear(def);
@@ -2642,6 +2642,8 @@ virDomainChrSourceDefDispose(void *obj)
             virSecurityDeviceLabelDefFree(def->seclabels[i]);
         VIR_FREE(def->seclabels);
     }
+
+    G_OBJECT_CLASS(vir_domain_chr_source_def_parent_class)->finalize(obj);
 }
 
 
@@ -13215,34 +13217,29 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
 }
 
 
-static virClassPtr virDomainChrSourceDefClass;
-
-static int
-virDomainChrSourceDefOnceInit(void)
+static void
+vir_domain_chr_source_def_init(virDomainChrSourceDef *def G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virDomainChrSourceDef, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virDomainChrSourceDef);
+static void
+vir_domain_chr_source_def_class_init(virDomainChrSourceDefClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virDomainChrSourceDefFinalize;
+}
 
 virDomainChrSourceDefPtr
 virDomainChrSourceDefNew(virDomainXMLOptionPtr xmlopt)
 {
     virDomainChrSourceDefPtr def = NULL;
 
-    if (virDomainChrSourceDefInitialize() < 0)
-        return NULL;
-
-    if (!(def = virObjectNew(virDomainChrSourceDefClass)))
-        return NULL;
+    def = VIR_DOMAIN_CHR_SOURCE_DEF(g_object_new(VIR_TYPE_DOMAIN_CHR_SOURCE_DEF, NULL));
 
     if (xmlopt && xmlopt->privateData.chrSourceNew &&
         !(def->privateData = xmlopt->privateData.chrSourceNew())) {
-        virObjectUnref(def);
-        def = NULL;
+        g_clear_object(&def);
     }
 
     return def;

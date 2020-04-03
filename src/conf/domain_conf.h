@@ -1173,7 +1173,7 @@ struct _virDomainChrSourceReconnectDef {
 
 /* The host side information for a character device.  */
 struct _virDomainChrSourceDef {
-    virObject parent;
+    GObject parent;
     int type; /* virDomainChrType */
     virObjectPtr privateData;
     union {
@@ -1218,6 +1218,13 @@ struct _virDomainChrSourceDef {
     size_t nseclabels;
     virSecurityDeviceLabelDefPtr *seclabels;
 };
+
+#define VIR_TYPE_DOMAIN_CHR_SOURCE_DEF vir_domain_chr_source_def_get_type()
+G_DECLARE_FINAL_TYPE(virDomainChrSourceDef,
+                     vir_domain_chr_source_def,
+                     VIR,
+                     DOMAIN_CHR_SOURCE_DEF,
+                     GObject);
 
 /* A complete character device, both host and domain views.  */
 struct _virDomainChrDef {

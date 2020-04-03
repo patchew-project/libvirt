@@ -80,7 +80,7 @@ qemuVirtioFSOpenChardev(virQEMUDriverPtr driver,
                         virDomainObjPtr vm,
                         const char *socket_path)
 {
-    virDomainChrSourceDefPtr chrdev = virDomainChrSourceDefNew(NULL);
+    g_autoptr(virDomainChrSourceDef) chrdev = virDomainChrSourceDefNew(NULL);
     virDomainChrDef chr = { .source = chrdev };
     VIR_AUTOCLOSE fd = -1;
     int ret = -1;
@@ -90,23 +90,21 @@ qemuVirtioFSOpenChardev(virQEMUDriverPtr driver,
     chrdev->data.nix.path = g_strdup(socket_path);
 
     if (qemuSecuritySetDaemonSocketLabel(driver->securityManager, vm->def) < 0)
-        goto cleanup;
+        return ret;
     fd = qemuOpenChrChardevUNIXSocket(chrdev);
     if (fd < 0) {
         ignore_value(qemuSecurityClearSocketLabel(driver->securityManager, vm->def));
-        goto cleanup;
+        return ret;
     }
     if (qemuSecurityClearSocketLabel(driver->securityManager, vm->def) < 0)
-        goto cleanup;
+        return ret;
 
     if (qemuSecuritySetChardevLabel(driver, vm, &chr) < 0)
-        goto cleanup;
+        return ret;
 
     ret = fd;
     fd = -1;
 
- cleanup:
-    virObjectUnref(chrdev);
     return ret;
 }
 
