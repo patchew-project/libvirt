@@ -2095,6 +2095,12 @@ virStoragePoolObjListExport(virConnectPtr conn,
     return data.nPools;
 
  error:
-    virObjectListFree(data.pools);
+    if (data.pools) {
+        while (data.nPools--) {
+            if (data.pools[data.nPools])
+                g_object_unref(data.pools[data.nPools]);
+        }
+    }
+    VIR_FREE(data.pools);
     return -1;
 }

@@ -5493,7 +5493,7 @@ remoteStoragePoolBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virStoragePoolEventLifecycleNew(pool->name, pool->uuid, msg->event,
                                             msg->detail);
-    virObjectUnref(pool);
+    g_object_unref(pool);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5514,7 +5514,7 @@ remoteStoragePoolBuildEventRefresh(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virStoragePoolEventRefreshNew(pool->name, pool->uuid);
-    virObjectUnref(pool);
+    g_object_unref(pool);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }

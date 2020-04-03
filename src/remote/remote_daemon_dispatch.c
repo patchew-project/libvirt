@@ -6196,7 +6196,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(pool);
+    g_object_unref(pool);
     return rv;
 }
 
