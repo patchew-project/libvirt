@@ -150,7 +150,8 @@ remoteEventCallbackFree(void *opaque)
     daemonClientEventCallbackPtr callback = opaque;
     if (!callback)
         return;
-    virObjectUnref(callback->program);
+    if (callback->program)
+        g_object_unref(callback->program);
     virObjectUnref(callback->client);
     VIR_FREE(callback);
 }
@@ -4255,7 +4256,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server G_GNUC_UNUSED,
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4484,7 +4485,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4560,7 +4561,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6043,7 +6044,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6164,7 +6165,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6284,7 +6285,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server G_GNUC_UN
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6404,7 +6405,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = g_object_ref(remoteProgram);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6519,7 +6520,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUS
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(qemuProgram);
+    callback->program = g_object_ref(qemuProgram);
     callback->eventID = -1;
     callback->callbackID = -1;
     ref = callback;

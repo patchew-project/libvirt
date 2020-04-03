@@ -317,6 +317,8 @@ static void virLXCControllerFree(virLXCControllerPtr ctrl)
     VIR_FREE(ctrl->nsFDs);
     virCgroupFree(&ctrl->cgroup);
 
+    if (ctrl->prog)
+        g_object_unref(ctrl->prog);
     /* This must always be the last thing to be closed */
     VIR_FORCE_CLOSE(ctrl->handshakeFd);
     VIR_FREE(ctrl);
@@ -992,11 +994,10 @@ static int virLXCControllerSetupServer(virLXCControllerPtr ctrl)
     virObjectUnref(svc);
     svc = NULL;
 
-    if (!(ctrl->prog = virNetServerProgramNew(VIR_LXC_MONITOR_PROGRAM,
-                                              VIR_LXC_MONITOR_PROGRAM_VERSION,
-                                              virLXCMonitorProcs,
-                                              virLXCMonitorNProcs)))
-        goto error;
+    ctrl->prog = virNetServerProgramNew(VIR_LXC_MONITOR_PROGRAM,
+                                        VIR_LXC_MONITOR_PROGRAM_VERSION,
+                                        virLXCMonitorProcs,
+                                        virLXCMonitorNProcs);
 
     if (!(ctrl->daemon = virNetDaemonNew()) ||
         virNetDaemonAddServer(ctrl->daemon, srv) < 0)
@@ -1008,6 +1009,8 @@ static int virLXCControllerSetupServer(virLXCControllerPtr ctrl)
 
  error:
     VIR_FREE(sockpath);
+    if (ctrl->prog)
+        g_clear_object(&ctrl->prog);
     virObjectUnref(srv);
     virObjectUnref(ctrl->daemon);
     ctrl->daemon = NULL;

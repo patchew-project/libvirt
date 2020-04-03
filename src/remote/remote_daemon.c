@@ -760,8 +760,8 @@ int main(int argc, char **argv) {
     virNetDaemonPtr dmn = NULL;
     virNetServerPtr srv = NULL;
     virNetServerPtr srvAdm = NULL;
-    virNetServerProgramPtr adminProgram = NULL;
-    virNetServerProgramPtr lxcProgram = NULL;
+    g_autoptr(virNetServerProgram) adminProgram = NULL;
+    g_autoptr(virNetServerProgram) lxcProgram = NULL;
     char *remote_config_file = NULL;
     int statuswrite = -1;
     int ret = 1;
@@ -1038,37 +1038,28 @@ int main(int argc, char **argv) {
     remoteProcs[REMOTE_PROC_AUTH_SASL_STEP].needAuth = false;
     remoteProcs[REMOTE_PROC_AUTH_SASL_START].needAuth = false;
     remoteProcs[REMOTE_PROC_AUTH_POLKIT].needAuth = false;
-    if (!(remoteProgram = virNetServerProgramNew(REMOTE_PROGRAM,
-                                                 REMOTE_PROTOCOL_VERSION,
-                                                 remoteProcs,
-                                                 remoteNProcs))) {
-        ret = VIR_DAEMON_ERR_INIT;
-        goto cleanup;
-    }
+    remoteProgram = virNetServerProgramNew(REMOTE_PROGRAM,
+                                           REMOTE_PROTOCOL_VERSION,
+                                           remoteProcs,
+                                           remoteNProcs);
     if (virNetServerAddProgram(srv, remoteProgram) < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
 
-    if (!(lxcProgram = virNetServerProgramNew(LXC_PROGRAM,
-                                              LXC_PROTOCOL_VERSION,
-                                              lxcProcs,
-                                              lxcNProcs))) {
-        ret = VIR_DAEMON_ERR_INIT;
-        goto cleanup;
-    }
+    lxcProgram = virNetServerProgramNew(LXC_PROGRAM,
+                                        LXC_PROTOCOL_VERSION,
+                                        lxcProcs,
+                                        lxcNProcs);
     if (virNetServerAddProgram(srv, lxcProgram) < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
 
-    if (!(qemuProgram = virNetServerProgramNew(QEMU_PROGRAM,
-                                               QEMU_PROTOCOL_VERSION,
-                                               qemuProcs,
-                                               qemuNProcs))) {
-        ret = VIR_DAEMON_ERR_INIT;
-        goto cleanup;
-    }
+    qemuProgram = virNetServerProgramNew(QEMU_PROGRAM,
+                                         QEMU_PROTOCOL_VERSION,
+                                         qemuProcs,
+                                         qemuNProcs);
     if (virNetServerAddProgram(srv, qemuProgram) < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
@@ -1095,13 +1086,10 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!(adminProgram = virNetServerProgramNew(ADMIN_PROGRAM,
-                                                ADMIN_PROTOCOL_VERSION,
-                                                adminProcs,
-                                                adminNProcs))) {
-        ret = VIR_DAEMON_ERR_INIT;
-        goto cleanup;
-    }
+    adminProgram = virNetServerProgramNew(ADMIN_PROGRAM,
+                                          ADMIN_PROTOCOL_VERSION,
+                                          adminProcs,
+                                          adminNProcs);
     if (virNetServerAddProgram(srvAdm, adminProgram) < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
@@ -1213,11 +1201,7 @@ int main(int argc, char **argv) {
         virStateCleanup();
     }
 
-    virObjectUnref(adminProgram);
     virObjectUnref(srvAdm);
-    virObjectUnref(qemuProgram);
-    virObjectUnref(lxcProgram);
-    virObjectUnref(remoteProgram);
     virObjectUnref(srv);
     virObjectUnref(dmn);
 
