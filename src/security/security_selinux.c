@@ -3135,7 +3135,7 @@ virSecuritySELinuxSetSecuritySmartcardCallback(virDomainDefPtr def,
 static int
 virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
                               virDomainDefPtr def,
-                              const char *stdin_path,
+                              const char *stdin_path G_GNUC_UNUSED,
                               bool chardevStdioLogd,
                               bool migrated G_GNUC_UNUSED)
 {
@@ -3229,11 +3229,6 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
     if (def->os.slic_table &&
         virSecuritySELinuxSetFilecon(mgr, def->os.slic_table,
                                      data->content_context, true) < 0)
-        return -1;
-
-    if (stdin_path &&
-        virSecuritySELinuxSetFilecon(mgr, stdin_path,
-                                     data->content_context, false) < 0)
         return -1;
 
     return 0;
@@ -3393,6 +3388,21 @@ virSecuritySELinuxDomainSetPathLabel(virSecurityManagerPtr mgr,
     return virSecuritySELinuxSetFilecon(mgr, path, seclabel->imagelabel, true);
 }
 
+static int
+virSecuritySELinuxDomainSetIncomingPathLabel(virSecurityManagerPtr mgr,
+                                             virDomainDefPtr def,
+                                             const char *path)
+{
+    virSecuritySELinuxDataPtr data = virSecurityManagerGetPrivateData(mgr);
+    virSecurityLabelDefPtr secdef;
+
+    secdef = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
+
+    if (!path || !secdef || !secdef->relabel || data->skipAllLabel)
+        return 0;
+
+    return virSecuritySELinuxSetFilecon(mgr, path, data->content_context, false);
+}
 
 /*
  * virSecuritySELinuxSetFileLabels:
@@ -3596,6 +3606,7 @@ virSecurityDriver virSecurityDriverSELinux = {
     .getBaseLabel                       = virSecuritySELinuxGetBaseLabel,
 
     .domainSetPathLabel                 = virSecuritySELinuxDomainSetPathLabel,
+    .domainSetIncomingPathLabel         = virSecuritySELinuxDomainSetIncomingPathLabel,
 
     .domainSetSecurityChardevLabel      = virSecuritySELinuxSetChardevLabel,
     .domainRestoreSecurityChardevLabel  = virSecuritySELinuxRestoreChardevLabel,
