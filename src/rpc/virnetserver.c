@@ -660,7 +660,7 @@ int virNetServerAddService(virNetServerPtr srv,
     if (VIR_EXPAND_N(srv->services, srv->nservices, 1) < 0)
         goto error;
 
-    srv->services[srv->nservices-1] = virObjectRef(svc);
+    srv->services[srv->nservices-1] = g_object_ref(svc);
 
     virNetServerServiceSetDispatcher(svc,
                                      virNetServerDispatchNewClient,
@@ -916,7 +916,7 @@ void virNetServerDispose(void *obj)
     virThreadPoolFree(srv->workers);
 
     for (i = 0; i < srv->nservices; i++)
-        virObjectUnref(srv->services[i]);
+        g_object_unref(srv->services[i]);
     VIR_FREE(srv->services);
 
     for (i = 0; i < srv->nprograms; i++)

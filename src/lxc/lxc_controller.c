@@ -992,8 +992,7 @@ static int virLXCControllerSetupServer(virLXCControllerPtr ctrl)
 
     if (virNetServerAddService(srv, svc) < 0)
         goto error;
-    virObjectUnref(svc);
-    svc = NULL;
+    g_clear_object(&svc);
 
     ctrl->prog = virNetServerProgramNew(VIR_LXC_MONITOR_PROGRAM,
                                         VIR_LXC_MONITOR_PROGRAM_VERSION,
@@ -1015,7 +1014,8 @@ static int virLXCControllerSetupServer(virLXCControllerPtr ctrl)
     virObjectUnref(srv);
     virObjectUnref(ctrl->daemon);
     ctrl->daemon = NULL;
-    virObjectUnref(svc);
+    if (svc)
+        g_object_unref(svc);
     return -1;
 }
 

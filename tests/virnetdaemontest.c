@@ -85,7 +85,7 @@ static virNetServerPtr
 testCreateServer(const char *server_name, const char *host, int family)
 {
     virNetServerPtr srv = NULL;
-    virNetServerServicePtr svc1 = NULL, svc2 = NULL;
+    g_autoptr(virNetServerService) svc1 = NULL, svc2 = NULL;
     virNetServerClientPtr cln1 = NULL, cln2 = NULL;
     virNetSocketPtr sk1 = NULL, sk2 = NULL;
     int fdclient[2];
@@ -170,8 +170,6 @@ testCreateServer(const char *server_name, const char *host, int family)
         virDispatchError(NULL);
     virObjectUnref(cln1);
     virObjectUnref(cln2);
-    virObjectUnref(svc1);
-    virObjectUnref(svc2);
     virObjectUnref(sk1);
     virObjectUnref(sk2);
     return srv;
