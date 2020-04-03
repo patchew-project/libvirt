@@ -1688,7 +1688,7 @@ virNetworkPortFree(virNetworkPortPtr port)
 
     virCheckNetworkPortReturn(port, -1);
 
-    virObjectUnref(port);
+    g_object_unref(port);
     return 0;
 }
 
@@ -1713,13 +1713,12 @@ virNetworkPortFree(virNetworkPortPtr port)
 int
 virNetworkPortRef(virNetworkPortPtr port)
 {
-    VIR_DEBUG("port=%p refs=%d", port,
-              port ? port->parent.u.s.refs : 0);
+    VIR_DEBUG("port=%p", port);
 
     virResetLastError();
 
     virCheckNetworkPortReturn(port, -1);
 
-    virObjectRef(port);
+    g_object_ref(port);
     return 0;
 }

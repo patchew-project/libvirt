@@ -1825,9 +1825,10 @@ virNetworkObjPortListExport(virNetworkPtr net,
 
     ret = data.nports;
  cleanup:
-    while (data.ports && data.nports)
-        virObjectUnref(data.ports[--data.nports]);
-
+    while (data.ports && data.nports) {
+        if (data.ports[--data.nports])
+            g_object_unref(data.ports[data.nports]);
+    }
     VIR_FREE(data.ports);
     return ret;
 }

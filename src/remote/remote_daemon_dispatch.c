@@ -7199,7 +7199,7 @@ remoteDispatchNetworkPortGetParameters(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(port);
+    g_object_unref(port);
     virTypedParamsFree(params, nparams);
     return rv;
 }

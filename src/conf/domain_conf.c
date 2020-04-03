@@ -31541,7 +31541,7 @@ virDomainNetReleaseActualDevice(virConnectPtr conn,
                                 virDomainNetDefPtr iface)
 {
     g_autoptr(virNetwork) net = NULL;
-    virNetworkPortPtr port = NULL;
+    g_autoptr(virNetworkPort) port = NULL;
     int ret = -1;
 
     /* Port might not exist if a failure occurred during VM startup */
@@ -31560,7 +31560,6 @@ virDomainNetReleaseActualDevice(virConnectPtr conn,
         goto cleanup;
 
  cleanup:
-    virObjectUnref(port);
     return ret;
 }
 
@@ -31614,7 +31613,7 @@ virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
                             virNetDevBandwidthPtr newBandwidth)
 {
     g_autoptr(virNetwork) net = NULL;
-    virNetworkPortPtr port = NULL;
+    g_autoptr(virNetworkPort) port = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     virConnectPtr conn = NULL;
@@ -31639,7 +31638,6 @@ virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
  cleanup:
     virObjectUnref(conn);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(port);
     return ret;
 }
 
