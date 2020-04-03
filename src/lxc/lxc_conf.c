@@ -42,19 +42,20 @@
 
 VIR_LOG_INIT("lxc.lxc_conf");
 
-static virClassPtr virLXCDriverConfigClass;
-static void virLXCDriverConfigDispose(void *obj);
+G_DEFINE_TYPE(virLXCDriverConfig, vir_lxc_driver_config, G_TYPE_OBJECT);
 
-static int virLXCConfigOnceInit(void)
+static void virLXCDriverConfigFinalize(GObject *obj);
+
+static void vir_lxc_driver_config_init(virLXCDriverConfig *cfg G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virLXCDriverConfig, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virLXCConfig);
+static void vir_lxc_driver_config_class_init(virLXCDriverConfigClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
+    obj->finalize = virLXCDriverConfigFinalize;
+}
 
 /* Functions */
 virCapsPtr virLXCDriverCapsInit(virLXCDriverPtr driver)
@@ -227,11 +228,7 @@ virLXCDriverConfigNew(void)
 {
     virLXCDriverConfigPtr cfg;
 
-    if (virLXCConfigInitialize() < 0)
-        return NULL;
-
-    if (!(cfg = virObjectNew(virLXCDriverConfigClass)))
-        return NULL;
+    cfg = VIR_LXC_DRIVER_CONFIG(g_object_new(VIR_TYPE_LXC_DRIVER_CONFIG, NULL));
 
     cfg->securityDefaultConfined = false;
     cfg->securityRequireConfined = false;
@@ -278,19 +275,21 @@ virLXCDriverConfigPtr virLXCDriverGetConfig(virLXCDriverPtr driver)
 {
     virLXCDriverConfigPtr cfg;
     lxcDriverLock(driver);
-    cfg = virObjectRef(driver->config);
+    cfg = g_object_ref(driver->config);
     lxcDriverUnlock(driver);
     return cfg;
 }
 
 static void
-virLXCDriverConfigDispose(void *obj)
+virLXCDriverConfigFinalize(GObject *obj)
 {
-    virLXCDriverConfigPtr cfg = obj;
+    virLXCDriverConfigPtr cfg = VIR_LXC_DRIVER_CONFIG(obj);
 
     VIR_FREE(cfg->configDir);
     VIR_FREE(cfg->autostartDir);
     VIR_FREE(cfg->stateDir);
     VIR_FREE(cfg->logDir);
     VIR_FREE(cfg->securityDriverName);
+
+    G_OBJECT_CLASS(vir_lxc_driver_config_parent_class)->finalize(obj);
 }
