@@ -45,7 +45,21 @@
 
 VIR_LOG_INIT("util.storagefile");
 
-static virClassPtr virStorageSourceClass;
+G_DEFINE_TYPE(virStorageSource, vir_storage_source, G_TYPE_OBJECT);
+static void virStorageSourceFinalize(GObject *obj);
+
+static void
+vir_storage_source_init(virStorageSource *src G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_storage_source_class_init(virStorageSourceClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virStorageSourceFinalize;
+}
 
 VIR_ENUM_IMPL(virStorage,
               VIR_STORAGE_TYPE_LAST,
@@ -2682,8 +2696,8 @@ virStorageSourceBackingStoreClear(virStorageSourcePtr def)
     VIR_FREE(def->backingStoreRaw);
 
     /* recursively free backing chain */
-    virObjectUnref(def->backingStore);
-    def->backingStore = NULL;
+    if (def->backingStore)
+        g_clear_object(&def->backingStore);
 }
 
 
@@ -2739,34 +2753,21 @@ virStorageSourceClear(virStorageSourcePtr def)
 
 
 static void
-virStorageSourceDispose(void *obj)
+virStorageSourceFinalize(GObject *obj)
 {
-    virStorageSourcePtr src = obj;
+    virStorageSourcePtr src = VIR_STORAGE_SOURCE(obj);
 
     virStorageSourceClear(src);
+
+    G_OBJECT_CLASS(vir_storage_source_parent_class)->finalize(obj);
 }
 
-
-static int
-virStorageSourceOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(virStorageSource, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-
-VIR_ONCE_GLOBAL_INIT(virStorageSource);
 
 
 virStorageSourcePtr
 virStorageSourceNew(void)
 {
-    if (virStorageSourceInitialize() < 0)
-        return NULL;
-
-    return virObjectNew(virStorageSourceClass);
+    return VIR_STORAGE_SOURCE(g_object_new(VIR_TYPE_STORAGE_SOURCE, NULL));
 }
 
 

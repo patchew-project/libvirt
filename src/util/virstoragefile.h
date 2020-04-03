@@ -275,7 +275,7 @@ typedef virStorageSource *virStorageSourcePtr;
  * IMPORTANT: When adding fields to this struct it's also necessary to add
  * appropriate code to the virStorageSourceCopy deep copy function */
 struct _virStorageSource {
-    virObject parent;
+    GObject parent;
 
     unsigned int id; /* backing chain identifier, 0 is unset */
     int type; /* virStorageType */
@@ -393,7 +393,9 @@ struct _virStorageSource {
     bool ssh_host_key_check_disabled;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStorageSource, virObjectUnref);
+#define VIR_TYPE_STORAGE_SOURCE vir_storage_source_get_type()
+G_DECLARE_FINAL_TYPE(virStorageSource, vir_storage_source, VIR, STORAGE_SOURCE, GObject);
+
 
 
 #ifndef DEV_BSIZE

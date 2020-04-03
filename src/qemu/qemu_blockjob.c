@@ -91,10 +91,10 @@ static void
 qemuBlockJobDataDisposeJobdata(qemuBlockJobDataPtr job)
 {
     if (job->type == QEMU_BLOCKJOB_TYPE_CREATE)
-        virObjectUnref(job->data.create.src);
+        g_object_unref(job->data.create.src);
 
     if (job->type == QEMU_BLOCKJOB_TYPE_BACKUP) {
-        virObjectUnref(job->data.backup.store);
+        g_object_unref(job->data.backup.store);
         g_free(job->data.backup.bitmap);
     }
 }
@@ -105,8 +105,10 @@ qemuBlockJobDataFinalize(GObject *obj)
 {
     qemuBlockJobDataPtr job = QEMU_BLOCK_JOB_DATA(obj);
 
-    virObjectUnref(job->chain);
-    virObjectUnref(job->mirrorChain);
+    if (job->chain)
+        g_object_unref(job->chain);
+    if (job->mirrorChain)
+        g_object_unref(job->mirrorChain);
 
     qemuBlockJobDataDisposeJobdata(job);
 
@@ -185,7 +187,7 @@ qemuBlockJobRegister(qemuBlockJobDataPtr job,
 
     if (disk) {
         job->disk = disk;
-        job->chain = virObjectRef(disk->src);
+        job->chain = g_object_ref(disk->src);
         QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = g_object_ref(job);
     }
 
@@ -337,9 +339,9 @@ qemuBlockJobNewCreate(virDomainObjPtr vm,
         return NULL;
 
     if (virStorageSourceIsBacking(chain))
-        job->chain = virObjectRef(chain);
+        job->chain = g_object_ref(chain);
 
-     job->data.create.src = virObjectRef(src);
+     job->data.create.src = g_object_ref(src);
 
     if (qemuBlockJobRegister(job, vm, NULL, true) < 0)
         return NULL;
@@ -370,7 +372,7 @@ qemuBlockJobDiskNewCopy(virDomainObjPtr vm,
     if (!(job = qemuBlockJobDataNew(QEMU_BLOCKJOB_TYPE_COPY, jobname)))
         return NULL;
 
-    job->mirrorChain = virObjectRef(mirror);
+    job->mirrorChain = g_object_ref(mirror);
 
     if (shallow && !reuse)
         job->data.copy.shallownew = true;
@@ -399,7 +401,7 @@ qemuBlockJobDiskNewBackup(virDomainObjPtr vm,
         return NULL;
 
     job->data.backup.bitmap = g_strdup(bitmap);
-    job->data.backup.store = virObjectRef(store);
+    job->data.backup.store = g_object_ref(store);
 
     /* backup jobs are usually started in bulk by transaction so the caller
      * shall save the status XML */
@@ -688,14 +690,12 @@ qemuBlockJobRewriteConfigDiskSource(virDomainObjPtr vm,
         /* discard any detected backing store */
         if (virStorageSourceIsBacking(n->backingStore) &&
             n->backingStore->detected) {
-            virObjectUnref(n->backingStore);
-            n->backingStore = NULL;
+            g_clear_object(&n->backingStore);
             break;
         }
     }
 
-    virObjectUnref(persistDisk->src);
-    persistDisk->src = g_steal_pointer(&copy);
+    g_set_object(&persistDisk->src, copy);
 }
 
 
@@ -729,8 +729,7 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
                      disk->dst);
         }
 
-        virObjectUnref(disk->src);
-        disk->src = disk->mirror;
+        g_set_object(&disk->src, disk->mirror);
     } else {
         if (disk->mirror) {
             virDomainLockImageDetach(driver->lockManager, vm, disk->mirror);
@@ -740,7 +739,7 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
              * Remove security driver metadata so that they are not leaked. */
             qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->mirror);
 
-            virObjectUnref(disk->mirror);
+            g_object_unref(disk->mirror);
         }
 
         qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->src);
@@ -817,8 +816,7 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
              * Remove security driver metadata so that they are not leaked. */
             qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->mirror);
 
-            virObjectUnref(disk->mirror);
-            disk->mirror = NULL;
+            g_clear_object(&disk->mirror);
         }
         disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_NONE;
         disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
@@ -930,8 +928,8 @@ qemuBlockJobClearConfigChain(virDomainObjPtr vm,
     if (!virStorageSourceIsSameLocation(disk->src, cfgdisk->src))
         return;
 
-    virObjectUnref(cfgdisk->src->backingStore);
-    cfgdisk->src->backingStore = NULL;
+    if (cfgdisk->src->backingStore)
+        g_clear_object(&cfgdisk->src->backingStore);
 }
 
 
@@ -997,14 +995,16 @@ qemuBlockJobProcessEventCompletedPull(virQEMUDriverPtr driver,
     if (baseparent)
         baseparent->backingStore = NULL;
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, tmp);
-    virObjectUnref(tmp);
+    if (tmp)
+        g_object_unref(tmp);
 
     if (cfgdisk) {
         tmp = cfgdisk->src->backingStore;
         cfgdisk->src->backingStore = cfgbase;
         if (cfgbaseparent)
             cfgbaseparent->backingStore = NULL;
-        virObjectUnref(tmp);
+        if (tmp)
+            g_object_unref(tmp);
     }
 }
 
@@ -1171,8 +1171,7 @@ qemuBlockJobProcessEventCompletedCommit(virQEMUDriverPtr driver,
     if (job->data.commit.deleteCommittedImages)
         qemuBlockJobDeleteImages(driver, vm, job->disk, job->data.commit.top);
 
-    virObjectUnref(job->data.commit.top);
-    job->data.commit.top = NULL;
+    g_clear_object(&job->data.commit.top);
 
     if (cfgbaseparent) {
         cfgbase = cfgbaseparent->backingStore;
@@ -1183,7 +1182,8 @@ qemuBlockJobProcessEventCompletedCommit(virQEMUDriverPtr driver,
         else
             cfgdisk->src = cfgbase;
 
-        virObjectUnref(cfgtop);
+        if (cfgtop)
+            g_object_unref(cfgtop);
     }
 }
 
@@ -1249,7 +1249,8 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
         cfgbaseparent->backingStore = NULL;
         cfgdisk->src = cfgbase;
         cfgdisk->src->readonly = cfgtop->readonly;
-        virObjectUnref(cfgtop);
+        if (cfgtop)
+            g_object_unref(cfgtop);
     }
 
     /* Move security driver metadata */
@@ -1265,11 +1266,9 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
     if (job->data.commit.deleteCommittedImages)
         qemuBlockJobDeleteImages(driver, vm, job->disk, job->data.commit.top);
 
-    virObjectUnref(job->data.commit.top);
-    job->data.commit.top = NULL;
+    g_clear_object(&job->data.commit.top);
     /* the mirror element does not serve functional purpose for the commit job */
-    virObjectUnref(job->disk->mirror);
-    job->disk->mirror = NULL;
+    g_clear_object(&job->disk->mirror);
 }
 
 
@@ -1297,8 +1296,7 @@ qemuBlockJobProcessEventConcludedCopyPivot(virQEMUDriverPtr driver,
     qemuBlockJobRewriteConfigDiskSource(vm, job->disk, job->disk->mirror);
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->disk->src);
-    virObjectUnref(job->disk->src);
-    job->disk->src = g_steal_pointer(&job->disk->mirror);
+    g_set_object(&job->disk->src, job->disk->mirror);
 }
 
 
@@ -1316,8 +1314,7 @@ qemuBlockJobProcessEventConcludedCopyAbort(virQEMUDriverPtr driver,
         return;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->disk->mirror);
-    virObjectUnref(job->disk->mirror);
-    job->disk->mirror = NULL;
+    g_clear_object(&job->disk->mirror);
 }
 
 
@@ -1338,8 +1335,7 @@ qemuBlockJobProcessEventFailedActiveCommit(virQEMUDriverPtr driver,
      * not leaking security driver metadata is more important. */
     qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->mirror);
 
-    virObjectUnref(disk->mirror);
-    disk->mirror = NULL;
+    g_clear_object(&disk->mirror);
 }
 
 
@@ -1389,8 +1385,7 @@ qemuBlockJobProcessEventConcludedCreate(virQEMUDriverPtr driver,
      * it will handle further hotplug of the created volume and also that
      * the 'chain' which was registered is under their control */
     if (job->synchronous) {
-        virObjectUnref(job->chain);
-        job->chain = NULL;
+        g_clear_object(&job->chain);
         return;
     }
 
