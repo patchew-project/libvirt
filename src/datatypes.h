@@ -36,7 +36,6 @@ extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
 extern virClassPtr virNetworkPortClass;
 extern virClassPtr virNodeDeviceClass;
-extern virClassPtr virNWFilterBindingClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 extern virClassPtr virStorageVolClass;
@@ -48,6 +47,13 @@ G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
                      vir_domain_checkpoint,
                      VIR,
                      DOMAIN_CHECKPOINT,
+                     GObject);
+
+#define VIR_TYPE_NW_FILTER_BINDING vir_nw_filter_binding_get_type()
+G_DECLARE_FINAL_TYPE(virNWFilterBinding,
+                     vir_nw_filter_binding,
+                     VIR,
+                     NW_FILTER_BINDING,
                      GObject);
 
 #define VIR_TYPE_DOMAIN_SNAPSHOT vir_domain_snapshot_get_type()
@@ -328,8 +334,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNWFilterBindingReturn(obj, retval) \
     do { \
-        virNWFilterBindingPtr _nw = (obj); \
-        if (!virObjectIsClass(_nw, virNWFilterBindingClass) || \
+        virNWFilterBindingPtr _nw = VIR_NW_FILTER_BINDING(obj); \
+        if (!G_IS_OBJECT(_nw) || !(G_OBJECT_TYPE(_nw) == VIR_TYPE_NW_FILTER_BINDING) || \
             !virObjectIsClass(_nw->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NWFILTER, \
                                  VIR_ERR_INVALID_NWFILTER_BINDING, \
@@ -800,7 +806,7 @@ struct _virNWFilter {
 * Internal structure associated to a network filter port binding
 */
 struct _virNWFilterBinding {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *portdev;                       /* the network filter port device name */
     char *filtername;                    /* the network filter name */

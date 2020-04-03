@@ -489,7 +489,11 @@ virNWFilterBindingObjListExport(virNWFilterBindingObjListPtr bindings,
  cleanup:
     virObjectListFreeCount(bindingobjs, nbindings);
     if (ret < 0) {
-        virObjectListFreeCount(*bindinglist, nbindings);
+        for (i = 0; i < nbindings; i++) {
+            if ((*bindinglist)[i])
+                g_object_unref((*bindinglist)[i]);
+        }
+        VIR_FREE(*bindinglist);
         *bindinglist = NULL;
     }
     return ret;
