@@ -70,6 +70,9 @@ int virDBusMessageDecode(DBusMessage *msg,
                          const char *types, ...);
 void virDBusMessageUnref(DBusMessage *msg);
 
+int virDBusIsServiceEnabled(DBusConnection *conn, const char *name);
+int virDBusIsServiceRegistered(DBusConnection *conn, const char *name);
+
 int virDBusSystemIsServiceEnabled(const char *name);
 int virDBusSystemIsServiceRegistered(const char *name);
 

@@ -1650,18 +1650,13 @@ int virDBusCallMethod(DBusConnection *conn,
 }
 
 
-static int virDBusIsServiceInList(const char *listMethod, const char *name)
+static int virDBusIsServiceInList(DBusConnection *conn,
+                                  const char *listMethod,
+                                  const char *name)
 {
-    DBusConnection *conn;
     DBusMessage *reply = NULL;
     DBusMessageIter iter, sub;
     int ret = -1;
-
-    if (!virDBusHasSystemBus())
-        return -2;
-
-    if (!(conn = virDBusGetSystemBus()))
-        return -1;
 
     if (virDBusCallMethod(conn,
                           &reply,
@@ -1700,14 +1695,15 @@ static int virDBusIsServiceInList(const char *listMethod, const char *name)
 }
 
 /**
- * virDBusSystemIsServiceEnabled:
- * @name: service name
+ * virDBusIsServiceEnabled:
+ * @conn: a DBus connection
+ * @name: a service name
  *
  * Returns 0 if service is available, -1 on fatal error, or -2 if service is not available
  */
-int virDBusSystemIsServiceEnabled(const char *name)
+int virDBusIsServiceEnabled(DBusConnection *conn, const char *name)
 {
-    int ret = virDBusIsServiceInList("ListActivatableNames", name);
+    int ret = virDBusIsServiceInList(conn, "ListActivatableNames", name);
 
     VIR_DEBUG("Service %s is %s", name, ret ? "unavailable" : "available");
 
@@ -1715,18 +1711,57 @@ int virDBusSystemIsServiceEnabled(const char *name)
 }
 
 /**
- * virDBusSystemIsServiceRegistered
+ * virDBusIsServiceRegistered:
+ * @conn: a DBus connection
+ * @name: a service name
+ *
+ * Returns 0 if service is registered, -1 on fatal error, or -2 if service is not available
+ */
+int virDBusIsServiceRegistered(DBusConnection *conn, const char *name)
+{
+    int ret = virDBusIsServiceInList(conn, "ListNames", name);
+
+    VIR_DEBUG("Service %s is %s", name, ret ? "not registered" : "registered");
+
+    return ret;
+}
+
+/**
+ * virDBusSystemIsServiceEnabled:
+ * @name: service name
+ *
+ * Returns 0 if service is available, -1 on fatal error, or -2 if service is not available
+ */
+int virDBusSystemIsServiceEnabled(const char *name)
+{
+    DBusConnection *conn;
+
+    if (!virDBusHasSystemBus())
+        return -2;
+
+    if (!(conn = virDBusGetSystemBus()))
+        return -1;
+
+    return virDBusIsServiceEnabled(conn, name);
+}
+
+/**
+ * virDBusSystemIsServiceRegistered:
  * @name: service name
  *
  * Returns 0 if service is registered, -1 on fatal error, or -2 if service is not registered
  */
 int virDBusSystemIsServiceRegistered(const char *name)
 {
-    int ret = virDBusIsServiceInList("ListNames", name);
+    DBusConnection *conn;
 
-    VIR_DEBUG("Service %s is %s", name, ret ? "not registered" : "registered");
+    if (!virDBusHasSystemBus())
+        return -2;
 
-    return ret;
+    if (!(conn = virDBusGetSystemBus()))
+        return -1;
+
+    return virDBusIsServiceRegistered(conn, name);
 }
 
 void virDBusMessageUnref(DBusMessage *msg)
