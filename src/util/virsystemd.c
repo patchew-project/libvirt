@@ -148,16 +148,18 @@ void virSystemdHasLogindResetCachedValue(void)
  *  0 = machine1 is available
  */
 static int
-virSystemdHasMachined(void)
+virSystemdHasMachined(DBusConnection **conn)
 {
     int ret;
     int val;
+
+    *conn = geteuid() ? virDBusGetSessionBus() : virDBusGetSystemBus();
 
     val = g_atomic_int_get(&virSystemdHasMachinedCachedValue);
     if (val != -1)
         return val;
 
-    if ((ret = virDBusSystemIsServiceEnabled("org.freedesktop.machine1")) < 0) {
+    if ((ret = virDBusIsServiceEnabled(*conn, "org.freedesktop.machine1")) < 0) {
         if (ret == -2)
             g_atomic_int_set(&virSystemdHasMachinedCachedValue, -2);
         return ret;
@@ -199,10 +201,7 @@ virSystemdGetMachineNameByPID(pid_t pid)
     DBusMessage *reply = NULL;
     char *name = NULL, *object = NULL;
 
-    if (virSystemdHasMachined() < 0)
-        goto cleanup;
-
-    if (!(conn = virDBusGetSystemBus()))
+    if (virSystemdHasMachined(&conn) < 0)
         goto cleanup;
 
     if (virDBusCallMethod(conn, &reply, NULL,
@@ -279,11 +278,8 @@ int virSystemdCreateMachine(const char *name,
     char *scopename = NULL;
     static int hasCreateWithNetwork = 1;
 
-    if ((ret = virSystemdHasMachined()) < 0)
+    if ((ret = virSystemdHasMachined(&conn)) < 0)
         return ret;
-
-    if (!(conn = virDBusGetSystemBus()))
-        return -1;
 
     ret = -1;
 
@@ -459,13 +455,10 @@ int virSystemdTerminateMachine(const char *name)
 
     memset(&error, 0, sizeof(error));
 
-    if ((ret = virSystemdHasMachined()) < 0)
+    if ((ret = virSystemdHasMachined(&conn)) < 0)
         goto cleanup;
 
     ret = -1;
-
-    if (!(conn = virDBusGetSystemBus()))
-        goto cleanup;
 
     /*
      * The systemd DBus API we're invoking has the
