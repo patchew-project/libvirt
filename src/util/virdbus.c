@@ -1700,12 +1700,12 @@ static int virDBusIsServiceInList(const char *listMethod, const char *name)
 }
 
 /**
- * virDBusIsServiceEnabled:
+ * virDBusSystemIsServiceEnabled:
  * @name: service name
  *
  * Returns 0 if service is available, -1 on fatal error, or -2 if service is not available
  */
-int virDBusIsServiceEnabled(const char *name)
+int virDBusSystemIsServiceEnabled(const char *name)
 {
     int ret = virDBusIsServiceInList("ListActivatableNames", name);
 
@@ -1715,12 +1715,12 @@ int virDBusIsServiceEnabled(const char *name)
 }
 
 /**
- * virDBusIsServiceRegistered
+ * virDBusSystemIsServiceRegistered
  * @name: service name
  *
  * Returns 0 if service is registered, -1 on fatal error, or -2 if service is not registered
  */
-int virDBusIsServiceRegistered(const char *name)
+int virDBusSystemIsServiceRegistered(const char *name)
 {
     int ret = virDBusIsServiceInList("ListNames", name);
 
@@ -1843,13 +1843,13 @@ int virDBusMessageDecode(DBusMessage* msg G_GNUC_UNUSED,
     return -1;
 }
 
-int virDBusIsServiceEnabled(const char *name G_GNUC_UNUSED)
+int virDBusSystemIsServiceEnabled(const char *name G_GNUC_UNUSED)
 {
     VIR_DEBUG("DBus support not compiled into this binary");
     return -2;
 }
 
-int virDBusIsServiceRegistered(const char *name G_GNUC_UNUSED)
+int virDBusSystemIsServiceRegistered(const char *name G_GNUC_UNUSED)
 {
     VIR_DEBUG("DBus support not compiled into this binary");
     return -2;

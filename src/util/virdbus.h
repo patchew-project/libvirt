@@ -70,7 +70,7 @@ int virDBusMessageDecode(DBusMessage *msg,
                          const char *types, ...);
 void virDBusMessageUnref(DBusMessage *msg);
 
-int virDBusIsServiceEnabled(const char *name);
-int virDBusIsServiceRegistered(const char *name);
+int virDBusSystemIsServiceEnabled(const char *name);
+int virDBusSystemIsServiceRegistered(const char *name);
 
 bool virDBusErrorIsUnknownMethod(virErrorPtr err);

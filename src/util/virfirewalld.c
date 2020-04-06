@@ -66,7 +66,7 @@ VIR_ENUM_IMPL(virFirewallDBackend,
 int
 virFirewallDIsRegistered(void)
 {
-    return virDBusIsServiceRegistered(VIR_FIREWALL_FIREWALLD_SERVICE);
+    return virDBusSystemIsServiceRegistered(VIR_FIREWALL_FIREWALLD_SERVICE);
 }
 
 /**
