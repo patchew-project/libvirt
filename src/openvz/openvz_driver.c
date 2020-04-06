@@ -2084,7 +2084,7 @@ openvzDomainMigratePrepare3Params(virConnectPtr dconn,
     virDomainDefPtr def = NULL;
     virDomainObjPtr vm = NULL;
     char *my_hostname = NULL;
-    const char *hostname = NULL;
+    char *hostname = NULL;
     virURIPtr uri = NULL;
     int ret = -1;
 
@@ -2147,6 +2147,10 @@ openvzDomainMigratePrepare3Params(virConnectPtr dconn,
         } else {
             hostname = uri->server;
         }
+    }
+
+    if (hostname == NULL) {
+        goto error;
     }
 
     *uri_out = g_strdup_printf("ssh://%s", hostname);

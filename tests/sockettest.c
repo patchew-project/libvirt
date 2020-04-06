@@ -188,8 +188,12 @@ static int testMaskNetwork(const char *addrstr,
         return -1;
 
     if (STRNEQ(networkstr, gotnet)) {
-        VIR_FREE(gotnet);
-        fprintf(stderr, "Expected %s, got %s\n", networkstr, gotnet);
+        if (gotnet == NULL) {
+            fprintf(stderr, "Expected %s, got empty string\n", networkstr);
+        } else {
+            fprintf(stderr, "Expected %s, got %s\n", networkstr, gotnet);
+            VIR_FREE(gotnet);
+        }
         return -1;
     }
     VIR_FREE(gotnet);
