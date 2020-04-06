@@ -960,6 +960,13 @@ mymain(void)
     DO_TEST("pcie-root-port-model-ioh3420",
             QEMU_CAPS_DEVICE_IOH3420);
 
+    DO_TEST("pcie-root-port-nohotplug",
+            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_DEVICE_X3130_UPSTREAM,
+            QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
+            QEMU_CAPS_PCIE_ROOT_PORT_HOTPLUG);
+
     DO_TEST("pcie-switch-upstream-port",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,
