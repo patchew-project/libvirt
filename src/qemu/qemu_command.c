@@ -1047,7 +1047,12 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                 return NULL;
             }
 
-            virBufferStrcat(&buf, "rbd:", src->volume, "/", src->path, NULL);
+            virBufferStrcat(&buf, "rbd:", src->volume, "/", NULL);
+            /* The filename of image with namespace: rbd:POOL/NAMESPACE/IMAGE... */
+            if (src->namespace)
+                virBufferStrcat(&buf, src->namespace, "/", NULL);
+
+            virBufferStrcat(&buf, src->path, NULL);
 
             if (src->snapshot)
                 virBufferEscape(&buf, '\\', ":", "@%s", src->snapshot);
@@ -1423,6 +1428,13 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_DETECT_ZEROES)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("detect_zeroes is not supported by this QEMU binary"));
+            return -1;
+        }
+
+        if (disk->src->namespace &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_RBD_NAMESPACE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("rbd namespace is not supported by this QEMU binary"));
             return -1;
         }
     }

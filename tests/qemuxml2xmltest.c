@@ -333,6 +333,7 @@ mymain(void)
     DO_TEST("disk-network-iscsi", QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("disk-network-gluster", NONE);
     DO_TEST("disk-network-rbd", NONE);
+    DO_TEST_CAPS_LATEST("disk-network-rbd-namespace");
     DO_TEST("disk-network-source-auth", NONE);
     DO_TEST("disk-network-sheepdog", NONE);
     DO_TEST("disk-network-vxhs", NONE);

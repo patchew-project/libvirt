@@ -1081,6 +1081,7 @@ mymain(void)
     DO_TEST_CAPS_VER("disk-network-rbd", "2.5.0");
     DO_TEST_CAPS_VER("disk-network-rbd", "2.12.0");
     DO_TEST_CAPS_LATEST("disk-network-rbd");
+    DO_TEST_CAPS_LATEST("disk-network-rbd-namespace");
     DO_TEST_FAILURE("disk-network-rbd-no-colon", NONE);
     DO_TEST("disk-network-sheepdog", NONE);
     DO_TEST_CAPS_VER("disk-network-sheepdog", "2.12.0");
