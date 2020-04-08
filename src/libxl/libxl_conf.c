@@ -288,6 +288,11 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
 #endif
     } else {
         libxl_domain_build_info_init_type(b_info, LIBXL_DOMAIN_TYPE_PV);
+        /*
+         * e820_host is a PV-only setting and according to xl.cfg(5) it
+         * should be safe to unconditionally enable it.
+         */
+        libxl_defbool_set(&b_info->u.pv.e820_host, true);
     }
 
     b_info->max_vcpus = virDomainDefGetVcpusMax(def);

@@ -19,7 +19,8 @@
 
         },
         "type.pv": {
-            "bootloader": "pygrub"
+            "bootloader": "pygrub",
+            "e820_host": "True"
         },
         "arch_arm": {
 
