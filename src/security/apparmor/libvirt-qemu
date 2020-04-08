@@ -227,3 +227,8 @@
   # required for sasl GSSAPI plugin
   /etc/gss/mech.d/ r,
   /etc/gss/mech.d/* r,
+
+  # scanned on libpmem init, but harmless on any lsb compliant system
+  / r,
+  /sys/bus/nd/devices/ r,
+  /sys/bus/nd/devices/* r,
