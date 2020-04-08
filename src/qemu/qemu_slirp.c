@@ -355,6 +355,6 @@ qemuSlirpStart(qemuSlirpPtr slirp,
         virProcessKillPainfully(pid, true);
     if (pidfile)
         unlink(pidfile);
-    qemuDBusStop(driver, vm);
+    /* leave dbus daemon running, it may be used by others */
     return -1;
 }
