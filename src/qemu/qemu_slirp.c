@@ -243,12 +243,21 @@ qemuSlirpStop(qemuSlirpPtr slirp,
 
 
 int
+qemuSlirpSetupCgroup(qemuSlirpPtr slirp,
+                     virCgroupPtr cgroup)
+{
+    return virCgroupAddProcess(cgroup, slirp->pid);
+}
+
+
+int
 qemuSlirpStart(qemuSlirpPtr slirp,
                virDomainObjPtr vm,
                virQEMUDriverPtr driver,
                virDomainNetDefPtr net,
                bool incoming)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     g_autoptr(virCommand) cmd = NULL;
     g_autofree char *pidfile = NULL;
@@ -348,6 +357,10 @@ qemuSlirpStart(qemuSlirpPtr slirp,
     }
 
     slirp->pid = pid;
+
+    if (priv->cgroup && qemuSlirpSetupCgroup(slirp, priv->cgroup) < 0)
+        goto error;
+
     return 0;
 
  error:
@@ -355,6 +368,7 @@ qemuSlirpStart(qemuSlirpPtr slirp,
         virProcessKillPainfully(pid, true);
     if (pidfile)
         unlink(pidfile);
+    slirp->pid = 0;
     /* leave dbus daemon running, it may be used by others */
     return -1;
 }
