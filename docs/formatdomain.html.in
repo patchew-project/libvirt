@@ -3118,6 +3118,11 @@
               (<span class="since">Since 6.2.0</span>)
               </p>
 
+              <p>For protocol <code>rbd</code>, an optional attribute
+              <code>namespace</code> specifies the namespace of a rbd pool.
+              (<span class="since">Since 6.3.0 and QEMU 5.0.0</span>)
+              </p>
+
               <p>For "iscsi" (<span class="since">since 1.0.4</span>), the
               <code>name</code> attribute may include a logical unit number,
               separated from the target's name by a slash (e.g.,
