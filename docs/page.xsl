@@ -77,6 +77,7 @@
   <!-- This is the master page structure -->
   <xsl:template match="/" mode="page">
     <xsl:param name="pagename"/>
+    <xsl:param name="pagesrc"/>
     <xsl:param name="timestamp"/>
     <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE html&gt;
 </xsl:text>
@@ -150,6 +151,12 @@
           </div>
         </div>
         <div id="footer">
+          <div id="contact">
+            <h3>Contribute</h3>
+            <ul>
+              <li><a href="https://gitlab.com/libvirt/libvirt/-/blob/master/docs/{$pagesrc}">edit this page</a></li>
+            </ul>
+          </div>
           <div id="contact">
             <h3>Contact</h3>
             <ul>
