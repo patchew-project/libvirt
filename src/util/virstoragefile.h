@@ -284,6 +284,7 @@ struct _virStorageSource {
     char *snapshot; /* for storage systems supporting internal snapshots */
     char *configFile; /* some storage systems use config file as part of
                          the source definition */
+    char *namespace; /* for the storage systems supporting namespace */
     char *query; /* query string for HTTP based protocols */
     size_t nhosts;
     virStorageNetHostDefPtr hosts;
