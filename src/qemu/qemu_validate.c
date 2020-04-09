@@ -982,6 +982,24 @@ qemuValidateDomainDef(const virDomainDef *def,
 }
 
 
+static bool
+qemuDomainDeviceDefValidateZPCIUid(virZPCIDeviceAddressPtr zpci)
+{
+    if (zpci->uid_set &&
+        (zpci->uid > VIR_DOMAIN_DEVICE_ZPCI_MAX_UID ||
+         zpci->uid == 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid PCI address uid='0x%.4x', "
+                         "must be > 0x0000 and <= 0x%.4x"),
+                       zpci->uid,
+                       VIR_DOMAIN_DEVICE_ZPCI_MAX_UID);
+        return false;
+    }
+
+    return true;
+}
+
+
 static int
 qemuValidateDomainDeviceDefZPCIAddress(virDomainDeviceInfoPtr info,
                                        virQEMUCapsPtr qemuCaps)
@@ -993,6 +1011,12 @@ qemuValidateDomainDeviceDefZPCIAddress(virDomainDeviceInfoPtr info,
                        _("This QEMU binary doesn't support zPCI"));
         return -1;
     }
+
+    /* We don't need to check fid because fid covers
+     * all range of uint32 type.
+     */
+    if (!qemuDomainDeviceDefValidateZPCIUid(&info->addr.pci.zpci))
+        return -1;
 
     return 0;
 }

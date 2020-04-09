@@ -2834,7 +2834,6 @@ virPCIStubDriverTypeFromString;
 virPCIStubDriverTypeToString;
 virZPCIDeviceAddressIsIncomplete;
 virZPCIDeviceAddressIsPresent;
-virZPCIDeviceAddressIsValid;
 
 
 # util/virperf.h

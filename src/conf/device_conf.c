@@ -77,9 +77,6 @@ virZPCIDeviceAddressParseXML(xmlNodePtr node,
         def.fid_set = true;
     }
 
-    if (!virZPCIDeviceAddressIsValid(&def))
-        return -1;
-
     addr->zpci = def;
 
     return 0;
