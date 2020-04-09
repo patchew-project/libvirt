@@ -6168,6 +6168,10 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
     } else {
         *enable = false;
 
+        if (nvcpus == curvcpus) {
+            def->individualvcpus = true;
+        }
+
         for (i = maxvcpus - 1; i >= 0 && curvcpus > nvcpus; i--) {
             vcpu = virDomainDefGetVcpu(def, i);
             vcpupriv =  QEMU_DOMAIN_VCPU_PRIVATE(vcpu);
