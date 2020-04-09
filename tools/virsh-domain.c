@@ -3658,7 +3658,7 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
     bool checkpoints_metadata = vshCommandOptBool(cmd, "checkpoints-metadata");
     bool wipe_storage = vshCommandOptBool(cmd, "wipe-storage");
     bool remove_all_storage = vshCommandOptBool(cmd, "remove-all-storage");
-    bool delete_snapshots = vshCommandOptBool(cmd, "delete-snapshots");
+    bool delete_snapshots = vshCommandOptBool(cmd, "delete-storage-volume-snapshots");
     bool nvram = vshCommandOptBool(cmd, "nvram");
     bool keep_nvram = vshCommandOptBool(cmd, "keep-nvram");
     /* Positive if these items exist.  */
