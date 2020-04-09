@@ -27,11 +27,11 @@ server,nowait \
 -device vfio-pci,host=0001:00:00.0,id=hostdev0,bus=pci.0,addr=0x3 \
 -device zpci,uid=53,fid=104,target=hostdev1,id=zpci53 \
 -device vfio-pci,host=0002:00:00.0,id=hostdev1,bus=pci.0,addr=0x1 \
--device zpci,uid=1,fid=1,target=hostdev2,id=zpci1 \
+-device zpci,uid=1,fid=0,target=hostdev2,id=zpci1 \
 -device vfio-pci,host=0003:00:00.0,id=hostdev2,bus=pci.0,addr=0x2 \
--device zpci,uid=2,fid=2,target=hostdev3,id=zpci2 \
+-device zpci,uid=2,fid=1,target=hostdev3,id=zpci2 \
 -device vfio-pci,host=0004:00:00.0,id=hostdev3,bus=pci.0,addr=0x5 \
--device zpci,uid=83,fid=0,target=hostdev4,id=zpci83 \
+-device zpci,uid=83,fid=2,target=hostdev4,id=zpci83 \
 -device vfio-pci,host=0005:00:00.0,id=hostdev4,bus=pci.0,addr=0x7 \
 -device zpci,uid=3,fid=114,target=hostdev5,id=zpci3 \
 -device vfio-pci,host=0006:00:00.0,id=hostdev5,bus=pci.0,addr=0x9 \

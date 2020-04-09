@@ -39,7 +39,7 @@
         <address domain='0x0003' bus='0x00' slot='0x00' function='0x0'/>
       </source>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'>
-        <zpci uid='0x0001' fid='0x00000001'/>
+        <zpci uid='0x0001' fid='0x00000000'/>
       </address>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='no'>
@@ -48,7 +48,7 @@
         <address domain='0x0004' bus='0x00' slot='0x00' function='0x0'/>
       </source>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'>
-        <zpci uid='0x0002' fid='0x00000002'/>
+        <zpci uid='0x0002' fid='0x00000001'/>
       </address>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='no'>
@@ -57,7 +57,7 @@
         <address domain='0x0005' bus='0x00' slot='0x00' function='0x0'/>
       </source>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'>
-        <zpci uid='0x0053' fid='0x00000000'/>
+        <zpci uid='0x0053' fid='0x00000002'/>
       </address>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='no'>

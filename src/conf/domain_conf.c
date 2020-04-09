@@ -7516,7 +7516,7 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
                               virTristateSwitchTypeToString(info->addr.pci.multi));
         }
 
-        if (!virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci)) {
+        if (!virZPCIDeviceAddressIsIncomplete(&info->addr.pci.zpci)) {
             virBufferAsprintf(&childBuf,
                               "<zpci uid='0x%.4x' fid='0x%.8x'/>\n",
                               info->addr.pci.zpci.uid,

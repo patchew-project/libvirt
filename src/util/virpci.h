@@ -43,6 +43,8 @@ typedef virZPCIDeviceAddress *virZPCIDeviceAddressPtr;
 struct _virZPCIDeviceAddress {
     unsigned int uid; /* exempt from syntax-check */
     unsigned int fid;
+    bool uid_set;
+    bool fid_set;
     /* Don't forget to update virPCIDeviceAddressCopy if needed. */
 };
 
@@ -245,8 +247,9 @@ char *virPCIDeviceAddressAsString(const virPCIDeviceAddress *addr)
 
 int virPCIDeviceAddressParse(char *address, virPCIDeviceAddressPtr bdf);
 
+bool virZPCIDeviceAddressIsIncomplete(const virZPCIDeviceAddress *addr);
+bool virZPCIDeviceAddressIsPresent(const virZPCIDeviceAddress *addr);
 bool virZPCIDeviceAddressIsValid(virZPCIDeviceAddressPtr zpci);
-bool virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr);
 
 int virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path,
                                  int pfNetDevIdx,

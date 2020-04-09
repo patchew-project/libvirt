@@ -65,8 +65,7 @@ virZPCIDeviceAddressParseXML(xmlNodePtr node,
                            _("Cannot parse <address> 'uid' attribute"));
             return -1;
         }
-        if (!virZPCIDeviceAddressIsValid(&def))
-            return -1;
+        def.uid_set = true;
     }
 
     if (fid) {
@@ -75,8 +74,11 @@ virZPCIDeviceAddressParseXML(xmlNodePtr node,
                            _("Cannot parse <address> 'fid' attribute"));
             return -1;
         }
+        def.fid_set = true;
     }
 
+    if (!virZPCIDeviceAddressIsValid(&def))
+        return -1;
 
     addr->zpci = def;
 
@@ -191,21 +193,19 @@ virDeviceInfoPCIAddressIsPresent(const virDomainDeviceInfo *info)
            !virPCIDeviceAddressIsEmpty(&info->addr.pci);
 }
 
-
 bool
 virDeviceInfoPCIAddressExtensionIsWanted(const virDomainDeviceInfo *info)
 {
     return (info->addr.pci.extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) &&
-           virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci);
+           virZPCIDeviceAddressIsIncomplete(&info->addr.pci.zpci);
 }
 
 bool
 virDeviceInfoPCIAddressExtensionIsPresent(const virDomainDeviceInfo *info)
 {
     return (info->addr.pci.extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) &&
-           !virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci);
+           virZPCIDeviceAddressIsPresent(&info->addr.pci.zpci);
 }
-
 
 int
 virPCIDeviceAddressParseXML(xmlNodePtr node,
