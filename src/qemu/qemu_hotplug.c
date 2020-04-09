@@ -6274,8 +6274,10 @@ qemuDomainSetVcpusConfig(virDomainDefPtr def,
     /* ordering information may become invalid, thus clear it */
     virDomainDefVcpuOrderClear(def);
 
-    if (curvcpus == nvcpus)
+    if (curvcpus == nvcpus) {
+        def->individualvcpus = true;
         return;
+    }
 
     if (curvcpus < nvcpus) {
         for (i = 0; i < maxvcpus; i++) {
