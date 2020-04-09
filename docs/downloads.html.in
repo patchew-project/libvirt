@@ -31,10 +31,10 @@
             <a href="https://libvirt.org/sources/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt.git;a=summary">libvirt</a>
@@ -54,10 +54,10 @@
             <a href="https://libvirt.org/sources/csharp/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-csharp">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-csharp">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-csharp/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-csharp/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-csharp.git;a=summary">libvirt</a>
@@ -71,10 +71,10 @@
             <a href="https://libvirt.org/libvirt-go">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-go">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-go">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-go/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-go/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-go.git;a=summary">libvirt</a>
@@ -90,10 +90,10 @@
             <a href="https://libvirt.org/sources/java/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-java">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-java">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-java/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-java/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-java.git;a=summary">libvirt</a>
@@ -107,10 +107,10 @@
             <a href="https://libvirt.org/sources/ocaml/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-ocaml">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-ocaml">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-ocaml/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-ocaml/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-ocaml.git;a=summary">libvirt</a>
@@ -124,10 +124,10 @@
             <a href="https://metacpan.org/release/Sys-Virt/">cpan</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-perl">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-perl">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-perl/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-perl/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-perl.git;a=summary">libvirt</a>
@@ -144,10 +144,10 @@
             <a href="https://libvirt.org/sources/php/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-php">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-php">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-php/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-php/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-php.git;a=summary">libvirt</a>
@@ -162,10 +162,10 @@
             <a href="https://pypi.python.org/pypi/libvirt-python">pypi</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-python">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-python">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-python/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-python/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-python.git;a=summary">libvirt</a>
@@ -179,10 +179,10 @@
             <a href="https://libvirt.org/sources/ruby/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/ruby-libvirt">gitlab</a>
+            <a href="https://gitlab.com/libvirt/ruby-libvirt">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/ruby-libvirt/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/ruby-libvirt/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=ruby-libvirt.git;a=summary">libvirt</a>
@@ -196,10 +196,10 @@
             <a href="https://crates.io/crates/virt">crates.io</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-rust">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-rust">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-rust/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-rust/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-rust.git;a=summary">libvirt</a>
@@ -218,10 +218,10 @@
             <a href="https://libvirt.org/sources/glib/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-glib">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-glib">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-glib/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-glib/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-glib.git;a=summary">libvirt</a>
@@ -235,10 +235,10 @@
             <a href="https://libvirt.org/libvirt-go-xml">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-go-xml">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-go-xml">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-go-xml/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-go-xml/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-go-xml.git;a=summary">libvirt</a>
@@ -254,10 +254,10 @@
             <a href="https://libvirt.org/sources/dbus/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-dbus">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-dbus">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-dbus/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-dbus/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-dbus.git;a=summary">libvirt</a>
@@ -271,10 +271,10 @@
             <a href="https://libvirt.org/sources/consoleproxy/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-console-proxy">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-console-proxy">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-console-proxy/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-console-proxy/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-console-proxy.git;a=summary">libvirt</a>
@@ -288,10 +288,10 @@
             <a href="https://libvirt.org/sources/CIM/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-cim">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-cim">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-cim/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-cim/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-cim.git;a=summary">libvirt</a>
@@ -305,10 +305,10 @@
             <a href="https://libvirt.org/sources/CIM/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libcmpiutil">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libcmpiutil">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libcmpiutil/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libcmpiutil/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libcmpiutil.git;a=summary">libvirt</a>
@@ -322,10 +322,10 @@
             <a href="https://libvirt.org/sources/snmp/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-snmp">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-snmp">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-snmp/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-snmp/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-snmp.git;a=summary">libvirt</a>
@@ -339,10 +339,10 @@
             <a href="https://libvirt.org/sources/sandbox/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-sandbox">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-sandbox">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-sandbox/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-sandbox/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-sandbox.git;a=summary">libvirt</a>
@@ -359,10 +359,10 @@
             <a href="https://libvirt.org/sources/tck/">libvirt</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-tck">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-tck">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-tck/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-tck/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-tck.git;a=summary">libvirt</a>
@@ -374,10 +374,10 @@
           <td>Test API</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-test-API">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-test-API">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-test-API/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-test-API/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-test-API.git;a=summary">libvirt</a>
@@ -389,10 +389,10 @@
           <td>Continuous Integration Config</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-ci">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-ci">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-ci/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-ci/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-ci.git;a=summary">libvirt</a>
@@ -404,10 +404,10 @@
           <td>CIM Test</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/cimtest">gitlab</a>
+            <a href="https://gitlab.com/libvirt/cimtest">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/cimtest/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/cimtest/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=cimtest.git;a=summary">libvirt</a>
@@ -422,10 +422,10 @@
           <td>Publican Brand</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-publican">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-publican">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-publican/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-publican/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-publican.git;a=summary">libvirt</a>
@@ -437,10 +437,10 @@
           <td>App Development Guide</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-appdev-guide.git;a=summary">libvirt</a>
@@ -452,10 +452,10 @@
           <td>App Development Guide Python</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide-python">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide-python">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide-python/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-appdev-guide-python/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-appdev-guide-python.git;a=summary">libvirt</a>
@@ -467,10 +467,10 @@
           <td>virsh Command Reference</td>
           <td></td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-virshcmdref">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-virshcmdref">git</a>
           </td>
           <td>
-            <a href="https://gitlab.com/libvirt/libvirt-virshcmdref/-/issues">gitlab</a>
+            <a href="https://gitlab.com/libvirt/libvirt-virshcmdref/-/issues">bugs</a>
           </td>
           <td class="gitmirror">
             <a href="https://libvirt.org/git/?p=libvirt-virshcmdref.git;a=summary">libvirt</a>
