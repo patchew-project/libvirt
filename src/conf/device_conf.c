@@ -53,38 +53,34 @@ virZPCIDeviceAddressParseXML(xmlNodePtr node,
                              virPCIDeviceAddressPtr addr)
 {
     virZPCIDeviceAddress def = { 0 };
-    char *uid;
-    char *fid;
-    int ret = -1;
+    g_autofree char *uid = NULL;
+    g_autofree char *fid = NULL;
 
     uid = virXMLPropString(node, "uid");
     fid = virXMLPropString(node, "fid");
 
-    if (uid &&
-        virStrToLong_uip(uid, NULL, 0, &def.uid) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Cannot parse <address> 'uid' attribute"));
-        goto cleanup;
+    if (uid) {
+        if (virStrToLong_uip(uid, NULL, 0, &def.uid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'uid' attribute"));
+            return -1;
+        }
+        if (!virZPCIDeviceAddressIsValid(&def))
+            return -1;
     }
 
-    if (fid &&
-        virStrToLong_uip(fid, NULL, 0, &def.fid) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Cannot parse <address> 'fid' attribute"));
-        goto cleanup;
+    if (fid) {
+        if (virStrToLong_uip(fid, NULL, 0, &def.fid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'fid' attribute"));
+            return -1;
+        }
     }
 
-    if (!virZPCIDeviceAddressIsEmpty(&def) &&
-        !virZPCIDeviceAddressIsValid(&def))
-        goto cleanup;
 
     addr->zpci = def;
-    ret = 0;
 
- cleanup:
-    VIR_FREE(uid);
-    VIR_FREE(fid);
-    return ret;
+    return 0;
 }
 
 void
