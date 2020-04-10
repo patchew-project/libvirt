@@ -125,7 +125,7 @@ typedef struct _testDriver testDriver;
 typedef testDriver *testDriverPtr;
 
 static testDriverPtr defaultPrivconn;
-static virMutex defaultLock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(defaultLock);
 
 static virClassPtr testDriverClass;
 static void testDriverDispose(void *obj);
@@ -1334,10 +1334,10 @@ testOpenDefault(virConnectPtr conn)
     xmlXPathContextPtr ctxt = NULL;
     size_t i;
 
-    virMutexLock(&defaultLock);
+    G_LOCK(defaultLock);
     if (defaultPrivconn) {
         conn->privateData = virObjectRef(defaultPrivconn);
-        virMutexUnlock(&defaultLock);
+        G_UNLOCK(defaultLock);
         return VIR_DRV_OPEN_SUCCESS;
     }
 
@@ -1379,7 +1379,7 @@ testOpenDefault(virConnectPtr conn)
     defaultPrivconn = privconn;
     ret = VIR_DRV_OPEN_SUCCESS;
  cleanup:
-    virMutexUnlock(&defaultLock);
+    G_UNLOCK(defaultLock);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(doc);
     return ret;
@@ -1445,11 +1445,11 @@ testConnectAuthenticate(virConnectPtr conn,
 static void
 testDriverCloseInternal(testDriverPtr driver)
 {
-    virMutexLock(&defaultLock);
+    G_LOCK(defaultLock);
     bool disposed = !virObjectUnref(driver);
     if (disposed && driver == defaultPrivconn)
         defaultPrivconn = NULL;
-    virMutexUnlock(&defaultLock);
+    G_UNLOCK(defaultLock);
 }
 
 
