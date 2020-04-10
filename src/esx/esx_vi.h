@@ -115,7 +115,7 @@ struct _esxVI_ParsedHostCpuIdInfo {
 
 struct _esxVI_CURL {
     CURL *handle;
-    virMutex lock;
+    GMutex lock;
     struct curl_slist *headers;
     char error[CURL_ERROR_SIZE];
     esxVI_SharedCURL *shared;
@@ -137,7 +137,7 @@ int esxVI_CURL_Upload(esxVI_CURL *curl, const char *url, const char *content);
 
 struct _esxVI_SharedCURL {
     CURLSH *handle;
-    virMutex locks[3]; /* share, cookie, dns */
+    GMutex locks[3]; /* share, cookie, dns */
     size_t count; /* number of added easy handle */
 };
 
@@ -184,7 +184,7 @@ struct _esxVI_Context {
     esxVI_ProductLine productLine;
     unsigned long productVersion; /* = 1000000 * major + 1000 * minor + micro */
     esxVI_UserSession *session; /* ... except the session ... */
-    virMutexPtr sessionLock; /* ... that is protected by this mutex */
+    GMutex *sessionLock; /* ... that is protected by this mutex */
     esxVI_Datacenter *datacenter;
     char *datacenterPath; /* including folders */
     esxVI_ComputeResource *computeResource;

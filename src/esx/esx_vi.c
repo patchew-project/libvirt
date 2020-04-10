@@ -112,7 +112,7 @@ ESX_VI__TEMPLATE__FREE(CURL,
     if (item->headers)
         curl_slist_free_all(item->headers);
 
-    virMutexDestroy(&item->lock);
+    g_mutex_clear(&item->lock);
 })
 
 static size_t
@@ -356,11 +356,7 @@ esxVI_CURL_Connect(esxVI_CURL *curl, esxUtil_ParsedUri *parsedUri)
                          parsedUri->proxy_port);
     }
 
-    if (virMutexInit(&curl->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Could not initialize CURL mutex"));
-        return -1;
-    }
+    g_mutex_init(&curl->lock);
 
     return 0;
 }
@@ -392,7 +388,7 @@ esxVI_CURL_Download(esxVI_CURL *curl, const char *url, char **content,
         range = g_strdup_printf("%llu-", offset);
     }
 
-    virMutexLock(&curl->lock);
+    g_mutex_lock(&curl->lock);
 
     curl_easy_setopt(curl->handle, CURLOPT_URL, url);
     curl_easy_setopt(curl->handle, CURLOPT_RANGE, range);
@@ -402,7 +398,7 @@ esxVI_CURL_Download(esxVI_CURL *curl, const char *url, char **content,
 
     responseCode = esxVI_CURL_Perform(curl, url);
 
-    virMutexUnlock(&curl->lock);
+    g_mutex_unlock(&curl->lock);
 
     if (responseCode < 0) {
         goto cleanup;
@@ -433,13 +429,12 @@ int
 esxVI_CURL_Upload(esxVI_CURL *curl, const char *url, const char *content)
 {
     int responseCode = 0;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&curl->lock);
 
     if (!content) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
         return -1;
     }
-
-    virMutexLock(&curl->lock);
 
     curl_easy_setopt(curl->handle, CURLOPT_URL, url);
     curl_easy_setopt(curl->handle, CURLOPT_RANGE, NULL);
@@ -448,8 +443,6 @@ esxVI_CURL_Upload(esxVI_CURL *curl, const char *url, const char *content)
     curl_easy_setopt(curl->handle, CURLOPT_INFILESIZE, strlen(content));
 
     responseCode = esxVI_CURL_Perform(curl, url);
-
-    virMutexUnlock(&curl->lock);
 
     if (responseCode < 0) {
         return -1;
@@ -494,7 +487,7 @@ esxVI_SharedCURL_Lock(CURL *handle G_GNUC_UNUSED, curl_lock_data data,
         return;
     }
 
-    virMutexLock(&shared->locks[i]);
+    g_mutex_lock(&shared->locks[i]);
 }
 
 static void
@@ -522,7 +515,7 @@ esxVI_SharedCURL_Unlock(CURL *handle G_GNUC_UNUSED, curl_lock_data data,
         return;
     }
 
-    virMutexUnlock(&shared->locks[i]);
+    g_mutex_unlock(&shared->locks[i]);
 }
 
 /* esxVI_SharedCURL_Alloc */
@@ -543,7 +536,7 @@ ESX_VI__TEMPLATE__FREE(SharedCURL,
         curl_share_cleanup(item->handle);
 
     for (i = 0; i < G_N_ELEMENTS(item->locks); ++i)
-        virMutexDestroy(&item->locks[i]);
+        g_mutex_clear(&item->locks[i]);
 })
 
 int
@@ -583,22 +576,18 @@ esxVI_SharedCURL_Add(esxVI_SharedCURL *shared, esxVI_CURL *curl)
                           CURL_LOCK_DATA_DNS);
 
         for (i = 0; i < G_N_ELEMENTS(shared->locks); ++i) {
-            if (virMutexInit(&shared->locks[i]) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("Could not initialize a CURL (share) mutex"));
-                return -1;
-            }
+            g_mutex_init(&shared->locks[i]);
         }
     }
 
-    virMutexLock(&curl->lock);
+    g_mutex_lock(&curl->lock);
 
     curl_easy_setopt(curl->handle, CURLOPT_SHARE, shared->handle);
 
     curl->shared = shared;
     ++shared->count;
 
-    virMutexUnlock(&curl->lock);
+    g_mutex_unlock(&curl->lock);
 
     return 0;
 }
@@ -606,6 +595,8 @@ esxVI_SharedCURL_Add(esxVI_SharedCURL *shared, esxVI_CURL *curl)
 int
 esxVI_SharedCURL_Remove(esxVI_SharedCURL *shared, esxVI_CURL *curl)
 {
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&curl->lock);
+
     if (!curl->handle) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot unshare uninitialized CURL handle"));
@@ -623,14 +614,10 @@ esxVI_SharedCURL_Remove(esxVI_SharedCURL *shared, esxVI_CURL *curl)
         return -1;
     }
 
-    virMutexLock(&curl->lock);
-
     curl_easy_setopt(curl->handle, CURLOPT_SHARE, NULL);
 
     curl->shared = NULL;
     --shared->count;
-
-    virMutexUnlock(&curl->lock);
 
     return 0;
 }
@@ -661,6 +648,8 @@ ESX_VI__TEMPLATE__FREE(MultiCURL,
 int
 esxVI_MultiCURL_Add(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 {
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&curl->lock);
+
     if (!curl->handle) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot add uninitialized CURL handle to a multi handle"));
@@ -684,14 +673,10 @@ esxVI_MultiCURL_Add(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 
     }
 
-    virMutexLock(&curl->lock);
-
     curl_multi_add_handle(multi->handle, curl->handle);
 
     curl->multi = multi;
     ++multi->count;
-
-    virMutexUnlock(&curl->lock);
 
     return 0;
 }
@@ -699,6 +684,8 @@ esxVI_MultiCURL_Add(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 int
 esxVI_MultiCURL_Remove(esxVI_MultiCURL *multi, esxVI_CURL *curl)
 {
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&curl->lock);
+
     if (!curl->handle) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot remove uninitialized CURL handle from a "
@@ -718,14 +705,10 @@ esxVI_MultiCURL_Remove(esxVI_MultiCURL *multi, esxVI_CURL *curl)
         return -1;
     }
 
-    virMutexLock(&curl->lock);
-
     curl_multi_remove_handle(multi->handle, curl->handle);
 
     curl->multi = NULL;
     --multi->count;
-
-    virMutexUnlock(&curl->lock);
 
     return 0;
 }
@@ -809,7 +792,7 @@ ESX_VI__TEMPLATE__ALLOC(Context)
 ESX_VI__TEMPLATE__FREE(Context,
 {
     if (item->sessionLock)
-        virMutexDestroy(item->sessionLock);
+        g_mutex_clear(item->sessionLock);
 
     esxVI_CURL_Free(&item->curl);
     VIR_FREE(item->url);
@@ -870,11 +853,7 @@ esxVI_Context_Connect(esxVI_Context *ctx, const char *url,
         goto cleanup;
 
 
-    if (virMutexInit(ctx->sessionLock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Could not initialize session mutex"));
-        goto cleanup;
-    }
+    g_mutex_init(ctx->sessionLock);
 
     if (esxVI_RetrieveServiceContent(ctx, &ctx->service) < 0)
         goto cleanup;
@@ -1262,7 +1241,7 @@ esxVI_Context_Execute(esxVI_Context *ctx, const char *methodName,
     if (esxVI_Response_Alloc(response) < 0)
         return -1;
 
-    virMutexLock(&ctx->curl->lock);
+    g_mutex_lock(&ctx->curl->lock);
 
     curl_easy_setopt(ctx->curl->handle, CURLOPT_URL, ctx->url);
     curl_easy_setopt(ctx->curl->handle, CURLOPT_RANGE, NULL);
@@ -1273,7 +1252,7 @@ esxVI_Context_Execute(esxVI_Context *ctx, const char *methodName,
 
     (*response)->responseCode = esxVI_CURL_Perform(ctx->curl, ctx->url);
 
-    virMutexUnlock(&ctx->curl->lock);
+    g_mutex_unlock(&ctx->curl->lock);
 
     if ((*response)->responseCode < 0)
         goto cleanup;
@@ -1908,13 +1887,14 @@ esxVI_EnsureSession(esxVI_Context *ctx)
     esxVI_DynamicProperty *dynamicProperty = NULL;
     esxVI_UserSession *currentSession = NULL;
     char *escapedPassword = NULL;
+    g_autoptr(GMutexLocker) locker = NULL;
 
     if (!ctx->sessionLock) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid call, no mutex"));
         return -1;
     }
 
-    virMutexLock(ctx->sessionLock);
+    locker = g_mutex_locker_new(ctx->sessionLock);
 
     if (!ctx->session) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid call, no session"));
@@ -1969,8 +1949,6 @@ esxVI_EnsureSession(esxVI_Context *ctx)
     result = 0;
 
  cleanup:
-    virMutexUnlock(ctx->sessionLock);
-
     VIR_FREE(escapedPassword);
     esxVI_String_Free(&propertyNameList);
     esxVI_ObjectContent_Free(&sessionManager);

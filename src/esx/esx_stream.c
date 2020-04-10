@@ -203,6 +203,7 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
     int result = -1;
     esxStreamPrivate *priv = stream->privateData;
     int status;
+    g_autoptr(GMutexLocker) locker = NULL;
 
     if (nbytes == 0)
         return 0;
@@ -217,7 +218,7 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
         return -1;
     }
 
-    virMutexLock(&priv->curl->lock);
+    locker = g_mutex_locker_new(&priv->curl->lock);
 
     priv->buffer = (char *)data;
     priv->buffer_size = nbytes;
@@ -225,7 +226,7 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
 
     if (stream->flags & VIR_STREAM_NONBLOCK) {
         if (esxStreamTransfer(priv, false) < 0)
-            goto cleanup;
+            return -1;
 
         if (priv->buffer_used < priv->buffer_size)
             result = priv->buffer_size - priv->buffer_used;
@@ -236,7 +237,7 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
             status = esxStreamTransfer(priv, true);
 
             if (status < 0)
-                goto cleanup;
+                return -1;
 
             if (status > 0)
                 break;
@@ -244,9 +245,6 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
 
         result = priv->buffer_size - priv->buffer_used;
     }
-
- cleanup:
-    virMutexUnlock(&priv->curl->lock);
 
     return result;
 }
@@ -260,6 +258,7 @@ esxStreamRecvFlags(virStreamPtr stream,
     int result = -1;
     esxStreamPrivate *priv = stream->privateData;
     int status;
+    g_autoptr(GMutexLocker) locker = NULL;
 
     virCheckFlags(0, -1);
 
@@ -276,7 +275,7 @@ esxStreamRecvFlags(virStreamPtr stream,
         return -1;
     }
 
-    virMutexLock(&priv->curl->lock);
+    locker = g_mutex_locker_new(&priv->curl->lock);
 
     priv->buffer = data;
     priv->buffer_size = nbytes;
@@ -296,7 +295,7 @@ esxStreamRecvFlags(virStreamPtr stream,
         result = priv->buffer_used;
     } else if (stream->flags & VIR_STREAM_NONBLOCK) {
         if (esxStreamTransfer(priv, false) < 0)
-            goto cleanup;
+            return -1;
 
         if (priv->buffer_used > 0)
             result = priv->buffer_used;
@@ -307,7 +306,7 @@ esxStreamRecvFlags(virStreamPtr stream,
             status = esxStreamTransfer(priv, true);
 
             if (status < 0)
-                goto cleanup;
+                return -1;
 
             if (status > 0)
                 break;
@@ -315,9 +314,6 @@ esxStreamRecvFlags(virStreamPtr stream,
 
         result = priv->buffer_used;
     }
-
- cleanup:
-    virMutexUnlock(&priv->curl->lock);
 
     return result;
 }
@@ -346,11 +342,12 @@ esxStreamClose(virStreamPtr stream, bool finish)
 {
     int result = 0;
     esxStreamPrivate *priv = stream->privateData;
+    g_autoptr(GMutexLocker) locker = NULL;
 
     if (!priv)
         return 0;
 
-    virMutexLock(&priv->curl->lock);
+    locker = g_mutex_locker_new(&priv->curl->lock);
 
     if (finish && priv->backlog_used > 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -359,8 +356,6 @@ esxStreamClose(virStreamPtr stream, bool finish)
     }
 
     stream->privateData = NULL;
-
-    virMutexUnlock(&priv->curl->lock);
 
     esxFreeStreamPrivate(&priv);
 
