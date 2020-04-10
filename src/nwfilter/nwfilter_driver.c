@@ -333,7 +333,7 @@ nwfilterStateReload(void)
 
     virNWFilterObjListLoadAllConfigs(driver->nwfilters, driver->configDir);
 
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterWriteUnlockFilterUpdates();
 
     virNWFilterBuildAll(driver, false);
 
@@ -602,7 +602,7 @@ nwfilterDefineXML(virConnectPtr conn,
     if (obj)
         virNWFilterObjUnlock(obj);
 
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterWriteUnlockFilterUpdates();
     nwfilterDriverUnlock();
     return nwfilter;
 }
@@ -643,7 +643,7 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
     if (obj)
         virNWFilterObjUnlock(obj);
 
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterWriteUnlockFilterUpdates();
     nwfilterDriverUnlock();
     return ret;
 }

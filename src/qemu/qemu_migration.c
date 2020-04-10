@@ -2716,7 +2716,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     qemuMigrationCookieFree(mig);
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterReadUnlockFilterUpdates();
     virErrorRestore(&origErr);
     return ret;
 

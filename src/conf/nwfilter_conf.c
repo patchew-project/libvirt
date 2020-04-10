@@ -154,27 +154,33 @@ static const struct int_map chain_priorities[] = {
 /*
  * only one filter update allowed
  */
-static virRWLock updateLock;
+static GRWLock updateLock;
 static bool initialized;
 
 void
 virNWFilterReadLockFilterUpdates(void)
 {
-    virRWLockRead(&updateLock);
+    g_rw_lock_reader_lock(&updateLock);
 }
 
 
 void
 virNWFilterWriteLockFilterUpdates(void)
 {
-    virRWLockWrite(&updateLock);
+    g_rw_lock_writer_lock(&updateLock);
 }
 
 
 void
-virNWFilterUnlockFilterUpdates(void)
+virNWFilterReadUnlockFilterUpdates(void)
 {
-    virRWLockUnlock(&updateLock);
+    g_rw_lock_reader_unlock(&updateLock);
+}
+
+void
+virNWFilterWriteUnlockFilterUpdates(void)
+{
+    g_rw_lock_writer_unlock(&updateLock);
 }
 
 
@@ -3090,9 +3096,6 @@ virNWFilterConfLayerInit(virNWFilterTriggerRebuildCallback cb,
 
     initialized = true;
 
-    if (virRWLockInit(&updateLock) < 0)
-        return -1;
-
     return 0;
 }
 
@@ -3102,8 +3105,6 @@ virNWFilterConfLayerShutdown(void)
 {
     if (!initialized)
         return;
-
-    virRWLockDestroy(&updateLock);
 
     initialized = false;
     rebuildCallback = NULL;

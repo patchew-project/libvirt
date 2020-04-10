@@ -582,7 +582,10 @@ void
 virNWFilterReadLockFilterUpdates(void);
 
 void
-virNWFilterUnlockFilterUpdates(void);
+virNWFilterWriteUnlockFilterUpdates(void);
+
+void
+virNWFilterReadUnlockFilterUpdates(void);
 
 typedef int (*virNWFilterTriggerRebuildCallback)(void *opaque);
 

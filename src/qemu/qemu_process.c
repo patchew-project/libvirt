@@ -8196,7 +8196,7 @@ qemuProcessReconnect(void *opaque)
             qemuDomainRemoveInactiveJob(driver, obj);
     }
     virDomainObjEndAPI(&obj);
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterReadUnlockFilterUpdates();
     virIdentitySetCurrent(NULL);
     return;
 
@@ -8272,7 +8272,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
         qemuDomainRemoveInactiveJobLocked(src->driver, obj);
 
         virDomainObjEndAPI(&obj);
-        virNWFilterUnlockFilterUpdates();
+        virNWFilterReadUnlockFilterUpdates();
         g_clear_object(&data->identity);
         VIR_FREE(data);
         return -1;

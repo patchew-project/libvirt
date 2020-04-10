@@ -807,7 +807,7 @@ virNWFilterInstantiateFilterLate(virNWFilterDriverStatePtr driver,
         }
     }
 
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterReadUnlockFilterUpdates();
     virMutexUnlock(&updateMutex);
 
     return rc;

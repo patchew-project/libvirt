@@ -874,6 +874,7 @@ virNWFilterJumpTargetTypeToString;
 virNWFilterPrintStateMatchFlags;
 virNWFilterPrintTCPFlags;
 virNWFilterReadLockFilterUpdates;
+virNWFilterReadUnlockFilterUpdates;
 virNWFilterRuleActionTypeToString;
 virNWFilterRuleDirectionTypeToString;
 virNWFilterRuleIsProtocolEthernet;
@@ -882,8 +883,8 @@ virNWFilterRuleIsProtocolIPv6;
 virNWFilterRuleProtocolTypeToString;
 virNWFilterSaveConfig;
 virNWFilterTriggerRebuild;
-virNWFilterUnlockFilterUpdates;
 virNWFilterWriteLockFilterUpdates;
+virNWFilterWriteUnlockFilterUpdates;
 
 
 # conf/nwfilter_ipaddrmap.h

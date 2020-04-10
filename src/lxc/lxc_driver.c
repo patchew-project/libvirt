@@ -1030,7 +1030,7 @@ static int lxcDomainCreateWithFiles(virDomainPtr dom,
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(cfg);
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterReadUnlockFilterUpdates();
     return ret;
 }
 
@@ -1158,7 +1158,7 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(caps);
     virObjectUnref(cfg);
-    virNWFilterUnlockFilterUpdates();
+    virNWFilterReadUnlockFilterUpdates();
     return dom;
 }
 
