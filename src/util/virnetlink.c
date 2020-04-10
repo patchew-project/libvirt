@@ -62,7 +62,7 @@ typedef struct _virNetlinkEventSrvPrivate virNetlinkEventSrvPrivate;
 typedef virNetlinkEventSrvPrivate *virNetlinkEventSrvPrivatePtr;
 struct _virNetlinkEventSrvPrivate {
     /* Server */
-    virMutex lock;
+    GMutex lock;
     int eventwatch;
     int netlinkfd;
     virNetlinkHandle *netlinknh;
@@ -791,13 +791,13 @@ virNetlinkGetErrorCode(struct nlmsghdr *resp, unsigned int recvbuflen)
 static void
 virNetlinkEventServerLock(virNetlinkEventSrvPrivatePtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 static void
 virNetlinkEventServerUnlock(virNetlinkEventSrvPrivatePtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 /**
@@ -916,7 +916,7 @@ virNetlinkEventServiceStop(unsigned int protocol)
     VIR_FREE(srv->handles);
     virNetlinkEventServerUnlock(srv);
 
-    virMutexDestroy(&srv->lock);
+    g_mutex_clear(&srv->lock);
     VIR_FREE(srv);
     return 0;
 }
@@ -1017,10 +1017,7 @@ virNetlinkEventServiceStart(unsigned int protocol, unsigned int groups)
     if (VIR_ALLOC(srv) < 0)
         return -1;
 
-    if (virMutexInit(&srv->lock) < 0) {
-        VIR_FREE(srv);
-        return -1;
-    }
+    g_mutex_init(&srv->lock);
 
     virNetlinkEventServerLock(srv);
 
@@ -1070,7 +1067,7 @@ virNetlinkEventServiceStart(unsigned int protocol, unsigned int groups)
  error_locked:
     virNetlinkEventServerUnlock(srv);
     if (ret < 0) {
-        virMutexDestroy(&srv->lock);
+        g_mutex_clear(&srv->lock);
         VIR_FREE(srv);
     }
     return ret;
