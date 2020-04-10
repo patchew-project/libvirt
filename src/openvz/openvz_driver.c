@@ -67,12 +67,12 @@ static int openvzGetVEStatus(virDomainObjPtr vm, int *status, int *reason);
 
 static void openvzDriverLock(struct openvz_driver *driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 static void openvzDriverUnlock(struct openvz_driver *driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 struct openvz_driver ovz_driver;

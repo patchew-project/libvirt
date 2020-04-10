@@ -37,7 +37,7 @@
 #define VZCTL_BRIDGE_MIN_VERSION ((3 * 1000 * 1000) + (0 * 1000) + 22 + 1)
 
 struct openvz_driver {
-    virMutex lock;
+    GMutex lock;
 
     virCapsPtr caps;
     virDomainXMLOptionPtr xmlopt;
