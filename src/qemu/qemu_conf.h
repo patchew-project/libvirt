@@ -225,7 +225,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(virQEMUDriverConfig, virObjectUnref);
 
 /* Main driver state */
 struct _virQEMUDriver {
-    virMutex lock;
+    GMutex lock;
 
     /* Require lock to get reference on 'config',
      * then lockless thereafter */

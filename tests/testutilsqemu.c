@@ -307,7 +307,7 @@ qemuTestParseCapabilitiesArch(virArch arch,
 
 void qemuTestDriverFree(virQEMUDriver *driver)
 {
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     if (driver->config) {
         virFileDeleteTree(driver->config->stateDir);
         virFileDeleteTree(driver->config->configDir);
@@ -386,8 +386,7 @@ int qemuTestDriverInit(virQEMUDriver *driver)
         !(cpuPower9 = virCPUDefCopy(&cpuPower9Data)))
         return -1;
 
-    if (virMutexInit(&driver->lock) < 0)
-        return -1;
+    g_mutex_init(&driver->lock);
 
     driver->hostarch = virArchFromHost();
     driver->config = virQEMUDriverConfigNew(false, NULL);

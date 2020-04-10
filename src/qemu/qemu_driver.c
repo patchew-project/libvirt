@@ -645,12 +645,7 @@ qemuStateInitialize(bool privileged,
 
     qemu_driver->lockFD = -1;
 
-    if (virMutexInit(&qemu_driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize mutex"));
-        VIR_FREE(qemu_driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&qemu_driver->lock);
 
     qemu_driver->inhibitCallback = callback;
     qemu_driver->inhibitOpaque = opaque;
@@ -1134,7 +1129,7 @@ qemuStateCleanup(void)
         virPidFileRelease(qemu_driver->config->stateDir, "driver", qemu_driver->lockFD);
 
     virObjectUnref(qemu_driver->config);
-    virMutexDestroy(&qemu_driver->lock);
+    g_mutex_clear(&qemu_driver->lock);
     VIR_FREE(qemu_driver);
 
     return 0;

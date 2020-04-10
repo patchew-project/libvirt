@@ -86,12 +86,12 @@ VIR_ONCE_GLOBAL_INIT(virQEMUConfig);
 static void
 qemuDriverLock(virQEMUDriverPtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 static void
 qemuDriverUnlock(virQEMUDriverPtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 #ifndef DEFAULT_LOADER_NVRAM
