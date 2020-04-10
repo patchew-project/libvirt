@@ -45,7 +45,7 @@ typedef daemonClientEventCallback *daemonClientEventCallbackPtr;
 /* Stores the per-client connection state */
 struct daemonClientPrivate {
     /* Hold while accessing any data except conn */
-    virMutex lock;
+    GMutex lock;
 
     daemonClientEventCallbackPtr *domainEventCallbacks;
     size_t ndomainEventCallbacks;

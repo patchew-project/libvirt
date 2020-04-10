@@ -119,8 +119,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
     virNetServerClientPtr client = opaque;
     daemonClientStream *stream;
     daemonClientPrivatePtr priv = virNetServerClientGetPrivateData(client);
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     stream = priv->streams;
     while (stream) {
@@ -132,7 +131,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
     if (!stream) {
         VIR_WARN("event for client=%p stream st=%p, but missing stream state", client, st);
         virStreamEventRemoveCallback(st);
-        goto cleanup;
+        return;
     }
 
     VIR_DEBUG("st=%p events=%d EOF=%d closed=%d", st, events, stream->recvEOF, stream->closed);
@@ -142,7 +141,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         if (daemonStreamHandleWrite(client, stream) < 0) {
             daemonRemoveClientStream(client, stream);
             virNetServerClientClose(client);
-            goto cleanup;
+            return;
         }
     }
 
@@ -152,7 +151,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         if (daemonStreamHandleRead(client, stream) < 0) {
             daemonRemoveClientStream(client, stream);
             virNetServerClientClose(client);
-            goto cleanup;
+            return;
         }
         /* If we detected EOF during read processing,
          * then clear hangup/error conditions, since
@@ -177,7 +176,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
                 virNetMessageFree(msg);
                 daemonRemoveClientStream(client, stream);
                 virNetServerClientClose(client);
-                goto cleanup;
+                return;
             }
             break;
         case VIR_NET_ERROR:
@@ -187,7 +186,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
                 virNetMessageFree(msg);
                 daemonRemoveClientStream(client, stream);
                 virNetServerClientClose(client);
-                goto cleanup;
+                return;
             }
             break;
         }
@@ -206,7 +205,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         if (!(msg = virNetMessageNew(false))) {
             daemonRemoveClientStream(client, stream);
             virNetServerClientClose(client);
-            goto cleanup;
+            return;
         }
         msg->cb = daemonStreamMessageFinished;
         msg->opaque = stream;
@@ -220,7 +219,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
             virNetMessageFree(msg);
             daemonRemoveClientStream(client, stream);
             virNetServerClientClose(client);
-            goto cleanup;
+            return;
         }
     }
 
@@ -263,7 +262,7 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
         daemonRemoveClientStream(client, stream);
         if (ret < 0)
             virNetServerClientClose(client);
-        goto cleanup;
+        return;
     }
 
     if (stream->closed) {
@@ -271,9 +270,6 @@ daemonStreamEvent(virStreamPtr st, int events, void *opaque)
     } else {
         daemonStreamUpdateEvents(stream);
     }
-
- cleanup:
-    virMutexUnlock(&priv->lock);
 }
 
 
@@ -292,6 +288,7 @@ daemonStreamFilter(virNetServerClientPtr client,
 {
     daemonClientStream *stream = opaque;
     int ret = 0;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&stream->priv->lock);
 
     /* We must honour lock ordering here. Client private data lock must
      * be acquired before client lock. Bu we are already called with
@@ -300,7 +297,6 @@ daemonStreamFilter(virNetServerClientPtr client,
      * implications though. */
     stream->refs++;
     virObjectUnlock(client);
-    virMutexLock(&stream->priv->lock);
     virObjectLock(client);
 
     if (stream->refs == 1) {
@@ -332,7 +328,6 @@ daemonStreamFilter(virNetServerClientPtr client,
     ret = 1;
 
  cleanup:
-    virMutexUnlock(&stream->priv->lock);
     /* Don't pass client here, because client is locked here and this
      * function might try to lock it again which would result in a
      * deadlock. */
@@ -460,13 +455,13 @@ int daemonAddClientStream(virNetServerClientPtr client,
     if (transmit)
         stream->tx = true;
 
-    virMutexLock(&priv->lock);
+    g_mutex_lock(&priv->lock);
     stream->next = priv->streams;
     priv->streams = stream;
 
     daemonStreamUpdateEvents(stream);
 
-    virMutexUnlock(&priv->lock);
+    g_mutex_unlock(&priv->lock);
 
     return 0;
 }
