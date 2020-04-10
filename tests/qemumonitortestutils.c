@@ -49,7 +49,7 @@ struct _qemuMonitorTestItem {
 };
 
 struct _qemuMonitorTest {
-    virMutex lock;
+    GMutex lock;
     virThread thread;
 
     bool quit;
@@ -233,10 +233,9 @@ qemuMonitorTestIO(virNetSocketPtr sock,
 {
     qemuMonitorTestPtr test = opaque;
     bool err = false;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&test->lock);
 
-    virMutexLock(&test->lock);
     if (test->quit) {
-        virMutexUnlock(&test->lock);
         return;
     }
     if (events & VIR_EVENT_HANDLE_WRITABLE) {
@@ -320,7 +319,6 @@ qemuMonitorTestIO(virNetSocketPtr sock,
 
         virNetSocketUpdateIOCallback(sock, events);
     }
-    virMutexUnlock(&test->lock);
 }
 
 
@@ -329,23 +327,23 @@ qemuMonitorTestWorker(void *opaque)
 {
     qemuMonitorTestPtr test = opaque;
 
-    virMutexLock(&test->lock);
+    g_mutex_lock(&test->lock);
 
     while (!test->quit) {
-        virMutexUnlock(&test->lock);
+        g_mutex_unlock(&test->lock);
 
         if (virEventRunDefaultImpl() < 0) {
-            virMutexLock(&test->lock);
+            g_mutex_lock(&test->lock);
             test->quit = true;
             break;
         }
 
-        virMutexLock(&test->lock);
+        g_mutex_lock(&test->lock);
     }
 
     test->running = false;
 
-    virMutexUnlock(&test->lock);
+    g_mutex_unlock(&test->lock);
     return;
 }
 
@@ -367,13 +365,13 @@ qemuMonitorTestFree(qemuMonitorTestPtr test)
     if (!test)
         return;
 
-    virMutexLock(&test->lock);
+    g_mutex_lock(&test->lock);
     if (test->running) {
         test->quit = true;
         /* HACK: Add a dummy timeout to break event loop */
         timer = virEventAddTimeout(0, qemuMonitorTestFreeTimer, NULL, NULL);
     }
-    virMutexUnlock(&test->lock);
+    g_mutex_unlock(&test->lock);
 
     if (test->client) {
         virNetSocketRemoveIOCallback(test->client);
@@ -414,7 +412,7 @@ qemuMonitorTestFree(qemuMonitorTestPtr test)
 
     VIR_FREE(test->tmpdir);
 
-    virMutexDestroy(&test->lock);
+    g_mutex_clear(&test->lock);
     VIR_FREE(test);
 }
 
@@ -426,6 +424,7 @@ qemuMonitorTestAddHandler(qemuMonitorTestPtr test,
                           virFreeCallback freecb)
 {
     qemuMonitorTestItemPtr item;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&test->lock);
 
     if (VIR_ALLOC(item) < 0)
         goto error;
@@ -434,12 +433,9 @@ qemuMonitorTestAddHandler(qemuMonitorTestPtr test,
     item->freecb = freecb;
     item->opaque = opaque;
 
-    virMutexLock(&test->lock);
     if (VIR_APPEND_ELEMENT(test->items, test->nitems, item) < 0) {
-        virMutexUnlock(&test->lock);
         goto error;
     }
-    virMutexUnlock(&test->lock);
 
     return 0;
 
@@ -1046,12 +1042,7 @@ qemuMonitorCommonTestNew(virDomainXMLOptionPtr xmlopt,
     if (VIR_ALLOC(test) < 0)
         goto error;
 
-    if (virMutexInit(&test->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       "Cannot initialize mutex");
-        VIR_FREE(test);
-        return NULL;
-    }
+    g_mutex_init(&test->lock);
 
     tmpdir_template = g_strdup("/tmp/libvirt_XXXXXX");
 
@@ -1103,6 +1094,7 @@ static int
 qemuMonitorCommonTestInit(qemuMonitorTestPtr test)
 {
     int events = VIR_EVENT_HANDLE_READABLE;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&test->lock);
 
     if (!test)
         return -1;
@@ -1123,16 +1115,13 @@ qemuMonitorCommonTestInit(qemuMonitorTestPtr test)
                                   NULL) < 0)
         return -1;
 
-    virMutexLock(&test->lock);
     if (virThreadCreate(&test->thread,
                         true,
                         qemuMonitorTestWorker,
                         test) < 0) {
-        virMutexUnlock(&test->lock);
         return -1;
     }
     test->started = test->running = true;
-    virMutexUnlock(&test->lock);
 
     return 0;
 }
