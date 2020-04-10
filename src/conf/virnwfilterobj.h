@@ -33,7 +33,7 @@ typedef virNWFilterObjList *virNWFilterObjListPtr;
 typedef struct _virNWFilterDriverState virNWFilterDriverState;
 typedef virNWFilterDriverState *virNWFilterDriverStatePtr;
 struct _virNWFilterDriverState {
-    virMutex lock;
+    GMutex lock;
     bool privileged;
 
     /* pid file FD, ensures two copies of the driver can't use the same root */
