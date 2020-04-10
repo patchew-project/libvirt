@@ -63,7 +63,7 @@ struct _virObjectLockable {
 
 struct _virObjectRWLockable {
     virObject parent;
-    virRWLock lock;
+    GRWLock lock;
 };
 
 virClassPtr virClassForObject(void);
@@ -150,7 +150,11 @@ virObjectUnlock(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 
 void
-virObjectRWUnlock(void *lockableobj)
+virObjectRWUnlockRead(void *lockableobj)
+    ATTRIBUTE_NONNULL(1);
+
+void
+virObjectRWUnlockWrite(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 
 void

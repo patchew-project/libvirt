@@ -188,7 +188,7 @@ virSecretObjListFindByUUID(virSecretObjListPtr secrets,
 
     virObjectRWLockRead(secrets);
     obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockRead(secrets);
     if (obj)
         virObjectLock(obj);
     return obj;
@@ -267,7 +267,7 @@ virSecretObjListFindByUsage(virSecretObjListPtr secrets,
 
     virObjectRWLockRead(secrets);
     obj = virSecretObjListFindByUsageLocked(secrets, usageType, usageID);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockRead(secrets);
     if (obj)
         virObjectLock(obj);
     return obj;
@@ -303,7 +303,7 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
     virHashRemoveEntry(secrets->objs, uuidstr);
     virObjectUnlock(obj);
     virObjectUnref(obj);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockWrite(secrets);
 }
 
 
@@ -397,7 +397,7 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 
  cleanup:
     virSecretObjEndAPI(&obj);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockWrite(secrets);
     return ret;
 }
 
@@ -490,7 +490,7 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
 
     virObjectRWLockRead(secrets);
     virHashForEach(secrets->objs, virSecretObjListNumOfSecretsCallback, &data);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockRead(secrets);
 
     return data.count;
 }
@@ -592,12 +592,12 @@ virSecretObjListExport(virConnectPtr conn,
     virObjectRWLockRead(secretobjs);
     if (secrets &&
         VIR_ALLOC_N(data.secrets, virHashSize(secretobjs->objs) + 1) < 0) {
-        virObjectRWUnlock(secretobjs);
+        virObjectRWUnlockRead(secretobjs);
         return -1;
     }
 
     virHashForEach(secretobjs->objs, virSecretObjListExportCallback, &data);
-    virObjectRWUnlock(secretobjs);
+    virObjectRWUnlockRead(secretobjs);
 
     if (data.error)
         goto error;
@@ -629,7 +629,7 @@ virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
 
     virObjectRWLockRead(secrets);
     virHashForEach(secrets->objs, virSecretObjListGetUUIDsCallback, &data);
-    virObjectRWUnlock(secrets);
+    virObjectRWUnlockRead(secrets);
 
     if (data.error)
         goto error;

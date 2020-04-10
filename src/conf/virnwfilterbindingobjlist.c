@@ -115,7 +115,7 @@ virNWFilterBindingObjListFindByPortDev(virNWFilterBindingObjListPtr bindings,
 
     virObjectRWLockRead(bindings);
     obj = virNWFilterBindingObjListFindByPortDevLocked(bindings, name);
-    virObjectRWUnlock(bindings);
+    virObjectRWUnlockRead(bindings);
 
     if (obj && virNWFilterBindingObjGetRemoving(obj)) {
         virObjectUnlock(obj);
@@ -212,7 +212,7 @@ virNWFilterBindingObjListAdd(virNWFilterBindingObjListPtr bindings,
 
     virObjectRWLockWrite(bindings);
     ret = virNWFilterBindingObjListAddLocked(bindings, def);
-    virObjectRWUnlock(bindings);
+    virObjectRWUnlockWrite(bindings);
     return ret;
 }
 
@@ -256,7 +256,7 @@ virNWFilterBindingObjListRemove(virNWFilterBindingObjListPtr bindings,
     virObjectLock(binding);
     virNWFilterBindingObjListRemoveLocked(bindings, binding);
     virObjectUnref(binding);
-    virObjectRWUnlock(bindings);
+    virObjectRWUnlockWrite(bindings);
 }
 
 
@@ -331,7 +331,7 @@ virNWFilterBindingObjListLoadAllConfigs(virNWFilterBindingObjListPtr bindings,
     }
 
     VIR_DIR_CLOSE(dir);
-    virObjectRWUnlock(bindings);
+    virObjectRWUnlockWrite(bindings);
     return ret;
 }
 
@@ -366,7 +366,7 @@ virNWFilterBindingObjListForEach(virNWFilterBindingObjListPtr bindings,
     };
     virObjectRWLockRead(bindings);
     virHashForEach(bindings->objs, virNWFilterBindingObjListHelper, &data);
-    virObjectRWUnlock(bindings);
+    virObjectRWUnlockRead(bindings);
     return data.ret;
 }
 
@@ -435,12 +435,12 @@ virNWFilterBindingObjListCollect(virNWFilterBindingObjListPtr domlist,
     virObjectRWLockRead(domlist);
     sa_assert(domlist->objs);
     if (VIR_ALLOC_N(data.bindings, virHashSize(domlist->objs)) < 0) {
-        virObjectRWUnlock(domlist);
+        virObjectRWUnlockRead(domlist);
         return -1;
     }
 
     virHashForEach(domlist->objs, virNWFilterBindingObjListCollectIterator, &data);
-    virObjectRWUnlock(domlist);
+    virObjectRWUnlockRead(domlist);
 
     virNWFilterBindingObjListFilter(&data.bindings, &data.nbindings, conn, filter);
 

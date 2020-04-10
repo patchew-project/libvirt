@@ -515,7 +515,7 @@ virStoragePoolObjListSearch(virStoragePoolObjListPtr pools,
 
     virObjectRWLockRead(pools);
     obj = virHashSearch(pools->objs, virStoragePoolObjListSearchCb, &data, NULL);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockRead(pools);
 
     return virObjectRef(obj);
 }
@@ -535,7 +535,7 @@ virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
     virHashRemoveEntry(pools->objs, uuidstr);
     virHashRemoveEntry(pools->objsName, obj->def->name);
     virObjectUnref(obj);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockWrite(pools);
 }
 
 
@@ -568,7 +568,7 @@ virStoragePoolObjFindByUUID(virStoragePoolObjListPtr pools,
 
     virObjectRWLockRead(pools);
     obj = virStoragePoolObjFindByUUIDLocked(pools, uuid);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockRead(pools);
     if (obj)
         virObjectLock(obj);
 
@@ -601,7 +601,7 @@ virStoragePoolObjFindByName(virStoragePoolObjListPtr pools,
 
     virObjectRWLockRead(pools);
     obj = virStoragePoolObjFindByNameLocked(pools, name);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockRead(pools);
     if (obj)
         virObjectLock(obj);
 
@@ -668,13 +668,13 @@ virStoragePoolObjAddVol(virStoragePoolObjPtr obj,
     virObjectRef(volobj);
 
     volobj->voldef = voldef;
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockWrite(volumes);
     virStorageVolObjEndAPI(&volobj);
     return 0;
 
  error:
     virStorageVolObjEndAPI(&volobj);
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockWrite(volumes);
     return -1;
 }
 
@@ -691,7 +691,7 @@ virStoragePoolObjRemoveVol(virStoragePoolObjPtr obj,
     if (!volobj) {
         VIR_INFO("Cannot find volume '%s' from storage pool '%s'",
                  voldef->name, obj->def->name);
-        virObjectRWUnlock(volumes);
+        virObjectRWUnlockWrite(volumes);
         return;
     }
     VIR_INFO("Deleting volume '%s' from storage pool '%s'",
@@ -704,7 +704,7 @@ virStoragePoolObjRemoveVol(virStoragePoolObjPtr obj,
     virHashRemoveEntry(volumes->objsPath, voldef->target.path);
     virStorageVolObjEndAPI(&volobj);
 
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockWrite(volumes);
 }
 
 
@@ -715,7 +715,7 @@ virStoragePoolObjGetVolumesCount(virStoragePoolObjPtr obj)
 
     virObjectRWLockRead(obj->volumes);
     nbElems = virHashSize(obj->volumes->objsKey);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
 
     return nbElems;
 }
@@ -755,7 +755,7 @@ virStoragePoolObjForEachVolume(virStoragePoolObjPtr obj,
     virObjectRWLockRead(obj->volumes);
     virHashForEach(obj->volumes->objsKey, virStoragePoolObjForEachVolumeCb,
                    &data);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
     return 0;
 }
 
@@ -797,7 +797,7 @@ virStoragePoolObjSearchVolume(virStoragePoolObjPtr obj,
     volobj = virHashSearch(obj->volumes->objsKey,
                            virStoragePoolObjSearchVolumeCb,
                            &data, NULL);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
 
     if (volobj)
         return volobj->voldef;
@@ -814,7 +814,7 @@ virStorageVolDefFindByKey(virStoragePoolObjPtr obj,
 
     virObjectRWLockRead(obj->volumes);
     volobj = virHashLookup(obj->volumes->objsKey, key);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
 
     if (volobj)
         return volobj->voldef;
@@ -830,7 +830,7 @@ virStorageVolDefFindByPath(virStoragePoolObjPtr obj,
 
     virObjectRWLockRead(obj->volumes);
     volobj = virHashLookup(obj->volumes->objsPath, path);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
 
     if (volobj)
         return volobj->voldef;
@@ -846,7 +846,7 @@ virStorageVolDefFindByName(virStoragePoolObjPtr obj,
 
     virObjectRWLockRead(obj->volumes);
     volobj = virHashLookup(obj->volumes->objsName, name);
-    virObjectRWUnlock(obj->volumes);
+    virObjectRWUnlockRead(obj->volumes);
 
     if (volobj)
         return volobj->voldef;
@@ -895,7 +895,7 @@ virStoragePoolObjNumOfVolumes(virStoragePoolObjPtr obj,
 
     virObjectRWLockRead(volumes);
     virHashForEach(volumes->objsName, virStoragePoolObjNumOfVolumesCb, &data);
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockRead(volumes);
 
     return data.count;
 }
@@ -956,7 +956,7 @@ virStoragePoolObjVolumeGetNames(virStoragePoolObjPtr obj,
 
     virObjectRWLockRead(volumes);
     virHashForEach(volumes->objsName, virStoragePoolObjVolumeGetNamesCb, &data);
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockRead(volumes);
 
     if (data.error)
         goto error;
@@ -1032,17 +1032,17 @@ virStoragePoolObjVolumeListExport(virConnectPtr conn,
 
     if (!vols) {
         int ret = virHashSize(volumes->objsName);
-        virObjectRWUnlock(volumes);
+        virObjectRWUnlockRead(volumes);
         return ret;
     }
 
     if (VIR_ALLOC_N(data.vols, virHashSize(volumes->objsName) + 1) < 0) {
-        virObjectRWUnlock(volumes);
+        virObjectRWUnlockRead(volumes);
         return -1;
     }
 
     virHashForEach(volumes->objsName, virStoragePoolObjVolumeListExportCallback, &data);
-    virObjectRWUnlock(volumes);
+    virObjectRWUnlockRead(volumes);
 
     if (data.error)
         goto error;
@@ -1584,7 +1584,7 @@ virStoragePoolObjListAdd(virStoragePoolObjListPtr pools,
         goto error;
     if (rc > 0) {
         virStoragePoolObjAssignDef(obj, def, flags);
-        virObjectRWUnlock(pools);
+        virObjectRWUnlockWrite(pools);
         return obj;
     }
 
@@ -1602,12 +1602,12 @@ virStoragePoolObjListAdd(virStoragePoolObjListPtr pools,
     }
     virObjectRef(obj);
     obj->def = def;
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockWrite(pools);
     return obj;
 
  error:
     virStoragePoolObjEndAPI(&obj);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockWrite(pools);
     return NULL;
 }
 
@@ -1867,7 +1867,7 @@ virStoragePoolObjNumOfStoragePools(virStoragePoolObjListPtr pools,
 
     virObjectRWLockRead(pools);
     virHashForEach(pools->objs, virStoragePoolObjNumOfStoragePoolsCb, &data);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockRead(pools);
 
     return data.count;
 }
@@ -1931,7 +1931,7 @@ virStoragePoolObjGetNames(virStoragePoolObjListPtr pools,
 
     virObjectRWLockRead(pools);
     virHashForEach(pools->objs, virStoragePoolObjGetNamesCb, &data);
-    virObjectRWUnlock(pools);
+    virObjectRWUnlockRead(pools);
 
     if (data.error)
         goto error;
@@ -2081,7 +2081,7 @@ virStoragePoolObjListExport(virConnectPtr conn,
         goto error;
 
     virHashForEach(poolobjs->objs, virStoragePoolObjListExportCallback, &data);
-    virObjectRWUnlock(poolobjs);
+    virObjectRWUnlockRead(poolobjs);
 
     if (data.error)
         goto error;

@@ -2745,7 +2745,8 @@ virObjectRef;
 virObjectRWLockableNew;
 virObjectRWLockRead;
 virObjectRWLockWrite;
-virObjectRWUnlock;
+virObjectRWUnlockRead;
+virObjectRWUnlockWrite;
 virObjectUnlock;
 virObjectUnref;
 

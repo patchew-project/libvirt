@@ -294,12 +294,7 @@ virObjectRWLockableNew(virClassPtr klass)
     if (!(obj = virObjectNew(klass)))
         return NULL;
 
-    if (virRWLockInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize RW lock"));
-        virObjectUnref(obj);
-        return NULL;
-    }
+    g_rw_lock_init(&obj->lock);
 
     return obj;
 }
@@ -319,7 +314,7 @@ virObjectRWLockableDispose(void *anyobj)
 {
     virObjectRWLockablePtr obj = anyobj;
 
-    virRWLockDestroy(&obj->lock);
+    g_rw_lock_clear(&obj->lock);
 }
 
 
@@ -458,7 +453,7 @@ virObjectRWLockRead(void *anyobj)
     if (!obj)
         return;
 
-    virRWLockRead(&obj->lock);
+    g_rw_lock_reader_lock(&obj->lock);
 }
 
 
@@ -487,7 +482,7 @@ virObjectRWLockWrite(void *anyobj)
     if (!obj)
         return;
 
-    virRWLockWrite(&obj->lock);
+    g_rw_lock_writer_lock(&obj->lock);
 }
 
 
@@ -518,16 +513,26 @@ virObjectUnlock(void *anyobj)
  * virObjectRWLockRead or virObjectRWLockWrite.
  */
 void
-virObjectRWUnlock(void *anyobj)
+virObjectRWUnlockWrite(void *anyobj)
 {
     virObjectRWLockablePtr obj = virObjectGetRWLockableObj(anyobj);
 
     if (!obj)
         return;
 
-    virRWLockUnlock(&obj->lock);
+    g_rw_lock_writer_unlock(&obj->lock);
 }
 
+void
+virObjectRWUnlockRead(void *anyobj)
+{
+    virObjectRWLockablePtr obj = virObjectGetRWLockableObj(anyobj);
+
+    if (!obj)
+        return;
+
+    g_rw_lock_reader_unlock(&obj->lock);
+}
 
 /**
  * virObjectIsClass:

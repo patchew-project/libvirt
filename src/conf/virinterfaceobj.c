@@ -200,7 +200,7 @@ virInterfaceObjListFindByMACString(virInterfaceObjListPtr interfaces,
     virObjectRWLockRead(interfaces);
     virHashForEach(interfaces->objsName, virInterfaceObjListFindByMACStringCb,
                    &data);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockRead(interfaces);
 
     if (data.error)
         goto error;
@@ -230,7 +230,7 @@ virInterfaceObjListFindByName(virInterfaceObjListPtr interfaces,
     virInterfaceObjPtr obj;
     virObjectRWLockRead(interfaces);
     obj = virInterfaceObjListFindByNameLocked(interfaces, name);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockRead(interfaces);
     if (obj)
         virObjectLock(obj);
 
@@ -337,7 +337,7 @@ virInterfaceObjListExport(virConnectPtr conn,
 
     ret = data.nifaces;
  cleanup:
-    virObjectRWUnlock(ifaceobjs);
+    virObjectRWUnlockRead(ifaceobjs);
     while (data.ifaces && data.nifaces)
         virObjectUnref(data.ifaces[--data.nifaces]);
 
@@ -413,7 +413,7 @@ virInterfaceObjListClone(virInterfaceObjListPtr interfaces)
 
     virObjectRWLockRead(interfaces);
     virHashForEach(interfaces->objsName, virInterfaceObjListCloneCb, &data);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockRead(interfaces);
 
     if (data.error)
         goto error;
@@ -445,13 +445,13 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
     }
 
     obj->def = def;
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockWrite(interfaces);
 
     return obj;
 
  error:
     virInterfaceObjEndAPI(&obj);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockWrite(interfaces);
     return NULL;
 }
 
@@ -470,7 +470,7 @@ virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
     virHashRemoveEntry(interfaces->objsName, obj->def->name);
     virObjectUnlock(obj);
     virObjectUnref(obj);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockWrite(interfaces);
 }
 
 
@@ -507,7 +507,7 @@ virInterfaceObjListNumOfInterfaces(virInterfaceObjListPtr interfaces,
     virObjectRWLockRead(interfaces);
     virHashForEach(interfaces->objsName, virInterfaceObjListNumOfInterfacesCb,
                    &data);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockRead(interfaces);
 
     return data.count;
 }
@@ -562,7 +562,7 @@ virInterfaceObjListGetNames(virInterfaceObjListPtr interfaces,
 
     virObjectRWLockRead(interfaces);
     virHashForEach(interfaces->objsName, virInterfaceObjListGetNamesCb, &data);
-    virObjectRWUnlock(interfaces);
+    virObjectRWUnlockRead(interfaces);
 
     if (data.error)
         goto error;

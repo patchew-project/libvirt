@@ -188,7 +188,7 @@ virNodeDeviceObjListSearch(virNodeDeviceObjListPtr devs,
     virObjectRWLockRead(devs);
     obj = virHashSearch(devs->objs, callback, data, NULL);
     virObjectRef(obj);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockRead(devs);
 
     if (obj)
         virObjectLock(obj);
@@ -241,7 +241,7 @@ virNodeDeviceObjListFindByName(virNodeDeviceObjListPtr devs,
 
     virObjectRWLockRead(devs);
     obj = virNodeDeviceObjListFindByNameLocked(devs, name);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockRead(devs);
     if (obj)
         virObjectLock(obj);
 
@@ -462,7 +462,7 @@ virNodeDeviceObjListAssignDef(virNodeDeviceObjListPtr devs,
     }
 
  cleanup:
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockWrite(devs);
     return obj;
 }
 
@@ -484,7 +484,7 @@ virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
     virHashRemoveEntry(devs->objs, def->name);
     virObjectUnlock(obj);
     virObjectUnref(obj);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockWrite(devs);
 }
 
 
@@ -724,7 +724,7 @@ virNodeDeviceObjListNumOfDevices(virNodeDeviceObjListPtr devs,
 
     virObjectRWLockRead(devs);
     virHashForEach(devs->objs, virNodeDeviceObjListNumOfDevicesCallback, &data);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockRead(devs);
 
     return data.count;
 }
@@ -784,7 +784,7 @@ virNodeDeviceObjListGetNames(virNodeDeviceObjListPtr devs,
 
     virObjectRWLockRead(devs);
     virHashForEach(devs->objs, virNodeDeviceObjListGetNamesCallback, &data);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockRead(devs);
 
     if (data.error)
         goto error;
@@ -896,12 +896,12 @@ virNodeDeviceObjListExport(virConnectPtr conn,
     virObjectRWLockRead(devs);
     if (devices &&
         VIR_ALLOC_N(data.devices, virHashSize(devs->objs) + 1) < 0) {
-        virObjectRWUnlock(devs);
+        virObjectRWUnlockRead(devs);
         return -1;
     }
 
     virHashForEach(devs->objs, virNodeDeviceObjListExportCallback, &data);
-    virObjectRWUnlock(devs);
+    virObjectRWUnlockRead(devs);
 
     if (data.error)
         goto cleanup;
