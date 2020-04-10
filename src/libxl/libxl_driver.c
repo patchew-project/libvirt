@@ -520,7 +520,7 @@ libxlStateCleanup(void)
         virPidFileRelease(libxl_driver->config->stateDir, "driver", libxl_driver->lockFD);
 
     virObjectUnref(libxl_driver->config);
-    virMutexDestroy(&libxl_driver->lock);
+    g_mutex_clear(&libxl_driver->lock);
     VIR_FREE(libxl_driver);
 
     return 0;
@@ -669,12 +669,7 @@ libxlStateInitialize(bool privileged,
         return VIR_DRV_STATE_INIT_ERROR;
 
     libxl_driver->lockFD = -1;
-    if (virMutexInit(&libxl_driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("cannot initialize mutex"));
-        VIR_FREE(libxl_driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&libxl_driver->lock);
 
     libxl_driver->inhibitCallback = callback;
     libxl_driver->inhibitOpaque = opaque;

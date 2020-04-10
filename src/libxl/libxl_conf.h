@@ -106,7 +106,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(libxlDriverConfig, virObjectUnref);
 
 
 struct _libxlDriverPrivate {
-    virMutex lock;
+    GMutex lock;
 
     virHostdevManagerPtr hostdevMgr;
     /* Require lock to get reference on 'config',
@@ -225,11 +225,11 @@ libxlBuildDomainConfig(virPortAllocatorRangePtr graphicsports,
 static inline void
 libxlDriverLock(libxlDriverPrivatePtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 static inline void
 libxlDriverUnlock(libxlDriverPrivatePtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }

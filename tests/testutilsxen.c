@@ -87,12 +87,7 @@ libxlDriverPrivatePtr testXLInitDriver(void)
 {
     libxlDriverPrivatePtr driver = g_new0(libxlDriverPrivate, 1);
 
-    if (virMutexInit(&driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", "cannot initialize mutex");
-        g_free(driver);
-        return NULL;
-    }
+    g_mutex_init(&driver->lock);
 
     if (!(driver->config = libxlDriverConfigNew()))
         return NULL;
@@ -114,6 +109,6 @@ void testXLFreeDriver(libxlDriverPrivatePtr driver)
 {
     virObjectUnref(driver->config);
     virObjectUnref(driver->xmlopt);
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     g_free(driver);
 }
