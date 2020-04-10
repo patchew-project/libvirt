@@ -49,18 +49,18 @@ VIR_LOG_INIT("util.nodesuspend");
 static unsigned int nodeSuspendTargetMask;
 static bool nodeSuspendTargetMaskInit;
 
-static virMutex virNodeSuspendMutex = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(virNodeSuspendMutex);
 
 static bool aboutToSuspend;
 
 static void virNodeSuspendLock(void)
 {
-    virMutexLock(&virNodeSuspendMutex);
+    G_LOCK(virNodeSuspendMutex);
 }
 
 static void virNodeSuspendUnlock(void)
 {
-    virMutexUnlock(&virNodeSuspendMutex);
+    G_UNLOCK(virNodeSuspendMutex);
 }
 
 
