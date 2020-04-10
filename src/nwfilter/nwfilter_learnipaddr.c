@@ -111,17 +111,17 @@ struct ether_vlan_header
 } ATTRIBUTE_PACKED;
 
 
-static virMutex pendingLearnReqLock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(pendingLearnReqLock);
 static virHashTablePtr pendingLearnReq;
 
-static virMutex ifaceMapLock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(ifaceMapLock);
 static virHashTablePtr ifaceLockMap;
 
 typedef struct _virNWFilterIfaceLock virNWFilterIfaceLock;
 typedef virNWFilterIfaceLock *virNWFilterIfaceLockPtr;
 struct _virNWFilterIfaceLock {
     char ifname[IF_NAMESIZE];
-    virMutex lock;
+    GRecMutex lock;
     int refctr;
 };
 
@@ -147,19 +147,14 @@ virNWFilterLockIface(const char *ifname)
 {
     virNWFilterIfaceLockPtr ifaceLock;
 
-    virMutexLock(&ifaceMapLock);
+    G_LOCK(ifaceMapLock);
 
     ifaceLock = virHashLookup(ifaceLockMap, ifname);
     if (!ifaceLock) {
         if (VIR_ALLOC(ifaceLock) < 0)
             goto err_exit;
 
-        if (virMutexInitRecursive(&ifaceLock->lock) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("mutex initialization failed"));
-            VIR_FREE(ifaceLock);
-            goto err_exit;
-        }
+        g_rec_mutex_init(&ifaceLock->lock);
 
         if (virStrcpyStatic(ifaceLock->ifname, ifname) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -180,14 +175,14 @@ virNWFilterLockIface(const char *ifname)
 
     ifaceLock->refctr++;
 
-    virMutexUnlock(&ifaceMapLock);
+    G_UNLOCK(ifaceMapLock);
 
-    virMutexLock(&ifaceLock->lock);
+    g_rec_mutex_lock(&ifaceLock->lock);
 
     return 0;
 
  err_exit:
-    virMutexUnlock(&ifaceMapLock);
+    G_UNLOCK(ifaceMapLock);
 
     return -1;
 }
@@ -198,19 +193,19 @@ virNWFilterUnlockIface(const char *ifname)
 {
     virNWFilterIfaceLockPtr ifaceLock;
 
-    virMutexLock(&ifaceMapLock);
+    G_LOCK(ifaceMapLock);
 
     ifaceLock = virHashLookup(ifaceLockMap, ifname);
 
     if (ifaceLock) {
-        virMutexUnlock(&ifaceLock->lock);
+        g_rec_mutex_unlock(&ifaceLock->lock);
 
         ifaceLock->refctr--;
         if (ifaceLock->refctr == 0)
             virHashRemoveEntry(ifaceLockMap, ifname);
     }
 
-    virMutexUnlock(&ifaceMapLock);
+    G_UNLOCK(ifaceMapLock);
 }
 
 
@@ -234,12 +229,12 @@ virNWFilterRegisterLearnReq(virNWFilterIPAddrLearnReqPtr req)
     int res = -1;
     g_autofree char *ifindex_str = g_strdup_printf("%d", req->ifindex);
 
-    virMutexLock(&pendingLearnReqLock);
+    G_LOCK(pendingLearnReqLock);
 
     if (!virHashLookup(pendingLearnReq, ifindex_str))
         res = virHashAddEntry(pendingLearnReq, ifindex_str, req);
 
-    virMutexUnlock(&pendingLearnReqLock);
+    G_UNLOCK(pendingLearnReqLock);
 
     return res;
 }
@@ -270,7 +265,7 @@ virNWFilterTerminateLearnReq(const char *ifname)
 
     ifindex_str = g_strdup_printf("%d", ifindex);
 
-    virMutexLock(&pendingLearnReqLock);
+    G_LOCK(pendingLearnReqLock);
 
     req = virHashLookup(pendingLearnReq, ifindex_str);
     if (req) {
@@ -278,7 +273,7 @@ virNWFilterTerminateLearnReq(const char *ifname)
         req->terminate = true;
     }
 
-    virMutexUnlock(&pendingLearnReqLock);
+    G_UNLOCK(pendingLearnReqLock);
 
     return rc;
 }
@@ -290,11 +285,11 @@ virNWFilterHasLearnReq(int ifindex)
     void *res;
     g_autofree char *ifindex_str = g_strdup_printf("%d", ifindex);
 
-    virMutexLock(&pendingLearnReqLock);
+    G_LOCK(pendingLearnReqLock);
 
     res = virHashLookup(pendingLearnReq, ifindex_str);
 
-    virMutexUnlock(&pendingLearnReqLock);
+    G_UNLOCK(pendingLearnReqLock);
 
     return res != NULL;
 }
@@ -315,11 +310,11 @@ virNWFilterDeregisterLearnReq(int ifindex)
     virNWFilterIPAddrLearnReqPtr res;
     g_autofree char *ifindex_str = g_strdup_printf("%d", ifindex);
 
-    virMutexLock(&pendingLearnReqLock);
+    G_LOCK(pendingLearnReqLock);
 
     res = virHashSteal(pendingLearnReq, ifindex_str);
 
-    virMutexUnlock(&pendingLearnReqLock);
+    G_UNLOCK(pendingLearnReqLock);
 
     return res;
 }
