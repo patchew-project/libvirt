@@ -57,7 +57,7 @@ static int (*real_close)(int fd);
 
 
 /* Global mutex to avoid races */
-virMutex m = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE(m);
 
 /* Hash table to store XATTRs for paths. For simplicity, key is
  * "$path:$name" and value is just XATTR "$value". We don't need
@@ -134,7 +134,7 @@ virFileGetXAttrQuiet(const char *path,
 
     key = get_key(path, name);
 
-    virMutexLock(&m);
+    G_LOCK(m);
     init_syms();
     init_hash();
 
@@ -147,7 +147,7 @@ virFileGetXAttrQuiet(const char *path,
 
     ret = 0;
  cleanup:
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
     VIR_FREE(key);
     return ret;
 }
@@ -192,7 +192,7 @@ int virFileSetXAttr(const char *path,
     key = get_key(path, name);
     val = g_strdup(value);
 
-    virMutexLock(&m);
+    G_LOCK(m);
     init_syms();
     init_hash();
 
@@ -202,7 +202,7 @@ int virFileSetXAttr(const char *path,
 
     ret = 0;
  cleanup:
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
     VIR_FREE(val);
     VIR_FREE(key);
     return ret;
@@ -217,14 +217,14 @@ int virFileRemoveXAttr(const char *path,
 
     key = get_key(path, name);
 
-    virMutexLock(&m);
+    G_LOCK(m);
     init_syms();
     init_hash();
 
     if ((ret = virHashRemoveEntry(xattr_paths, key)) < 0)
         errno = ENODATA;
 
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
     VIR_FREE(key);
     return ret;
 }
@@ -235,7 +235,7 @@ int virFileRemoveXAttr(const char *path,
         if (getenv(ENVVAR)) { \
             uint32_t *val; \
 \
-            virMutexLock(&m); \
+            G_LOCK(m); \
             init_hash(); \
 \
             memset(sb, 0, sizeof(*sb)); \
@@ -254,7 +254,7 @@ int virFileRemoveXAttr(const char *path,
                 sb->st_gid = *val >> 16; \
             } \
 \
-            virMutexUnlock(&m); \
+            G_UNLOCK(m); \
 \
             return 0; \
         } \
@@ -279,7 +279,7 @@ mock_chown(const char *path,
 
     *val = (gid << 16) + uid;
 
-    virMutexLock(&m);
+    G_LOCK(m);
     init_hash();
 
     if (virHashUpdateEntry(chown_paths, path, val) < 0)
@@ -288,7 +288,7 @@ mock_chown(const char *path,
 
     ret = 0;
  cleanup:
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
     VIR_FREE(val);
     return ret;
 }
@@ -440,7 +440,7 @@ int checkPaths(const char **paths)
     bool xattr_fail = false;
     size_t i;
 
-    virMutexLock(&m);
+    G_LOCK(m);
     init_hash();
 
     for (i = 0; paths && paths[i]; i++) {
@@ -461,20 +461,20 @@ int checkPaths(const char **paths)
 
     ret = 0;
  cleanup:
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
     return ret;
 }
 
 
 void freePaths(void)
 {
-    virMutexLock(&m);
+    G_LOCK(m);
     init_hash();
 
     virHashFree(chown_paths);
     virHashFree(xattr_paths);
     chown_paths = xattr_paths = NULL;
-    virMutexUnlock(&m);
+    G_UNLOCK(m);
 }
 
 
