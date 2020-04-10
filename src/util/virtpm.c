@@ -91,7 +91,7 @@ virTPMCreateCancelPath(const char *devpath)
  * executables for the swtpm; to be found on the host along with
  * capabilties bitmap
  */
-static virMutex swtpm_tools_lock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(swtpm_tools_lock);
 static char *swtpm_path;
 static struct stat swtpm_stat;
 static virBitmapPtr swtpm_caps;
@@ -113,9 +113,9 @@ virTPMGetSwtpm(void)
     if (!swtpm_path && virTPMEmulatorInit() < 0)
         return NULL;
 
-    virMutexLock(&swtpm_tools_lock);
+    G_LOCK(swtpm_tools_lock);
     s = g_strdup(swtpm_path);
-    virMutexUnlock(&swtpm_tools_lock);
+    G_UNLOCK(swtpm_tools_lock);
 
     return s;
 }
@@ -128,9 +128,9 @@ virTPMGetSwtpmSetup(void)
     if (!swtpm_setup && virTPMEmulatorInit() < 0)
         return NULL;
 
-    virMutexLock(&swtpm_tools_lock);
+    G_LOCK(swtpm_tools_lock);
     s = g_strdup(swtpm_setup);
-    virMutexUnlock(&swtpm_tools_lock);
+    G_UNLOCK(swtpm_tools_lock);
 
     return s;
 }
@@ -143,9 +143,9 @@ virTPMGetSwtpmIoctl(void)
     if (!swtpm_ioctl && virTPMEmulatorInit() < 0)
         return NULL;
 
-    virMutexLock(&swtpm_tools_lock);
+    G_LOCK(swtpm_tools_lock);
     s = g_strdup(swtpm_ioctl);
-    virMutexUnlock(&swtpm_tools_lock);
+    G_UNLOCK(swtpm_tools_lock);
 
     return s;
 }
@@ -284,7 +284,7 @@ virTPMEmulatorInit(void)
     };
     size_t i;
 
-    virMutexLock(&swtpm_tools_lock);
+    G_LOCK(swtpm_tools_lock);
 
     for (i = 0; i < G_N_ELEMENTS(prgs); i++) {
         g_autofree char *path = NULL;
@@ -341,7 +341,7 @@ virTPMEmulatorInit(void)
     ret = 0;
 
  cleanup:
-    virMutexUnlock(&swtpm_tools_lock);
+    G_UNLOCK(swtpm_tools_lock);
 
     return ret;
 }
