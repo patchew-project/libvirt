@@ -35,7 +35,7 @@ typedef struct _virStorageDriverState virStorageDriverState;
 typedef virStorageDriverState *virStorageDriverStatePtr;
 
 struct _virStorageDriverState {
-    virMutex lock;
+    GMutex lock;
 
     /* pid file FD, ensures two copies of the driver can't use the same root */
     int lockFD;

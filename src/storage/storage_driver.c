@@ -68,11 +68,11 @@ struct _virStorageVolStreamInfo {
 
 static void storageDriverLock(void)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 static void storageDriverUnlock(void)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 
@@ -269,10 +269,7 @@ storageStateInitialize(bool privileged,
         return VIR_DRV_STATE_INIT_ERROR;
 
     driver->lockFD = -1;
-    if (virMutexInit(&driver->lock) < 0) {
-        VIR_FREE(driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&driver->lock);
     storageDriverLock();
 
     if (!(driver->pools = virStoragePoolObjListNew()))
@@ -391,7 +388,7 @@ storageStateCleanup(void)
     VIR_FREE(driver->autostartDir);
     VIR_FREE(driver->stateDir);
     storageDriverUnlock();
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     VIR_FREE(driver);
 
     return 0;
