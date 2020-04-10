@@ -58,7 +58,7 @@ VIR_LOG_INIT("vbox.vbox_common");
 static vboxUniformedAPI gVBoxAPI;
 
 static virClassPtr vboxDriverClass;
-static virMutex vbox_driver_lock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(vbox_driver_lock);
 static vboxDriverPtr vbox_driver;
 static vboxDriverPtr vboxDriverObjNew(void);
 
@@ -233,7 +233,7 @@ vboxSdkUninitialize(void)
 static vboxDriverPtr
 vboxGetDriverConnection(void)
 {
-    virMutexLock(&vbox_driver_lock);
+    G_LOCK(vbox_driver_lock);
 
     if (vbox_driver) {
         virObjectRef(vbox_driver);
@@ -253,14 +253,14 @@ vboxGetDriverConnection(void)
         if (!virObjectUnref(vbox_driver))
             vbox_driver = NULL;
 
-        virMutexUnlock(&vbox_driver_lock);
+        G_UNLOCK(vbox_driver_lock);
 
         return NULL;
     }
 
     vbox_driver->connectionCount++;
 
-    virMutexUnlock(&vbox_driver_lock);
+    G_UNLOCK(vbox_driver_lock);
 
     return vbox_driver;
 }
@@ -268,7 +268,7 @@ vboxGetDriverConnection(void)
 static void
 vboxDestroyDriverConnection(void)
 {
-    virMutexLock(&vbox_driver_lock);
+    G_LOCK(vbox_driver_lock);
 
     if (!vbox_driver)
         goto cleanup;
@@ -281,7 +281,7 @@ vboxDestroyDriverConnection(void)
         vbox_driver = NULL;
 
  cleanup:
-    virMutexUnlock(&vbox_driver_lock);
+    G_UNLOCK(vbox_driver_lock);
 }
 
 static int openSessionForMachine(vboxDriverPtr data, const unsigned char *dom_uuid,
