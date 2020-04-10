@@ -48,7 +48,7 @@ struct virLXCFuse {
     char *mountpoint;
     struct fuse *fuse;
     struct fuse_chan *ch;
-    virMutex lock;
+    GMutex lock;
 };
 typedef struct virLXCFuse *virLXCFusePtr;
 

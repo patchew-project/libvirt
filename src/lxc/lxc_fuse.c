@@ -262,11 +262,10 @@ static struct fuse_operations lxcProcOper = {
 
 static void lxcFuseDestroy(virLXCFusePtr fuse)
 {
-    virMutexLock(&fuse->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&fuse->lock);
     fuse_unmount(fuse->mountpoint, fuse->ch);
     fuse_destroy(fuse->fuse);
     fuse->fuse = NULL;
-    virMutexUnlock(&fuse->lock);
 }
 
 static void lxcFuseRun(void *opaque)
@@ -291,8 +290,7 @@ int lxcSetupFuse(virLXCFusePtr *f, virDomainDefPtr def)
 
     fuse->def = def;
 
-    if (virMutexInit(&fuse->lock) < 0)
-        goto cleanup2;
+    g_mutex_init(&fuse->lock);
 
     fuse->mountpoint = g_strdup_printf("%s/%s.fuse/", LXC_STATE_DIR, def->name);
 
@@ -327,8 +325,7 @@ int lxcSetupFuse(virLXCFusePtr *f, virDomainDefPtr def)
     return ret;
  cleanup1:
     VIR_FREE(fuse->mountpoint);
-    virMutexDestroy(&fuse->lock);
- cleanup2:
+    g_mutex_clear(&fuse->lock);
     VIR_FREE(fuse);
     goto cleanup;
 }
@@ -351,10 +348,10 @@ void lxcFreeFuse(virLXCFusePtr *f)
     if (fuse) {
         /* exit fuse_loop, lxcFuseRun thread may try to destroy
          * fuse->fuse at the same time,so add a lock here. */
-        virMutexLock(&fuse->lock);
+        g_mutex_lock(&fuse->lock);
         if (fuse->fuse)
             fuse_exit(fuse->fuse);
-        virMutexUnlock(&fuse->lock);
+        g_mutex_unlock(&fuse->lock);
 
         VIR_FREE(fuse->mountpoint);
         VIR_FREE(*f);
