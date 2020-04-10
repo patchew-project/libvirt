@@ -69,8 +69,7 @@ libxlDomainObjInitJob(libxlDomainObjPrivatePtr priv)
 {
     memset(&priv->job, 0, sizeof(priv->job));
 
-    if (virCondInit(&priv->job.cond) < 0)
-        return -1;
+    g_cond_init(&priv->job.cond);
 
     if (VIR_ALLOC(priv->job.current) < 0)
         return -1;
@@ -90,12 +89,12 @@ libxlDomainObjResetJob(libxlDomainObjPrivatePtr priv)
 static void
 libxlDomainObjFreeJob(libxlDomainObjPrivatePtr priv)
 {
-    ignore_value(virCondDestroy(&priv->job.cond));
+    g_cond_clear(&priv->job.cond);
     VIR_FREE(priv->job.current);
 }
 
 /* Give up waiting for mutex after 30 seconds */
-#define LIBXL_JOB_WAIT_TIME (1000ull * 30)
+#define LIBXL_JOB_WAIT_TIME (30 * G_TIME_SPAN_SECOND)
 
 /*
  * obj must be locked before calling, libxlDriverPrivatePtr must NOT be locked
@@ -112,17 +111,12 @@ libxlDomainObjBeginJob(libxlDriverPrivatePtr driver G_GNUC_UNUSED,
                        enum libxlDomainJob job)
 {
     libxlDomainObjPrivatePtr priv = obj->privateData;
-    unsigned long long now;
-    unsigned long long then;
-
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-    then = now + LIBXL_JOB_WAIT_TIME;
+    gint64 then = g_get_monotonic_time() + LIBXL_JOB_WAIT_TIME;
 
     while (priv->job.active) {
         VIR_DEBUG("Wait normal job condition for starting job: %s",
                   libxlDomainJobTypeToString(job));
-        if (virCondWaitUntil(&priv->job.cond, &obj->parent.lock, then) < 0)
+        if (!g_cond_wait_until(&priv->job.cond, &obj->parent.lock, then))
             goto error;
     }
 
@@ -175,7 +169,7 @@ libxlDomainObjEndJob(libxlDriverPrivatePtr driver G_GNUC_UNUSED,
               libxlDomainJobTypeToString(job));
 
     libxlDomainObjResetJob(priv);
-    virCondSignal(&priv->job.cond);
+    g_cond_signal(&priv->job.cond);
 }
 
 int

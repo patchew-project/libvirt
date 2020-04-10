@@ -334,13 +334,8 @@ qemuDomainObjInitJob(qemuDomainObjPrivatePtr priv)
 {
     memset(&priv->job, 0, sizeof(priv->job));
 
-    if (virCondInit(&priv->job.cond) < 0)
-        return -1;
-
-    if (virCondInit(&priv->job.asyncCond) < 0) {
-        virCondDestroy(&priv->job.cond);
-        return -1;
-    }
+    g_cond_init(&priv->job.cond);
+    g_cond_init(&priv->job.asyncCond);
 
     return 0;
 }
@@ -417,8 +412,8 @@ qemuDomainObjFreeJob(qemuDomainObjPrivatePtr priv)
     qemuDomainObjResetAsyncJob(priv);
     VIR_FREE(priv->job.current);
     VIR_FREE(priv->job.completed);
-    virCondDestroy(&priv->job.cond);
-    virCondDestroy(&priv->job.asyncCond);
+    g_cond_clear(&priv->job.cond);
+    g_cond_clear(&priv->job.asyncCond);
 }
 
 static bool
@@ -6181,7 +6176,7 @@ qemuDomainObjCanSetJob(qemuDomainObjPrivatePtr priv,
 }
 
 /* Give up waiting for mutex after 30 seconds */
-#define QEMU_JOB_WAIT_TIME (1000ull * 30)
+#define QEMU_JOB_WAIT_TIME (30 * G_TIME_SPAN_SECOND)
 
 /**
  * qemuDomainObjBeginJobInternal:
@@ -6214,17 +6209,16 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
                               bool nowait)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
-    unsigned long long now;
-    unsigned long long then;
+    gint64 now, then = 0;
     bool nested = job == QEMU_JOB_ASYNC_NESTED;
     bool async = job == QEMU_JOB_ASYNC;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     const char *blocker = NULL;
     const char *agentBlocker = NULL;
     int ret = -1;
-    unsigned long long duration = 0;
-    unsigned long long agentDuration = 0;
-    unsigned long long asyncDuration = 0;
+    gint64 duration = 0;
+    gint64 agentDuration = 0;
+    gint64 asyncDuration = 0;
 
     VIR_DEBUG("Starting job: job=%s agentJob=%s asyncJob=%s "
               "(vm=%p name=%s, current job=%s agentJob=%s async=%s)",
@@ -6236,11 +6230,8 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
               qemuDomainAgentJobTypeToString(priv->job.agentActive),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob));
 
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-
     priv->jobs_queued++;
-    then = now + QEMU_JOB_WAIT_TIME;
+    then = g_get_monotonic_time() + QEMU_JOB_WAIT_TIME;
 
  retry:
     if ((!async && job != QEMU_JOB_DESTROY) &&
@@ -6254,7 +6245,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
             goto cleanup;
 
         VIR_DEBUG("Waiting for async job (vm=%p name=%s)", obj, obj->def->name);
-        if (virCondWaitUntil(&priv->job.asyncCond, &obj->parent.lock, then) < 0)
+        if (!g_cond_wait_until(&priv->job.asyncCond, &obj->parent.lock, then))
             goto error;
     }
 
@@ -6263,7 +6254,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
             goto cleanup;
 
         VIR_DEBUG("Waiting for job (vm=%p name=%s)", obj, obj->def->name);
-        if (virCondWaitUntil(&priv->job.cond, &obj->parent.lock, then) < 0)
+        if (!g_cond_wait_until(&priv->job.cond, &obj->parent.lock, then))
             goto error;
     }
 
@@ -6272,7 +6263,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     if (!nested && !qemuDomainNestedJobAllowed(priv, job))
         goto retry;
 
-    ignore_value(virTimeMillisNow(&now));
+    now = g_get_monotonic_time();
 
     if (job) {
         qemuDomainObjResetJob(priv);
@@ -6322,7 +6313,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     return 0;
 
  error:
-    ignore_value(virTimeMillisNow(&now));
+    now = g_get_monotonic_time();
     if (priv->job.active && priv->job.started)
         duration = now - priv->job.started;
     if (priv->job.agentActive && priv->job.agentStarted)
@@ -6333,7 +6324,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     VIR_WARN("Cannot start job (%s, %s, %s) for domain %s; "
              "current job is (%s, %s, %s) "
              "owned by (%llu %s, %llu %s, %llu %s (flags=0x%lx)) "
-             "for (%llus, %llus, %llus)",
+             "for (%"G_GINT64_FORMAT"s, %"G_GINT64_FORMAT"s, %"G_GINT64_FORMAT"s)",
              qemuDomainJobTypeToString(job),
              qemuDomainAgentJobTypeToString(agentJob),
              qemuDomainAsyncJobTypeToString(asyncJob),
@@ -6345,7 +6336,9 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
              priv->job.agentOwner, NULLSTR(priv->job.agentOwnerAPI),
              priv->job.asyncOwner, NULLSTR(priv->job.asyncOwnerAPI),
              priv->job.apiFlags,
-             duration / 1000, agentDuration / 1000, asyncDuration / 1000);
+             duration / G_TIME_SPAN_MILLISECOND,
+             agentDuration / G_TIME_SPAN_MILLISECOND,
+             asyncDuration / G_TIME_SPAN_MILLISECOND);
 
     if (job) {
         if (nested || qemuDomainNestedJobAllowed(priv, job))
@@ -6357,29 +6350,8 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     if (agentJob)
         agentBlocker = priv->job.agentOwnerAPI;
 
-    if (errno == ETIMEDOUT) {
-        if (blocker && agentBlocker) {
-            virReportError(VIR_ERR_OPERATION_TIMEOUT,
-                           _("cannot acquire state change "
-                             "lock (held by monitor=%s agent=%s)"),
-                           blocker, agentBlocker);
-        } else if (blocker) {
-            virReportError(VIR_ERR_OPERATION_TIMEOUT,
-                           _("cannot acquire state change "
-                             "lock (held by monitor=%s)"),
-                           blocker);
-        } else if (agentBlocker) {
-            virReportError(VIR_ERR_OPERATION_TIMEOUT,
-                           _("cannot acquire state change "
-                             "lock (held by agent=%s)"),
-                           agentBlocker);
-        } else {
-            virReportError(VIR_ERR_OPERATION_TIMEOUT, "%s",
-                           _("cannot acquire state change lock"));
-        }
-        ret = -2;
-    } else if (cfg->maxQueuedJobs &&
-               priv->jobs_queued > cfg->maxQueuedJobs) {
+    if (cfg->maxQueuedJobs &&
+        priv->jobs_queued > cfg->maxQueuedJobs) {
         if (blocker && agentBlocker) {
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("cannot acquire state change "
@@ -6405,7 +6377,26 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         }
         ret = -2;
     } else {
-        virReportSystemError(errno, "%s", _("cannot acquire job mutex"));
+        if (blocker && agentBlocker) {
+            virReportError(VIR_ERR_OPERATION_TIMEOUT,
+                           _("cannot acquire state change "
+                             "lock (held by monitor=%s agent=%s)"),
+                           blocker, agentBlocker);
+        } else if (blocker) {
+            virReportError(VIR_ERR_OPERATION_TIMEOUT,
+                           _("cannot acquire state change "
+                             "lock (held by monitor=%s)"),
+                           blocker);
+        } else if (agentBlocker) {
+            virReportError(VIR_ERR_OPERATION_TIMEOUT,
+                           _("cannot acquire state change "
+                             "lock (held by agent=%s)"),
+                           agentBlocker);
+        } else {
+            virReportError(VIR_ERR_OPERATION_TIMEOUT, "%s",
+                           _("cannot acquire state change lock"));
+        }
+        ret = -2;
     }
 
  cleanup:
@@ -6542,7 +6533,7 @@ qemuDomainObjEndJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
         qemuDomainObjSaveStatus(driver, obj);
     /* We indeed need to wake up ALL threads waiting because
      * grabbing a job requires checking more variables. */
-    virCondBroadcast(&priv->job.cond);
+    g_cond_broadcast(&priv->job.cond);
 }
 
 void
@@ -6561,7 +6552,7 @@ qemuDomainObjEndAgentJob(virDomainObjPtr obj)
     qemuDomainObjResetAgentJob(priv);
     /* We indeed need to wake up ALL threads waiting because
      * grabbing a job requires checking more variables. */
-    virCondBroadcast(&priv->job.cond);
+    g_cond_broadcast(&priv->job.cond);
 }
 
 void
@@ -6577,7 +6568,7 @@ qemuDomainObjEndAsyncJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
 
     qemuDomainObjResetAsyncJob(priv);
     qemuDomainObjSaveStatus(driver, obj);
-    virCondBroadcast(&priv->job.asyncCond);
+    g_cond_broadcast(&priv->job.asyncCond);
 }
 
 void

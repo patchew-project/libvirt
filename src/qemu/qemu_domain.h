@@ -180,7 +180,7 @@ struct _qemuDomainJobInfo {
 typedef struct _qemuDomainJobObj qemuDomainJobObj;
 typedef qemuDomainJobObj *qemuDomainJobObjPtr;
 struct _qemuDomainJobObj {
-    virCond cond;                       /* Use to coordinate jobs */
+    GCond cond;                         /* Use to coordinate jobs */
 
     /* The following members are for QEMU_JOB_* */
     qemuDomainJob active;               /* Currently running job */
@@ -195,7 +195,7 @@ struct _qemuDomainJobObj {
     unsigned long long agentStarted;    /* When the current agent job started */
 
     /* The following members are for QEMU_ASYNC_JOB_* */
-    virCond asyncCond;                  /* Use to coordinate with async jobs */
+    GCond asyncCond;                    /* Use to coordinate with async jobs */
     qemuDomainAsyncJob asyncJob;        /* Currently active async job */
     unsigned long long asyncOwner;      /* Thread which set current async job */
     const char *asyncOwnerAPI;          /* The API which owns the async job */

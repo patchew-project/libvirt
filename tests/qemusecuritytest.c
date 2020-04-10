@@ -100,19 +100,19 @@ testDomain(const void *opaque)
         if (virStorageSourceIsLocalStorage(src) && src->path &&
             (src->shared || src->readonly) &&
             virStringListAdd(&notRestored, src->path) < 0)
-            return -1;
+            goto unlock;
 
         for (n = src->backingStore; virStorageSourceIsBacking(n); n = n->backingStore) {
             if (virStorageSourceIsLocalStorage(n) && n->path &&
                 virStringListAdd(&notRestored, n->path) < 0)
-                return -1;
+                goto unlock;
         }
     }
 
     /* Mocking is enabled only when this env variable is set.
      * See mock code for explanation. */
     if (g_setenv(ENVVAR, "1", FALSE) == FALSE)
-        return -1;
+        goto unlock;
 
     if (qemuSecuritySetAllLabel(data->driver, vm, NULL, false) < 0)
         goto cleanup;
@@ -124,9 +124,13 @@ testDomain(const void *opaque)
 
     ret = 0;
  cleanup:
+    virObjectUnlock(vm);
     g_unsetenv(ENVVAR);
     freePaths();
     return ret;
+unlock:
+    virObjectUnlock(vm);
+    return -1;
 }
 
 

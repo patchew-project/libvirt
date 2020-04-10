@@ -99,7 +99,7 @@ struct _qemuAgentMessage {
 struct _qemuAgent {
     virObjectLockable parent;
 
-    virCond notify;
+    GCond notify;
 
     int fd;
 
@@ -176,7 +176,7 @@ static void qemuAgentDispose(void *obj)
     VIR_DEBUG("agent=%p", agent);
     if (agent->cb && agent->cb->destroy)
         (agent->cb->destroy)(agent, agent->vm);
-    virCondDestroy(&agent->notify);
+    g_cond_clear(&agent->notify);
     VIR_FREE(agent->buffer);
     g_main_context_unref(agent->context);
     virResetError(&agent->lastError);
@@ -403,7 +403,7 @@ qemuAgentIOProcess(qemuAgentPtr agent)
     VIR_DEBUG("Process done %zu used %d", agent->bufferOffset, len);
 #endif
     if (msg && msg->finished)
-        virCondBroadcast(&agent->notify);
+        g_cond_broadcast(&agent->notify);
     return len;
 }
 
@@ -628,7 +628,7 @@ qemuAgentIO(GSocket *socket G_GNUC_UNUSED,
          * then wakeup that waiter */
         if (agent->msg && !agent->msg->finished) {
             agent->msg->finished = 1;
-            virCondSignal(&agent->notify);
+            g_cond_signal(&agent->notify);
         }
     }
 
@@ -643,7 +643,7 @@ qemuAgentIO(GSocket *socket G_GNUC_UNUSED,
         virDomainObjPtr vm = agent->vm;
 
         /* Make sure anyone waiting wakes up now */
-        virCondSignal(&agent->notify);
+        g_cond_signal(&agent->notify);
         virObjectUnlock(agent);
         virObjectUnref(agent);
         VIR_DEBUG("Triggering EOF callback");
@@ -654,7 +654,7 @@ qemuAgentIO(GSocket *socket G_GNUC_UNUSED,
         virDomainObjPtr vm = agent->vm;
 
         /* Make sure anyone waiting wakes up now */
-        virCondSignal(&agent->notify);
+        g_cond_signal(&agent->notify);
         virObjectUnlock(agent);
         virObjectUnref(agent);
         VIR_DEBUG("Triggering error callback");
@@ -692,12 +692,8 @@ qemuAgentOpen(virDomainObjPtr vm,
 
     agent->timeout = QEMU_DOMAIN_PRIVATE(vm)->agentTimeout;
     agent->fd = -1;
-    if (virCondInit(&agent->notify) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("cannot initialize agent condition"));
-        virObjectUnref(agent);
-        return NULL;
-    }
+    g_cond_init(&agent->notify);
+
     agent->vm = vm;
     agent->cb = cb;
     agent->singleSync = singleSync;
@@ -752,7 +748,7 @@ qemuAgentNotifyCloseLocked(qemuAgentPtr agent)
          * wake him up. No message will arrive anyway. */
         if (agent->msg && !agent->msg->finished) {
             agent->msg->finished = 1;
-            virCondSignal(&agent->notify);
+            g_cond_signal(&agent->notify);
         }
     }
 }
@@ -820,7 +816,7 @@ static int qemuAgentSend(qemuAgentPtr agent,
                          int seconds)
 {
     int ret = -1;
-    unsigned long long then = 0;
+    gint64 then = 0;
 
     /* Check whether qemu quit unexpectedly */
     if (agent->lastError.code != VIR_ERR_OK) {
@@ -831,29 +827,23 @@ static int qemuAgentSend(qemuAgentPtr agent,
     }
 
     if (seconds > VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK) {
-        unsigned long long now;
-        if (virTimeMillisNow(&now) < 0)
-            return -1;
         if (seconds == VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT)
             seconds = QEMU_AGENT_WAIT_TIME;
-        then = now + seconds * 1000ull;
+        then = g_get_monotonic_time() + seconds * G_TIME_SPAN_SECOND;
     }
 
     agent->msg = msg;
     qemuAgentUpdateWatch(agent);
 
     while (!agent->msg->finished) {
-        if ((then && virCondWaitUntil(&agent->notify, &agent->parent.lock, then) < 0) ||
-            (!then && virCondWait(&agent->notify, &agent->parent.lock) < 0)) {
-            if (errno == ETIMEDOUT) {
-                virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
-                               _("Guest agent not available for now"));
-                ret = -2;
-            } else {
-                virReportSystemError(errno, "%s",
-                                     _("Unable to wait on agent socket "
-                                       "condition"));
-            }
+        if (!then) {
+            g_cond_wait(&agent->notify, &agent->parent.lock);
+        } else if (!g_cond_wait_until(&agent->notify,
+                                      &agent->parent.lock,
+                                      then)) {
+            virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                           _("Guest agent not available for now"));
+            ret = -2;
             agent->inSync = false;
             goto cleanup;
         }
@@ -1210,7 +1200,7 @@ void qemuAgentNotifyEvent(qemuAgentPtr agent,
         /* somebody waiting for this event, wake him up. */
         if (agent->msg && !agent->msg->finished) {
             agent->msg->finished = 1;
-            virCondSignal(&agent->notify);
+            g_cond_signal(&agent->notify);
         }
     }
 

@@ -2631,7 +2631,7 @@ struct _virDomainStateReason {
 
 struct _virDomainObj {
     virObjectLockable parent;
-    virCond cond;
+    GCond cond;
 
     pid_t pid;
     virDomainStateReason state;
@@ -2893,8 +2893,7 @@ bool virDomainObjTaint(virDomainObjPtr obj,
 
 void virDomainObjBroadcast(virDomainObjPtr vm);
 int virDomainObjWait(virDomainObjPtr vm);
-int virDomainObjWaitUntil(virDomainObjPtr vm,
-                          unsigned long long whenms);
+int virDomainObjWaitUntil(virDomainObjPtr vm, gint64 whenms);
 
 void virDomainPanicDefFree(virDomainPanicDefPtr panic);
 void virDomainResourceDefFree(virDomainResourceDefPtr resource);

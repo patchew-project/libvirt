@@ -63,7 +63,7 @@ struct _udevEventData {
 
     /* Thread data */
     virThread th;
-    virCond threadCond;
+    GCond threadCond;
     bool threadQuit;
     bool dataReady;
 };
@@ -86,7 +86,7 @@ udevEventDataDispose(void *obj)
     udev_monitor_unref(priv->udev_monitor);
     udev_unref(udev);
 
-    virCondDestroy(&priv->threadCond);
+    g_cond_clear(&priv->threadCond);
 }
 
 
@@ -112,10 +112,7 @@ udevEventDataNew(void)
     if (!(ret = virObjectLockableNew(udevEventDataClass)))
         return NULL;
 
-    if (virCondInit(&ret->threadCond) < 0) {
-        virObjectUnref(ret);
-        return NULL;
-    }
+    g_cond_init(&ret->threadCond);
 
     ret->watch = -1;
     return ret;
@@ -1463,7 +1460,7 @@ nodeStateCleanup(void)
     if (priv) {
         virObjectLock(priv);
         priv->threadQuit = true;
-        virCondSignal(&priv->threadCond);
+        g_cond_signal(&priv->threadCond);
         virObjectUnlock(priv);
         virThreadJoin(&priv->th);
     }
@@ -1563,12 +1560,7 @@ udevEventHandleThread(void *opaque G_GNUC_UNUSED)
     while (1) {
         virObjectLock(priv);
         while (!priv->dataReady && !priv->threadQuit) {
-            if (virCondWait(&priv->threadCond, &priv->parent.lock)) {
-                virReportSystemError(errno, "%s",
-                                     _("handler failed to wait on condition"));
-                virObjectUnlock(priv);
-                return;
-            }
+            g_cond_wait(&priv->threadCond, &priv->parent.lock);
         }
 
         if (priv->threadQuit) {
@@ -1635,7 +1627,7 @@ udevEventHandleCallback(int watch G_GNUC_UNUSED,
     else
         priv->dataReady = true;
 
-    virCondSignal(&priv->threadCond);
+    g_cond_signal(&priv->threadCond);
     virObjectUnlock(priv);
 }
 
@@ -1757,7 +1749,7 @@ nodeStateInitializeEnumerate(void *opaque)
     ignore_value(virEventRemoveHandle(priv->watch));
     priv->watch = -1;
     priv->threadQuit = true;
-    virCondSignal(&priv->threadCond);
+    g_cond_signal(&priv->threadCond);
     virObjectUnlock(priv);
 }
 

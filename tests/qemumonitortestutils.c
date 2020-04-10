@@ -79,6 +79,8 @@ struct _qemuMonitorTest {
 
     virDomainObjPtr vm;
     virHashTablePtr qapischema;
+
+    bool vmCreated;
 };
 
 
@@ -392,6 +394,8 @@ qemuMonitorTestFree(qemuMonitorTestPtr test)
 
     g_object_unref(test->eventThread);
 
+    if (test->vmCreated)
+        virObjectUnlock(test->vm);
     virObjectUnref(test->vm);
 
     if (test->started)
@@ -1062,6 +1066,7 @@ qemuMonitorCommonTestNew(virDomainXMLOptionPtr xmlopt,
         test->vm = virDomainObjNew(xmlopt);
         if (!test->vm)
             goto error;
+        test->vmCreated = true;
         if (!(test->vm->def = virDomainDefNew()))
             goto error;
     }

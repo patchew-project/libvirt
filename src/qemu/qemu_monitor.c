@@ -70,7 +70,7 @@ VIR_LOG_INIT("qemu.qemu_monitor");
 struct _qemuMonitor {
     virObjectLockable parent;
 
-    virCond notify;
+    GCond notify;
 
     int fd;
 
@@ -228,7 +228,7 @@ qemuMonitorDispose(void *obj)
 
     g_main_context_unref(mon->context);
     virResetError(&mon->lastError);
-    virCondDestroy(&mon->notify);
+    g_cond_clear(&mon->notify);
     VIR_FREE(mon->buffer);
     virJSONValueFree(mon->options);
     VIR_FREE(mon->balloonpath);
@@ -357,7 +357,7 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
      * while dealing with qemu event, mon->msg could be changed which
      * means the above 'msg' may be invalid, thus we use 'mon->msg' here */
     if (mon->msg && mon->msg->finished)
-        virCondBroadcast(&mon->notify);
+        g_cond_broadcast(&mon->notify);
     return len;
 }
 
@@ -618,7 +618,7 @@ qemuMonitorIO(GSocket *socket G_GNUC_UNUSED,
          * then wakeup that waiter */
         if (mon->msg && !mon->msg->finished) {
             mon->msg->finished = 1;
-            virCondSignal(&mon->notify);
+            g_cond_signal(&mon->notify);
         }
     }
 
@@ -632,7 +632,7 @@ qemuMonitorIO(GSocket *socket G_GNUC_UNUSED,
         virDomainObjPtr vm = mon->vm;
 
         /* Make sure anyone waiting wakes up now */
-        virCondSignal(&mon->notify);
+        g_cond_signal(&mon->notify);
         virObjectUnlock(mon);
         VIR_DEBUG("Triggering EOF callback");
         (eofNotify)(mon, vm, mon->callbackOpaque);
@@ -642,7 +642,7 @@ qemuMonitorIO(GSocket *socket G_GNUC_UNUSED,
         virDomainObjPtr vm = mon->vm;
 
         /* Make sure anyone waiting wakes up now */
-        virCondSignal(&mon->notify);
+        g_cond_signal(&mon->notify);
         virObjectUnlock(mon);
         VIR_DEBUG("Triggering error callback");
         (errorNotify)(mon, vm, mon->callbackOpaque);
@@ -683,11 +683,8 @@ qemuMonitorOpenInternal(virDomainObjPtr vm,
     if (!(mon = virObjectLockableNew(qemuMonitorClass)))
         return NULL;
 
-    if (virCondInit(&mon->notify) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize monitor condition"));
-        goto cleanup;
-    }
+    g_cond_init(&mon->notify);
+
     mon->fd = fd;
     mon->context = g_main_context_ref(context);
     mon->vm = virObjectRef(vm);
@@ -881,7 +878,7 @@ qemuMonitorClose(qemuMonitorPtr mon)
                 virResetLastError();
         }
         mon->msg->finished = 1;
-        virCondSignal(&mon->notify);
+        g_cond_signal(&mon->notify);
     }
 
     /* Propagate existing monitor error in case the current thread has no
@@ -935,11 +932,7 @@ qemuMonitorSend(qemuMonitorPtr mon,
           mon, mon->msg->txBuffer, mon->msg->txFD);
 
     while (!mon->msg->finished) {
-        if (virCondWait(&mon->notify, &mon->parent.lock) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Unable to wait on monitor condition"));
-            goto cleanup;
-        }
+        g_cond_wait(&mon->notify, &mon->parent.lock);
     }
 
     if (mon->lastError.code != VIR_ERR_OK) {

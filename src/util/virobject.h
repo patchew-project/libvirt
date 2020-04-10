@@ -58,7 +58,7 @@ struct _virObject {
 
 struct _virObjectLockable {
     virObject parent;
-    virMutex lock;
+    GMutex lock;
 };
 
 struct _virObjectRWLockable {

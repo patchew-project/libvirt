@@ -50,8 +50,7 @@ virLXCDomainObjInitJob(virLXCDomainObjPrivatePtr priv)
 {
     memset(&priv->job, 0, sizeof(priv->job));
 
-    if (virCondInit(&priv->job.cond) < 0)
-        return -1;
+    g_cond_init(&priv->job.cond);
 
     return 0;
 }
@@ -68,11 +67,11 @@ virLXCDomainObjResetJob(virLXCDomainObjPrivatePtr priv)
 static void
 virLXCDomainObjFreeJob(virLXCDomainObjPrivatePtr priv)
 {
-    ignore_value(virCondDestroy(&priv->job.cond));
+    g_cond_clear(&priv->job.cond);
 }
 
 /* Give up waiting for mutex after 30 seconds */
-#define LXC_JOB_WAIT_TIME (1000ull * 30)
+#define LXC_JOB_WAIT_TIME (30 * G_TIME_SPAN_SECOND)
 
 /*
  * obj must be locked before calling, virLXCDriverPtr must NOT be locked
@@ -89,17 +88,12 @@ virLXCDomainObjBeginJob(virLXCDriverPtr driver G_GNUC_UNUSED,
                        enum virLXCDomainJob job)
 {
     virLXCDomainObjPrivatePtr priv = obj->privateData;
-    unsigned long long now;
-    unsigned long long then;
-
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-    then = now + LXC_JOB_WAIT_TIME;
+    gint64 then = g_get_monotonic_time() + LXC_JOB_WAIT_TIME;
 
     while (priv->job.active) {
         VIR_DEBUG("Wait normal job condition for starting job: %s",
                   virLXCDomainJobTypeToString(job));
-        if (virCondWaitUntil(&priv->job.cond, &obj->parent.lock, then) < 0)
+        if (!g_cond_wait_until(&priv->job.cond, &obj->parent.lock, then))
             goto error;
     }
 
@@ -146,7 +140,7 @@ virLXCDomainObjEndJob(virLXCDriverPtr driver G_GNUC_UNUSED,
               virLXCDomainJobTypeToString(job));
 
     virLXCDomainObjResetJob(priv);
-    virCondSignal(&priv->job.cond);
+    g_cond_signal(&priv->job.cond);
 }
 
 

@@ -93,11 +93,11 @@ typedef struct _vzConn vzConn;
 typedef struct _vzConn *vzConnPtr;
 
 struct _vzDomainJobObj {
-    virCond cond;
+    GCond cond;
     bool active;
     /* when the job started, zeroed on time discontinuities */
-    unsigned long long started;
-    unsigned long long elapsed;
+    gint64 started;
+    gint64 elapsed;
     bool hasProgress;
     int progress; /* percents */
     PRL_HANDLE sdkJob;

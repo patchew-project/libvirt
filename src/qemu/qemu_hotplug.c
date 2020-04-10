@@ -59,14 +59,14 @@
 
 VIR_LOG_INIT("qemu.qemu_hotplug");
 
-#define CHANGE_MEDIA_TIMEOUT 5000
+#define CHANGE_MEDIA_TIMEOUT (5 * G_TIME_SPAN_MILLISECOND)
 
 /* Timeout in miliseconds for device removal. PPC64 domains
  * can experience a bigger delay in unplug operations during
  * heavy guest activity (vcpu being the most notable case), thus
  * the timeout for PPC64 is also bigger. */
-#define QEMU_UNPLUG_TIMEOUT 1000ull * 5
-#define QEMU_UNPLUG_TIMEOUT_PPC64 1000ull * 10
+#define QEMU_UNPLUG_TIMEOUT (5 * G_TIME_SPAN_MILLISECOND)
+#define QEMU_UNPLUG_TIMEOUT_PPC64 (10 * G_TIME_SPAN_MILLISECOND)
 
 
 static void
@@ -201,15 +201,11 @@ static int
 qemuHotplugWaitForTrayEject(virDomainObjPtr vm,
                             virDomainDiskDefPtr disk)
 {
-    unsigned long long now;
+    gint64 now = g_get_monotonic_time();
     int rc;
 
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-
     while (disk->tray_status != VIR_DOMAIN_DISK_TRAY_OPEN) {
-        if ((rc = virDomainObjWaitUntil(vm, now + CHANGE_MEDIA_TIMEOUT)) < 0)
-            return -1;
+        rc = virDomainObjWaitUntil(vm, now + CHANGE_MEDIA_TIMEOUT);
 
         if (rc > 0) {
             /* the caller called qemuMonitorEjectMedia which usually reports an
@@ -5122,7 +5118,7 @@ qemuDomainResetDeviceRemoval(virDomainObjPtr vm)
 }
 
 
-unsigned long long
+gint64
 qemuDomainGetUnplugTimeout(virDomainObjPtr vm)
 {
     if (qemuDomainIsPSeries(vm->def))
@@ -5145,22 +5141,14 @@ static int
 qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    unsigned long long until;
+    gint64 until;
     int rc;
 
-    if (virTimeMillisNow(&until) < 0)
-        return 1;
-    until += qemuDomainGetUnplugTimeout(vm);
+    until = g_get_monotonic_time() + qemuDomainGetUnplugTimeout(vm);
 
     while (priv->unplug.alias) {
         if ((rc = virDomainObjWaitUntil(vm, until)) == 1)
             return 0;
-
-        if (rc < 0) {
-            VIR_WARN("Failed to wait on unplug condition for domain '%s' "
-                     "device '%s'", vm->def->name, priv->unplug.alias);
-            return 1;
-        }
     }
 
     if (priv->unplug.status == QEMU_DOMAIN_UNPLUGGING_DEVICE_STATUS_GUEST_REJECTED) {

@@ -47,7 +47,7 @@ VIR_ENUM_DECL(libxlDomainJob);
 
 
 struct libxlDomainJobObj {
-    virCond cond;                       /* Use to coordinate jobs */
+    GCond cond;                         /* Use to coordinate jobs */
     enum libxlDomainJob active;         /* Currently running job */
     int owner;                          /* Thread which set current job */
     unsigned long long started;         /* When the job started */

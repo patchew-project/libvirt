@@ -103,7 +103,7 @@ struct virFDStreamData {
 
     /* Thread data */
     virThreadPtr thread;
-    virCond threadCond;
+    GCond threadCond;
     virErrorPtr threadErr;
     bool threadQuit;
     bool threadAbort;
@@ -149,7 +149,7 @@ virFDStreamMsgQueuePush(virFDStreamDataPtr fdst,
         tmp = &(*tmp)->next;
 
     *tmp = msg;
-    virCondSignal(&fdst->threadCond);
+    g_cond_signal(&fdst->threadCond);
 
     if (safewrite(fd, &c, sizeof(c)) != sizeof(c)) {
         virReportSystemError(errno,
@@ -175,7 +175,7 @@ virFDStreamMsgQueuePop(virFDStreamDataPtr fdst,
         tmp->next = NULL;
     }
 
-    virCondSignal(&fdst->threadCond);
+    g_cond_signal(&fdst->threadCond);
 
     if (saferead(fd, &c, sizeof(c)) != sizeof(c)) {
         virReportSystemError(errno,
@@ -591,11 +591,7 @@ virFDStreamThread(void *opaque)
 
         while (doRead == (fdst->msg != NULL) &&
                !fdst->threadQuit) {
-            if (virCondWait(&fdst->threadCond, &fdst->parent.lock)) {
-                virReportSystemError(errno, "%s",
-                                     _("failed to wait on condition"));
-                goto error;
-            }
+            g_cond_wait(&fdst->threadCond, &fdst->parent.lock);
         }
 
         if (fdst->threadQuit) {
@@ -654,7 +650,7 @@ virFDStreamJoinWorker(virFDStreamDataPtr fdst,
 
     fdst->threadAbort = streamAbort;
     fdst->threadQuit = true;
-    virCondSignal(&fdst->threadCond);
+    g_cond_signal(&fdst->threadCond);
 
     /* Give the thread a chance to lock the FD stream object. */
     virObjectUnlock(fdst);
@@ -669,7 +665,7 @@ virFDStreamJoinWorker(virFDStreamDataPtr fdst,
     ret = 0;
  cleanup:
     VIR_FREE(fdst->thread);
-    virCondDestroy(&fdst->threadCond);
+    g_cond_clear(&fdst->threadCond);
     return ret;
 }
 
@@ -891,7 +887,7 @@ static int virFDStreamRead(virStreamPtr st, char *bytes, size_t nbytes)
                 goto cleanup;
             } else {
                 virObjectUnlock(fdst);
-                virCondSignal(&fdst->threadCond);
+                g_cond_signal(&fdst->threadCond);
                 virObjectLock(fdst);
             }
         }
@@ -1057,7 +1053,7 @@ virFDStreamInData(virStreamPtr st,
                 goto cleanup;
             } else {
                 virObjectUnlock(fdst);
-                virCondSignal(&fdst->threadCond);
+                g_cond_signal(&fdst->threadCond);
                 virObjectLock(fdst);
             }
         }
@@ -1128,11 +1124,7 @@ static int virFDStreamOpenInternal(virStreamPtr st,
         if (VIR_ALLOC(fdst->thread) < 0)
             goto error;
 
-        if (virCondInit(&fdst->threadCond) < 0) {
-            virReportSystemError(errno, "%s",
-                                 _("cannot initialize condition variable"));
-            goto error;
-        }
+        g_cond_init(&fdst->threadCond);
 
         if (virThreadCreateFull(fdst->thread,
                                 true,

@@ -352,6 +352,7 @@ testQemuHotplug(const void *data)
     if (keep) {
         test->vm = vm;
     } else {
+        virObjectUnlock(vm);
         virObjectUnref(vm);
         test->vm = NULL;
     }
@@ -396,6 +397,7 @@ testQemuHotplugCpuDataFree(struct testQemuHotplugCpuData *data)
         priv = data->vm->privateData;
         priv->mon = NULL;
 
+        virObjectUnlock(data->vm);
         virObjectUnref(data->vm);
     }
 

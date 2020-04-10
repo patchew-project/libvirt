@@ -38,15 +38,15 @@ init_syms(void)
     VIR_MOCK_REAL_INIT(virFileExists);
 }
 
-unsigned long long
+gint64
 qemuDomainGetUnplugTimeout(virDomainObjPtr vm G_GNUC_UNUSED)
 {
     /* Wait only 100ms for DEVICE_DELETED event. Give a greater
      * timeout in case of PSeries guest to be consistent with the
      * original logic. */
     if (qemuDomainIsPSeries(vm->def))
-        return 200;
-    return 100;
+        return 200 * G_TIME_SPAN_MILLISECOND;
+    return 100 * G_TIME_SPAN_MILLISECOND;
 }
 
 

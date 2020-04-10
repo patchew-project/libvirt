@@ -69,7 +69,7 @@ VIR_ENUM_DECL(virLXCDomainJob);
 
 
 struct virLXCDomainJobObj {
-    virCond cond;                       /* Use to coordinate jobs */
+    GCond cond;                         /* Use to coordinate jobs */
     enum virLXCDomainJob active;        /* Currently running job */
     int owner;                          /* Thread which set current job */
 };

@@ -268,12 +268,7 @@ virObjectLockableNew(virClassPtr klass)
     if (!(obj = virObjectNew(klass)))
         return NULL;
 
-    if (virMutexInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize mutex"));
-        virObjectUnref(obj);
-        return NULL;
-    }
+    g_mutex_init(&obj->lock);
 
     return obj;
 }
@@ -305,7 +300,7 @@ virObjectLockableDispose(void *anyobj)
 {
     virObjectLockablePtr obj = anyobj;
 
-    virMutexDestroy(&obj->lock);
+    g_mutex_clear(&obj->lock);
 }
 
 
@@ -424,7 +419,7 @@ virObjectLock(void *anyobj)
     if (!obj)
         return;
 
-    virMutexLock(&obj->lock);
+    g_mutex_lock(&obj->lock);
 }
 
 
@@ -501,7 +496,7 @@ virObjectUnlock(void *anyobj)
     if (!obj)
         return;
 
-    virMutexUnlock(&obj->lock);
+    g_mutex_unlock(&obj->lock);
 }
 
 

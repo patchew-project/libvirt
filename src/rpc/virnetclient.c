@@ -58,7 +58,7 @@ struct _virNetClientCall {
     bool nonBlock;
     bool haveThread;
 
-    virCond cond;
+    GCond cond;
 
     virNetClientCallPtr next;
 };
@@ -1513,12 +1513,12 @@ static bool virNetClientIOEventLoopRemoveDone(virNetClientCallPtr call,
      */
     if (call->haveThread) {
         VIR_DEBUG("Waking up sleep %p", call);
-        virCondSignal(&call->cond);
+        g_cond_signal(&call->cond);
     } else {
         VIR_DEBUG("Removing completed call %p", call);
         if (call->expectReply)
             VIR_WARN("Got a call expecting a reply but without a waiting thread");
-        virCondDestroy(&call->cond);
+        g_cond_clear(&call->cond);
         VIR_FREE(call->msg);
         VIR_FREE(call);
     }
@@ -1545,7 +1545,7 @@ virNetClientIOEventLoopRemoveAll(virNetClientCallPtr call,
         return false;
 
     VIR_DEBUG("Removing call %p", call);
-    virCondDestroy(&call->cond);
+    g_cond_clear(&call->cond);
     VIR_FREE(call->msg);
     VIR_FREE(call);
     return true;
@@ -1563,7 +1563,7 @@ virNetClientIOEventLoopPassTheBuck(virNetClientPtr client,
     while (tmp) {
         if (tmp != thiscall && tmp->haveThread) {
             VIR_DEBUG("Passing the buck to %p", tmp);
-            virCondSignal(&tmp->cond);
+            g_cond_signal(&tmp->cond);
             return;
         }
         tmp = tmp->next;
@@ -1897,12 +1897,7 @@ static int virNetClientIO(virNetClientPtr client,
         VIR_DEBUG("Going to sleep head=%p call=%p",
                   client->waitDispatch, thiscall);
         /* Go to sleep while other thread is working... */
-        if (virCondWait(&thiscall->cond, &client->parent.lock) < 0) {
-            virNetClientCallRemove(&client->waitDispatch, thiscall);
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("failed to wait on condition"));
-            return -1;
-        }
+        g_cond_wait(&thiscall->cond, &client->parent.lock);
 
         VIR_DEBUG("Woken up from sleep head=%p call=%p",
                   client->waitDispatch, thiscall);
@@ -2042,11 +2037,7 @@ virNetClientCallNew(virNetMessagePtr msg,
     if (VIR_ALLOC(call) < 0)
         goto error;
 
-    if (virCondInit(&call->cond) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize condition variable"));
-        goto error;
-    }
+    g_cond_init(&call->cond);
 
     msg->donefds = 0;
     if (msg->bufferLength)
@@ -2124,7 +2115,7 @@ static int virNetClientSendInternal(virNetClientPtr client,
     if (ret == 1)
         return 1;
 
-    virCondDestroy(&call->cond);
+    g_cond_clear(&call->cond);
     VIR_FREE(call);
     return ret;
 }

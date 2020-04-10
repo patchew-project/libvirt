@@ -63,7 +63,7 @@ struct virConsole {
 
     virStreamPtr st;
     bool quit;
-    virCond cond;
+    GCond cond;
 
     int stdinWatch;
     int stdoutWatch;
@@ -130,7 +130,7 @@ virConsoleShutdown(virConsolePtr con,
     con->stdoutWatch = -1;
     if (!con->quit) {
         con->quit = true;
-        virCondSignal(&con->cond);
+        g_cond_signal(&con->cond);
     }
 }
 
@@ -143,7 +143,7 @@ virConsoleDispose(void *obj)
     if (con->st)
         virStreamFree(con->st);
 
-    virCondDestroy(&con->cond);
+    g_cond_clear(&con->cond);
     virResetError(&con->error);
 }
 
@@ -376,21 +376,12 @@ virConsoleNew(void)
     if (!(con = virObjectLockableNew(virConsoleClass)))
         return NULL;
 
-    if (virCondInit(&con->cond) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize console condition"));
-
-        goto error;
-    }
+    g_cond_init(&con->cond);
 
     con->stdinWatch = -1;
     con->stdoutWatch = -1;
 
     return con;
-
- error:
-    virObjectUnref(con);
-    return NULL;
 }
 
 
@@ -484,11 +475,7 @@ virshRunConsole(vshControl *ctl,
     }
 
     while (!con->quit) {
-        if (virCondWait(&con->cond, &con->parent.lock) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("unable to wait on console condition"));
-            goto cleanup;
-        }
+        g_cond_wait(&con->cond, &con->parent.lock);
     }
 
     if (con->error.code == VIR_ERR_OK)

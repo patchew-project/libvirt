@@ -592,6 +592,7 @@ testCompareXMLToArgv(const void *data)
     VIR_FREE(actualargv);
     virDomainChrSourceDefClear(&monitor_chr);
     virCommandFree(cmd);
+    virObjectUnlock(vm);
     virObjectUnref(vm);
     virSetConnectSecret(NULL);
     virSetConnectStorage(NULL);

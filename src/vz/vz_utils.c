@@ -559,17 +559,11 @@ vzDomObjAlloc(void *opaque G_GNUC_UNUSED)
     if (VIR_ALLOC(pdom) < 0)
         return NULL;
 
-    if (virCondInit(&pdom->job.cond) < 0)
-        goto error;
+    g_cond_init(&pdom->job.cond);
 
     pdom->stats = PRL_INVALID_HANDLE;
 
     return pdom;
-
- error:
-    VIR_FREE(pdom);
-
-    return NULL;
 }
 
 void
@@ -582,45 +576,33 @@ vzDomObjFree(void* p)
 
     PrlHandle_Free(pdom->sdkdom);
     PrlHandle_Free(pdom->stats);
-    virCondDestroy(&pdom->job.cond);
+    g_cond_clear(&pdom->job.cond);
     VIR_FREE(pdom);
 };
 
-#define VZ_JOB_WAIT_TIME (1000 * 30)
+#define VZ_JOB_WAIT_TIME (30 * G_TIME_SPAN_SECOND)
 
 int
 vzDomainObjBeginJob(virDomainObjPtr dom)
 {
     vzDomObjPtr pdom = dom->privateData;
-    unsigned long long now;
-    unsigned long long then;
-
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-    then = now + VZ_JOB_WAIT_TIME;
+    gint64 then = g_get_monotonic_time() + VZ_JOB_WAIT_TIME;
 
     while (pdom->job.active) {
-        if (virCondWaitUntil(&pdom->job.cond, &dom->parent.lock, then) < 0)
+        if (!g_cond_wait_until(&pdom->job.cond, &dom->parent.lock, then))
             goto error;
     }
 
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
-
     pdom->job.active = true;
-    pdom->job.started = now;
+    pdom->job.started = g_get_monotonic_time();
     pdom->job.elapsed = 0;
     pdom->job.progress = 0;
     pdom->job.hasProgress = false;
     return 0;
 
  error:
-    if (errno == ETIMEDOUT)
-        virReportError(VIR_ERR_OPERATION_TIMEOUT,
-                       "%s", _("cannot acquire state change lock"));
-    else
-        virReportSystemError(errno,
-                             "%s", _("cannot acquire job mutex"));
+    virReportError(VIR_ERR_OPERATION_TIMEOUT,
+                   "%s", _("cannot acquire state change lock"));
     return -1;
 }
 
@@ -631,19 +613,18 @@ vzDomainObjEndJob(virDomainObjPtr dom)
 
     pdom->job.active = false;
     pdom->job.cancelled = false;
-    virCondSignal(&pdom->job.cond);
+    g_cond_signal(&pdom->job.cond);
 }
 
 int
 vzDomainJobUpdateTime(vzDomainJobObjPtr job)
 {
-    unsigned long long now;
+    gint64 now;
 
     if (!job->started)
         return 0;
 
-    if (virTimeMillisNow(&now) < 0)
-        return -1;
+    now = g_get_monotonic_time();
 
     if (now < job->started) {
         VIR_WARN("Async job starts in the future");

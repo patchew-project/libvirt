@@ -3535,7 +3535,7 @@ static void virDomainObjDispose(void *obj)
     virDomainObjPtr dom = obj;
 
     VIR_DEBUG("obj=%p", dom);
-    virCondDestroy(&dom->cond);
+    g_cond_clear(&dom->cond);
     virDomainDefFree(dom->def);
     virDomainDefFree(dom->newDef);
 
@@ -3557,11 +3557,7 @@ virDomainObjNew(virDomainXMLOptionPtr xmlopt)
     if (!(domain = virObjectLockableNew(virDomainObjClass)))
         return NULL;
 
-    if (virCondInit(&domain->cond) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("failed to initialize domain condition"));
-        goto error;
-    }
+    g_cond_init(&domain->cond);
 
     if (xmlopt->privateData.alloc) {
         domain->privateData = (xmlopt->privateData.alloc)(xmlopt->config.priv);
@@ -3670,18 +3666,14 @@ virDomainObjEndAPI(virDomainObjPtr *vm)
 void
 virDomainObjBroadcast(virDomainObjPtr vm)
 {
-    virCondBroadcast(&vm->cond);
+    g_cond_broadcast(&vm->cond);
 }
 
 
 int
 virDomainObjWait(virDomainObjPtr vm)
 {
-    if (virCondWait(&vm->cond, &vm->parent.lock) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("failed to wait for domain condition"));
-        return -1;
-    }
+    g_cond_wait(&vm->cond, &vm->parent.lock);
 
     if (!virDomainObjIsActive(vm)) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
@@ -3697,22 +3689,15 @@ virDomainObjWait(virDomainObjPtr vm)
  * Waits for domain condition to be triggered for a specific period of time.
  *
  * Returns:
- *  -1 in case of error
  *  0 on success
  *  1 on timeout
  */
 int
 virDomainObjWaitUntil(virDomainObjPtr vm,
-                      unsigned long long whenms)
+                      gint64 whenms)
 {
-    if (virCondWaitUntil(&vm->cond, &vm->parent.lock, whenms) < 0) {
-        if (errno != ETIMEDOUT) {
-            virReportSystemError(errno, "%s",
-                                 _("failed to wait for domain condition"));
-            return -1;
-        }
+    if (!g_cond_wait_until(&vm->cond, &vm->parent.lock, whenms))
         return 1;
-    }
     return 0;
 }
 
