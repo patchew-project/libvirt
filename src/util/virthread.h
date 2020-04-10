@@ -33,14 +33,6 @@ struct virMutex {
     pthread_mutex_t lock;
 };
 
-typedef struct virRWLock virRWLock;
-typedef virRWLock *virRWLockPtr;
-
-struct virRWLock {
-    pthread_rwlock_t lock;
-};
-
-
 typedef struct virCond virCond;
 typedef virCond *virCondPtr;
 
@@ -131,14 +123,6 @@ void virMutexDestroy(virMutexPtr m);
 
 void virMutexLock(virMutexPtr m);
 void virMutexUnlock(virMutexPtr m);
-
-
-int virRWLockInit(virRWLockPtr m) G_GNUC_WARN_UNUSED_RESULT;
-void virRWLockDestroy(virRWLockPtr m);
-
-void virRWLockRead(virRWLockPtr m);
-void virRWLockWrite(virRWLockPtr m);
-void virRWLockUnlock(virRWLockPtr m);
 
 
 int virCondInit(virCondPtr c) G_GNUC_WARN_UNUSED_RESULT;
