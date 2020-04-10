@@ -607,18 +607,8 @@ nodeStateInitialize(bool privileged G_GNUC_UNUSED,
         return VIR_DRV_STATE_INIT_ERROR;
 
     driver->lockFD = -1;
-    if (virMutexInit(&driver->lock) < 0) {
-        VIR_FREE(driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
-
-    if (virCondInit(&driver->initCond) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("Unable to initialize condition variable"));
-        virMutexDestroy(&driver->lock);
-        VIR_FREE(driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&driver->lock);
+    g_cond_init(&driver->initCond);
 
     nodeDeviceLock();
 
@@ -713,7 +703,7 @@ nodeStateInitialize(bool privileged G_GNUC_UNUSED,
     nodeDeviceLock();
     driver->initialized = true;
     nodeDeviceUnlock();
-    virCondBroadcast(&driver->initCond);
+    g_cond_broadcast(&driver->initCond);
 
     return VIR_DRV_STATE_INIT_COMPLETE;
 
@@ -747,8 +737,8 @@ nodeStateCleanup(void)
 
         VIR_FREE(driver->stateDir);
         nodeDeviceUnlock();
-        virCondDestroy(&driver->initCond);
-        virMutexDestroy(&driver->lock);
+        g_cond_clear(&driver->initCond);
+        g_mutex_clear(&driver->lock);
         VIR_FREE(driver);
         return 0;
     }

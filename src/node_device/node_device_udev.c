@@ -1477,8 +1477,8 @@ nodeStateCleanup(void)
         virPidFileRelease(driver->stateDir, "driver", driver->lockFD);
 
     VIR_FREE(driver->stateDir);
-    virCondDestroy(&driver->initCond);
-    virMutexDestroy(&driver->lock);
+    g_cond_clear(&driver->initCond);
+    g_mutex_clear(&driver->lock);
     VIR_FREE(driver);
 
     udevPCITranslateDeinit();
@@ -1748,7 +1748,7 @@ nodeStateInitializeEnumerate(void *opaque)
     nodeDeviceLock();
     driver->initialized = true;
     nodeDeviceUnlock();
-    virCondBroadcast(&driver->initCond);
+    g_cond_broadcast(&driver->initCond);
 
     return;
 
@@ -1806,19 +1806,8 @@ nodeStateInitialize(bool privileged,
         return VIR_DRV_STATE_INIT_ERROR;
 
     driver->lockFD = -1;
-    if (virMutexInit(&driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize mutex"));
-        VIR_FREE(driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
-    if (virCondInit(&driver->initCond) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("Unable to initialize condition variable"));
-        virMutexDestroy(&driver->lock);
-        VIR_FREE(driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&driver->lock);
+    g_cond_init(&driver->initCond);
 
     driver->privileged = privileged;
 

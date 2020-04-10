@@ -35,8 +35,8 @@ typedef virNodeDeviceObjList *virNodeDeviceObjListPtr;
 typedef struct _virNodeDeviceDriverState virNodeDeviceDriverState;
 typedef virNodeDeviceDriverState *virNodeDeviceDriverStatePtr;
 struct _virNodeDeviceDriverState {
-    virMutex lock;
-    virCond initCond;
+    GMutex lock;
+    GCond initCond;
     bool initialized;
 
     /* pid file FD, ensures two copies of the driver can't use the same root */
