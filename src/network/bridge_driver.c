@@ -101,14 +101,14 @@ networkGetDriver(void)
 static void
 networkDriverLock(virNetworkDriverStatePtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 
 static void
 networkDriverUnlock(virNetworkDriverStatePtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 
@@ -726,10 +726,7 @@ networkStateInitialize(bool privileged,
         goto error;
 
     network_driver->lockFD = -1;
-    if (virMutexInit(&network_driver->lock) < 0) {
-        VIR_FREE(network_driver);
-        goto error;
-    }
+    g_mutex_init(&network_driver->lock);
 
     network_driver->privileged = privileged;
 
@@ -907,7 +904,7 @@ networkStateCleanup(void)
 
     virObjectUnref(network_driver->dnsmasqCaps);
 
-    virMutexDestroy(&network_driver->lock);
+    g_mutex_clear(&network_driver->lock);
 
     VIR_FREE(network_driver);
 

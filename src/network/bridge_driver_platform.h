@@ -29,7 +29,7 @@
 
 /* Main driver state */
 struct _virNetworkDriverState {
-    virMutex lock;
+    GMutex lock;
 
     /* Read-only */
     bool privileged;
