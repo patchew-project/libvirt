@@ -48,8 +48,7 @@ virLockSpaceProtocolDispatchAcquireResource(virNetServerPtr server G_GNUC_UNUSED
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
     unsigned int newFlags;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_SHARED |
                       VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE, cleanup);
@@ -90,7 +89,6 @@ virLockSpaceProtocolDispatchAcquireResource(virNetServerPtr server G_GNUC_UNUSED
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -107,8 +105,7 @@ virLockSpaceProtocolDispatchCreateResource(virNetServerPtr server G_GNUC_UNUSED,
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -139,7 +136,6 @@ virLockSpaceProtocolDispatchCreateResource(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -156,8 +152,7 @@ virLockSpaceProtocolDispatchDeleteResource(virNetServerPtr server G_GNUC_UNUSED,
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -188,7 +183,6 @@ virLockSpaceProtocolDispatchDeleteResource(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -205,8 +199,7 @@ virLockSpaceProtocolDispatchNew(virNetServerPtr server G_GNUC_UNUSED,
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -244,7 +237,6 @@ virLockSpaceProtocolDispatchNew(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -260,8 +252,7 @@ virLockSpaceProtocolDispatchRegister(virNetServerPtr server G_GNUC_UNUSED,
     unsigned int flags = args->flags;
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -289,7 +280,6 @@ virLockSpaceProtocolDispatchRegister(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -306,8 +296,7 @@ virLockSpaceProtocolDispatchReleaseResource(virNetServerPtr server G_GNUC_UNUSED
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -340,7 +329,6 @@ virLockSpaceProtocolDispatchReleaseResource(virNetServerPtr server G_GNUC_UNUSED
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -356,8 +344,7 @@ virLockSpaceProtocolDispatchRestrict(virNetServerPtr server G_GNUC_UNUSED,
     unsigned int flags = args->flags;
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     virCheckFlagsGoto(0, cleanup);
 
@@ -379,7 +366,6 @@ virLockSpaceProtocolDispatchRestrict(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }
 
@@ -395,8 +381,7 @@ virLockSpaceProtocolDispatchCreateLockSpace(virNetServerPtr server G_GNUC_UNUSED
     virLockDaemonClientPtr priv =
         virNetServerClientGetPrivateData(client);
     virLockSpacePtr lockspace;
-
-    virMutexLock(&priv->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     if (priv->restricted) {
         virReportError(VIR_ERR_OPERATION_DENIED, "%s",
@@ -424,6 +409,5 @@ virLockSpaceProtocolDispatchCreateLockSpace(virNetServerPtr server G_GNUC_UNUSED
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return rv;
 }

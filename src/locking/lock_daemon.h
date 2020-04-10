@@ -30,7 +30,7 @@ typedef struct _virLockDaemonClient virLockDaemonClient;
 typedef virLockDaemonClient *virLockDaemonClientPtr;
 
 struct _virLockDaemonClient {
-    virMutex lock;
+    GMutex lock;
     bool restricted;
 
     pid_t ownerPid;
