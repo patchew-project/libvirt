@@ -71,7 +71,7 @@ VIR_LOG_INIT("util.netdevmacvlan");
 
 # define MACVLAN_MAX_ID 8191
 
-virMutex virNetDevMacVLanCreateMutex = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE(virNetDevMacVLanCreateMutex);
 virBitmapPtr macvtapIDs = NULL;
 virBitmapPtr macvlanIDs = NULL;
 
@@ -951,10 +951,10 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
                STRPREFIX(ifnameRequested, VIR_NET_GENERATED_MACVLAN_PREFIX));
 
         VIR_INFO("Requested macvtap device name: %s", ifnameRequested);
-        virMutexLock(&virNetDevMacVLanCreateMutex);
+        G_LOCK(virNetDevMacVLanCreateMutex);
 
         if ((rc = virNetDevExists(ifnameRequested)) < 0) {
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            G_UNLOCK(virNetDevMacVLanCreateMutex);
             return -1;
         }
         if (rc) {
@@ -963,7 +963,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
             virReportSystemError(EEXIST,
                                  _("Unable to create %s device %s"),
                                  type, ifnameRequested);
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            G_UNLOCK(virNetDevMacVLanCreateMutex);
             return -1;
         }
         if (isAutoName &&
@@ -979,28 +979,28 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
                 reservedID = -1;
                 goto create_name;
             }
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            G_UNLOCK(virNetDevMacVLanCreateMutex);
             return -1;
         }
         /* virNetDevMacVLanCreate() was successful - use this name */
         ifnameCreated = ifnameRequested;
  create_name:
-        virMutexUnlock(&virNetDevMacVLanCreateMutex);
+        G_UNLOCK(virNetDevMacVLanCreateMutex);
     }
 
     retries = MACVLAN_MAX_ID;
     while (!ifnameCreated && retries) {
-        virMutexLock(&virNetDevMacVLanCreateMutex);
+        G_LOCK(virNetDevMacVLanCreateMutex);
         reservedID = virNetDevMacVLanReserveID(reservedID, flags, false, true);
         if (reservedID < 0) {
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            G_UNLOCK(virNetDevMacVLanCreateMutex);
             return -1;
         }
         g_snprintf(ifname, sizeof(ifname), pattern, reservedID);
         if (virNetDevMacVLanCreate(ifname, type, macaddress, linkdev,
                                    macvtapMode, &do_retry) < 0) {
             virNetDevMacVLanReleaseID(reservedID, flags);
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            G_UNLOCK(virNetDevMacVLanCreateMutex);
             if (!do_retry)
                 return -1;
             VIR_INFO("Device %s wasn't reserved but already existed, skipping",
@@ -1009,7 +1009,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
             continue;
         }
         ifnameCreated = ifname;
-        virMutexUnlock(&virNetDevMacVLanCreateMutex);
+        G_UNLOCK(virNetDevMacVLanCreateMutex);
     }
 
     if (!ifnameCreated) {
