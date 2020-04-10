@@ -34,7 +34,7 @@
 VIR_LOG_INIT("conf.virnwfilterobj");
 
 struct _virNWFilterObj {
-    virMutex lock;
+    GRecMutex lock;
 
     bool wantRemoved;
 
@@ -56,12 +56,7 @@ virNWFilterObjNew(void)
     if (VIR_ALLOC(obj) < 0)
         return NULL;
 
-    if (virMutexInitRecursive(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("cannot initialize mutex"));
-        VIR_FREE(obj);
-        return NULL;
-    }
+    g_rec_mutex_init(&obj->lock);
 
     virNWFilterObjLock(obj);
     return obj;
@@ -98,7 +93,7 @@ virNWFilterObjFree(virNWFilterObjPtr obj)
     virNWFilterDefFree(obj->def);
     virNWFilterDefFree(obj->newDef);
 
-    virMutexDestroy(&obj->lock);
+    g_rec_mutex_clear(&obj->lock);
 
     VIR_FREE(obj);
 }
@@ -554,12 +549,12 @@ virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,
 void
 virNWFilterObjLock(virNWFilterObjPtr obj)
 {
-    virMutexLock(&obj->lock);
+    g_rec_mutex_lock(&obj->lock);
 }
 
 
 void
 virNWFilterObjUnlock(virNWFilterObjPtr obj)
 {
-    virMutexUnlock(&obj->lock);
+    g_rec_mutex_unlock(&obj->lock);
 }

@@ -80,26 +80,26 @@ struct virNWFilterSnoopState {
     /* thread management */
     virHashTablePtr      snoopReqs;
     virHashTablePtr      ifnameToKey;
-    virMutex             snoopLock;  /* protects SnoopReqs and IfNameToKey */
+    GRecMutex            snoopLock;  /* protects SnoopReqs and IfNameToKey */
     virHashTablePtr      active;
-    virMutex             activeLock; /* protects Active */
+    GMutex               activeLock; /* protects Active */
 };
 
 # define virNWFilterSnoopLock() \
     do { \
-        virMutexLock(&virNWFilterSnoopState.snoopLock); \
+        g_rec_mutex_lock(&virNWFilterSnoopState.snoopLock); \
     } while (0)
 # define virNWFilterSnoopUnlock() \
     do { \
-        virMutexUnlock(&virNWFilterSnoopState.snoopLock); \
+        g_rec_mutex_unlock(&virNWFilterSnoopState.snoopLock); \
     } while (0)
 # define virNWFilterSnoopActiveLock() \
     do { \
-        virMutexLock(&virNWFilterSnoopState.activeLock); \
+        g_mutex_lock(&virNWFilterSnoopState.activeLock); \
     } while (0)
 # define virNWFilterSnoopActiveUnlock() \
     do { \
-        virMutexUnlock(&virNWFilterSnoopState.activeLock); \
+        g_mutex_unlock(&virNWFilterSnoopState.activeLock); \
     } while (0)
 
 # define VIR_IFKEY_LEN   ((VIR_UUID_STRING_BUFLEN) + (VIR_MAC_STRING_BUFLEN))
@@ -136,7 +136,7 @@ struct _virNWFilterSnoopReq {
     virErrorPtr                          threadError;
 
     virNWFilterSnoopThreadStatus         threadStatus;
-    virCond                              threadStatusCond;
+    GCond                                threadStatusCond;
 
     int                                  jobCompletionStatus;
     /* the number of submitted jobs in the worker's queue */
@@ -152,7 +152,7 @@ struct _virNWFilterSnoopReq {
      * - threadStatus
      * (for refctr, see above)
      */
-    virMutex                             lock;
+    GRecMutex                            lock;
 };
 
 /*
@@ -567,19 +567,16 @@ virNWFilterSnoopReqNew(const char *ifkey)
 
     req->threadStatus = THREAD_STATUS_NONE;
 
-    if (virStrcpyStatic(req->ifkey, ifkey) < 0||
-        virMutexInitRecursive(&req->lock) < 0)
+    if (virStrcpyStatic(req->ifkey, ifkey) < 0)
         goto err_free_req;
 
-    if (virCondInit(&req->threadStatusCond) < 0)
-        goto err_destroy_mutex;
+    g_rec_mutex_init(&req->lock);
+
+    g_cond_init(&req->threadStatusCond);
 
     virNWFilterSnoopReqGet(req);
 
     return req;
-
- err_destroy_mutex:
-    virMutexDestroy(&req->lock);
 
  err_free_req:
     VIR_FREE(req);
@@ -610,8 +607,8 @@ virNWFilterSnoopReqFree(virNWFilterSnoopReqPtr req)
     /* free all req data */
     virNWFilterBindingDefFree(req->binding);
 
-    virMutexDestroy(&req->lock);
-    virCondDestroy(&req->threadStatusCond);
+    g_rec_mutex_clear(&req->lock);
+    g_cond_clear(&req->threadStatusCond);
     virFreeError(req->threadError);
 
     VIR_FREE(req);
@@ -623,7 +620,7 @@ virNWFilterSnoopReqFree(virNWFilterSnoopReqPtr req)
 static void
 virNWFilterSnoopReqLock(virNWFilterSnoopReqPtr req)
 {
-    virMutexLock(&req->lock);
+    g_rec_mutex_lock(&req->lock);
 }
 
 /*
@@ -632,7 +629,7 @@ virNWFilterSnoopReqLock(virNWFilterSnoopReqPtr req)
 static void
 virNWFilterSnoopReqUnlock(virNWFilterSnoopReqPtr req)
 {
-    virMutexUnlock(&req->lock);
+    g_rec_mutex_unlock(&req->lock);
 }
 
 /*
@@ -1381,7 +1378,7 @@ virNWFilterDHCPSnoopThread(void *req0)
         req->threadStatus = THREAD_STATUS_OK;
     }
 
-    virCondSignal(&req->threadStatusCond);
+    g_cond_signal(&req->threadStatusCond);
 
     virNWFilterSnoopReqUnlock(req);
 
@@ -1667,11 +1664,7 @@ virNWFilterDHCPSnoopReq(virNWFilterTechDriverPtr techdriver,
     }
 
     /* sync with thread */
-    if (virCondWait(&req->threadStatusCond, &req->lock) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("unable to wait on dhcp snoop thread"));
-        goto exit_snoop_cancel;
-    }
+    g_cond_wait(&req->threadStatusCond, (GMutex *)&req->lock);
 
     if (req->threadStatus != THREAD_STATUS_OK) {
         virErrorRestore(&req->threadError);
@@ -2039,9 +2032,8 @@ virNWFilterDHCPSnoopInit(void)
 
     VIR_DEBUG("Initializing DHCP snooping");
 
-    if (virMutexInitRecursive(&virNWFilterSnoopState.snoopLock) < 0 ||
-        virMutexInit(&virNWFilterSnoopState.activeLock) < 0)
-        return -1;
+    g_rec_mutex_init(&virNWFilterSnoopState.snoopLock);
+    g_mutex_init(&virNWFilterSnoopState.activeLock);
 
     virNWFilterSnoopState.ifnameToKey = virHashCreate(0, NULL);
     virNWFilterSnoopState.active = virHashCreate(0, NULL);
