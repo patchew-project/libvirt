@@ -83,7 +83,7 @@ struct _virFirewall {
 };
 
 static virFirewallBackend currentBackend = VIR_FIREWALL_BACKEND_AUTOMATIC;
-static virMutex ruleLock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(ruleLock);
 
 static int
 virFirewallValidateBackend(virFirewallBackend backend);
@@ -807,7 +807,7 @@ virFirewallApply(virFirewallPtr firewall)
     size_t i, j;
     int ret = -1;
 
-    virMutexLock(&ruleLock);
+    G_LOCK(ruleLock);
 
     if (currentBackend == VIR_FIREWALL_BACKEND_AUTOMATIC) {
         /* a specific backend should have been set when the firewall
@@ -863,6 +863,6 @@ virFirewallApply(virFirewallPtr firewall)
 
     ret = 0;
  cleanup:
-    virMutexUnlock(&ruleLock);
+    G_UNLOCK(ruleLock);
     return ret;
 }
