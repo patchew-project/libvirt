@@ -44,7 +44,7 @@ VIR_LOG_INIT("conf.chrdev");
 /* structure holding information about character devices
  * open in a given domain */
 struct _virChrdevs {
-    virMutex lock;
+    GMutex lock;
     virHashTablePtr hash;
 };
 
@@ -238,12 +238,10 @@ static void virChrdevFDStreamCloseCb(virStreamPtr st G_GNUC_UNUSED,
                                       void *opaque)
 {
     virChrdevStreamInfoPtr priv = opaque;
-    virMutexLock(&priv->devs->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->devs->lock);
 
     /* remove entry from hash */
     virHashRemoveEntry(priv->devs->hash, priv->path);
-
-    virMutexUnlock(&priv->devs->lock);
 }
 
 /**
@@ -258,12 +256,7 @@ virChrdevsPtr virChrdevAlloc(void)
     if (VIR_ALLOC(devs) < 0)
         return NULL;
 
-    if (virMutexInit(&devs->lock) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("Unable to init device stream mutex"));
-        VIR_FREE(devs);
-        return NULL;
-    }
+    g_mutex_init(&devs->lock);
 
     /* there will hardly be any devices most of the time, the hash
      * does not have to be huge */
@@ -299,11 +292,11 @@ void virChrdevFree(virChrdevsPtr devs)
     if (!devs)
         return;
 
-    virMutexLock(&devs->lock);
+    g_mutex_lock(&devs->lock);
     virHashForEach(devs->hash, virChrdevFreeClearCallbacks, NULL);
     virHashFree(devs->hash);
-    virMutexUnlock(&devs->lock);
-    virMutexDestroy(&devs->lock);
+    g_mutex_unlock(&devs->lock);
+    g_mutex_clear(&devs->lock);
 
     VIR_FREE(devs);
 }
@@ -334,6 +327,7 @@ int virChrdevOpen(virChrdevsPtr devs,
     char *path;
     int ret;
     bool added = false;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&devs->lock);
 
     switch (source->type) {
     case VIR_DOMAIN_CHR_TYPE_PTY:
@@ -354,12 +348,9 @@ int virChrdevOpen(virChrdevsPtr devs,
         return -1;
     }
 
-    virMutexLock(&devs->lock);
-
     if ((ent = virHashLookup(devs->hash, path))) {
         if (!force) {
              /* entry found, device is busy */
-            virMutexUnlock(&devs->lock);
             return 1;
        } else {
            /* terminate existing connection */
@@ -378,13 +369,11 @@ int virChrdevOpen(virChrdevsPtr devs,
 
     /* create the lock file */
     if ((ret = virChrdevLockFileCreate(path)) < 0) {
-        virMutexUnlock(&devs->lock);
         return ret;
     }
 
     /* obtain a reference to the stream */
     if (virStreamRef(st) < 0) {
-        virMutexUnlock(&devs->lock);
         return -1;
     }
 
@@ -428,7 +417,6 @@ int virChrdevOpen(virChrdevsPtr devs,
                                   cbdata,
                                   virChrdevFDStreamCloseCbFree);
 
-    virMutexUnlock(&devs->lock);
     return 0;
 
  error:
@@ -440,7 +428,6 @@ int virChrdevOpen(virChrdevsPtr devs,
     if (cbdata)
         VIR_FREE(cbdata->path);
     VIR_FREE(cbdata);
-    virMutexUnlock(&devs->lock);
     virChrdevHashEntryFree(ent);
     return -1;
 }
