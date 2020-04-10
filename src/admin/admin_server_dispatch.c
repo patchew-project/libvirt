@@ -45,7 +45,7 @@ typedef daemonAdmClientPrivate *daemonAdmClientPrivatePtr;
 /* Separate private data for admin connection */
 struct daemonAdmClientPrivate {
     /* Just a placeholder, not that there is anything to be locked */
-    virMutex lock;
+    GMutex lock;
 
     virNetDaemonPtr dmn;
 };
@@ -55,7 +55,7 @@ remoteAdmClientFree(void *data)
 {
     struct daemonAdmClientPrivate *priv = data;
 
-    virMutexDestroy(&priv->lock);
+    g_mutex_clear(&priv->lock);
     virObjectUnref(priv->dmn);
     VIR_FREE(priv);
 }
@@ -91,11 +91,7 @@ remoteAdmClientNew(virNetServerClientPtr client G_GNUC_UNUSED,
     if (VIR_ALLOC(priv) < 0)
         return NULL;
 
-    if (virMutexInit(&priv->lock) < 0) {
-        VIR_FREE(priv);
-        virReportSystemError(errno, "%s", _("unable to init mutex"));
-        return NULL;
-    }
+    g_mutex_init(&priv->lock);
 
     /*
      * We don't necessarily need to ref this object right now as there
@@ -167,9 +163,9 @@ adminDispatchConnectOpen(virNetServerPtr server G_GNUC_UNUSED,
     struct daemonAdmClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     int ret = -1;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&priv->lock);
 
     VIR_DEBUG("priv=%p dmn=%p", priv, priv->dmn);
-    virMutexLock(&priv->lock);
 
     flags = args->flags;
     virCheckFlagsGoto(0, cleanup);
@@ -178,7 +174,6 @@ adminDispatchConnectOpen(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (ret < 0)
         virNetMessageSaveError(rerr);
-    virMutexUnlock(&priv->lock);
     return ret;
 }
 
