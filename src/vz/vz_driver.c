@@ -67,7 +67,7 @@ static virClassPtr vzDriverClass;
 static bool vz_driver_privileged;
 /* pid file FD, ensures two copies of the driver can't use the same root */
 static int vz_driver_lock_fd = -1;
-static virMutex vz_driver_lock;
+G_LOCK_DEFINE_STATIC(vz_driver_lock);
 static vzDriverPtr vz_driver;
 static vzConnPtr vz_conn_list;
 
@@ -177,11 +177,11 @@ vzGetDriverConnection(void)
                        "%s", _("vz state driver is not active"));
         return NULL;
     }
-    virMutexLock(&vz_driver_lock);
+    G_LOCK(vz_driver_lock);
     if (!vz_driver)
         vz_driver = vzDriverObjNew();
     virObjectRef(vz_driver);
-    virMutexUnlock(&vz_driver_lock);
+    G_UNLOCK(vz_driver_lock);
 
     return vz_driver;
 }
@@ -192,10 +192,10 @@ vzDestroyDriverConnection(void)
     vzDriverPtr driver;
     vzConnPtr privconn_list;
 
-    virMutexLock(&vz_driver_lock);
+    G_LOCK(vz_driver_lock);
     driver = g_steal_pointer(&vz_driver);
     privconn_list = g_steal_pointer(&vz_conn_list);
-    virMutexUnlock(&vz_driver_lock);
+    G_UNLOCK(vz_driver_lock);
 
     while (privconn_list) {
         vzConnPtr privconn = privconn_list;
@@ -389,10 +389,10 @@ vzConnectOpen(virConnectPtr conn,
     if (!(privconn->closeCallback = virNewConnectCloseCallbackData()))
         goto error;
 
-    virMutexLock(&vz_driver_lock);
+    G_LOCK(vz_driver_lock);
     privconn->next = vz_conn_list;
     vz_conn_list = privconn;
-    virMutexUnlock(&vz_driver_lock);
+    G_UNLOCK(vz_driver_lock);
 
     return VIR_DRV_OPEN_SUCCESS;
 
@@ -413,7 +413,7 @@ vzConnectClose(virConnectPtr conn)
     if (!privconn)
         return 0;
 
-    virMutexLock(&vz_driver_lock);
+    G_LOCK(vz_driver_lock);
     for (curr = vz_conn_list; curr; prev = &curr->next, curr = curr->next) {
         if (curr == privconn) {
             *prev = curr->next;
@@ -421,7 +421,7 @@ vzConnectClose(virConnectPtr conn)
         }
     }
 
-    virMutexUnlock(&vz_driver_lock);
+    G_UNLOCK(vz_driver_lock);
 
     virObjectUnref(privconn->closeCallback);
     virObjectUnref(privconn->driver);
@@ -4094,7 +4094,6 @@ vzStateCleanup(void)
         vz_driver = NULL;
         if (vz_driver_lock_fd != -1)
             virPidFileRelease(VZ_STATEDIR, "driver", vz_driver_lock_fd);
-        virMutexDestroy(&vz_driver_lock);
         prlsdkDeinit();
     }
     return 0;
@@ -4132,17 +4131,10 @@ vzStateInitialize(bool privileged,
         return VIR_DRV_STATE_INIT_ERROR;
     }
 
-    if (virMutexInit(&vz_driver_lock) < 0)
-        goto error;
-
     /* Failing to create driver here is not fatal and only means
      * that next driver client will try once more when connecting */
     vz_driver = vzDriverObjNew();
     return VIR_DRV_STATE_INIT_COMPLETE;
-
- error:
-    vzStateCleanup();
-    return VIR_DRV_STATE_INIT_ERROR;
 }
 
 static virStateDriver vzStateDriver = {
