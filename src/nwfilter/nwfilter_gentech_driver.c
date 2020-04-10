@@ -69,14 +69,12 @@ static virNWFilterTechDriverPtr filter_tech_drivers[] = {
  * hash table as is done for virDomainObjList. You can then get
  * lockless lookup of objects by name.
  */
-static virMutex updateMutex;
+static GRecMutex updateMutex;
 
 int virNWFilterTechDriversInit(bool privileged)
 {
     size_t i = 0;
     VIR_DEBUG("Initializing NWFilter technology drivers");
-    if (virMutexInitRecursive(&updateMutex) < 0)
-        return -1;
 
     while (filter_tech_drivers[i]) {
         if (!(filter_tech_drivers[i]->flags & TECHDRV_FLAG_INITIALIZED))
@@ -95,7 +93,6 @@ void virNWFilterTechDriversShutdown(void)
             filter_tech_drivers[i]->shutdown();
         i++;
     }
-    virMutexDestroy(&updateMutex);
 }
 
 
@@ -753,9 +750,7 @@ virNWFilterInstantiateFilterInternal(virNWFilterDriverStatePtr driver,
                                      bool *foundNewFilter)
 {
     int ifindex;
-    int rc;
-
-    virMutexLock(&updateMutex);
+    g_autoptr(GRecMutexLocker) locker = g_rec_mutex_locker_new(&updateMutex);
 
     /* after grabbing the filter update lock check for the interface; if
        it's not there anymore its filters will be or are being removed
@@ -765,20 +760,14 @@ virNWFilterInstantiateFilterInternal(virNWFilterDriverStatePtr driver,
         /* interfaces / VMs can disappear during filter instantiation;
            don't mark it as an error */
         virResetLastError();
-        rc = 0;
-        goto cleanup;
+        return 0;
     }
 
-    rc = virNWFilterInstantiateFilterUpdate(driver, teardownOld,
-                                            binding,
-                                            ifindex,
-                                            useNewFilter,
-                                            false, foundNewFilter);
-
- cleanup:
-    virMutexUnlock(&updateMutex);
-
-    return rc;
+    return virNWFilterInstantiateFilterUpdate(driver, teardownOld,
+                                              binding,
+                                              ifindex,
+                                              useNewFilter,
+                                              false, foundNewFilter);
 }
 
 
@@ -789,9 +778,10 @@ virNWFilterInstantiateFilterLate(virNWFilterDriverStatePtr driver,
 {
     int rc;
     bool foundNewFilter = false;
+    g_autoptr(GRecMutexLocker) locker = NULL;
 
     virNWFilterReadLockFilterUpdates();
-    virMutexLock(&updateMutex);
+    locker = g_rec_mutex_locker_new(&updateMutex);
 
     rc = virNWFilterInstantiateFilterUpdate(driver, true,
                                             binding, ifindex,
@@ -808,7 +798,6 @@ virNWFilterInstantiateFilterLate(virNWFilterDriverStatePtr driver,
     }
 
     virNWFilterReadUnlockFilterUpdates();
-    virMutexUnlock(&updateMutex);
 
     return rc;
 }
@@ -930,11 +919,8 @@ _virNWFilterTeardownFilter(const char *ifname)
 int
 virNWFilterTeardownFilter(virNWFilterBindingDefPtr binding)
 {
-    int ret;
-    virMutexLock(&updateMutex);
-    ret = _virNWFilterTeardownFilter(binding->portdevname);
-    virMutexUnlock(&updateMutex);
-    return ret;
+    g_autoptr(GRecMutexLocker) locker = g_rec_mutex_locker_new(&updateMutex);
+    return _virNWFilterTeardownFilter(binding->portdevname);
 }
 
 enum {
