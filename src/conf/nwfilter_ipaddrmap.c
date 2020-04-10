@@ -32,7 +32,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_NWFILTER
 
-static virMutex ipAddressMapLock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(ipAddressMapLock);
 static virHashTablePtr ipAddressMap;
 
 
@@ -55,7 +55,7 @@ virNWFilterIPAddrMapAddIPAddr(const char *ifname, char *addr)
 
     addrCopy = g_strdup(addr);
 
-    virMutexLock(&ipAddressMapLock);
+    G_LOCK(ipAddressMapLock);
 
     val = virHashLookup(ipAddressMap, ifname);
     if (!val) {
@@ -76,7 +76,7 @@ virNWFilterIPAddrMapAddIPAddr(const char *ifname, char *addr)
     ret = 0;
 
  cleanup:
-    virMutexUnlock(&ipAddressMapLock);
+    G_UNLOCK(ipAddressMapLock);
     VIR_FREE(addrCopy);
 
     return ret;
@@ -102,7 +102,7 @@ virNWFilterIPAddrMapDelIPAddr(const char *ifname, const char *ipaddr)
     int ret = -1;
     virNWFilterVarValuePtr val = NULL;
 
-    virMutexLock(&ipAddressMapLock);
+    G_LOCK(ipAddressMapLock);
 
     if (ipaddr != NULL) {
         val = virHashLookup(ipAddressMap, ifname);
@@ -121,7 +121,7 @@ virNWFilterIPAddrMapDelIPAddr(const char *ifname, const char *ipaddr)
         ret = 0;
     }
 
-    virMutexUnlock(&ipAddressMapLock);
+    G_UNLOCK(ipAddressMapLock);
 
     return ret;
 }
@@ -137,11 +137,11 @@ virNWFilterIPAddrMapGetIPAddr(const char *ifname)
 {
     virNWFilterVarValuePtr res;
 
-    virMutexLock(&ipAddressMapLock);
+    G_LOCK(ipAddressMapLock);
 
     res = virHashLookup(ipAddressMap, ifname);
 
-    virMutexUnlock(&ipAddressMapLock);
+    G_UNLOCK(ipAddressMapLock);
 
     return res;
 }
