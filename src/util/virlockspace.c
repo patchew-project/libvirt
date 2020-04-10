@@ -56,7 +56,7 @@ struct _virLockSpaceResource {
 
 struct _virLockSpace {
     char *dir;
-    virMutex lock;
+    GMutex lock;
 
     virHashTablePtr resources;
 };
@@ -244,12 +244,7 @@ virLockSpacePtr virLockSpaceNew(const char *directory)
     if (VIR_ALLOC(lockspace) < 0)
         return NULL;
 
-    if (virMutexInit(&lockspace->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize lockspace mutex"));
-        VIR_FREE(lockspace);
-        return NULL;
-    }
+    g_mutex_init(&lockspace->lock);
 
     lockspace->dir = g_strdup(directory);
 
@@ -295,12 +290,7 @@ virLockSpacePtr virLockSpaceNewPostExecRestart(virJSONValuePtr object)
     if (VIR_ALLOC(lockspace) < 0)
         return NULL;
 
-    if (virMutexInit(&lockspace->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize lockspace mutex"));
-        VIR_FREE(lockspace);
-        return NULL;
-    }
+    g_mutex_init(&lockspace->lock);
 
     if (!(lockspace->resources = virHashCreate(VIR_LOCKSPACE_TABLE_SIZE,
                                                virLockSpaceResourceDataFree)))
@@ -430,8 +420,7 @@ virJSONValuePtr virLockSpacePreExecRestart(virLockSpacePtr lockspace)
     virJSONValuePtr object = virJSONValueNewObject();
     virJSONValuePtr resources;
     virHashKeyValuePairPtr pairs = NULL, tmp;
-
-    virMutexLock(&lockspace->lock);
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     if (lockspace->dir &&
         virJSONValueObjectAppendString(object, "directory", lockspace->dir) < 0)
@@ -491,13 +480,11 @@ virJSONValuePtr virLockSpacePreExecRestart(virLockSpacePtr lockspace)
     }
     VIR_FREE(pairs);
 
-    virMutexUnlock(&lockspace->lock);
     return object;
 
  error:
     VIR_FREE(pairs);
     virJSONValueFree(object);
-    virMutexUnlock(&lockspace->lock);
     return NULL;
 }
 
@@ -509,7 +496,7 @@ void virLockSpaceFree(virLockSpacePtr lockspace)
 
     virHashFree(lockspace->resources);
     VIR_FREE(lockspace->dir);
-    virMutexDestroy(&lockspace->lock);
+    g_mutex_clear(&lockspace->lock);
     VIR_FREE(lockspace);
 }
 
@@ -525,10 +512,9 @@ int virLockSpaceCreateResource(virLockSpacePtr lockspace,
 {
     int ret = -1;
     char *respath = NULL;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     VIR_DEBUG("lockspace=%p resname=%s", lockspace, resname);
-
-    virMutexLock(&lockspace->lock);
 
     if (virHashLookup(lockspace->resources, resname) != NULL) {
         virReportError(VIR_ERR_RESOURCE_BUSY,
@@ -546,7 +532,6 @@ int virLockSpaceCreateResource(virLockSpacePtr lockspace,
     ret = 0;
 
  cleanup:
-    virMutexUnlock(&lockspace->lock);
     VIR_FREE(respath);
     return ret;
 }
@@ -557,10 +542,9 @@ int virLockSpaceDeleteResource(virLockSpacePtr lockspace,
 {
     int ret = -1;
     char *respath = NULL;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     VIR_DEBUG("lockspace=%p resname=%s", lockspace, resname);
-
-    virMutexLock(&lockspace->lock);
 
     if (virHashLookup(lockspace->resources, resname) != NULL) {
         virReportError(VIR_ERR_RESOURCE_BUSY,
@@ -583,7 +567,6 @@ int virLockSpaceDeleteResource(virLockSpacePtr lockspace,
     ret = 0;
 
  cleanup:
-    virMutexUnlock(&lockspace->lock);
     VIR_FREE(respath);
     return ret;
 }
@@ -594,8 +577,8 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
                                 pid_t owner,
                                 unsigned int flags)
 {
-    int ret = -1;
     virLockSpaceResourcePtr res;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     VIR_DEBUG("lockspace=%p resname=%s flags=0x%x owner=%lld",
               lockspace, resname, flags, (unsigned long long)owner);
@@ -603,38 +586,31 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
     virCheckFlags(VIR_LOCK_SPACE_ACQUIRE_SHARED |
                   VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE, -1);
 
-    virMutexLock(&lockspace->lock);
-
     if ((res = virHashLookup(lockspace->resources, resname))) {
         if ((res->flags & VIR_LOCK_SPACE_ACQUIRE_SHARED) &&
             (flags & VIR_LOCK_SPACE_ACQUIRE_SHARED)) {
 
             if (VIR_EXPAND_N(res->owners, res->nOwners, 1) < 0)
-                goto cleanup;
+                return -1;
             res->owners[res->nOwners-1] = owner;
 
-            goto done;
+            return 0;
         }
         virReportError(VIR_ERR_RESOURCE_BUSY,
                        _("Lockspace resource '%s' is locked"),
                        resname);
-        goto cleanup;
+        return -1;
     }
 
     if (!(res = virLockSpaceResourceNew(lockspace, resname, flags, owner)))
-        goto cleanup;
+        return -1;
 
     if (virHashAddEntry(lockspace->resources, resname, res) < 0) {
         virLockSpaceResourceFree(res);
-        goto cleanup;
+        return -1;
     }
 
- done:
-    ret = 0;
-
- cleanup:
-    virMutexUnlock(&lockspace->lock);
-    return ret;
+    return 0;
 }
 
 
@@ -642,20 +618,18 @@ int virLockSpaceReleaseResource(virLockSpacePtr lockspace,
                                 const char *resname,
                                 pid_t owner)
 {
-    int ret = -1;
     virLockSpaceResourcePtr res;
     size_t i;
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     VIR_DEBUG("lockspace=%p resname=%s owner=%lld",
               lockspace, resname, (unsigned long long)owner);
-
-    virMutexLock(&lockspace->lock);
 
     if (!(res = virHashLookup(lockspace->resources, resname))) {
         virReportError(VIR_ERR_RESOURCE_BUSY,
                        _("Lockspace resource '%s' is not locked"),
                        resname);
-        goto cleanup;
+        return -1;
     }
 
     for (i = 0; i < res->nOwners; i++) {
@@ -667,20 +641,16 @@ int virLockSpaceReleaseResource(virLockSpacePtr lockspace,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("owner %lld does not hold the resource lock"),
                        (unsigned long long)owner);
-        goto cleanup;
+        return -1;
     }
 
     VIR_DELETE_ELEMENT(res->owners, i, res->nOwners);
 
     if ((res->nOwners == 0) &&
         virHashRemoveEntry(lockspace->resources, resname) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virMutexUnlock(&lockspace->lock);
-    return ret;
+    return 0;
 }
 
 
@@ -726,26 +696,17 @@ virLockSpaceRemoveResourcesForOwner(const void *payload,
 int virLockSpaceReleaseResourcesForOwner(virLockSpacePtr lockspace,
                                          pid_t owner)
 {
-    int ret = 0;
     struct virLockSpaceRemoveData data = {
         owner, 0
     };
+    g_autoptr(GMutexLocker) locker = g_mutex_locker_new(&lockspace->lock);
 
     VIR_DEBUG("lockspace=%p owner=%lld", lockspace, (unsigned long long)owner);
-
-    virMutexLock(&lockspace->lock);
 
     if (virHashRemoveSet(lockspace->resources,
                          virLockSpaceRemoveResourcesForOwner,
                          &data) < 0)
-        goto error;
+        return -1;
 
-    ret = data.count;
-
-    virMutexUnlock(&lockspace->lock);
-    return ret;
-
- error:
-    virMutexUnlock(&lockspace->lock);
-    return -1;
+    return data.count;
 }
