@@ -35,12 +35,12 @@ probe library = process( %( $# > 0 %? @1 %: "/usr/lib/libvirt.so" %) )
     if (filter()) next
 }
 
-probe lock = library.function("virMutexLock")
+probe lock = library.function("g_mutex_lock")
 {
     lockname = usymdata($m)
 }
 
-probe unlock = library.function("virMutexUnlock")
+probe unlock = library.function("g_mutex_unlock")
 {
     lockname = usymdata($m)
 }

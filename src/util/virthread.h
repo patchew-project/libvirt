@@ -26,20 +26,6 @@
 
 #include <pthread.h>
 
-typedef struct virMutex virMutex;
-typedef virMutex *virMutexPtr;
-
-struct virMutex {
-    pthread_mutex_t lock;
-};
-
-typedef struct virCond virCond;
-typedef virCond *virCondPtr;
-
-struct virCond {
-    pthread_cond_t cond;
-};
-
 typedef struct virThreadLocal virThreadLocal;
 typedef virThreadLocal *virThreadLocalPtr;
 
@@ -61,11 +47,6 @@ struct virOnceControl {
     pthread_once_t once;
 };
 
-
-#define VIR_MUTEX_INITIALIZER \
-    { \
-        .lock = PTHREAD_MUTEX_INITIALIZER \
-    }
 
 #define VIR_ONCE_CONTROL_INITIALIZER \
     { \
@@ -116,28 +97,6 @@ unsigned long long virThreadID(virThreadPtr thread);
  */
 int virOnce(virOnceControlPtr once, virOnceFunc init)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_WARN_UNUSED_RESULT;
-
-int virMutexInit(virMutexPtr m) G_GNUC_WARN_UNUSED_RESULT;
-int virMutexInitRecursive(virMutexPtr m) G_GNUC_WARN_UNUSED_RESULT;
-void virMutexDestroy(virMutexPtr m);
-
-void virMutexLock(virMutexPtr m);
-void virMutexUnlock(virMutexPtr m);
-
-
-int virCondInit(virCondPtr c) G_GNUC_WARN_UNUSED_RESULT;
-int virCondDestroy(virCondPtr c);
-
-/* virCondWait, virCondWaitUntil:
- * These functions can return without the associated predicate
- * changing value. Therefore in nearly all cases they
- * should be enclosed in a while loop that checks the predicate.
- */
-int virCondWait(virCondPtr c, virMutexPtr m) G_GNUC_WARN_UNUSED_RESULT;
-int virCondWaitUntil(virCondPtr c, virMutexPtr m, unsigned long long whenms) G_GNUC_WARN_UNUSED_RESULT;
-
-void virCondSignal(virCondPtr c);
-void virCondBroadcast(virCondPtr c);
 
 
 typedef void (*virThreadLocalCleanup)(void *);

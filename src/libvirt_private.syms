@@ -3259,17 +3259,6 @@ virSystemdTerminateMachine;
 
 
 # util/virthread.h
-virCondBroadcast;
-virCondDestroy;
-virCondInit;
-virCondSignal;
-virCondWait;
-virCondWaitUntil;
-virMutexDestroy;
-virMutexInit;
-virMutexInitRecursive;
-virMutexLock;
-virMutexUnlock;
 virOnce;
 virThreadCancel;
 virThreadCreateFull;
