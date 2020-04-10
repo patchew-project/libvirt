@@ -50,13 +50,13 @@ static const char * const vmrun_candidates[] = {
 static void
 vmwareDriverLock(struct vmware_driver *driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 static void
 vmwareDriverUnlock(struct vmware_driver *driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 
@@ -211,8 +211,7 @@ vmwareConnectOpen(virConnectPtr conn,
         goto cleanup;
     }
 
-    if (virMutexInit(&driver->lock) < 0)
-        goto cleanup;
+    g_mutex_init(&driver->lock);
 
     if ((tmp = STRSKIP(conn->uri->scheme, "vmware")) == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, _("unable to parse URI "

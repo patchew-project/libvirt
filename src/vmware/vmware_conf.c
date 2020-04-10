@@ -52,7 +52,7 @@ vmwareFreeDriver(struct vmware_driver *driver)
     if (!driver)
         return;
 
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     virObjectUnref(driver->domains);
     virObjectUnref(driver->caps);
     virObjectUnref(driver->xmlopt);

@@ -41,7 +41,7 @@ enum vmwareDriverType {
 VIR_ENUM_DECL(vmwareDriver);
 
 struct vmware_driver {
-    virMutex lock;
+    GMutex lock;
     virCapsPtr caps;
     virDomainXMLOptionPtr xmlopt;
 
