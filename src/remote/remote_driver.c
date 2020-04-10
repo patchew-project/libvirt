@@ -116,7 +116,7 @@ VIR_ENUM_IMPL(remoteDriverMode,
 static bool inside_daemon;
 
 struct private_data {
-    virMutex lock;
+    GMutex lock;
 
     virNetClientPtr client;
     virNetClientProgramPtr remoteProgram;
@@ -147,12 +147,12 @@ enum {
 
 static void remoteDriverLock(struct private_data *driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 static void remoteDriverUnlock(struct private_data *driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 static int call(virConnectPtr conn, struct private_data *priv,
@@ -1393,12 +1393,7 @@ remoteAllocPrivateData(void)
     if (VIR_ALLOC(priv) < 0)
         return NULL;
 
-    if (virMutexInit(&priv->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize mutex"));
-        VIR_FREE(priv);
-        return NULL;
-    }
+    g_mutex_init(&priv->lock);
     remoteDriverLock(priv);
     priv->localUses = 1;
 
@@ -1561,7 +1556,7 @@ remoteConnectClose(virConnectPtr conn)
         ret = doRemoteClose(conn, priv);
         conn->privateData = NULL;
         remoteDriverUnlock(priv);
-        virMutexDestroy(&priv->lock);
+        g_mutex_clear(&priv->lock);
         VIR_FREE(priv);
     }
     if (priv)
