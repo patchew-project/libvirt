@@ -208,7 +208,7 @@ struct _vshControl {
     char *historydir;           /* readline history directory name */
     char *historyfile;          /* readline history file name */
     virThread eventLoop;
-    virMutex lock;
+    GMutex lock;
     bool eventLoopStarted;
     bool quit;
     int eventPipe[2];           /* Write-to-self pipe to end waiting for an

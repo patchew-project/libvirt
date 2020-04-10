@@ -414,11 +414,11 @@ virshDeinit(vshControl *ctl)
     if (ctl->eventLoopStarted) {
         int timer;
 
-        virMutexLock(&ctl->lock);
+        g_mutex_lock(&ctl->lock);
         ctl->quit = true;
         /* HACK: Add a dummy timeout to break event loop */
         timer = virEventAddTimeout(0, virshDeinitTimer, NULL, NULL);
-        virMutexUnlock(&ctl->lock);
+        g_mutex_unlock(&ctl->lock);
 
         virThreadJoin(&ctl->eventLoop);
 
@@ -431,7 +431,7 @@ virshDeinit(vshControl *ctl)
         ctl->eventLoopStarted = false;
     }
 
-    virMutexDestroy(&ctl->lock);
+    g_mutex_clear(&ctl->lock);
 
     return true;
 }
@@ -877,10 +877,7 @@ main(int argc, char **argv)
 #endif
     }
 
-    if (virMutexInit(&ctl->lock) < 0) {
-        vshError(ctl, "%s", _("Failed to initialize mutex"));
-        return EXIT_FAILURE;
-    }
+    g_mutex_init(&ctl->lock);
 
     if (virInitialize() < 0) {
         vshError(ctl, "%s", _("Failed to initialize libvirt"));

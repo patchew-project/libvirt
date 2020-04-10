@@ -1989,9 +1989,9 @@ vshEventLoop(void *opaque)
 
     while (1) {
         bool quit;
-        virMutexLock(&ctl->lock);
+        g_mutex_lock(&ctl->lock);
         quit = ctl->quit;
-        virMutexUnlock(&ctl->lock);
+        g_mutex_unlock(&ctl->lock);
 
         if (quit)
             break;
