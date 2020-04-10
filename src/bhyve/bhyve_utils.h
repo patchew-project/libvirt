@@ -44,7 +44,7 @@ struct _virBhyveDriverConfig {
 };
 
 struct _bhyveConn {
-    virMutex lock;
+    GMutex lock;
 
     virBhyveDriverConfigPtr config;
 

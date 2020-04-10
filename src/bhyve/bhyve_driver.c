@@ -73,13 +73,13 @@ bhyveConnPtr bhyve_driver = NULL;
 void
 bhyveDriverLock(bhyveConnPtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 
 void
 bhyveDriverUnlock(bhyveConnPtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }
 
 static int
@@ -1199,7 +1199,7 @@ bhyveStateCleanup(void)
     if (bhyve_driver->lockFD != -1)
         virPidFileRelease(BHYVE_STATE_DIR, "driver", bhyve_driver->lockFD);
 
-    virMutexDestroy(&bhyve_driver->lock);
+    g_mutex_clear(&bhyve_driver->lock);
     VIR_FREE(bhyve_driver);
 
     return 0;
@@ -1228,10 +1228,7 @@ bhyveStateInitialize(bool privileged,
         return VIR_DRV_STATE_INIT_ERROR;
 
     bhyve_driver->lockFD = -1;
-    if (virMutexInit(&bhyve_driver->lock) < 0) {
-        VIR_FREE(bhyve_driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&bhyve_driver->lock);
 
     if (!(bhyve_driver->closeCallbacks = virCloseCallbacksNew()))
         goto cleanup;
