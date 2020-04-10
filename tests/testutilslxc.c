@@ -63,12 +63,7 @@ testLXCDriverInit(void)
 {
     virLXCDriverPtr driver = g_new0(virLXCDriver, 1);
 
-    if (virMutexInit(&driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", "cannot initialize mutex");
-        g_free(driver);
-        return NULL;
-    }
+    g_mutex_init(&driver->lock);
 
     driver->caps = testLXCCapsInit();
     driver->xmlopt = lxcDomainXMLConfInit(driver);
@@ -82,7 +77,7 @@ testLXCDriverFree(virLXCDriverPtr driver)
 {
     virObjectUnref(driver->xmlopt);
     virObjectUnref(driver->caps);
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     g_free(driver);
 }
 

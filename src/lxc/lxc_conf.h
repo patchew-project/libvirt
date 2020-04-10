@@ -64,7 +64,7 @@ struct _virLXCDriverConfig {
 };
 
 struct _virLXCDriver {
-    virMutex lock;
+    GMutex lock;
 
     /* Require lock to get reference on 'config',
      * then lockless thereafter */
@@ -116,9 +116,9 @@ virDomainXMLOptionPtr lxcDomainXMLConfInit(virLXCDriverPtr driver);
 
 static inline void lxcDriverLock(virLXCDriverPtr driver)
 {
-    virMutexLock(&driver->lock);
+    g_mutex_lock(&driver->lock);
 }
 static inline void lxcDriverUnlock(virLXCDriverPtr driver)
 {
-    virMutexUnlock(&driver->lock);
+    g_mutex_unlock(&driver->lock);
 }

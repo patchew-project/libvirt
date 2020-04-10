@@ -161,12 +161,7 @@ virLXCControllerDriverNew(void)
 {
     virLXCDriverPtr driver = g_new0(virLXCDriver, 1);
 
-    if (virMutexInit(&driver->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("cannot initialize mutex"));
-        g_free(driver);
-        return NULL;
-    }
+    g_mutex_init(&driver->lock);
 
     driver->caps = virLXCDriverCapsInit(NULL);
     driver->xmlopt = lxcDomainXMLConfInit(driver);
@@ -182,7 +177,7 @@ virLXCControllerDriverFree(virLXCDriverPtr driver)
         return;
     virObjectUnref(driver->xmlopt);
     virObjectUnref(driver->caps);
-    virMutexDestroy(&driver->lock);
+    g_mutex_clear(&driver->lock);
     g_free(driver);
 }
 
@@ -1034,7 +1029,7 @@ static int lxcControllerClearCapabilities(void)
 }
 
 static bool wantReboot;
-static virMutex lock = VIR_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC(lock);
 
 
 static void virLXCControllerSignalChildIO(virNetDaemonPtr dmn,
@@ -1049,13 +1044,13 @@ static void virLXCControllerSignalChildIO(virNetDaemonPtr dmn,
     VIR_DEBUG("Got sig child %d vs %lld", ret, (long long)ctrl->initpid);
     if (ret == ctrl->initpid) {
         virNetDaemonQuit(dmn);
-        virMutexLock(&lock);
+        G_LOCK(lock);
         if (WIFSIGNALED(status) &&
             WTERMSIG(status) == SIGHUP) {
             VIR_DEBUG("Status indicates reboot");
             wantReboot = true;
         }
-        virMutexUnlock(&lock);
+        G_UNLOCK(lock);
     }
 }
 
@@ -1169,7 +1164,7 @@ static void virLXCControllerConsoleEPoll(int watch, int fd, int events, void *op
 {
     virLXCControllerConsolePtr console = opaque;
 
-    virMutexLock(&lock);
+    G_LOCK(lock);
     VIR_DEBUG("IO event watch=%d fd=%d events=%d fromHost=%zu fromcont=%zu",
               watch, fd, events,
               console->fromHostLen,
@@ -1209,14 +1204,14 @@ static void virLXCControllerConsoleEPoll(int watch, int fd, int events, void *op
     }
 
  cleanup:
-    virMutexUnlock(&lock);
+    G_UNLOCK(lock);
 }
 
 static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaque)
 {
     virLXCControllerConsolePtr console = opaque;
 
-    virMutexLock(&lock);
+    G_LOCK(lock);
     VIR_DEBUG("IO event watch=%d fd=%d events=%d fromHost=%zu fromcont=%zu",
               watch, fd, events,
               console->fromHostLen,
@@ -1290,7 +1285,7 @@ static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaqu
     }
 
     virLXCControllerConsoleUpdateWatch(console);
-    virMutexUnlock(&lock);
+    G_UNLOCK(lock);
     return;
 
  error:
@@ -1298,7 +1293,7 @@ static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaqu
     virEventRemoveHandle(console->hostWatch);
     console->contWatch = console->hostWatch = -1;
     virNetDaemonQuit(console->daemon);
-    virMutexUnlock(&lock);
+    G_UNLOCK(lock);
 }
 
 

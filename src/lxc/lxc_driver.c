@@ -1494,10 +1494,7 @@ static int lxcStateInitialize(bool privileged,
     if (VIR_ALLOC(lxc_driver) < 0)
         return VIR_DRV_STATE_INIT_ERROR;
     lxc_driver->lockFD = -1;
-    if (virMutexInit(&lxc_driver->lock) < 0) {
-        VIR_FREE(lxc_driver);
-        return VIR_DRV_STATE_INIT_ERROR;
-    }
+    g_mutex_init(&lxc_driver->lock);
 
     if (!(lxc_driver->domains = virDomainObjListNew()))
         goto cleanup;
@@ -1631,7 +1628,7 @@ static int lxcStateCleanup(void)
         virPidFileRelease(lxc_driver->config->stateDir, "driver", lxc_driver->lockFD);
 
     virObjectUnref(lxc_driver->config);
-    virMutexDestroy(&lxc_driver->lock);
+    g_mutex_clear(&lxc_driver->lock);
     VIR_FREE(lxc_driver);
 
     return 0;
