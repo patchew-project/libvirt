@@ -142,6 +142,10 @@ mymain(void)
     DO_TEST("dhcp6host-routed-network", dhcpv6);
     DO_TEST("ptr-domains-auto", dhcpv6);
     DO_TEST("dnsmasq-options", dhcpv6);
+    DO_TEST("leasetime-seconds", full);
+    DO_TEST("leasetime-minutes", full);
+    DO_TEST("leasetime-hours", full);
+    DO_TEST("leasetime-infinite", full);
 
     virObjectUnref(dhcpv6);
     virObjectUnref(full);
