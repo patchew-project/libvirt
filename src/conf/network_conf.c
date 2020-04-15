@@ -70,6 +70,14 @@ VIR_ENUM_IMPL(virNetworkTaint,
               "hook-script",
 );
 
+VIR_ENUM_IMPL(virNetworkDHCPLeaseTimeUnit,
+              VIR_NETWORK_DHCP_LEASETIME_UNIT_LAST,
+              "seconds",
+              "minutes",
+              "hours",
+              "infinite",
+);
+
 static virClassPtr virNetworkXMLOptionClass;
 
 static void
@@ -553,8 +561,49 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
 
 
 static int
+virNetworkDHCPLeaseTimeDefParseXML(virNetworkIPDefPtr def,
+                                   xmlNodePtr node,
+                                   xmlXPathContextPtr ctxt)
+{
+    g_autofree char *leasetime = NULL, *leaseunit = NULL;
+
+    if (!(leaseunit = virXMLPropString(node, "unit")))
+        def->leaseunit = VIR_NETWORK_DHCP_LEASETIME_UNIT_SECONDS;
+    else
+        def->leaseunit = virNetworkDHCPLeaseTimeUnitTypeFromString(leaseunit);
+
+    if (def->leaseunit == VIR_NETWORK_DHCP_LEASETIME_UNIT_INFINITE)
+        return 0;
+
+    if (!(leasetime = virXPathString("string(./dhcp/leasetime)", ctxt)))
+        return -1;
+
+    if (virStrToLong_ul(leasetime, NULL, 10, &def->leasetime) < 0)
+        return -1;
+
+    /* This boundary check is related to dnsmasq man page settings:
+     * "The minimum lease time is two minutes." */
+    if ((def->leaseunit == VIR_NETWORK_DHCP_LEASETIME_UNIT_SECONDS &&
+         def->leasetime < 120) ||
+        (def->leaseunit == VIR_NETWORK_DHCP_LEASETIME_UNIT_MINUTES &&
+         def->leasetime < 2)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("The minimum lease time should be greater "
+                         "than 2 minutes"));
+        return -1;
+    }
+
+    if (def->leasetime > 0)
+        return 0;
+
+    return -1;
+}
+
+
+static int
 virNetworkDHCPDefParseXML(const char *networkName,
                           xmlNodePtr node,
+                          xmlXPathContextPtr ctxt,
                           virNetworkIPDefPtr def)
 {
     int ret = -1;
@@ -583,7 +632,11 @@ virNetworkDHCPDefParseXML(const char *networkName,
                 goto cleanup;
             if (VIR_APPEND_ELEMENT(def->hosts, def->nhosts, host) < 0)
                 goto cleanup;
+        } else if (cur->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(cur, "leasetime")) {
 
+            if (virNetworkDHCPLeaseTimeDefParseXML(def, cur, ctxt) < 0)
+                goto cleanup;
         } else if (VIR_SOCKET_ADDR_IS_FAMILY(&def->address, AF_INET) &&
                    cur->type == XML_ELEMENT_NODE &&
                    virXMLNodeNameEqual(cur, "bootp")) {
@@ -1143,7 +1196,7 @@ virNetworkIPDefParseXML(const char *networkName,
     }
 
     if ((dhcp = virXPathNode("./dhcp[1]", ctxt)) &&
-        virNetworkDHCPDefParseXML(networkName, dhcp, def) < 0)
+        virNetworkDHCPDefParseXML(networkName, dhcp, ctxt, def) < 0)
         goto cleanup;
 
     if (virXPathNode("./tftp[1]", ctxt)) {
@@ -2342,6 +2395,13 @@ virNetworkIPDefFormat(virBufferPtr buf,
             }
             virBufferAddLit(buf, "/>\n");
 
+        }
+        if (def->leaseunit == VIR_NETWORK_DHCP_LEASETIME_UNIT_INFINITE) {
+            virBufferAddLit(buf, "<leasetime unit='infinite'/>\n");
+        } else if (def->leasetime) {
+            virBufferAsprintf(buf, "<leasetime unit='%s'>%lu</leasetime>\n",
+                              virNetworkDHCPLeaseTimeUnitTypeToString(def->leaseunit),
+                              def->leasetime);
         }
 
         virBufferAdjustIndent(buf, -2);

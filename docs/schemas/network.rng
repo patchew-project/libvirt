@@ -398,6 +398,17 @@
                         </optional>
                       </element>
                     </optional>
+                    <optional>
+                      <element name="leasetime">
+                        <optional>
+                          <attribute name="unit"><ref name="leaseUnit"/></attribute>
+                        </optional>
+                        <choice>
+                          <data type="unsignedLong"/>
+                          <empty/>
+                        </choice>
+                      </element>
+                    </optional>
                   </interleave>
                 </element>
               </optional>

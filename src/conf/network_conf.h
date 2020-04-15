@@ -80,6 +80,17 @@ typedef enum {
     VIR_NETWORK_FORWARD_HOSTDEV_DEVICE_LAST,
 } virNetworkForwardHostdevDeviceType;
 
+typedef enum {
+    VIR_NETWORK_DHCP_LEASETIME_UNIT_SECONDS = 0,
+    VIR_NETWORK_DHCP_LEASETIME_UNIT_MINUTES,
+    VIR_NETWORK_DHCP_LEASETIME_UNIT_HOURS,
+    VIR_NETWORK_DHCP_LEASETIME_UNIT_INFINITE,
+
+    VIR_NETWORK_DHCP_LEASETIME_UNIT_LAST,
+} virNetworkDHCPLeaseTimeUnitType;
+
+VIR_ENUM_DECL(virNetworkDHCPLeaseTimeUnit);
+
 /* The backend driver used for devices from the pool. Currently used
  * only for PCI devices (vfio vs. kvm), but could be used for other
  * device types in the future.
@@ -175,6 +186,9 @@ struct _virNetworkIPDef {
 
     size_t nhosts;              /* Zero or more dhcp hosts */
     virNetworkDHCPHostDefPtr hosts;
+
+    unsigned long leasetime;
+    virNetworkDHCPLeaseTimeUnitType leaseunit;
 
     char *tftproot;
     char *bootfile;

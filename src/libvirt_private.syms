@@ -770,6 +770,8 @@ virNetworkDefParseNode;
 virNetworkDefParseString;
 virNetworkDefParseXML;
 virNetworkDefUpdateSection;
+virNetworkDHCPLeaseTimeUnitTypeFromString;
+virNetworkDHCPLeaseTimeUnitTypeToString;
 virNetworkForwardTypeToString;
 virNetworkIPDefNetmask;
 virNetworkIPDefPrefix;

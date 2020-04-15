@@ -966,6 +966,27 @@ static int networkConnectIsAlive(virConnectPtr conn G_GNUC_UNUSED)
 }
 
 
+static char *
+networkBuildDnsmasqLeaseTime(virNetworkIPDefPtr ipdef)
+{
+    char *leasetime = NULL;
+    const char *unit;
+    g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
+
+    if (ipdef->leaseunit == VIR_NETWORK_DHCP_LEASETIME_UNIT_INFINITE) {
+        virBufferAddLit(&buf, "infinite");
+    } else if (ipdef->leasetime) {
+        unit = virNetworkDHCPLeaseTimeUnitTypeToString(ipdef->leaseunit);
+        /* We get only first compatible char from string: 's', 'm' or 'h' */
+        virBufferAsprintf(&buf, "%lu%c", ipdef->leasetime, unit[0]);
+    }
+
+    leasetime = virBufferContentAndReset(&buf);
+
+    return leasetime;
+}
+
+
 /* the following does not build a file, it builds a list
  * which is later saved into a file
  */
@@ -975,6 +996,9 @@ networkBuildDnsmasqDhcpHostsList(dnsmasqContext *dctx,
 {
     size_t i;
     bool ipv6 = false;
+    g_autofree char *leasetime = NULL;
+
+    leasetime = networkBuildDnsmasqLeaseTime(ipdef);
 
     if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6))
         ipv6 = true;
@@ -982,7 +1006,8 @@ networkBuildDnsmasqDhcpHostsList(dnsmasqContext *dctx,
         virNetworkDHCPHostDefPtr host = &(ipdef->hosts[i]);
         if (VIR_SOCKET_ADDR_VALID(&host->ip))
             if (dnsmasqAddDhcpHost(dctx, host->mac, &host->ip,
-                                   host->name, host->id, ipv6) < 0)
+                                   host->name, host->id, leasetime,
+                                   ipv6) < 0)
                 return -1;
     }
 
@@ -1381,13 +1406,14 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
         }
         for (r = 0; r < ipdef->nranges; r++) {
             int thisRange;
+            g_autofree char *leasetime = NULL;
 
             if (!(saddr = virSocketAddrFormat(&ipdef->ranges[r].start)) ||
                 !(eaddr = virSocketAddrFormat(&ipdef->ranges[r].end)))
                 goto cleanup;
 
             if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6)) {
-               virBufferAsprintf(&configbuf, "dhcp-range=%s,%s,%d\n",
+               virBufferAsprintf(&configbuf, "dhcp-range=%s,%s,%d",
                                  saddr, eaddr, prefix);
             } else {
                 /* IPv4 - dnsmasq requires a netmask rather than prefix */
@@ -1404,9 +1430,14 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
 
                 if (!(netmaskStr = virSocketAddrFormat(&netmask)))
                     goto cleanup;
-                virBufferAsprintf(&configbuf, "dhcp-range=%s,%s,%s\n",
+                virBufferAsprintf(&configbuf, "dhcp-range=%s,%s,%s",
                                   saddr, eaddr, netmaskStr);
             }
+
+            if ((leasetime = networkBuildDnsmasqLeaseTime(ipdef)))
+                virBufferAsprintf(&configbuf, ",%s", leasetime);
+
+            virBufferAddLit(&configbuf, "\n");
 
             VIR_FREE(saddr);
             VIR_FREE(eaddr);
