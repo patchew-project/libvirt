@@ -1345,7 +1345,7 @@ blockpull
 
 .. code-block::
 
-   blockpull domain path [bandwidth] [--bytes] [base]
+   blockpull domain path { [bandwidth [--bytes] [base]] | [--bandwidth [--bytes]] [--base] }
       [--wait [--verbose] [--timeout seconds] [--async]]
       [--keep-relative]
 
@@ -1353,7 +1353,7 @@ Populate a disk from its backing image chain. By default, this command
 flattens the entire chain; but if *base* is specified, containing the
 name of one of the backing files in the chain, then that file becomes
 the new backing file and only the intermediate portion of the chain is
-pulled.  Once all requested data from the backing image chain has been
+pulled. Once all requested data from the backing image chain has been
 pulled, the disk no longer depends on that portion of the backing chain.
 
 By default, this command returns as soon as possible, and data for
@@ -1367,16 +1367,23 @@ is triggered, *--async* will return control to the user as fast as
 possible, otherwise the command may continue to block a little while
 longer until the job is done cleaning up.
 
-Using the *--keep-relative* flag will keep the backing chain names
-relative.
-
 *path* specifies fully-qualified path of the disk; it corresponds
 to a unique target name (<target dev='name'/>) or source file (<source
 file='name'/>) for one of the disk devices attached to *domain* (see
 also ``domblklist`` for listing these names).
+
 *bandwidth* specifies copying bandwidth limit in MiB/s. For further information
 on the *bandwidth* argument see the corresponding section for the ``blockjob``
-command.
+command. Using *--bytes* flag indicates the value in *bandwidth* is given in
+bytes.
+
+*base* specifies fully-qualified path of the backing file; it corresponds
+to a unique indexed target name 'name[i]' (<target dev='name'/>..
+<backingStore index='i'/>) or source file 'name' (<source file='name'/>).
+
+Using the *--keep-relative* flag will keep the backing chain names
+relative (details on `https://www.libvirt.org/kbase/backing_chains.html
+<https://www.libvirt.org/kbase/backing_chains.html>`__).
 
 
 blockresize
