@@ -176,14 +176,14 @@ In the simplest case, the following XML snippet
     <model name='pci-bridge'/>
     <target chassisNr='1'/>
     <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0'>
-      <zpci uid='0x0002' fid='0x00000001'/>
+      <zpci uid='0x0001' fid='0x00000000'/>
     </address>
   </controller>
   <interface type='bridge'>
     <source bridge='virbr0'/>
     <model type='virtio'/>
     <address type='pci' domain='0x0000' bus='0x01' slot='0x01' function='0x0'>
-      <zpci uid='0x0001' fid='0x00000000'/>
+      <zpci uid='0x0007' fid='0x00000003'/>
     </address>
   </interface>
 
@@ -191,21 +191,22 @@ will result in the following in a Linux guest:
 
 ::
 
-  0001:00:00.0 Ethernet controller: Red Hat, Inc. Virtio network device
+  0007:00:00.0 Ethernet controller: Red Hat, Inc. Virtio network device
 
 Note that the PCI bridge is not visible in the guest; s390x always has a flat
-topology.
+topology. Also ``fid`` does not define slot or function of the PCI address.
 
 Neither are any changes in the PCI address visible in the guest; replacing
 the PCI address for the ``virtio-net`` device with
 
 ::
 
-  <address type='pci' domain='0x0000' bus='0x01' slot='0x07' function='0x3'>
+  <address type='pci' domain='0x0000' bus='0x01' slot='0x06' function='0x4'>
 
 will result in the exactly same view in the guest, as the addresses there
-are generated from the information provided via the ``zpci`` element (in
-fact, from the ``uid``).
+are generated from the information provided via the ``zpci`` element:
+the ``uid`` is used as PCI domain, and the ``fid`` is used as the PCI devices
+slot in the sysfs.
 
 
 Device assignment
