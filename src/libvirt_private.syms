@@ -582,6 +582,7 @@ virDomainRNGModelTypeToString;
 virDomainRNGRemove;
 virDomainRunningReasonTypeFromString;
 virDomainRunningReasonTypeToString;
+virDomainSBBCTypeToString;
 virDomainSCSIDriveAddressIsUsed;
 virDomainSeclabelTypeFromString;
 virDomainSeclabelTypeToString;

@@ -174,6 +174,7 @@ VIR_ENUM_IMPL(virDomainFeature,
               "msrs",
               "ccf-assist",
               "cfpc",
+              "sbbc",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy,
@@ -1254,6 +1255,14 @@ VIR_ENUM_IMPL(virDomainOsDefFirmware,
 
 VIR_ENUM_IMPL(virDomainCFPC,
               VIR_DOMAIN_CFPC_LAST,
+              "none",
+              "broken",
+              "workaround",
+              "fixed",
+);
+
+VIR_ENUM_IMPL(virDomainSBBC,
+              VIR_DOMAIN_SBBC_LAST,
               "none",
               "broken",
               "workaround",
@@ -20985,6 +20994,20 @@ virDomainDefParseXML(xmlDocPtr xml,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_SBBC:
+            tmp = virXMLPropString(nodes[i], "value");
+            if (tmp) {
+                int value = virDomainSBBCTypeFromString(tmp);
+                if (value < 0 || value == VIR_DOMAIN_SBBC_NONE) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Unknown value: %s"),
+                                   tmp);
+                    goto error;
+                }
+                def->features[val] = value;
+                VIR_FREE(tmp);
+            }
+            break;
 
         case VIR_DOMAIN_FEATURE_HTM:
         case VIR_DOMAIN_FEATURE_NESTED_HV:
@@ -23299,6 +23322,18 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                featureName,
                                "value", virDomainCFPCTypeToString(src->features[i]),
                                "value", virDomainCFPCTypeToString(dst->features[i]));
+                return false;
+            }
+            break;
+
+        case VIR_DOMAIN_FEATURE_SBBC:
+            if (src->features[i] != dst->features[i]) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("State of feature '%s' differs: "
+                                 "source: '%s=%s', destination: '%s=%s'"),
+                               featureName,
+                               "value", virDomainSBBCTypeToString(src->features[i]),
+                               "value", virDomainSBBCTypeToString(dst->features[i]));
                 return false;
             }
             break;
@@ -29067,6 +29102,14 @@ virDomainDefFormatFeatures(virBufferPtr buf,
 
             virBufferAsprintf(&childBuf, "<cfpc value='%s'/>\n",
                               virDomainCFPCTypeToString(def->features[i]));
+            break;
+
+        case VIR_DOMAIN_FEATURE_SBBC:
+            if (def->features[i] == VIR_DOMAIN_SBBC_NONE)
+                break;
+
+            virBufferAsprintf(&childBuf, "<sbbc value='%s'/>\n",
+                              virDomainSBBCTypeToString(def->features[i]));
             break;
 
         /* coverity[dead_error_begin] */

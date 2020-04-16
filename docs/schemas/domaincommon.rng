@@ -5433,6 +5433,9 @@
           <optional>
             <ref name="cfpc"/>
           </optional>
+          <optional>
+            <ref name="sbbc"/>
+          </optional>
         </interleave>
       </element>
     </optional>
@@ -5694,6 +5697,18 @@
 
   <define name="cfpc">
     <element name="cfpc">
+      <attribute name="value">
+        <choice>
+          <value>broken</value>
+          <value>workaround</value>
+          <value>fixed</value>
+        </choice>
+      </attribute>
+    </element>
+  </define>
+
+  <define name="sbbc">
+    <element name="sbbc">
       <attribute name="value">
         <choice>
           <value>broken</value>
