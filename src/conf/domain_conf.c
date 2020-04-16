@@ -173,6 +173,7 @@ VIR_ENUM_IMPL(virDomainFeature,
               "nested-hv",
               "msrs",
               "ccf-assist",
+              "cfpc",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy,
@@ -1249,6 +1250,14 @@ VIR_ENUM_IMPL(virDomainOsDefFirmware,
               "none",
               "bios",
               "efi",
+);
+
+VIR_ENUM_IMPL(virDomainCFPC,
+              VIR_DOMAIN_CFPC_LAST,
+              "none",
+              "broken",
+              "workaround",
+              "fixed",
 );
 
 /* Internal mapping: subset of block job types that can be present in
@@ -20961,6 +20970,22 @@ virDomainDefParseXML(xmlDocPtr xml,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_CFPC:
+            tmp = virXMLPropString(nodes[i], "value");
+            if (tmp) {
+                int value = virDomainCFPCTypeFromString(tmp);
+                if (value < 0 || value == VIR_DOMAIN_CFPC_NONE) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Unknown value: %s"),
+                                   tmp);
+                    goto error;
+                }
+                def->features[val] = value;
+                VIR_FREE(tmp);
+            }
+            break;
+
+
         case VIR_DOMAIN_FEATURE_HTM:
         case VIR_DOMAIN_FEATURE_NESTED_HV:
         case VIR_DOMAIN_FEATURE_CCF_ASSIST:
@@ -23262,6 +23287,18 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                featureName,
                                "driver", virDomainIOAPICTypeToString(src->features[i]),
                                "driver", virDomainIOAPICTypeToString(dst->features[i]));
+                return false;
+            }
+            break;
+
+        case VIR_DOMAIN_FEATURE_CFPC:
+            if (src->features[i] != dst->features[i]) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("State of feature '%s' differs: "
+                                 "source: '%s=%s', destination: '%s=%s'"),
+                               featureName,
+                               "value", virDomainCFPCTypeToString(src->features[i]),
+                               "value", virDomainCFPCTypeToString(dst->features[i]));
                 return false;
             }
             break;
@@ -29022,6 +29059,14 @@ virDomainDefFormatFeatures(virBufferPtr buf,
 
             virBufferAsprintf(&childBuf, "<msrs unknown='%s'/>\n",
                               virDomainMsrsUnknownTypeToString(def->msrs_features[VIR_DOMAIN_MSRS_UNKNOWN]));
+            break;
+
+        case VIR_DOMAIN_FEATURE_CFPC:
+            if (def->features[i] == VIR_DOMAIN_CFPC_NONE)
+                break;
+
+            virBufferAsprintf(&childBuf, "<cfpc value='%s'/>\n",
+                              virDomainCFPCTypeToString(def->features[i]));
             break;
 
         /* coverity[dead_error_begin] */

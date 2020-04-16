@@ -1814,6 +1814,7 @@ typedef enum {
     VIR_DOMAIN_FEATURE_NESTED_HV,
     VIR_DOMAIN_FEATURE_MSRS,
     VIR_DOMAIN_FEATURE_CCF_ASSIST,
+    VIR_DOMAIN_FEATURE_CFPC,
 
     VIR_DOMAIN_FEATURE_LAST
 } virDomainFeature;
@@ -1969,6 +1970,17 @@ typedef enum {
 } virDomainHPTResizing;
 
 VIR_ENUM_DECL(virDomainHPTResizing);
+
+typedef enum {
+    VIR_DOMAIN_CFPC_NONE = 0,
+    VIR_DOMAIN_CFPC_BROKEN,
+    VIR_DOMAIN_CFPC_WORKAROUND,
+    VIR_DOMAIN_CFPC_FIXED,
+
+    VIR_DOMAIN_CFPC_LAST
+} virDomainCFPC;
+
+VIR_ENUM_DECL(virDomainCFPC);
 
 /* Operating system configuration data & machine / arch */
 struct _virDomainOSEnv {
