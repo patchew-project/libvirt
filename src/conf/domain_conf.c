@@ -175,6 +175,7 @@ VIR_ENUM_IMPL(virDomainFeature,
               "ccf-assist",
               "cfpc",
               "sbbc",
+              "ibs",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy,
@@ -1267,6 +1268,16 @@ VIR_ENUM_IMPL(virDomainSBBC,
               "broken",
               "workaround",
               "fixed",
+);
+
+VIR_ENUM_IMPL(virDomainIBS,
+              VIR_DOMAIN_IBS_LAST,
+              "none",
+              "broken",
+              "workaround",
+              "fixed-ibs",
+              "fixed-ccd",
+              "fixed-na",
 );
 
 /* Internal mapping: subset of block job types that can be present in
@@ -21009,6 +21020,21 @@ virDomainDefParseXML(xmlDocPtr xml,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_IBS:
+            tmp = virXMLPropString(nodes[i], "value");
+            if (tmp) {
+                int value = virDomainIBSTypeFromString(tmp);
+                if (value < 0 || value == VIR_DOMAIN_IBS_NONE) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Unknown value: %s"),
+                                   tmp);
+                    goto error;
+                }
+                def->features[val] = value;
+                VIR_FREE(tmp);
+            }
+            break;
+
         case VIR_DOMAIN_FEATURE_HTM:
         case VIR_DOMAIN_FEATURE_NESTED_HV:
         case VIR_DOMAIN_FEATURE_CCF_ASSIST:
@@ -23334,6 +23360,18 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                featureName,
                                "value", virDomainSBBCTypeToString(src->features[i]),
                                "value", virDomainSBBCTypeToString(dst->features[i]));
+                return false;
+            }
+            break;
+
+        case VIR_DOMAIN_FEATURE_IBS:
+            if (src->features[i] != dst->features[i]) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("State of feature '%s' differs: "
+                                 "source: '%s=%s', destination: '%s=%s'"),
+                               featureName,
+                               "value", virDomainIBSTypeToString(src->features[i]),
+                               "value", virDomainIBSTypeToString(dst->features[i]));
                 return false;
             }
             break;
@@ -29110,6 +29148,14 @@ virDomainDefFormatFeatures(virBufferPtr buf,
 
             virBufferAsprintf(&childBuf, "<sbbc value='%s'/>\n",
                               virDomainSBBCTypeToString(def->features[i]));
+            break;
+
+        case VIR_DOMAIN_FEATURE_IBS:
+            if (def->features[i] == VIR_DOMAIN_IBS_NONE)
+                break;
+
+            virBufferAsprintf(&childBuf, "<ibs value='%s'/>\n",
+                              virDomainIBSTypeToString(def->features[i]));
             break;
 
         /* coverity[dead_error_begin] */
