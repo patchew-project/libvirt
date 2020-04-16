@@ -574,6 +574,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "virtio.packed",
               "pcie-root-port.hotplug",
               "machine.pseries.cap-cfpc",
+              "machine.pseries.cap-sbbc",
     );
 
 
@@ -1617,6 +1618,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsMachinePropsPSeries[] = {
     { "cap-nested-hv", QEMU_CAPS_MACHINE_PSERIES_CAP_NESTED_HV },
     { "cap-ccf-assist", QEMU_CAPS_MACHINE_PSERIES_CAP_CCF_ASSIST },
     { "cap-cfpc", QEMU_CAPS_MACHINE_PSERIES_CAP_CFPC },
+    { "cap-sbbc", QEMU_CAPS_MACHINE_PSERIES_CAP_SBBC },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsMachinePropsVirt[] = {
