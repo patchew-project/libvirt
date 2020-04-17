@@ -8419,6 +8419,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     g_autofree char *managed = NULL;
+    g_autofree char *permissive = NULL;
     g_autofree char *sgio = NULL;
     g_autofree char *rawio = NULL;
     g_autofree char *backendStr = NULL;
@@ -8433,6 +8434,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      */
     if ((managed = virXMLPropString(node, "managed")) != NULL)
         ignore_value(virStringParseYesNo(managed, &def->managed));
+
+    if ((permissive = virXMLPropString(node, "permissive")) != NULL) {
+        if (STREQ(permissive, "yes"))
+            def->permissive = true;
+    }
 
     sgio = virXMLPropString(node, "sgio");
     rawio = virXMLPropString(node, "rawio");
@@ -25946,6 +25952,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
         virDomainHostdevDefPtr hostdef = virDomainNetGetActualHostdev(def);
         if  (hostdef && hostdef->managed)
             virBufferAddLit(buf, " managed='yes'");
+        if  (hostdef && hostdef->permissive)
+            virBufferAddLit(buf, " permissive='yes'");
     }
     if (def->trustGuestRxFilters)
         virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
@@ -26134,6 +26142,8 @@ virDomainNetDefFormat(virBufferPtr buf,
     virBufferAsprintf(buf, "<interface type='%s'", typeStr);
     if (hostdef && hostdef->managed)
         virBufferAddLit(buf, " managed='yes'");
+    if (hostdef && hostdef->permissive)
+        virBufferAddLit(buf, " permissive='yes'");
     if (def->trustGuestRxFilters)
         virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                           virTristateBoolTypeToString(def->trustGuestRxFilters));
@@ -27918,6 +27928,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
         virBufferAsprintf(buf, " managed='%s'",
                           def->managed ? "yes" : "no");
+        if (def->permissive)
+            virBufferAddLit(buf, " permissive='yes'");
 
         if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
             scsisrc->sgio)

@@ -5055,6 +5055,9 @@
             or hot-plugging the device and <code>virNodeDeviceReAttach</code>
             (or <code>virsh nodedev-reattach</code>) after hot-unplug or
             stopping the guest.
+            When <code>permissive</code> is "yes" the pci config space access
+            will not be filtered. This might be a security issue. The default
+            is "no".
           </dd>
           <dt><code>scsi</code></dt>
           <dd>For SCSI devices, user is responsible to make sure the device
