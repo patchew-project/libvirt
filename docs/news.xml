@@ -56,6 +56,15 @@
           hotplug/unplug attempts, but this is often undesireable).
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: support io mode io_uring to libvirt
+        </summary>
+        <description>
+          From Linux 5.1 and QEMU 5.0.0, the io_uring aio interface was
+          introduced. Implement that to libvirt with the io value 'io_uring'.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
