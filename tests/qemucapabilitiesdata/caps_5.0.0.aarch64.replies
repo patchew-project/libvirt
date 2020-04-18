@@ -19327,7 +19327,8 @@
       "meta-type": "enum",
       "values": [
         "threads",
-        "native"
+        "native",
+        "io_uring"
       ]
     },
     {
