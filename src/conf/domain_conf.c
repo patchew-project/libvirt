@@ -361,6 +361,7 @@ VIR_ENUM_IMPL(virDomainDiskIo,
               "default",
               "native",
               "threads",
+              "io_uring",
 );
 
 VIR_ENUM_IMPL(virDomainDeviceSGIO,
