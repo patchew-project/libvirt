@@ -3680,11 +3680,3094 @@
 }
 
 {
+  "execute": "qom-list-types",
+  "id": "libvirt-7"
+}
+
+{
+  "return": [
+    {
+      "name": "scsi-hd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "chardev-parallel",
+      "parent": "chardev"
+    },
+    {
+      "name": "vhost-vsock-pci",
+      "parent": "vhost-vsock-pci-base"
+    },
+    {
+      "name": "pxa270-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "qio-channel-tls",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "virtio-input-host-pci-non-transitional",
+      "parent": "virtio-input-host-pci-base"
+    },
+    {
+      "name": "digic",
+      "parent": "device"
+    },
+    {
+      "name": "pxa270-a1-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "imx7.analog",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mv88w8618_flashcfg",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "at25df641",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "chardev-null",
+      "parent": "chardev"
+    },
+    {
+      "name": "usb-bot",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "lm3s811evb-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "mx25l3205d",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "bcm2835-property",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pxa2xx-pcmcia",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "canon-a1100-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "aspeed.wdt",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "qemu-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "n25q512a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "lsi53c895a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pr-manager-helper",
+      "parent": "pr-manager"
+    },
+    {
+      "name": "cpu-cluster",
+      "parent": "device"
+    },
+    {
+      "name": "virtio-keyboard-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "imx2.wdt",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virt-3.1-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "mx25l6405d",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "chardev-pty",
+      "parent": "chardev"
+    },
+    {
+      "name": "w25q256",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25fl064k",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "musicpal_gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-scsi-pci-non-transitional",
+      "parent": "vhost-scsi-pci-base"
+    },
+    {
+      "name": "ide-hd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "virtio-net-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "virtio-9p-pci-non-transitional",
+      "parent": "virtio-9p-pci-base"
+    },
+    {
+      "name": "tz-mpc-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "aspeed.smc.smc",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "n25q00",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "iotkit-secctl",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cortex-r5-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "filter-redirector",
+      "parent": "netfilter"
+    },
+    {
+      "name": "xlnx-zcu102-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "vexpress-a15-machine",
+      "parent": "vexpress"
+    },
+    {
+      "name": "gpex-pcihost",
+      "parent": "pcie-host-bridge"
+    },
+    {
+      "name": "at45db081d",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "en25p32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "imx7.gpt",
+      "parent": "imx25.gpt"
+    },
+    {
+      "name": "imx7.gpr",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pxa2xx-i2c-slave",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "cortex-m0-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "ftgmac100",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "filter-rewriter",
+      "parent": "netfilter"
+    },
+    {
+      "name": "loader",
+      "parent": "device"
+    },
+    {
+      "name": "arm946-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "pxa270-b0-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "m25pe80",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "iotkit",
+      "parent": "arm-sse"
+    },
+    {
+      "name": "s25fl256s1",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25fl256s0",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virtio-serial-pci",
+      "parent": "virtio-serial-pci-base"
+    },
+    {
+      "name": "platform-bus-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pcie-root-port",
+      "parent": "pcie-root-port-base"
+    },
+    {
+      "name": "iotkit-sysinfo",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mt25qu01g",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virtio-crypto-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "usb-host",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ich9-usb-uhci1",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "tls-creds-anon",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "xlnx,ps7-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci6",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "usb-bt-dongle",
+      "parent": "usb-device"
+    },
+    {
+      "name": "s25fl129p1",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25fl129p0",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "usb-mtp",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ich9-usb-uhci5",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci3",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "kvm-arm-gicv3",
+      "parent": "arm-gicv3-common"
+    },
+    {
+      "name": "virtio-input-host-pci",
+      "parent": "virtio-input-host-pci-base"
+    },
+    {
+      "name": "mcimx6ul-evk-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "SSI",
+      "parent": "bus"
+    },
+    {
+      "name": "ich9-usb-uhci4",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "e1000",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "xlnx.axi-dma",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "s25sl12801",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25sl12800",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "lan9118",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pxa2xx_rtc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xlnx,zynq-xadc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ich9-usb-uhci2",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "cortex-m4-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "sysbus-ahci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "kvm-arm-gic",
+      "parent": "arm_gic_common"
+    },
+    {
+      "name": "imx.fec",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "rtl8139",
+      "parent": "pci-device"
+    },
+    {
+      "name": "tls-creds-psk",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "platform-ehci-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "spitz-lcdtg",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "tpci200",
+      "parent": "pci-device"
+    },
+    {
+      "name": "memory-backend-file",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "stm32f2xx-usart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "max-arm-cpu",
+      "parent": "aarch64-cpu"
+    },
+    {
+      "name": "cortex-m3-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "s25sl064p",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "xlnx.pmu_io_intc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "exynos4210.i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "stm32f2xx-syscfg",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mps2-an521-machine",
+      "parent": "mps2tz"
+    },
+    {
+      "name": "chardev-hci",
+      "parent": "chardev"
+    },
+    {
+      "name": "container",
+      "parent": "object"
+    },
+    {
+      "name": "armsse-mhu",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "s25sl064a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "vexpress-a9-machine",
+      "parent": "vexpress"
+    },
+    {
+      "name": "usb-chipidea",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "megasas",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "corgi-ssp",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "pxa2xx-fir",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-balloon-pci-non-transitional",
+      "parent": "virtio-balloon-pci-base"
+    },
+    {
+      "name": "designware-pcie-host",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "scsi-block",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "mx66u1g45g",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "omap-intc",
+      "parent": "common-omap-intc"
+    },
+    {
+      "name": "unimplemented-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx31.gpt",
+      "parent": "imx25.gpt"
+    },
+    {
+      "name": "strongarm_pic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "max7310",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "sst25wf512",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "scsi-cd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "usb-audio",
+      "parent": "usb-device"
+    },
+    {
+      "name": "accel",
+      "parent": "object"
+    },
+    {
+      "name": "microbit.i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m45pe80",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pxa270-b1-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "pxa2xx-dma",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xlnx.axi-ethernet",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vmware-svga",
+      "parent": "pci-device"
+    },
+    {
+      "name": "imx.gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-input-host-pci-transitional",
+      "parent": "virtio-input-host-pci-base"
+    },
+    {
+      "name": "virtio-serial-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "integrator_debug",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "tegra2-ehci-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "chardev-gdb",
+      "parent": "chardev"
+    },
+    {
+      "name": "vhost-scsi-pci",
+      "parent": "vhost-scsi-pci-base"
+    },
+    {
+      "name": "xlnx.usmp-gqspi",
+      "parent": "xlnx.ps7-qspi"
+    },
+    {
+      "name": "imx25.ccm",
+      "parent": "imx.ccm"
+    },
+    {
+      "name": "a15mpcore_priv",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "fw_cfg_mem",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "digic-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-scsi-pci-transitional",
+      "parent": "virtio-scsi-pci-base"
+    },
+    {
+      "name": "chardev-socket",
+      "parent": "chardev"
+    },
+    {
+      "name": "pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "usb-uas",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ide-cd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "mss-spi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "usb-ccid",
+      "parent": "usb-device"
+    },
+    {
+      "name": "cadence_uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mps2-an385-machine",
+      "parent": "mps2"
+    },
+    {
+      "name": "virtio-balloon-pci",
+      "parent": "virtio-balloon-pci-base"
+    },
+    {
+      "name": "gpio_i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "iothread",
+      "parent": "object"
+    },
+    {
+      "name": "spitz-keyboard",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "lm8323",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "chardev-mux",
+      "parent": "chardev"
+    },
+    {
+      "name": "n25q256a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "bochs-display",
+      "parent": "pci-device"
+    },
+    {
+      "name": "bcm2835-ic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xilinx-zynq-a9-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "qio-channel-rdma",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "arm1026-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "twl92230",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "vhost-vsock-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "sdhci-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-input-host-device",
+      "parent": "virtio-input-device"
+    },
+    {
+      "name": "virtio-rng-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "xlnx.v-dp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "stm32f2xx-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "i82559er",
+      "parent": "pci-device"
+    },
+    {
+      "name": "gpio-key",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-udp",
+      "parent": "chardev"
+    },
+    {
+      "name": "ivshmem-doorbell",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "qio-channel-file",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "mx66l1g45g",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "authz-list-file",
+      "parent": "authz"
+    },
+    {
+      "name": "versatile_pci_host",
+      "parent": "pci-device"
+    },
+    {
+      "name": "w25x80",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "mv88w8618_wlan",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pci-bridge-seat",
+      "parent": "pci-bridge"
+    },
+    {
+      "name": "en25q32b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "m25pe16",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pxa270-c0-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "witherspoon-bmc-machine",
+      "parent": "aspeed-machine"
+    },
+    {
+      "name": "mx25l1606e",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "arm-gicv2m",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "microbit-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "nand",
+      "parent": "device"
+    },
+    {
+      "name": "nrf51_soc.timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pxa27x-timer",
+      "parent": "pxa2xx-timer"
+    },
+    {
+      "name": "hda-micro",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "fw_cfg_io",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "dc390",
+      "parent": "am53c974"
+    },
+    {
+      "name": "am53c974",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pl190",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "qemu,register",
+      "parent": "device"
+    },
+    {
+      "name": "cortex-a7-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "IDE",
+      "parent": "bus"
+    },
+    {
+      "name": "at25256a-nonjedec",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "m25pe20",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "integrator_core",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virt-2.12-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "ads7846",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "sst25wf080",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "memory-backend-ram",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "arm_gic",
+      "parent": "arm_gic_common"
+    },
+    {
+      "name": "qio-channel-websock",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "connex-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "stellaris-adc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "exynos4210.mct",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-blk-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "cortex-a8-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virt-2.11-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "at25128a-nonjedec",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "n25q512a13",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "imx6.ccm",
+      "parent": "imx.ccm"
+    },
+    {
+      "name": "n25q512a11",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "designware-pcie-root",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "armv7m",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "icp-ctrl-regs",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "bcm2835-sdhost",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "stellaris-gptm",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-pipe",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "chardev-msmouse",
+      "parent": "chardev"
+    },
+    {
+      "name": "virt-2.10-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "pl181",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sl-nand",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cryptodev-backend-builtin",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "hda-output",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "w25x64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "VGA",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "iotkit-sysctl",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "s25fl016k",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "n800-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "vfio-pci-nohotplug",
+      "parent": "vfio-pci"
+    },
+    {
+      "name": "m25p80",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "at25df321a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pxa2xx-mmci-bus",
+      "parent": "sd-bus"
+    },
+    {
+      "name": "qio-net-listener",
+      "parent": "object"
+    },
+    {
+      "name": "mptsas1068",
+      "parent": "pci-device"
+    },
+    {
+      "name": "bcm2835-fb",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "lm3s6965evb-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "versatileab-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "aspeed.scu",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-mouse-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "strongarm-uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pl330",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "aspeed.sdmc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ast2400",
+      "parent": "aspeed-soc"
+    },
+    {
+      "name": "vfio-pci-igd-lpc-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "mv88w8618_pit",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "HDA",
+      "parent": "bus"
+    },
+    {
+      "name": "chardev-ringbuf",
+      "parent": "chardev"
+    },
+    {
+      "name": "stm32f2xx-adc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cmsdk-apb-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "qio-channel-command",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "filter-dump",
+      "parent": "netfilter"
+    },
+    {
+      "name": "pcm3680_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "qemu:memory-region",
+      "parent": "object"
+    },
+    {
+      "name": "mioe3680_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "mv88w8618_pic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ssd0323",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "i2c-ddc",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "omap2-intc",
+      "parent": "common-omap-intc"
+    },
+    {
+      "name": "sysbus-ohci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xlnx.ps7-dev-cfg",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pl080",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "borzoi-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "pl081",
+      "parent": "pl080"
+    },
+    {
+      "name": "stellaris-i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cirrus-vga",
+      "parent": "pci-device"
+    },
+    {
+      "name": "xlnx.dpdma",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "can-bus",
+      "parent": "object"
+    },
+    {
+      "name": "qtest-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "m25p64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "w25x40",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "tosa-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "n25q128a13",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "ccid-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "mx66u51235f",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "xio3130-downstream",
+      "parent": "pcie-slot"
+    },
+    {
+      "name": "cortex-a9-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virtio-blk-pci",
+      "parent": "virtio-blk-pci-base"
+    },
+    {
+      "name": "xlnx-versal",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-gpu-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "cryptodev-vhost-user",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "ast2500-a1",
+      "parent": "aspeed-soc"
+    },
+    {
+      "name": "n25q128a11",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "usb-serial",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "imx-gpcv2",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "lsi53c810",
+      "parent": "lsi53c895a"
+    },
+    {
+      "name": "System",
+      "parent": "bus"
+    },
+    {
+      "name": "strongarm-gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cheetah-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "m45pe16",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "chardev-file",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "pxa270-c5-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "w25x32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "m45pe10",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "sst25wf040",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "vt82c686b-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "romulus-bmc-machine",
+      "parent": "aspeed-machine"
+    },
+    {
+      "name": "chardev-braille",
+      "parent": "chardev"
+    },
+    {
+      "name": "s25sl032p",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "vhost-user-scsi-pci-non-transitional",
+      "parent": "vhost-user-scsi-pci-base"
+    },
+    {
+      "name": "qio-dns-resolver",
+      "parent": "object"
+    },
+    {
+      "name": "PCIE",
+      "parent": "PCI"
+    },
+    {
+      "name": "pcie-pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "gpex-root",
+      "parent": "pci-device"
+    },
+    {
+      "name": "exynos4210.rtc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sa1100-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "ssd0303",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "s25sl032a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25sl016a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virtio-net-pci-transitional",
+      "parent": "virtio-net-pci-base"
+    },
+    {
+      "name": "mv88w8618_audio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-user-blk-pci",
+      "parent": "vhost-user-blk-pci-base"
+    },
+    {
+      "name": "s25sl008a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virtio-serial-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "ssi-sd",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "secondary-vga",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "vhost-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "pl061",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "exynos4210-ehci-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "cfi.pflash02",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pci-ohci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "s70fl01gs",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "cfi.pflash01",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "w25x20",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "usb-hub",
+      "parent": "usb-device"
+    },
+    {
+      "name": "m25p40",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "s25fl512s",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "mx25l12855e",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "exynos4210.pwm",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "tmp423",
+      "parent": "tmp421-generic"
+    },
+    {
+      "name": "input-linux",
+      "parent": "object"
+    },
+    {
+      "name": "midway-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "tmp422",
+      "parent": "tmp421-generic"
+    },
+    {
+      "name": "tmp421",
+      "parent": "tmp421-generic"
+    },
+    {
+      "name": "bcm2835-aux",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sabrelite-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "usb-net",
+      "parent": "usb-device"
+    },
+    {
+      "name": "cmsdk-apb-watchdog",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "luminary-watchdog",
+      "parent": "cmsdk-apb-watchdog"
+    },
+    {
+      "name": "musicpal-misc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-rng-pci-transitional",
+      "parent": "virtio-rng-pci-base"
+    },
+    {
+      "name": "virtio-serial-pci-transitional",
+      "parent": "virtio-serial-pci-base"
+    },
+    {
+      "name": "w25x16",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "ati-vga",
+      "parent": "pci-device"
+    },
+    {
+      "name": "SCSI",
+      "parent": "bus"
+    },
+    {
+      "name": "w25x10",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "sst25wf020",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "vfio-amd-xgbe",
+      "parent": "vfio-platform"
+    },
+    {
+      "name": "pxa2xx-gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m25p32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "palmetto-bmc-machine",
+      "parent": "aspeed-machine"
+    },
+    {
+      "name": "mainstone-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "n810-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "pci-serial",
+      "parent": "pci-device"
+    },
+    {
+      "name": "at26df161a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "rocker",
+      "parent": "pci-device"
+    },
+    {
+      "name": "imx25.gpt",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "terrier-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "max1111",
+      "parent": "max111x"
+    },
+    {
+      "name": "netduino2-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "max1110",
+      "parent": "max111x"
+    },
+    {
+      "name": "i82559c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "vhost-user-scsi-pci",
+      "parent": "vhost-user-scsi-pci-base"
+    },
+    {
+      "name": "xlnx,zynqmp",
+      "parent": "device"
+    },
+    {
+      "name": "virtio-blk-pci-non-transitional",
+      "parent": "virtio-blk-pci-base"
+    },
+    {
+      "name": "realview_pci",
+      "parent": "versatile_pci"
+    },
+    {
+      "name": "pcnet",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pl041",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "nrf51_soc.uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "n25q032a13",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "n25q032a11",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "raspi3-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "sst25wf010",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "rng-egd",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "m25p20",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "xlnx.zdma",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "exynos4210.gic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "gd25q64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "tls-creds-x509",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "l2x0",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-testdev",
+      "parent": "chardev"
+    },
+    {
+      "name": "n25q064",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "migration",
+      "parent": "device"
+    },
+    {
+      "name": "pl031",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "arm_mptimer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "n25q064a13",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "i82558b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "n25q064a11",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "sdhci-bus",
+      "parent": "sd-bus"
+    },
+    {
+      "name": "raspi2-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "smbus-eeprom",
+      "parent": "smbus-device"
+    },
+    {
+      "name": "strongarm-ssp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "i82558a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pl111",
+      "parent": "pl110"
+    },
+    {
+      "name": "scoop",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "msf2-soc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pl110",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "tosa_dac",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "onenand",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "bcm2835-dma",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "allwinner-A10-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m25p16",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "i82801",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-keyboard-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "i82562",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-net-pci",
+      "parent": "virtio-net-pci-base"
+    },
+    {
+      "name": "exynos4210.fimd",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m25p10",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "aspeed.smc.ast2500-fmc",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "highbank-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "virt-4.0-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "i82557c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "at26df081a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "can-host-socketcan",
+      "parent": "can-host"
+    },
+    {
+      "name": "chardev-memory",
+      "parent": "chardev-ringbuf"
+    },
+    {
+      "name": "xilinx-axi-dma-control-stream",
+      "parent": "object"
+    },
+    {
+      "name": "i82557b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "digic-uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cortex-a53-arm-cpu",
+      "parent": "aarch64-cpu"
+    },
+    {
+      "name": "sse-200",
+      "parent": "arm-sse"
+    },
+    {
+      "name": "arm1176-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "i82557a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "s25sl004a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "usb-mouse",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "pl022",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "split-irq",
+      "parent": "device"
+    },
+    {
+      "name": "bcm2835-rng",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-gpu-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "pl061_luminary",
+      "parent": "pl061"
+    },
+    {
+      "name": "nrf51_soc.gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xilinx-axienet-control-stream",
+      "parent": "object"
+    },
+    {
+      "name": "m25p05",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "bcm2835-sdhost-bus",
+      "parent": "sd-bus"
+    },
+    {
+      "name": "strongarm-rtc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "n25q128",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "imx.epit",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "i82551",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82550",
+      "parent": "pci-device"
+    },
+    {
+      "name": "armv7m_nvic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cubieboard-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "fsl,imx31",
+      "parent": "device"
+    },
+    {
+      "name": "host-arm-cpu",
+      "parent": "aarch64-cpu"
+    },
+    {
+      "name": "throttle-group",
+      "parent": "object"
+    },
+    {
+      "name": "imx.i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "highbank-regs",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virt-2.6-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "sa1110-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "cadence_ttc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "filter-mirror",
+      "parent": "netfilter"
+    },
+    {
+      "name": "ich9-usb-ehci2",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "virtio-crypto-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "dpcd",
+      "parent": "aux-slave"
+    },
+    {
+      "name": "aspeed.i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pl011",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ich9-usb-ehci1",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "vfio-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "nec-usb-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "imx6.gpt",
+      "parent": "imx25.gpt"
+    },
+    {
+      "name": "tusb6010",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "realview_mpcore",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "w25q32dw",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "irq",
+      "parent": "object"
+    },
+    {
+      "name": "gd25q32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "sx1-v1-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "fsl,imx25",
+      "parent": "device"
+    },
+    {
+      "name": "cortex-a57-arm-cpu",
+      "parent": "aarch64-cpu"
+    },
+    {
+      "name": "exynos4210.rng",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "memory-backend-memfd",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "n25q032",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "arm.cortex-a9-global-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "qio-channel-socket",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "pxa2xx_pic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "piix3-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "pvscsi",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ti925t-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virtio-rng-pci-non-transitional",
+      "parent": "virtio-rng-pci-base"
+    },
+    {
+      "name": "virtserialport",
+      "parent": "virtio-serial-port"
+    },
+    {
+      "name": "virtio-serial-pci-non-transitional",
+      "parent": "virtio-serial-pci-base"
+    },
+    {
+      "name": "imx7.snvs",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sd-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "sx1-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "320s33b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "ich9-ahci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "dscm1xxxx",
+      "parent": "microdrive"
+    },
+    {
+      "name": "chardev-stdio",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "armv7m_systick",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx6ul.ccm",
+      "parent": "imx.ccm"
+    },
+    {
+      "name": "aux-to-i2c-bridge",
+      "parent": "device"
+    },
+    {
+      "name": "cmsdk-apb-dualtimer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-vsock-pci-non-transitional",
+      "parent": "vhost-vsock-pci-base"
+    },
+    {
+      "name": "mcimx7d-sabre-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "arm-smmuv3",
+      "parent": "arm-smmu"
+    },
+    {
+      "name": "musca-a-machine",
+      "parent": "musca"
+    },
+    {
+      "name": "xlnx-zynmp.rtc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "IndustryPack",
+      "parent": "bus"
+    },
+    {
+      "name": "cryptodev-backend",
+      "parent": "object"
+    },
+    {
+      "name": "realview-eb-mpcore-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "n25q00a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virt-2.8-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "sii9022",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "or-irq",
+      "parent": "device"
+    },
+    {
+      "name": "exynos4210.clk",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mx25l8005",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pl050_keyboard",
+      "parent": "pl050"
+    },
+    {
+      "name": "kzm-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "chardev-vc",
+      "parent": "chardev"
+    },
+    {
+      "name": "pxa250-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "usb-ehci",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "virt-2.7-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "xgmac",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "versatile_pci",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "realview_sysctl",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "smc91c111",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "arm11mpcore-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virtio-rng-pci",
+      "parent": "virtio-rng-pci-base"
+    },
+    {
+      "name": "pxa2xx-mmci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "filter-replay",
+      "parent": "netfilter"
+    },
+    {
+      "name": "nrf51_soc.rng",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sst25vf080b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "nrf51_soc.nvm",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "akita-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "cortex-r5f-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "ppc4xx-ehci-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "e1000-82545em",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "usb-storage",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "virtio-mmio-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "vhost-user-blk-pci-transitional",
+      "parent": "vhost-user-blk-pci-base"
+    },
+    {
+      "name": "allwinner-a10",
+      "parent": "device"
+    },
+    {
+      "name": "armsse-cpuid",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-wctablet",
+      "parent": "chardev"
+    },
+    {
+      "name": "sp804",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "tmp105",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "w25q80",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "piix4-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "integrator_pit",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "filter-buffer",
+      "parent": "netfilter"
+    },
+    {
+      "name": "fusbh200-ehci-usb",
+      "parent": "sysbus-ehci-usb"
+    },
+    {
+      "name": "e1000-82544gc",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "ioh3420",
+      "parent": "pcie-root-port-base"
+    },
+    {
+      "name": "pci-serial-4x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "mv88w8618_eth",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "versatilepb_sic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vmcoreinfo",
+      "parent": "device"
+    },
+    {
+      "name": "virtio-9p-pci",
+      "parent": "virtio-9p-pci-base"
+    },
+    {
+      "name": "integrator_pic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "versatile_i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m25p128",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "en25f32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "z2-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "s70fs01gs",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "at26f004",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "xilinx,zynq_slcr",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ich9-intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "s25fs512s",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "virtio-9p-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "n25q256a13",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "160s33b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "n25q256a11",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "imx-usdhc",
+      "parent": "generic-sdhci"
+    },
+    {
+      "name": "exynos4210.irq_gate",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "musicpal-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "stm32f2xx-spi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx6.src",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "exynos4210.combiner",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "arm926-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "chardev-serial",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "virt-2.9-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "vhost-user-blk-pci-non-transitional",
+      "parent": "vhost-user-blk-pci-base"
+    },
+    {
+      "name": "exynos4210.pmu",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "secret",
+      "parent": "object"
+    },
+    {
+      "name": "imx7.ccm",
+      "parent": "imx.ccm"
+    },
+    {
+      "name": "ipoctal232",
+      "parent": "ipack-device"
+    },
+    {
+      "name": "virtio-pci-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "qio-channel-buffer",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "omap_i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "omap-gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cmsdk-apb-uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-tablet-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "w25q64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "x3130-upstream",
+      "parent": "pcie-port"
+    },
+    {
+      "name": "virtio-scsi-pci",
+      "parent": "virtio-scsi-pci-base"
+    },
+    {
+      "name": "at25df041a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "mx25l12805d",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "e1000e",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ES1370",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pci-testdev",
+      "parent": "pci-device"
+    },
+    {
+      "name": "tz-ppc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "at25fs040",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "emcraft-sf2-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "qemu-console",
+      "parent": "object"
+    },
+    {
+      "name": "xlnx.ps7-spi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-tablet-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "cortex-m33-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virtio-balloon-pci-transitional",
+      "parent": "virtio-balloon-pci-base"
+    },
+    {
+      "name": "cortex-a72-arm-cpu",
+      "parent": "aarch64-cpu"
+    },
+    {
+      "name": "ARM,bitband-memory",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "tcg-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "nrf51-soc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtconsole",
+      "parent": "virtserialport"
+    },
+    {
+      "name": "mx25l25655e",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "aspeed.timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mss-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "versatilepb-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "pci-serial-2x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "mps2-scc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-user-scsi-pci-transitional",
+      "parent": "vhost-user-scsi-pci-base"
+    },
+    {
+      "name": "mps2-fpgaio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "realview-pb-a8-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "allwinner-emac",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "bcm2836-control",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "bcm2835-peripherals",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "arm-its-kvm",
+      "parent": "arm-gicv3-its-common"
+    },
+    {
+      "name": "pxa25x-timer",
+      "parent": "pxa2xx-timer"
+    },
+    {
+      "name": "colo-compare",
+      "parent": "object"
+    },
+    {
+      "name": "fsl,imx7",
+      "parent": "device"
+    },
+    {
+      "name": "fsl,imx6",
+      "parent": "device"
+    },
+    {
+      "name": "usb-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "msf2-sysreg",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "w25q80bl",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pxa255-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "at26df321",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "musicpal_key",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "PCI",
+      "parent": "bus"
+    },
+    {
+      "name": "pxa261-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "tosa-ssp",
+      "parent": "ssi-slave"
+    },
+    {
+      "name": "pl050_mouse",
+      "parent": "pl050"
+    },
+    {
+      "name": "generic-sdhci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "i82801b11-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "strongarm-ppc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "aspeed.smc.ast2500-spi2",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "aspeed.smc.ast2500-spi1",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "vhost-user-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "arm1136-r2-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "imx.enet",
+      "parent": "imx.fec"
+    },
+    {
+      "name": "esp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pxa260-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "ast2400-a1",
+      "parent": "aspeed-soc"
+    },
+    {
+      "name": "ast2400-a0",
+      "parent": "aspeed-soc"
+    },
+    {
+      "name": "stellaris_enet",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "musicpal_lcd",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "fsl,imx6ul",
+      "parent": "device"
+    },
+    {
+      "name": "realview-eb-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "ne2k_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "realview-pbx-a9-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "vhost-user-blk",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "ivshmem-plain",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "usb-kbd",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "musca-b1-machine",
+      "parent": "musca"
+    },
+    {
+      "name": "authz-simple",
+      "parent": "authz"
+    },
+    {
+      "name": "pxa2xx_i2c",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "a9-scu",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx31.ccm",
+      "parent": "imx.ccm"
+    },
+    {
+      "name": "cortex-a15-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "kvaser_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "spitz-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "hda-duplex",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "megasas-gen2",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "none-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "arm-gicv3",
+      "parent": "arm-gicv3-common"
+    },
+    {
+      "name": "virtio-9p-pci-transitional",
+      "parent": "virtio-9p-pci-base"
+    },
+    {
+      "name": "mt25ql01g",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "w25q32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "stm32f205-soc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "wm8750",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "virtio-balloon-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "pl011_luminary",
+      "parent": "pl011"
+    },
+    {
+      "name": "allwinner-ahci",
+      "parent": "sysbus-ahci"
+    },
+    {
+      "name": "m25px64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "nvme",
+      "parent": "pci-device"
+    },
+    {
+      "name": "at25fs010",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "allwinner-a10-pic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx25-pdk-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "tz-msc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-scsi-pci-transitional",
+      "parent": "vhost-scsi-pci-base"
+    },
+    {
+      "name": "ramfb",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "arm1136-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "mx25l4005a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "usb-tablet",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "usb-braille",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "usb-wacom-tablet",
+      "parent": "usb-device"
+    },
+    {
+      "name": "xlnx-versal-virt-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "scsi-disk",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "en25q64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "kvm-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "collie-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "arm11mpcore_priv",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx.spi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "realview_gic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-scsi-device",
+      "parent": "virtio-scsi-common"
+    },
+    {
+      "name": "smdkc210-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "bcm2835-mbox",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "AC97",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ds1338",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "aspeed.smc.fmc",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "pxa270-a0-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "virtio-blk-pci-transitional",
+      "parent": "virtio-blk-pci-base"
+    },
+    {
+      "name": "xilinx-axi-dma-data-stream",
+      "parent": "object"
+    },
+    {
+      "name": "pxa262-arm-cpu",
+      "parent": "arm-cpu"
+    },
+    {
+      "name": "bcm2835_gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "i2c-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "virtio-mouse-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "exynos4210.uart",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mx25l25635e",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "640s33b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pl110_versatile",
+      "parent": "pl110"
+    },
+    {
+      "name": "xlnx.ps7-qspi",
+      "parent": "xlnx.ps7-spi"
+    },
+    {
+      "name": "ast2500-evb-machine",
+      "parent": "aspeed-machine"
+    },
+    {
+      "name": "authz-list",
+      "parent": "authz"
+    },
+    {
+      "name": "aspeed.smc.spi",
+      "parent": "aspeed.smc"
+    },
+    {
+      "name": "cadence_gem",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "aux-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "virt-3.0-machine",
+      "parent": "virt-machine"
+    },
+    {
+      "name": "vmxnet3",
+      "parent": "pci-device"
+    },
+    {
+      "name": "mx25l2005a",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "a9mpcore_priv",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "xilinx-axienet-data-stream",
+      "parent": "object"
+    },
+    {
+      "name": "aspeed.vic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "m25px32-s1",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "mainstone-fpga",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sst25vf040b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pvrdma",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ide-drive",
+      "parent": "ide-device"
+    },
+    {
+      "name": "sst25vf032b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "bcm2837",
+      "parent": "bcm283x"
+    },
+    {
+      "name": "bcm2836",
+      "parent": "bcm283x"
+    },
+    {
+      "name": "sst25vf016b",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "vfio-platform",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "virtio-net-pci-non-transitional",
+      "parent": "virtio-net-pci-base"
+    },
+    {
+      "name": "omap2-gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx.serial",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "sd-card",
+      "parent": "device"
+    },
+    {
+      "name": "arm11-scu",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "en25p64",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "pxa2xx-ssp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pca9552",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "i6300esb",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-scsi-pci-non-transitional",
+      "parent": "virtio-scsi-pci-base"
+    },
+    {
+      "name": "xlnx.zynqmp_ipi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "mps2-an505-machine",
+      "parent": "mps2tz"
+    },
+    {
+      "name": "vfio-calxeda-xgmac",
+      "parent": "vfio-platform"
+    },
+    {
+      "name": "m25px32-s0",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "m25px32",
+      "parent": "m25p80-generic"
+    },
+    {
+      "name": "smmuv3-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "verdex-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "mps2-an511-machine",
+      "parent": "mps2"
+    },
+    {
+      "name": "tz-mpc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "imx.avic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "nuri-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "vhost-vsock-pci-transitional",
+      "parent": "vhost-vsock-pci-base"
+    },
+    {
+      "name": "integratorcp-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "scsi-generic",
+      "parent": "scsi-device"
+    },
+    {
+      "name": "rng-random",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "virtio-mmio",
+      "parent": "sys-bus-device"
+    }
+  ],
+  "id": "libvirt-7"
+}
+
+{
   "execute": "device-list-properties",
   "arguments": {
     "typename": "virtio-blk-pci"
   },
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -3934,7 +7017,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -3942,7 +7025,7 @@
   "arguments": {
     "typename": "virtio-net-pci"
   },
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -4241,7 +7324,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -4249,7 +7332,7 @@
   "arguments": {
     "typename": "virtio-scsi-pci"
   },
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -4414,7 +7497,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -4422,11 +7505,11 @@
   "arguments": {
     "typename": "virtio-net-ccw"
   },
-  "id": "libvirt-10"
+  "id": "libvirt-11"
 }
 
 {
-  "id": "libvirt-10",
+  "id": "libvirt-11",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-ccw' not found"
@@ -4438,11 +7521,11 @@
   "arguments": {
     "typename": "virtio-scsi-ccw"
   },
-  "id": "libvirt-11"
+  "id": "libvirt-12"
 }
 
 {
-  "id": "libvirt-11",
+  "id": "libvirt-12",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-scsi-ccw' not found"
@@ -4454,11 +7537,11 @@
   "arguments": {
     "typename": "virtio-net-s390"
   },
-  "id": "libvirt-12"
+  "id": "libvirt-13"
 }
 
 {
-  "id": "libvirt-12",
+  "id": "libvirt-13",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-s390' not found"
@@ -4470,7 +7553,7 @@
   "arguments": {
     "typename": "vfio-pci"
   },
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -4616,7 +7699,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -4624,7 +7707,7 @@
   "arguments": {
     "typename": "scsi-hd"
   },
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -4762,7 +7845,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -4770,7 +7853,7 @@
   "arguments": {
     "typename": "ide-hd"
   },
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -4867,7 +7950,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -4875,11 +7958,11 @@
   "arguments": {
     "typename": "PIIX4_PM"
   },
-  "id": "libvirt-16"
+  "id": "libvirt-17"
 }
 
 {
-  "id": "libvirt-16",
+  "id": "libvirt-17",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'PIIX4_PM' not found"
@@ -4891,11 +7974,11 @@
   "arguments": {
     "typename": "i440FX-pcihost"
   },
-  "id": "libvirt-17"
+  "id": "libvirt-18"
 }
 
 {
-  "id": "libvirt-17",
+  "id": "libvirt-18",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'i440FX-pcihost' not found"
@@ -4907,11 +7990,11 @@
   "arguments": {
     "typename": "q35-pcihost"
   },
-  "id": "libvirt-18"
+  "id": "libvirt-19"
 }
 
 {
-  "id": "libvirt-18",
+  "id": "libvirt-19",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'q35-pcihost' not found"
@@ -4923,7 +8006,7 @@
   "arguments": {
     "typename": "usb-storage"
   },
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -5006,7 +8089,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -5014,11 +8097,11 @@
   "arguments": {
     "typename": "kvm-pit"
   },
-  "id": "libvirt-20"
+  "id": "libvirt-21"
 }
 
 {
-  "id": "libvirt-20",
+  "id": "libvirt-21",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'kvm-pit' not found"
@@ -5030,7 +8113,7 @@
   "arguments": {
     "typename": "VGA"
   },
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -5104,7 +8187,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -5112,7 +8195,7 @@
   "arguments": {
     "typename": "vmware-svga"
   },
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -5159,7 +8242,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -5167,7 +8250,7 @@
   "arguments": {
     "typename": "virtio-gpu-pci"
   },
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -5314,7 +8397,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -5322,7 +8405,7 @@
   "arguments": {
     "typename": "virtio-gpu-device"
   },
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -5374,7 +8457,7 @@
       "type": "size"
     }
   ],
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -5382,11 +8465,11 @@
   "arguments": {
     "typename": "ICH9-LPC"
   },
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
-  "id": "libvirt-25",
+  "id": "libvirt-26",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ICH9-LPC' not found"
@@ -5398,7 +8481,7 @@
   "arguments": {
     "typename": "virtio-balloon-pci"
   },
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -5550,7 +8633,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -5558,11 +8641,11 @@
   "arguments": {
     "typename": "virtio-balloon-ccw"
   },
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
-  "id": "libvirt-27",
+  "id": "libvirt-28",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-balloon-ccw' not found"
@@ -5574,7 +8657,7 @@
   "arguments": {
     "typename": "virtio-balloon-device"
   },
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -5627,7 +8710,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -5635,7 +8718,7 @@
   "arguments": {
     "typename": "nec-usb-xhci"
   },
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
@@ -5715,7 +8798,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {

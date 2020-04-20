@@ -2268,11 +2268,1682 @@
 }
 
 {
+  "execute": "qom-list-types",
+  "id": "libvirt-7"
+}
+
+{
+  "return": [
+    {
+      "name": "vhost-vsock-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "scsi-generic",
+      "parent": "scsi-device"
+    },
+    {
+      "name": "qio-channel-tls",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "scsi-hd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "pc-0.10-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "usb-bot",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "chardev-null",
+      "parent": "chardev"
+    },
+    {
+      "name": "chardev-parallel",
+      "parent": "chardev"
+    },
+    {
+      "name": "qemu-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "lsi53c895a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "kvm-ioapic",
+      "parent": "ioapic-common"
+    },
+    {
+      "name": "virtio-keyboard-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "i440FX",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ide-hd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "Opteron_G1-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "kvm64-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "virtio-net-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "kvm-i8259",
+      "parent": "pic-common"
+    },
+    {
+      "name": "at24c-eeprom",
+      "parent": "i2c-slave"
+    },
+    {
+      "name": "chardev-pty",
+      "parent": "chardev"
+    },
+    {
+      "name": "SUNW,fdtwo",
+      "parent": "base-sysbus-fdc"
+    },
+    {
+      "name": "isa-pcspk",
+      "parent": "isa-device"
+    },
+    {
+      "name": "Haswell-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "loader",
+      "parent": "device"
+    },
+    {
+      "name": "filter-rewriter",
+      "parent": "netfilter"
+    },
+    {
+      "name": "virtio-serial-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "Nehalem-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pc-0.12-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "pcie-root-port",
+      "parent": "pcie-root-port-base"
+    },
+    {
+      "name": "virtio-crypto-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "usb-host",
+      "parent": "usb-device"
+    },
+    {
+      "name": "pc-0.11-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "usb-bt-dongle",
+      "parent": "usb-device"
+    },
+    {
+      "name": "igd-passthrough-isa-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "qemu64-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "PIIX3-xen",
+      "parent": "pci-piix3"
+    },
+    {
+      "name": "virtio-input-host-pci",
+      "parent": "virtio-input-pci"
+    },
+    {
+      "name": "pc-i440fx-2.10-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "phenom-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "e1000",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "ICH9-LPC",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pc-i440fx-1.4-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "ich9-usb-uhci6",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "sysbus-ahci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "ich9-usb-uhci4",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "pc-q35-2.6-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "usb-mtp",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ccid-card-emulated",
+      "parent": "ccid-card"
+    },
+    {
+      "name": "ich9-usb-uhci5",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "chardev-spicevmc",
+      "parent": "chardev-spice"
+    },
+    {
+      "name": "ich9-usb-uhci3",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci2",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci1",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "tls-creds-psk",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "tpci200",
+      "parent": "pci-device"
+    },
+    {
+      "name": "memory-backend-file",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "pc-q35-2.5-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "AMDVI-PCI",
+      "parent": "pci-device"
+    },
+    {
+      "name": "rtl8139",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-hci",
+      "parent": "chardev"
+    },
+    {
+      "name": "pc-q35-2.4-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "megasas",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "base-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "container",
+      "parent": "object"
+    },
+    {
+      "name": "qxl-vga",
+      "parent": "pci-qxl"
+    },
+    {
+      "name": "scsi-block",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "Opteron_G2-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "unimplemented-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pc-i440fx-3.0-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "scsi-cd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "pxb-bus",
+      "parent": "PCI"
+    },
+    {
+      "name": "pc-0.14-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "accel",
+      "parent": "object"
+    },
+    {
+      "name": "pc-i440fx-2.12-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "floppy-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "usb-audio",
+      "parent": "usb-device"
+    },
+    {
+      "name": "virtio-vga",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "vmware-svga",
+      "parent": "pci-device"
+    },
+    {
+      "name": "isa-serial",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pc-0.13-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "vhost-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-serial-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "isa-debug-exit",
+      "parent": "isa-device"
+    },
+    {
+      "name": "chardev-gdb",
+      "parent": "chardev"
+    },
+    {
+      "name": "fdc37m81x-superio",
+      "parent": "isa-superio"
+    },
+    {
+      "name": "pc-testdev",
+      "parent": "isa-device"
+    },
+    {
+      "name": "Haswell-noTSX-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pr-manager-helper",
+      "parent": "pr-manager"
+    },
+    {
+      "name": "fw_cfg_mem",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "tls-creds-anon",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "pc-q35-2.8-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "ide-cd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "usb-uas",
+      "parent": "usb-device"
+    },
+    {
+      "name": "pc-i440fx-2.11-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "pc-i440fx-1.6-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "chardev-socket",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-balloon-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "iothread",
+      "parent": "object"
+    },
+    {
+      "name": "filter-redirector",
+      "parent": "netfilter"
+    },
+    {
+      "name": "sb16",
+      "parent": "isa-device"
+    },
+    {
+      "name": "486-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pc-q35-2.7-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "pc-i440fx-1.5-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "chardev-mux",
+      "parent": "chardev"
+    },
+    {
+      "name": "bochs-display",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-ccid",
+      "parent": "usb-device"
+    },
+    {
+      "name": "isa-cirrus-vga",
+      "parent": "isa-device"
+    },
+    {
+      "name": "qio-channel-rdma",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "vhost-vsock-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "sdhci-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-input-host-device",
+      "parent": "virtio-input-device"
+    },
+    {
+      "name": "i82559er",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "cs4231a",
+      "parent": "isa-device"
+    },
+    {
+      "name": "ivshmem-doorbell",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "chardev-udp",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-rng-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "isa-parallel",
+      "parent": "isa-device"
+    },
+    {
+      "name": "piix4-ide",
+      "parent": "pci-ide"
+    },
+    {
+      "name": "adlib",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pc-0.15-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "kvmvapic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "hda-micro",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "pci-bridge-seat",
+      "parent": "pci-bridge"
+    },
+    {
+      "name": "dc390",
+      "parent": "am53c974"
+    },
+    {
+      "name": "qemu,register",
+      "parent": "device"
+    },
+    {
+      "name": "IDE",
+      "parent": "bus"
+    },
+    {
+      "name": "fw_cfg_io",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "tpm-crb",
+      "parent": "device"
+    },
+    {
+      "name": "memory-backend-ram",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "am53c974",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-blk-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "nvdimm",
+      "parent": "pc-dimm"
+    },
+    {
+      "name": "mc146818rtc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "qio-channel-websock",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "qio-channel-file",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "chardev-msmouse",
+      "parent": "chardev"
+    },
+    {
+      "name": "pc-q35-2.9-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "chardev-pipe",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "pc-i440fx-1.7-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "cryptodev-backend-builtin",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "hda-output",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "mmio_interface",
+      "parent": "device"
+    },
+    {
+      "name": "chardev-spiceport",
+      "parent": "chardev-spice"
+    },
+    {
+      "name": "VGA",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "KnightsMill-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "sga",
+      "parent": "isa-device"
+    },
+    {
+      "name": "i8257",
+      "parent": "isa-device"
+    },
+    {
+      "name": "qio-net-listener",
+      "parent": "object"
+    },
+    {
+      "name": "port92",
+      "parent": "isa-device"
+    },
+    {
+      "name": "mptsas1068",
+      "parent": "pci-device"
+    },
+    {
+      "name": "edu",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-mouse-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "Skylake-Client-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "ICH9 SMB",
+      "parent": "pci-device"
+    },
+    {
+      "name": "Broadwell-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "vfio-pci-igd-lpc-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "HDA",
+      "parent": "bus"
+    },
+    {
+      "name": "n270-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pcm3680_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-redir",
+      "parent": "usb-device"
+    },
+    {
+      "name": "floppy",
+      "parent": "device"
+    },
+    {
+      "name": "qemu:memory-region",
+      "parent": "object"
+    },
+    {
+      "name": "mioe3680_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "sysbus-ohci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "chardev-ringbuf",
+      "parent": "chardev"
+    },
+    {
+      "name": "max-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "can-bus",
+      "parent": "object"
+    },
+    {
+      "name": "qtest-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "qio-channel-command",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "pxb-host",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "IvyBridge-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "xio3130-downstream",
+      "parent": "pcie-slot"
+    },
+    {
+      "name": "virtio-gpu-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "virtio-blk-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "cirrus-vga",
+      "parent": "pci-device"
+    },
+    {
+      "name": "isa-ipmi-kcs",
+      "parent": "isa-device"
+    },
+    {
+      "name": "kvmclock",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cryptodev-vhost-user",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "Opteron_G3-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "lsi53c810",
+      "parent": "lsi53c895a"
+    },
+    {
+      "name": "System",
+      "parent": "bus"
+    },
+    {
+      "name": "Westmere-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "usb-serial",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "vt82c686b-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "chardev-braille",
+      "parent": "chardev"
+    },
+    {
+      "name": "chardev-file",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "intel-iommu",
+      "parent": "x86-iommu"
+    },
+    {
+      "name": "pc-q35-2.10-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "tpm-tis",
+      "parent": "isa-device"
+    },
+    {
+      "name": "PCIE",
+      "parent": "PCI"
+    },
+    {
+      "name": "pcie-pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "ccid-card-passthru",
+      "parent": "ccid-card"
+    },
+    {
+      "name": "qio-dns-resolver",
+      "parent": "object"
+    },
+    {
+      "name": "vhost-user-blk-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-serial-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "kvm-pit",
+      "parent": "pit-common"
+    },
+    {
+      "name": "secondary-vga",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "vhost-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "pci-ohci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "cfi.pflash01",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "usb-hub",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ccid-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "EPYC-IBPB-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "input-linux",
+      "parent": "object"
+    },
+    {
+      "name": "piix3-ide-xen",
+      "parent": "pci-ide"
+    },
+    {
+      "name": "vmgenid",
+      "parent": "device"
+    },
+    {
+      "name": "pc-q35-3.0-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "pci-serial",
+      "parent": "pci-device"
+    },
+    {
+      "name": "vmport",
+      "parent": "isa-device"
+    },
+    {
+      "name": "vhost-user-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "ipmi-bmc-extern",
+      "parent": "ipmi-bmc"
+    },
+    {
+      "name": "PIIX4_PM",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i8042",
+      "parent": "isa-device"
+    },
+    {
+      "name": "coreduo-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "i82559c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pc-q35-2.12-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "SCSI",
+      "parent": "bus"
+    },
+    {
+      "name": "rocker",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pcnet",
+      "parent": "pci-device"
+    },
+    {
+      "name": "rng-egd",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "Skylake-Server-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "Opteron_G4-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pc-q35-2.11-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "chardev-testdev",
+      "parent": "chardev"
+    },
+    {
+      "name": "PIIX3",
+      "parent": "pci-piix3"
+    },
+    {
+      "name": "filter-dump",
+      "parent": "netfilter"
+    },
+    {
+      "name": "migration",
+      "parent": "device"
+    },
+    {
+      "name": "vmmouse",
+      "parent": "isa-device"
+    },
+    {
+      "name": "i82558b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82558a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ioapic",
+      "parent": "ioapic-common"
+    },
+    {
+      "name": "smbus-eeprom",
+      "parent": "smbus-device"
+    },
+    {
+      "name": "Haswell-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "i82801",
+      "parent": "pci-device"
+    },
+    {
+      "name": "tls-creds-x509",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "virtio-net-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-keyboard-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "i82562",
+      "parent": "pci-device"
+    },
+    {
+      "name": "Haswell-noTSX-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "usb-net",
+      "parent": "usb-device"
+    },
+    {
+      "name": "tpm-passthrough",
+      "parent": "tpm-backend"
+    },
+    {
+      "name": "q35-pcihost",
+      "parent": "pcie-host-bridge"
+    },
+    {
+      "name": "amd-iommu",
+      "parent": "x86-iommu"
+    },
+    {
+      "name": "i440FX-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "i82557c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82557b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82557a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-memory",
+      "parent": "chardev-ringbuf"
+    },
+    {
+      "name": "isa-i8259",
+      "parent": "pic-common"
+    },
+    {
+      "name": "virtio-gpu-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "i82551",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pc-i440fx-2.0-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "SandyBridge-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "split-irq",
+      "parent": "device"
+    },
+    {
+      "name": "usb-mouse",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "sdhci-bus",
+      "parent": "sd-bus"
+    },
+    {
+      "name": "i82550",
+      "parent": "pci-device"
+    },
+    {
+      "name": "host-x86_64-cpu",
+      "parent": "max-x86_64-cpu"
+    },
+    {
+      "name": "virtio-crypto-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "ich9-usb-ehci1",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "ich9-usb-ehci2",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "vfio-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "filter-mirror",
+      "parent": "netfilter"
+    },
+    {
+      "name": "isa-ide",
+      "parent": "isa-device"
+    },
+    {
+      "name": "irq",
+      "parent": "object"
+    },
+    {
+      "name": "throttle-group",
+      "parent": "object"
+    },
+    {
+      "name": "IvyBridge-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "memory-backend-memfd",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "can-host-socketcan",
+      "parent": "can-host"
+    },
+    {
+      "name": "nec-usb-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "qio-channel-socket",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "pvscsi",
+      "parent": "pci-device"
+    },
+    {
+      "name": "piix3-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "virtserialport",
+      "parent": "virtio-serial-port"
+    },
+    {
+      "name": "sd-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "Opteron_G5-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "ich9-ahci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-stdio",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "Skylake-Client-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pc-dimm",
+      "parent": "device"
+    },
+    {
+      "name": "gus",
+      "parent": "isa-device"
+    },
+    {
+      "name": "hyperv-testdev",
+      "parent": "isa-device"
+    },
+    {
+      "name": "isa-vga",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pc-i440fx-2.2-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "cryptodev-backend",
+      "parent": "object"
+    },
+    {
+      "name": "IndustryPack",
+      "parent": "bus"
+    },
+    {
+      "name": "pc-i440fx-2.1-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "or-irq",
+      "parent": "device"
+    },
+    {
+      "name": "ipmi-bmc-sim",
+      "parent": "ipmi-bmc"
+    },
+    {
+      "name": "Broadwell-noTSX-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "usb-ehci",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "pentium2-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "chardev-vc",
+      "parent": "chardev"
+    },
+    {
+      "name": "virtio-rng-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "filter-replay",
+      "parent": "netfilter"
+    },
+    {
+      "name": "e1000-82545em",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "chardev-wctablet",
+      "parent": "chardev"
+    },
+    {
+      "name": "pc-i440fx-2.5-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "e1000-82544gc",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "hpet",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "Broadwell-noTSX-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "ioh3420",
+      "parent": "pcie-root-port-base"
+    },
+    {
+      "name": "pc-i440fx-2.4-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "virtio-9p-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "vmcoreinfo",
+      "parent": "device"
+    },
+    {
+      "name": "filter-buffer",
+      "parent": "netfilter"
+    },
+    {
+      "name": "pci-serial-4x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "athlon-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "ich9-intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "pc-i440fx-2.3-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "virtio-9p-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "ivshmem",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "imx-usdhc",
+      "parent": "generic-sdhci"
+    },
+    {
+      "name": "isa-ipmi-bt",
+      "parent": "isa-device"
+    },
+    {
+      "name": "ipoctal232",
+      "parent": "ipack-device"
+    },
+    {
+      "name": "virtio-tablet-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "virtio-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "ES1370",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-pci-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "x3130-upstream",
+      "parent": "pcie-port"
+    },
+    {
+      "name": "piix3-ide",
+      "parent": "pci-ide"
+    },
+    {
+      "name": "pci-testdev",
+      "parent": "pci-device"
+    },
+    {
+      "name": "qemu-console",
+      "parent": "object"
+    },
+    {
+      "name": "ISA",
+      "parent": "bus"
+    },
+    {
+      "name": "piix4-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "pc-i440fx-2.7-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "tcg-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "virtconsole",
+      "parent": "virtserialport"
+    },
+    {
+      "name": "pentium3-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pci-serial-2x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ne2k_isa",
+      "parent": "isa-device"
+    },
+    {
+      "name": "Nehalem-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "isa-fdc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pc-i440fx-2.6-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "chardev-serial",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "igd-passthrough-i440FX",
+      "parent": "i440FX"
+    },
+    {
+      "name": "colo-compare",
+      "parent": "object"
+    },
+    {
+      "name": "e1000e",
+      "parent": "pci-device"
+    },
+    {
+      "name": "virtio-tablet-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "usb-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "smc37c669-superio",
+      "parent": "isa-superio"
+    },
+    {
+      "name": "i82801b11-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "PCI",
+      "parent": "bus"
+    },
+    {
+      "name": "usb-storage",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "vhost-user-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "mch",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ib700",
+      "parent": "isa-device"
+    },
+    {
+      "name": "esp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "isabus-bridge",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-user-blk",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "qemu32-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "ne2k_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "Broadwell-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "tpm-emulator",
+      "parent": "tpm-backend"
+    },
+    {
+      "name": "ivshmem-plain",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "usb-kbd",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "isa-applesmc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "secret",
+      "parent": "object"
+    },
+    {
+      "name": "hda-duplex",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "kvm32-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pc-i440fx-2.9-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "kvm-apic",
+      "parent": "apic-common"
+    },
+    {
+      "name": "sev-guest",
+      "parent": "object"
+    },
+    {
+      "name": "virtio-balloon-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "none-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "sysbus-fdc",
+      "parent": "base-sysbus-fdc"
+    },
+    {
+      "name": "megasas-gen2",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "pc-1.0-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "core2duo-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "qxl",
+      "parent": "pci-qxl"
+    },
+    {
+      "name": "ramfb",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pc-i440fx-2.8-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "nvme",
+      "parent": "pci-device"
+    },
+    {
+      "name": "isa-debugcon",
+      "parent": "isa-device"
+    },
+    {
+      "name": "SandyBridge-IBRS-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "Skylake-Server-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pentium-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "usb-tablet",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "qio-channel-buffer",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "scsi-disk",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "usb-braille",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "kvm-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "pxb-pcie-bus",
+      "parent": "PCIE"
+    },
+    {
+      "name": "virtio-scsi-device",
+      "parent": "virtio-scsi-common"
+    },
+    {
+      "name": "AC97",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-wacom-tablet",
+      "parent": "usb-device"
+    },
+    {
+      "name": "i2c-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "EPYC-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "virtio-mouse-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "Conroe-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "pxb-pcie",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pc-1.3-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "ide-drive",
+      "parent": "ide-device"
+    },
+    {
+      "name": "generic-sdhci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pvrdma",
+      "parent": "pci-device"
+    },
+    {
+      "name": "isa-pit",
+      "parent": "pit-common"
+    },
+    {
+      "name": "pxb",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pc-1.2-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "intel-iommu-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "pc-1.1-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "sd-card",
+      "parent": "device"
+    },
+    {
+      "name": "kvaser_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "vmxnet3",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i6300esb",
+      "parent": "pci-device"
+    },
+    {
+      "name": "Westmere-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "amd-iommu-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "pvpanic",
+      "parent": "isa-device"
+    },
+    {
+      "name": "Penryn-x86_64-cpu",
+      "parent": "x86_64-cpu"
+    },
+    {
+      "name": "apic",
+      "parent": "apic-common"
+    },
+    {
+      "name": "isapc-machine",
+      "parent": "generic-pc-machine"
+    },
+    {
+      "name": "rng-random",
+      "parent": "rng-backend"
+    }
+  ],
+  "id": "libvirt-7"
+}
+
+{
   "execute": "device-list-properties",
   "arguments": {
     "typename": "virtio-blk-pci"
   },
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -2504,7 +4175,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -2512,7 +4183,7 @@
   "arguments": {
     "typename": "virtio-net-pci"
   },
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -2802,7 +4473,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -2810,7 +4481,7 @@
   "arguments": {
     "typename": "virtio-scsi-pci"
   },
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -2975,7 +4646,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -2983,11 +4654,11 @@
   "arguments": {
     "typename": "virtio-net-ccw"
   },
-  "id": "libvirt-10"
+  "id": "libvirt-11"
 }
 
 {
-  "id": "libvirt-10",
+  "id": "libvirt-11",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-ccw' not found"
@@ -2999,11 +4670,11 @@
   "arguments": {
     "typename": "virtio-scsi-ccw"
   },
-  "id": "libvirt-11"
+  "id": "libvirt-12"
 }
 
 {
-  "id": "libvirt-11",
+  "id": "libvirt-12",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-scsi-ccw' not found"
@@ -3015,11 +4686,11 @@
   "arguments": {
     "typename": "virtio-net-s390"
   },
-  "id": "libvirt-12"
+  "id": "libvirt-13"
 }
 
 {
-  "id": "libvirt-12",
+  "id": "libvirt-13",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-s390' not found"
@@ -3031,7 +4702,7 @@
   "arguments": {
     "typename": "vfio-pci"
   },
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -3165,7 +4836,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -3173,7 +4844,7 @@
   "arguments": {
     "typename": "scsi-hd"
   },
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -3291,7 +4962,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -3299,7 +4970,7 @@
   "arguments": {
     "typename": "ide-hd"
   },
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -3375,7 +5046,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -3383,7 +5054,7 @@
   "arguments": {
     "typename": "PIIX4_PM"
   },
-  "id": "libvirt-16"
+  "id": "libvirt-17"
 }
 
 {
@@ -3446,7 +5117,7 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-16"
+  "id": "libvirt-17"
 }
 
 {
@@ -3454,7 +5125,7 @@
   "arguments": {
     "typename": "usb-redir"
   },
-  "id": "libvirt-17"
+  "id": "libvirt-18"
 }
 
 {
@@ -3503,7 +5174,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-17"
+  "id": "libvirt-18"
 }
 
 {
@@ -3511,7 +5182,7 @@
   "arguments": {
     "typename": "i440FX-pcihost"
   },
-  "id": "libvirt-18"
+  "id": "libvirt-19"
 }
 
 {
@@ -3553,7 +5224,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-18"
+  "id": "libvirt-19"
 }
 
 {
@@ -3561,7 +5232,7 @@
   "arguments": {
     "typename": "q35-pcihost"
   },
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -3643,7 +5314,7 @@
       "type": "uint64"
     }
   ],
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -3651,7 +5322,7 @@
   "arguments": {
     "typename": "usb-storage"
   },
-  "id": "libvirt-20"
+  "id": "libvirt-21"
 }
 
 {
@@ -3734,7 +5405,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-20"
+  "id": "libvirt-21"
 }
 
 {
@@ -3742,7 +5413,7 @@
   "arguments": {
     "typename": "kvm-pit"
   },
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -3756,7 +5427,7 @@
       "type": "LostTickPolicy"
     }
   ],
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -3764,7 +5435,7 @@
   "arguments": {
     "typename": "VGA"
   },
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -3825,7 +5496,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -3833,7 +5504,7 @@
   "arguments": {
     "typename": "vmware-svga"
   },
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -3880,7 +5551,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -3888,7 +5559,7 @@
   "arguments": {
     "typename": "qxl"
   },
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -3987,7 +5658,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
@@ -3995,7 +5666,7 @@
   "arguments": {
     "typename": "virtio-gpu-pci"
   },
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -4156,7 +5827,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -4164,7 +5835,7 @@
   "arguments": {
     "typename": "virtio-gpu-device"
   },
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -4221,7 +5892,7 @@
       "type": "size"
     }
   ],
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
@@ -4229,7 +5900,7 @@
   "arguments": {
     "typename": "ICH9-LPC"
   },
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -4325,7 +5996,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -4333,7 +6004,7 @@
   "arguments": {
     "typename": "virtio-balloon-pci"
   },
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -4476,7 +6147,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -4484,11 +6155,11 @@
   "arguments": {
     "typename": "virtio-balloon-ccw"
   },
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
-  "id": "libvirt-29",
+  "id": "libvirt-30",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-balloon-ccw' not found"
@@ -4500,7 +6171,7 @@
   "arguments": {
     "typename": "virtio-balloon-device"
   },
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
@@ -4544,7 +6215,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
@@ -4552,7 +6223,7 @@
   "arguments": {
     "typename": "nec-usb-xhci"
   },
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
@@ -4632,7 +6303,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
@@ -4640,7 +6311,7 @@
   "arguments": {
     "typename": "intel-iommu"
   },
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
@@ -4679,7 +6350,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
@@ -4687,7 +6358,7 @@
   "arguments": {
     "typename": "mch"
   },
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
@@ -4730,7 +6401,7 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
@@ -4738,7 +6409,7 @@
   "arguments": {
     "typename": "nvdimm"
   },
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -4772,7 +6443,7 @@
       "type": "uint64"
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 

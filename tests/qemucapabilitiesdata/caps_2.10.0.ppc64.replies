@@ -3180,11 +3180,2690 @@
 }
 
 {
+  "execute": "qom-list-types",
+  "id": "libvirt-7"
+}
+
+{
+  "return": [
+    {
+      "name": "vhost-vsock-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "scsi-generic",
+      "parent": "scsi-device"
+    },
+    {
+      "name": "qio-channel-tls",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "virtio-mmio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "scsi-hd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "MPC8541E_v11-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "isa-m48t59",
+      "parent": "isa-m48txx"
+    },
+    {
+      "name": "405GPb-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8544E_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-bot",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "chardev-null",
+      "parent": "chardev"
+    },
+    {
+      "name": "750_v3.1-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "dec-21154",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-parallel",
+      "parent": "chardev"
+    },
+    {
+      "name": "qemu-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "spapr-pci-vfio-host-bridge",
+      "parent": "spapr-pci-host-bridge"
+    },
+    {
+      "name": "e300c2-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "lsi53c895a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8568-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "401-powerpc64-cpu",
+      "parent": "401-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8379-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-keyboard-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "40p-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "750cxe_v3.1-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8349EA-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxr-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cl_v2.0-powerpc64-cpu",
+      "parent": "750cl-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2HiP4-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v1.0-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "STB04-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-audio",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ide-hd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "virtio-net-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "601_v0-powerpc64-cpu",
+      "parent": "601-family-powerpc64-cpu"
+    },
+    {
+      "name": "powernv-chip-POWER9",
+      "parent": "powernv-chip"
+    },
+    {
+      "name": "powernv-chip-POWER8",
+      "parent": "powernv-chip"
+    },
+    {
+      "name": "chardev-pty",
+      "parent": "chardev"
+    },
+    {
+      "name": "ppc4xx-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "spapr-vio-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "ppc4xx-host-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "750fx_v2.1-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "macio-newworld",
+      "parent": "macio"
+    },
+    {
+      "name": "MPC8377E-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "970fx_v2.1-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "440EPa-powerpc64-cpu",
+      "parent": "440EP-family-powerpc64-cpu"
+    },
+    {
+      "name": "SUNW,fdtwo",
+      "parent": "base-sysbus-fdc"
+    },
+    {
+      "name": "isa-pcspk",
+      "parent": "isa-device"
+    },
+    {
+      "name": "dec-21154-p2p-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "603e_v4.1-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "7445_v3.3-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "970MP_v1.1-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "G2leGP3-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "spapr-vscsi",
+      "parent": "vio-spapr-device"
+    },
+    {
+      "name": "loader",
+      "parent": "device"
+    },
+    {
+      "name": "xlnx.xps-ethernetlite",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "7410_v1.0-powerpc64-cpu",
+      "parent": "7410-family-powerpc64-cpu"
+    },
+    {
+      "name": "filter-rewriter",
+      "parent": "netfilter"
+    },
+    {
+      "name": "platform-bus-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "403GA-powerpc64-cpu",
+      "parent": "403-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-serial-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "MPC5200_v10-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxe_v2.4b-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "ics",
+      "parent": "ics-base"
+    },
+    {
+      "name": "sysbus-sm501",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "MPC8610-powerpc64-cpu",
+      "parent": "e600-family-powerpc64-cpu"
+    },
+    {
+      "name": "icp",
+      "parent": "device"
+    },
+    {
+      "name": "virtio-crypto-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "usb-host",
+      "parent": "usb-device"
+    },
+    {
+      "name": "MPC8548E_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.5-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "970fx_v3.1-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "7447_v1.0-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "7457_v1.2-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-bt-dongle",
+      "parent": "usb-device"
+    },
+    {
+      "name": "qio-channel-rdma",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "virtio-input-host-pci",
+      "parent": "virtio-input-pci"
+    },
+    {
+      "name": "xlnx.xps-intc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "MPC8343EA-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "e1000",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "mpc8xxx_gpio",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "401F2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-mux",
+      "parent": "chardev"
+    },
+    {
+      "name": "pseries-2.1-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "ich9-usb-uhci6",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci5",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "usb-mtp",
+      "parent": "usb-device"
+    },
+    {
+      "name": "ich9-usb-uhci3",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "cmd646-ide",
+      "parent": "pci-ide"
+    },
+    {
+      "name": "ich9-usb-uhci4",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "sysbus-ahci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "e500v2_v22-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "ich9-usb-uhci2",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "ich9-usb-uhci1",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "MPC8533E_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "7447A_v1.2-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "tpci200",
+      "parent": "pci-device"
+    },
+    {
+      "name": "memory-backend-file",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "604r-powerpc64-cpu",
+      "parent": "604E-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-socket",
+      "parent": "chardev"
+    },
+    {
+      "name": "sysbus-m48t59",
+      "parent": "sysbus-m48txx"
+    },
+    {
+      "name": "chardev-udp",
+      "parent": "chardev"
+    },
+    {
+      "name": "603e7v2-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "970mp_v1.1-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "uni-north-internal-pci-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "rtl8139",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pci-bridge",
+      "parent": "base-pci-bridge"
+    },
+    {
+      "name": "chardev-hci",
+      "parent": "chardev"
+    },
+    {
+      "name": "MPC8347EAT-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "megasas",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "405GPc-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "7455_v2.1-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "7400_v2.8-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "u3-agp",
+      "parent": "pci-device"
+    },
+    {
+      "name": "container",
+      "parent": "object"
+    },
+    {
+      "name": "7450_v2.0-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "scsi-block",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "7451_v2.3-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "unimplemented-device",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "603e_v1.1-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "eTSEC",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "scsi-cd",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "uni-north-agp",
+      "parent": "pci-device"
+    },
+    {
+      "name": "440EPX-powerpc64-cpu",
+      "parent": "440EP-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER8_v2.0-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "MPC5200B_v20-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-uas",
+      "parent": "usb-device"
+    },
+    {
+      "name": "accel",
+      "parent": "object"
+    },
+    {
+      "name": "740p-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "floppy-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "virtio-vga",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "440-Xilinx-powerpc64-cpu",
+      "parent": "440x5-family-powerpc64-cpu"
+    },
+    {
+      "name": "vhost-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "spapr-rng",
+      "parent": "device"
+    },
+    {
+      "name": "xlnx.xps-timer",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "isa-serial",
+      "parent": "isa-device"
+    },
+    {
+      "name": "virtio-serial-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "970_v2.2-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "tls-creds-anon",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "sdhci-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "escc",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "POWER7_v2.3-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "chardev-gdb",
+      "parent": "chardev"
+    },
+    {
+      "name": "pc-testdev",
+      "parent": "isa-device"
+    },
+    {
+      "name": "icskvm",
+      "parent": "ics"
+    },
+    {
+      "name": "fw_cfg_mem",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "603e_v3-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "pseries-2.3-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "MPC8347T-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "7445_v3.4-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "taihu-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "icp-kvm",
+      "parent": "icp"
+    },
+    {
+      "name": "MPC8555_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-balloon-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "ide-cd",
+      "parent": "ide-device"
+    },
+    {
+      "name": "usb-ccid",
+      "parent": "usb-device"
+    },
+    {
+      "name": "750p-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.1-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "pseries-2.2-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "powernv-cpu-core-POWER8NVL",
+      "parent": "powernv-cpu-core"
+    },
+    {
+      "name": "403GCX-powerpc64-cpu",
+      "parent": "403GCX-family-powerpc64-cpu"
+    },
+    {
+      "name": "sb16",
+      "parent": "isa-device"
+    },
+    {
+      "name": "iothread",
+      "parent": "object"
+    },
+    {
+      "name": "750gl-powerpc64-cpu",
+      "parent": "750gx-family-powerpc64-cpu"
+    },
+    {
+      "name": "filter-redirector",
+      "parent": "netfilter"
+    },
+    {
+      "name": "7410_v1.1-powerpc64-cpu",
+      "parent": "7410-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8347EP-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.3-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC5200_v11-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "7450_v1.0-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "750_v2.2-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER7_v2.3-powerpc64-cpu",
+      "parent": "POWER7-family-powerpc64-cpu"
+    },
+    {
+      "name": "vhost-vsock-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "MPC8545E_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "cs4231a",
+      "parent": "isa-device"
+    },
+    {
+      "name": "virtio-input-host-device",
+      "parent": "virtio-input-device"
+    },
+    {
+      "name": "970MP_v1.0-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "403GB-powerpc64-cpu",
+      "parent": "403-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2le-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "i82559er",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8548E_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.6-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.8-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "604e_v2.4-powerpc64-cpu",
+      "parent": "604E-family-powerpc64-cpu"
+    },
+    {
+      "name": "ivshmem-doorbell",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "750cxe_v2.2-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cx_v1.0-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "pnv-icp",
+      "parent": "icp"
+    },
+    {
+      "name": "MPC8343-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-rng-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "G2leLS-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "spapr-drc-cpu",
+      "parent": "spapr-drc-logical"
+    },
+    {
+      "name": "spapr-iommu-memory-region",
+      "parent": "qemu:iommu-memory-region"
+    },
+    {
+      "name": "isa-parallel",
+      "parent": "isa-device"
+    },
+    {
+      "name": "MPC8548E_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "adlib",
+      "parent": "isa-device"
+    },
+    {
+      "name": "602-powerpc64-cpu",
+      "parent": "602-family-powerpc64-cpu"
+    },
+    {
+      "name": "pci-bridge-seat",
+      "parent": "pci-bridge"
+    },
+    {
+      "name": "hda-micro",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "fw_cfg_io",
+      "parent": "fw_cfg"
+    },
+    {
+      "name": "dc390",
+      "parent": "am53c974"
+    },
+    {
+      "name": "POWER5+_v2.1-powerpc64-cpu",
+      "parent": "POWER5P-family-powerpc64-cpu"
+    },
+    {
+      "name": "740_v3.0-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "7441_v2.1-powerpc64-cpu",
+      "parent": "7440-family-powerpc64-cpu"
+    },
+    {
+      "name": "qemu,register",
+      "parent": "device"
+    },
+    {
+      "name": "pnv-psi",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "IDE",
+      "parent": "bus"
+    },
+    {
+      "name": "MPC8533_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "e300c3-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8641D-powerpc64-cpu",
+      "parent": "e600-family-powerpc64-cpu"
+    },
+    {
+      "name": "401E2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8347EAP-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "spapr-pci-host-bridge",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "memory-backend-ram",
+      "parent": "memory-backend"
+    },
+    {
+      "name": "am53c974",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pseries-2.5-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "750cx_v2.0-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER7+_v2.1-powerpc64-cpu",
+      "parent": "POWER7-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-blk-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "qio-channel-file",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "745_v1.1-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "601_v1-powerpc64-cpu",
+      "parent": "601-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8544_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "740_v1.0-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "qio-channel-websock",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "pseries-2.4-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "mc146818rtc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "spapr-nvram",
+      "parent": "vio-spapr-device"
+    },
+    {
+      "name": "POWER9_v1.0-powerpc64-cpu",
+      "parent": "POWER9-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-msmouse",
+      "parent": "chardev"
+    },
+    {
+      "name": "uni-north-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-pipe",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "cryptodev-backend-builtin",
+      "parent": "cryptodev-backend"
+    },
+    {
+      "name": "750fx_v2.2-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "hda-output",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "603e_v1.2-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC603-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "mmio_interface",
+      "parent": "device"
+    },
+    {
+      "name": "sysbus-m48t08",
+      "parent": "sysbus-m48txx"
+    },
+    {
+      "name": "raven",
+      "parent": "pci-device"
+    },
+    {
+      "name": "440EPb-powerpc64-cpu",
+      "parent": "440EP-family-powerpc64-cpu"
+    },
+    {
+      "name": "VGA",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "i8257",
+      "parent": "isa-device"
+    },
+    {
+      "name": "sysbus-m48t02",
+      "parent": "sysbus-m48txx"
+    },
+    {
+      "name": "pc87312",
+      "parent": "isa-device"
+    },
+    {
+      "name": "mptsas1068",
+      "parent": "pci-device"
+    },
+    {
+      "name": "edu",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8347P-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-mouse-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "740_v2.0-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "7455_v3.2-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "vfio-pci-igd-lpc-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "spapr-vlan",
+      "parent": "vio-spapr-device"
+    },
+    {
+      "name": "603e_v4-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "HDA",
+      "parent": "bus"
+    },
+    {
+      "name": "7447_v1.1-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "603e_v2.2-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "pseries-2.8-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "MPC8543E_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "floppy",
+      "parent": "device"
+    },
+    {
+      "name": "macio-oldworld",
+      "parent": "macio"
+    },
+    {
+      "name": "qemu:memory-region",
+      "parent": "object"
+    },
+    {
+      "name": "adb-keyboard",
+      "parent": "adb-device"
+    },
+    {
+      "name": "G2LS-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "sysbus-ohci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "7445_v1.0-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "pseries-2.7-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "755_v2.4-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "7450_v1.1-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "e600-powerpc64-cpu",
+      "parent": "e600-family-powerpc64-cpu"
+    },
+    {
+      "name": "qio-channel-command",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "chardev-ringbuf",
+      "parent": "chardev"
+    },
+    {
+      "name": "usb-serial",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "x2vp20-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "qtest-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "pseries-2.6-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "750l_v2.0-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "750fl-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "vt82c686b-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "405D2-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-blk-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-gpu-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "MPC8560_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "750gx_v1.0-powerpc64-cpu",
+      "parent": "750gx-family-powerpc64-cpu"
+    },
+    {
+      "name": "System",
+      "parent": "bus"
+    },
+    {
+      "name": "lsi53c810",
+      "parent": "lsi53c895a"
+    },
+    {
+      "name": "uni-north-agp-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "IOP480-powerpc64-cpu",
+      "parent": "IOP480-family-powerpc64-cpu"
+    },
+    {
+      "name": "603e7t-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8548E_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "405GPd-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "603-powerpc64-cpu",
+      "parent": "603-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2GP-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "7400_v2.9-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxe_v3.1b-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2leGP-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "7450_v2.1-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-braille",
+      "parent": "chardev"
+    },
+    {
+      "name": "chardev-file",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "7448_v2.0-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "mac99-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "e300c4-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "750l_v3.0-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC5200B_v21-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "PCIE",
+      "parent": "PCI"
+    },
+    {
+      "name": "qio-dns-resolver",
+      "parent": "object"
+    },
+    {
+      "name": "750cx_v2.1-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "cuda",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "604e_v1.0-powerpc64-cpu",
+      "parent": "604E-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8572E-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-serial-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "vhost-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "secondary-vga",
+      "parent": "pci-vga"
+    },
+    {
+      "name": "401D2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8544_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500-ccsr",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "601_v2-powerpc64-cpu",
+      "parent": "601v-family-powerpc64-cpu"
+    },
+    {
+      "name": "405EP-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "ccid-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "pci-ohci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "cfi.pflash02",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "cfi.pflash01",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "pseries-2.9-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "usb-hub",
+      "parent": "usb-device"
+    },
+    {
+      "name": "750fx_v2.3-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "405LP-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8541_v10-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8555_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "input-linux",
+      "parent": "object"
+    },
+    {
+      "name": "x2vp4-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "7410_v1.2-powerpc64-cpu",
+      "parent": "7410-family-powerpc64-cpu"
+    },
+    {
+      "name": "7400_v1.0-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.2-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "740_v2.1-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC5200_v12-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "7448_v1.0-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "xlnx.xps-uartlite",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "e5500-powerpc64-cpu",
+      "parent": "e5500-family-powerpc64-cpu"
+    },
+    {
+      "name": "pci-serial",
+      "parent": "pci-device"
+    },
+    {
+      "name": "403GC-powerpc64-cpu",
+      "parent": "403-family-powerpc64-cpu"
+    },
+    {
+      "name": "ipmi-bmc-extern",
+      "parent": "ipmi-bmc"
+    },
+    {
+      "name": "745_v2.7-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8543_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "i8042",
+      "parent": "isa-device"
+    },
+    {
+      "name": "750cxe_v2.3-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8543E_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "vhost-user-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "i82559c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82559a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "SCSI",
+      "parent": "bus"
+    },
+    {
+      "name": "rocker",
+      "parent": "pci-device"
+    },
+    {
+      "name": "pcnet",
+      "parent": "pci-device"
+    },
+    {
+      "name": "rng-egd",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "MPC8543E_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "405CRa-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "spapr-tce-table",
+      "parent": "device"
+    },
+    {
+      "name": "7400_v2.0-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-testdev",
+      "parent": "chardev"
+    },
+    {
+      "name": "sm501",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8349-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "e200z5-powerpc64-cpu",
+      "parent": "e200-family-powerpc64-cpu"
+    },
+    {
+      "name": "740_v3.1-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "filter-dump",
+      "parent": "netfilter"
+    },
+    {
+      "name": "MPC8533_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "migration",
+      "parent": "device"
+    },
+    {
+      "name": "i82558b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "G2H4-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "i82558a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8560_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "smbus-eeprom",
+      "parent": "smbus-device"
+    },
+    {
+      "name": "host-powerpc64-cpu",
+      "parent": "POWER8E_v2.1-powerpc64-cpu"
+    },
+    {
+      "name": "i82801",
+      "parent": "pci-device"
+    },
+    {
+      "name": "tls-creds-x509",
+      "parent": "tls-creds"
+    },
+    {
+      "name": "virtio-net-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "virtio-keyboard-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "i82562",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-net",
+      "parent": "usb-device"
+    },
+    {
+      "name": "MPC8560_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER7+_v2.1-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "603e_v1.3-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v1.0-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8568E-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "i82557c",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82557b",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82557a",
+      "parent": "pci-device"
+    },
+    {
+      "name": "chardev-memory",
+      "parent": "chardev-ringbuf"
+    },
+    {
+      "name": "isa-i8259",
+      "parent": "pic-common"
+    },
+    {
+      "name": "virtio-gpu-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "nec-usb-xhci",
+      "parent": "base-xhci"
+    },
+    {
+      "name": "pc-dimm",
+      "parent": "device"
+    },
+    {
+      "name": "host-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "usb-mouse",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "sdhci-bus",
+      "parent": "sd-bus"
+    },
+    {
+      "name": "i82551",
+      "parent": "pci-device"
+    },
+    {
+      "name": "i82550",
+      "parent": "pci-device"
+    },
+    {
+      "name": "405EZ-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "ich9-ahci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "7455_v3.3-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "sd-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "filter-mirror",
+      "parent": "netfilter"
+    },
+    {
+      "name": "apple-desktop-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "e500v2_v30-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "macio-ide",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "401C2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8541_v11-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-crypto-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "755_v2.0-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "ich9-usb-ehci2",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "ich9-usb-ehci1",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "vfio-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "prep-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "isa-ide",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pseries-2.10-machine",
+      "parent": "spapr-machine"
+    },
+    {
+      "name": "irq",
+      "parent": "object"
+    },
+    {
+      "name": "405GPR-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER8E_v2.1-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "745_v2.3-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "7410_v1.3-powerpc64-cpu",
+      "parent": "7410-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.5-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8572-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "7450_v1.2-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "7457_v1.0-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "qio-channel-socket",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "7457A_v1.0-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER8NVL_v1.0-powerpc64-cpu",
+      "parent": "POWER8-family-powerpc64-cpu"
+    },
+    {
+      "name": "750l_v2.1-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8347AT-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "chardev-stdio",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "piix3-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "virtserialport",
+      "parent": "virtio-serial-port"
+    },
+    {
+      "name": "MPC8543E_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "pvscsi",
+      "parent": "pci-device"
+    },
+    {
+      "name": "MPC8548_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxe_v2.4-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "i82378",
+      "parent": "pci-device"
+    },
+    {
+      "name": "604-powerpc64-cpu",
+      "parent": "604-family-powerpc64-cpu"
+    },
+    {
+      "name": "powernv-chip-POWER8NVL",
+      "parent": "powernv-chip"
+    },
+    {
+      "name": "750gx_v1.1-powerpc64-cpu",
+      "parent": "750gx-family-powerpc64-cpu"
+    },
+    {
+      "name": "gus",
+      "parent": "isa-device"
+    },
+    {
+      "name": "e500_v20-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "i82374",
+      "parent": "isa-device"
+    },
+    {
+      "name": "pnv-lpc",
+      "parent": "device"
+    },
+    {
+      "name": "7445_v2.1-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8543_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8540_v20-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "7447A_v1.0-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "405CRb-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "g3beige-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "7400_v2.1-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "IndustryPack",
+      "parent": "bus"
+    },
+    {
+      "name": "powernv-chip-POWER8E",
+      "parent": "powernv-chip"
+    },
+    {
+      "name": "7441_v2.3-powerpc64-cpu",
+      "parent": "7440-family-powerpc64-cpu"
+    },
+    {
+      "name": "7448_v2.1-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8377-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "401A1-powerpc64-cpu",
+      "parent": "401-family-powerpc64-cpu"
+    },
+    {
+      "name": "603e7-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "cryptodev-backend",
+      "parent": "object"
+    },
+    {
+      "name": "adb-mouse",
+      "parent": "adb-device"
+    },
+    {
+      "name": "Npe405L-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "or-irq",
+      "parent": "device"
+    },
+    {
+      "name": "750cx_v2.2-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "ipmi-bmc-sim",
+      "parent": "ipmi-bmc"
+    },
+    {
+      "name": "MPC8343E-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "powernv-cpu-core-POWER9",
+      "parent": "powernv-cpu-core"
+    },
+    {
+      "name": "powernv-cpu-core-POWER8",
+      "parent": "powernv-cpu-core"
+    },
+    {
+      "name": "7451_v2.10-powerpc64-cpu",
+      "parent": "7450-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-rng-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "chardev-vc",
+      "parent": "chardev"
+    },
+    {
+      "name": "usb-ehci",
+      "parent": "pci-ehci-usb"
+    },
+    {
+      "name": "bamboo-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "filter-replay",
+      "parent": "netfilter"
+    },
+    {
+      "name": "G2leGP1-powerpc64-cpu",
+      "parent": "G2LE-family-powerpc64-cpu"
+    },
+    {
+      "name": "603e_v1.4-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "970mp_v1.1-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "virtio-9p-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "dec-21154-sysbus",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "uni-north-pci-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "spapr-vty",
+      "parent": "vio-spapr-device"
+    },
+    {
+      "name": "e1000-82545em",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "chardev-wctablet",
+      "parent": "chardev"
+    },
+    {
+      "name": "7441_v2.10-powerpc64-cpu",
+      "parent": "7440-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8567E-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER5+_v2.1-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "7400_v1.1-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "e1000-82544gc",
+      "parent": "e1000-base"
+    },
+    {
+      "name": "740_v2.2-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "7448_v1.1-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "7455_v3.4-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER8NVL_v1.0-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "prep-systemio",
+      "parent": "isa-device"
+    },
+    {
+      "name": "MPC8547E_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.8-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500-spin",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "MPC8543_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.1-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8349E-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "filter-buffer",
+      "parent": "netfilter"
+    },
+    {
+      "name": "mpc8544ds-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "pci-serial-4x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "401B2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "ich9-intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "virtio-9p-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "MPC8347AP-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "ivshmem",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "e500v2_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8379E-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-scsi-pci",
+      "parent": "virtio-pci"
+    },
+    {
+      "name": "qemu-console",
+      "parent": "object"
+    },
+    {
+      "name": "e200z6-powerpc64-cpu",
+      "parent": "e200-family-powerpc64-cpu"
+    },
+    {
+      "name": "7457A_v1.1-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8555E_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "isa-ipmi-bt",
+      "parent": "isa-device"
+    },
+    {
+      "name": "ppce500-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "virtio-pci-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "750l_v2.2-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "ISA",
+      "parent": "bus"
+    },
+    {
+      "name": "MPC8541E_v10-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "ipoctal232",
+      "parent": "ipack-device"
+    },
+    {
+      "name": "mpc8544-guts",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "MPC8548_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "spapr-drc-lmb",
+      "parent": "spapr-drc-logical"
+    },
+    {
+      "name": "pci-testdev",
+      "parent": "pci-device"
+    },
+    {
+      "name": "405GPa-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "piix4-usb-uhci",
+      "parent": "pci-uhci-usb"
+    },
+    {
+      "name": "7400_v2.6-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-tablet-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "Npe405H2-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "750_v3.0-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "powernv-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "ES1370",
+      "parent": "pci-device"
+    },
+    {
+      "name": "603e7v-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "openpic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "Npe405H-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8548_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8545_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8567-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v1.1-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500_v10-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxe_v3.0-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "G2HiP3-powerpc64-cpu",
+      "parent": "G2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8378-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8343A-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "STB03-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "tcg-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "750_v1.0-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtconsole",
+      "parent": "virtserialport"
+    },
+    {
+      "name": "MPC8540_v10-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "750l_v3.2-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "pci-serial-2x",
+      "parent": "pci-device"
+    },
+    {
+      "name": "ne2k_isa",
+      "parent": "isa-device"
+    },
+    {
+      "name": "isa-fdc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "chardev-serial",
+      "parent": "chardev-fd"
+    },
+    {
+      "name": "scsi-disk",
+      "parent": "scsi-disk-base"
+    },
+    {
+      "name": "colo-compare",
+      "parent": "object"
+    },
+    {
+      "name": "spapr-drc-pci",
+      "parent": "spapr-drc-physical"
+    },
+    {
+      "name": "745_v2.4-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-mmio-bus",
+      "parent": "virtio-bus"
+    },
+    {
+      "name": "virtio-tablet-pci",
+      "parent": "virtio-input-hid-pci"
+    },
+    {
+      "name": "e1000e",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "7445_v3.2-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "rs6000-mc",
+      "parent": "isa-device"
+    },
+    {
+      "name": "usb-storage",
+      "parent": "usb-storage-dev"
+    },
+    {
+      "name": "PCI",
+      "parent": "bus"
+    },
+    {
+      "name": "kvm-openpic",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "esp",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "vhost-user-scsi",
+      "parent": "vhost-scsi-common"
+    },
+    {
+      "name": "virtex-ml507-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "usb-kbd",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "750_v2.0-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500-host-bridge",
+      "parent": "pci-device"
+    },
+    {
+      "name": "7410_v1.4-powerpc64-cpu",
+      "parent": "7410-family-powerpc64-cpu"
+    },
+    {
+      "name": "ne2k_pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "Npe4GS3-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "isabus-bridge",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "970mp_v1.0-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "ivshmem-plain",
+      "parent": "ivshmem-common"
+    },
+    {
+      "name": "755_v2.6-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "604e_v2.2-powerpc64-cpu",
+      "parent": "604E-family-powerpc64-cpu"
+    },
+    {
+      "name": "qio-channel-buffer",
+      "parent": "qio-channel"
+    },
+    {
+      "name": "970fx_v3.0-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "7457_v1.1-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "pnv-occ",
+      "parent": "device"
+    },
+    {
+      "name": "u3-agp-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "spapr-vio-bridge",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "secret",
+      "parent": "object"
+    },
+    {
+      "name": "hda-duplex",
+      "parent": "hda-audio"
+    },
+    {
+      "name": "raven-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "allwinner-ahci",
+      "parent": "sysbus-ahci"
+    },
+    {
+      "name": "nvme",
+      "parent": "pci-device"
+    },
+    {
+      "name": "sysbus-fdc",
+      "parent": "base-sysbus-fdc"
+    },
+    {
+      "name": "405D4-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8544E_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "virtio-balloon-device",
+      "parent": "virtio-device"
+    },
+    {
+      "name": "MPC8641-powerpc64-cpu",
+      "parent": "e600-family-powerpc64-cpu"
+    },
+    {
+      "name": "none-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "750fx_v1.0-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "750gx_v1.2-powerpc64-cpu",
+      "parent": "750gx-family-powerpc64-cpu"
+    },
+    {
+      "name": "megasas-gen2",
+      "parent": "megasas-base"
+    },
+    {
+      "name": "AC97",
+      "parent": "pci-device"
+    },
+    {
+      "name": "usb-tablet",
+      "parent": "usb-hid"
+    },
+    {
+      "name": "970fx_v1.0-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-wacom-tablet",
+      "parent": "usb-device"
+    },
+    {
+      "name": "e300c1-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500v2_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8540_v21-powerpc64-cpu",
+      "parent": "e500v1-family-powerpc64-cpu"
+    },
+    {
+      "name": "7400_v2.2-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8543_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8533E_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "7447A_v1.1-powerpc64-cpu",
+      "parent": "7445-family-powerpc64-cpu"
+    },
+    {
+      "name": "405CRc-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "740e-powerpc64-cpu",
+      "parent": "740-family-powerpc64-cpu"
+    },
+    {
+      "name": "usb-braille",
+      "parent": "usb-serial-dev"
+    },
+    {
+      "name": "440-Xilinx-w-dfpu-powerpc64-cpu",
+      "parent": "440x5wDFPU-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8555E_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "970mp_v1.0-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "603e7v1-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500mc-powerpc64-cpu",
+      "parent": "e500mc-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500v2_v10-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8378E-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "intel-hda",
+      "parent": "intel-hda-generic"
+    },
+    {
+      "name": "kvm-accel",
+      "parent": "accel"
+    },
+    {
+      "name": "virtio-scsi-device",
+      "parent": "virtio-scsi-common"
+    },
+    {
+      "name": "603p-powerpc64-cpu",
+      "parent": "603E-family-powerpc64-cpu"
+    },
+    {
+      "name": "7400_v2.7-powerpc64-cpu",
+      "parent": "7400-family-powerpc64-cpu"
+    },
+    {
+      "name": "grackle",
+      "parent": "pci-device"
+    },
+    {
+      "name": "970_v2.2-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "Cobra-powerpc64-cpu",
+      "parent": "401-family-powerpc64-cpu"
+    },
+    {
+      "name": "POWER8E_v2.1-powerpc64-cpu",
+      "parent": "POWER8-family-powerpc64-cpu"
+    },
+    {
+      "name": "750fx_v2.0-powerpc64-cpu",
+      "parent": "750fx-family-powerpc64-cpu"
+    },
+    {
+      "name": "970fx_v2.0-powerpc64-cpu",
+      "parent": "970-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8548_v11-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8545_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "i2c-bus",
+      "parent": "bus"
+    },
+    {
+      "name": "virtio-mouse-device",
+      "parent": "virtio-input-hid-device"
+    },
+    {
+      "name": "750e-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "isa-pit",
+      "parent": "pit-common"
+    },
+    {
+      "name": "macio-nvram",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "POWER9_v1.0-spapr-cpu-core",
+      "parent": "spapr-cpu-core"
+    },
+    {
+      "name": "powernv-cpu-core-POWER8E",
+      "parent": "powernv-cpu-core"
+    },
+    {
+      "name": "grackle-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "ide-drive",
+      "parent": "ide-device"
+    },
+    {
+      "name": "ref405ep-machine",
+      "parent": "machine"
+    },
+    {
+      "name": "MPC8349A-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "401G2-powerpc64-cpu",
+      "parent": "401x2-family-powerpc64-cpu"
+    },
+    {
+      "name": "generic-sdhci",
+      "parent": "sys-bus-device"
+    },
+    {
+      "name": "POWER8_v2.0-powerpc64-cpu",
+      "parent": "POWER8-family-powerpc64-cpu"
+    },
+    {
+      "name": "i6300esb",
+      "parent": "pci-device"
+    },
+    {
+      "name": "STB25-powerpc64-cpu",
+      "parent": "405-family-powerpc64-cpu"
+    },
+    {
+      "name": "sd-card",
+      "parent": "device"
+    },
+    {
+      "name": "MPC8547E_v21-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "7455_v1.0-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    },
+    {
+      "name": "745_v2.0-powerpc64-cpu",
+      "parent": "745-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.2-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "e500-pcihost",
+      "parent": "pci-host-bridge"
+    },
+    {
+      "name": "vmxnet3",
+      "parent": "pci-device"
+    },
+    {
+      "name": "750_v2.1-powerpc64-cpu",
+      "parent": "750-family-powerpc64-cpu"
+    },
+    {
+      "name": "MPC8545E_v20-powerpc64-cpu",
+      "parent": "e500v2-family-powerpc64-cpu"
+    },
+    {
+      "name": "uni-north-internal-pci",
+      "parent": "pci-device"
+    },
+    {
+      "name": "spapr-rtc",
+      "parent": "device"
+    },
+    {
+      "name": "MPC8347ET-powerpc64-cpu",
+      "parent": "e300-family-powerpc64-cpu"
+    },
+    {
+      "name": "755_v2.7-powerpc64-cpu",
+      "parent": "755-family-powerpc64-cpu"
+    },
+    {
+      "name": "750cxe_v2.1-powerpc64-cpu",
+      "parent": "750cx-family-powerpc64-cpu"
+    },
+    {
+      "name": "rng-random",
+      "parent": "rng-backend"
+    },
+    {
+      "name": "750cl_v1.0-powerpc64-cpu",
+      "parent": "750cl-family-powerpc64-cpu"
+    },
+    {
+      "name": "7457A_v1.2-powerpc64-cpu",
+      "parent": "7455-family-powerpc64-cpu"
+    }
+  ],
+  "id": "libvirt-7"
+}
+
+{
   "execute": "device-list-properties",
   "arguments": {
     "typename": "virtio-blk-pci"
   },
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -3412,7 +6091,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-7"
+  "id": "libvirt-8"
 }
 
 {
@@ -3420,7 +6099,7 @@
   "arguments": {
     "typename": "virtio-net-pci"
   },
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -3707,7 +6386,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-8"
+  "id": "libvirt-9"
 }
 
 {
@@ -3715,7 +6394,7 @@
   "arguments": {
     "typename": "virtio-scsi-pci"
   },
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -3876,7 +6555,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-9"
+  "id": "libvirt-10"
 }
 
 {
@@ -3884,11 +6563,11 @@
   "arguments": {
     "typename": "virtio-net-ccw"
   },
-  "id": "libvirt-10"
+  "id": "libvirt-11"
 }
 
 {
-  "id": "libvirt-10",
+  "id": "libvirt-11",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-ccw' not found"
@@ -3900,11 +6579,11 @@
   "arguments": {
     "typename": "virtio-scsi-ccw"
   },
-  "id": "libvirt-11"
+  "id": "libvirt-12"
 }
 
 {
-  "id": "libvirt-11",
+  "id": "libvirt-12",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-scsi-ccw' not found"
@@ -3916,11 +6595,11 @@
   "arguments": {
     "typename": "virtio-net-s390"
   },
-  "id": "libvirt-12"
+  "id": "libvirt-13"
 }
 
 {
-  "id": "libvirt-12",
+  "id": "libvirt-13",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-net-s390' not found"
@@ -3932,7 +6611,7 @@
   "arguments": {
     "typename": "vfio-pci"
   },
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -4039,7 +6718,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-13"
+  "id": "libvirt-14"
 }
 
 {
@@ -4047,7 +6726,7 @@
   "arguments": {
     "typename": "scsi-hd"
   },
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -4161,7 +6840,7 @@
       "type": "uint64"
     }
   ],
-  "id": "libvirt-14"
+  "id": "libvirt-15"
 }
 
 {
@@ -4169,7 +6848,7 @@
   "arguments": {
     "typename": "ide-hd"
   },
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -4245,7 +6924,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-15"
+  "id": "libvirt-16"
 }
 
 {
@@ -4253,11 +6932,11 @@
   "arguments": {
     "typename": "PIIX4_PM"
   },
-  "id": "libvirt-16"
+  "id": "libvirt-17"
 }
 
 {
-  "id": "libvirt-16",
+  "id": "libvirt-17",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'PIIX4_PM' not found"
@@ -4269,11 +6948,11 @@
   "arguments": {
     "typename": "i440FX-pcihost"
   },
-  "id": "libvirt-17"
+  "id": "libvirt-18"
 }
 
 {
-  "id": "libvirt-17",
+  "id": "libvirt-18",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'i440FX-pcihost' not found"
@@ -4285,11 +6964,11 @@
   "arguments": {
     "typename": "q35-pcihost"
   },
-  "id": "libvirt-18"
+  "id": "libvirt-19"
 }
 
 {
-  "id": "libvirt-18",
+  "id": "libvirt-19",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'q35-pcihost' not found"
@@ -4301,7 +6980,7 @@
   "arguments": {
     "typename": "usb-storage"
   },
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -4374,7 +7053,7 @@
       "type": "uint16"
     }
   ],
-  "id": "libvirt-19"
+  "id": "libvirt-20"
 }
 
 {
@@ -4382,11 +7061,11 @@
   "arguments": {
     "typename": "kvm-pit"
   },
-  "id": "libvirt-20"
+  "id": "libvirt-21"
 }
 
 {
-  "id": "libvirt-20",
+  "id": "libvirt-21",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'kvm-pit' not found"
@@ -4398,7 +7077,7 @@
   "arguments": {
     "typename": "VGA"
   },
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -4455,7 +7134,7 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-21"
+  "id": "libvirt-22"
 }
 
 {
@@ -4463,7 +7142,7 @@
   "arguments": {
     "typename": "virtio-gpu-pci"
   },
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -4614,7 +7293,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-22"
+  "id": "libvirt-23"
 }
 
 {
@@ -4622,7 +7301,7 @@
   "arguments": {
     "typename": "virtio-gpu-device"
   },
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -4669,7 +7348,7 @@
       "type": "size"
     }
   ],
-  "id": "libvirt-23"
+  "id": "libvirt-24"
 }
 
 {
@@ -4677,11 +7356,11 @@
   "arguments": {
     "typename": "ICH9-LPC"
   },
-  "id": "libvirt-24"
+  "id": "libvirt-25"
 }
 
 {
-  "id": "libvirt-24",
+  "id": "libvirt-25",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ICH9-LPC' not found"
@@ -4693,7 +7372,7 @@
   "arguments": {
     "typename": "virtio-balloon-pci"
   },
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -4836,7 +7515,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-25"
+  "id": "libvirt-26"
 }
 
 {
@@ -4844,11 +7523,11 @@
   "arguments": {
     "typename": "virtio-balloon-ccw"
   },
-  "id": "libvirt-26"
+  "id": "libvirt-27"
 }
 
 {
-  "id": "libvirt-26",
+  "id": "libvirt-27",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-balloon-ccw' not found"
@@ -4860,7 +7539,7 @@
   "arguments": {
     "typename": "virtio-balloon-device"
   },
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -4904,7 +7583,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-27"
+  "id": "libvirt-28"
 }
 
 {
@@ -4912,7 +7591,7 @@
   "arguments": {
     "typename": "nec-usb-xhci"
   },
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -4992,7 +7671,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-28"
+  "id": "libvirt-29"
 }
 
 {
@@ -5000,7 +7679,7 @@
   "arguments": {
     "typename": "spapr-pci-host-bridge"
   },
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
@@ -5086,12 +7765,12 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-29"
+  "id": "libvirt-30"
 }
 
 {
   "execute": "query-machines",
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
@@ -5209,12 +7888,12 @@
       "cpu-max": 1
     }
   ],
-  "id": "libvirt-30"
+  "id": "libvirt-31"
 }
 
 {
   "execute": "query-cpu-definitions",
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
@@ -7390,34 +10069,34 @@
       "static": false
     }
   ],
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
   "execute": "query-tpm-models",
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
   "execute": "query-tpm-types",
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
   "execute": "query-command-line-options",
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -8557,12 +11236,12 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
   "execute": "query-migrate-capabilities",
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
@@ -8612,12 +11291,12 @@
       "capability": "return-path"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
   "execute": "query-qmp-schema",
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
@@ -18340,7 +21019,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
