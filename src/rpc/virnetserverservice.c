@@ -35,7 +35,7 @@
 VIR_LOG_INIT("rpc.netserverservice");
 
 struct _virNetServerService {
-    virObject parent;
+    GObject parent;
 
     size_t nsocks;
     virNetSocketPtr *socks;
@@ -51,19 +51,21 @@ struct _virNetServerService {
 };
 
 
-static virClassPtr virNetServerServiceClass;
-static void virNetServerServiceDispose(void *obj);
+G_DEFINE_TYPE(virNetServerService, vir_net_server_service, G_TYPE_OBJECT);
+static void virNetServerServiceDispose(GObject *obj);
+static void virNetServerServiceFinalize(GObject *obj);
 
-static int virNetServerServiceOnceInit(void)
+static void vir_net_server_service_init(virNetServerService *svc G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virNetServerService, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virNetServerService);
+static void vir_net_server_service_class_init(virNetServerServiceClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
+    obj->dispose = virNetServerServiceDispose;
+    obj->finalize = virNetServerServiceFinalize;
+}
 
 static void virNetServerServiceAccept(virNetSocketPtr sock,
                                       int events G_GNUC_UNUSED,
@@ -97,17 +99,13 @@ virNetServerServiceNewSocket(virNetSocketPtr *socks,
                              size_t max_queued_clients,
                              size_t nrequests_client_max)
 {
-    virNetServerServicePtr svc;
+    g_autoptr(virNetServerService) svc = NULL;
     size_t i;
 
-    if (virNetServerServiceInitialize() < 0)
-        return NULL;
-
-    if (!(svc = virObjectNew(virNetServerServiceClass)))
-        return NULL;
+    svc = VIR_NET_SERVER_SERVICE(g_object_new(VIR_TYPE_NET_SERVER_SERVICE, NULL));
 
     if (VIR_ALLOC_N(svc->socks, nsocks) < 0)
-        goto error;
+        return NULL;
     svc->nsocks = nsocks;
     for (i = 0; i < svc->nsocks; i++) {
         svc->socks[i] = socks[i];
@@ -120,27 +118,22 @@ virNetServerServiceNewSocket(virNetSocketPtr *socks,
 
     for (i = 0; i < svc->nsocks; i++) {
         if (virNetSocketListen(svc->socks[i], max_queued_clients) < 0)
-            goto error;
+            return NULL;
 
         /* IO callback is initially disabled, until we're ready
          * to deal with incoming clients */
-        virObjectRef(svc);
+        g_object_ref(svc);
         if (virNetSocketAddIOCallback(svc->socks[i],
                                       0,
                                       virNetServerServiceAccept,
                                       svc,
-                                      virObjectFreeCallback) < 0) {
-            virObjectUnref(svc);
-            goto error;
+                                      g_object_unref) < 0) {
+            g_object_unref(svc);
+            return NULL;
         }
     }
 
-
-    return svc;
-
- error:
-    virObjectUnref(svc);
-    return NULL;
+    return g_steal_pointer(&svc);
 }
 
 
@@ -258,51 +251,47 @@ virNetServerServicePtr virNetServerServiceNewFDs(int *fds,
 
 virNetServerServicePtr virNetServerServiceNewPostExecRestart(virJSONValuePtr object)
 {
-    virNetServerServicePtr svc;
+    g_autoptr(virNetServerService) svc = NULL;
     virJSONValuePtr socks;
     size_t i;
     size_t n;
     unsigned int max;
 
-    if (virNetServerServiceInitialize() < 0)
-        return NULL;
-
-    if (!(svc = virObjectNew(virNetServerServiceClass)))
-        return NULL;
+    svc = VIR_NET_SERVER_SERVICE(g_object_new(VIR_TYPE_NET_SERVER_SERVICE, NULL));
 
     if (virJSONValueObjectGetNumberInt(object, "auth", &svc->auth) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Missing auth field in JSON state document"));
-        goto error;
+        return NULL;
     }
     if (virJSONValueObjectGetBoolean(object, "readonly", &svc->readonly) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Missing readonly field in JSON state document"));
-        goto error;
+        return NULL;
     }
     if (virJSONValueObjectGetNumberUint(object, "nrequests_client_max",
                                         &max) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Missing nrequests_client_max field in JSON state document"));
-        goto error;
+        return NULL;
     }
     svc->nrequests_client_max = max;
 
     if (!(socks = virJSONValueObjectGet(object, "socks"))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Missing socks field in JSON state document"));
-        goto error;
+        return NULL;
     }
 
     if (!virJSONValueIsArray(socks)) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Malformed socks array"));
-        goto error;
+        return NULL;
     }
 
     n = virJSONValueArraySize(socks);
     if (VIR_ALLOC_N(svc->socks, n) < 0)
-        goto error;
+        return NULL;
     svc->nsocks = n;
 
     for (i = 0; i < svc->nsocks; i++) {
@@ -311,29 +300,25 @@ virNetServerServicePtr virNetServerServiceNewPostExecRestart(virJSONValuePtr obj
 
         if (!(sock = virNetSocketNewPostExecRestart(child))) {
             virObjectUnref(sock);
-            goto error;
+            return NULL;
         }
 
         svc->socks[i] = sock;
 
         /* IO callback is initially disabled, until we're ready
          * to deal with incoming clients */
-        virObjectRef(svc);
+        g_object_ref(svc);
         if (virNetSocketAddIOCallback(sock,
                                       0,
                                       virNetServerServiceAccept,
                                       svc,
-                                      virObjectFreeCallback) < 0) {
-            virObjectUnref(svc);
-            goto error;
+                                      g_object_unref) < 0) {
+            g_object_unref(svc);
+            return NULL;
         }
     }
 
-    return svc;
-
- error:
-    virObjectUnref(svc);
-    return NULL;
+    return g_steal_pointer(&svc);
 }
 
 
@@ -415,16 +400,28 @@ void virNetServerServiceSetDispatcher(virNetServerServicePtr svc,
 }
 
 
-void virNetServerServiceDispose(void *obj)
+void virNetServerServiceDispose(GObject *obj)
 {
-    virNetServerServicePtr svc = obj;
+    virNetServerServicePtr svc = VIR_NET_SERVER_SERVICE(obj);
     size_t i;
 
-    for (i = 0; i < svc->nsocks; i++)
+    for (i = 0; i < svc->nsocks; i++) {
        virObjectUnref(svc->socks[i]);
-    VIR_FREE(svc->socks);
+       svc->socks[i] = NULL;
+    }
 
     virObjectUnref(svc->tls);
+
+    G_OBJECT_CLASS(vir_net_server_service_parent_class)->dispose(obj);
+}
+
+void virNetServerServiceFinalize(GObject *obj)
+{
+    virNetServerServicePtr svc = VIR_NET_SERVER_SERVICE(obj);
+
+    VIR_FREE(svc->socks);
+
+    G_OBJECT_CLASS(vir_net_server_service_parent_class)->finalize(obj);
 }
 
 void virNetServerServiceToggle(virNetServerServicePtr svc,

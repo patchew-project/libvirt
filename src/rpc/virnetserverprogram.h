@@ -29,7 +29,12 @@
 typedef struct _virNetDaemon virNetDaemon;
 typedef virNetDaemon *virNetDaemonPtr;
 
-typedef struct _virNetServerService virNetServerService;
+#define VIR_TYPE_NET_SERVER_SERVICE vir_net_server_service_get_type()
+G_DECLARE_FINAL_TYPE(virNetServerService,
+                     vir_net_server_service,
+                     VIR,
+                     NET_SERVER_SERVICE,
+                     GObject);
 typedef virNetServerService *virNetServerServicePtr;
 
 #define VIR_TYPE_NET_SERVER_PROGRAM vir_net_server_program_get_type()
