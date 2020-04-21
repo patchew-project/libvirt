@@ -565,7 +565,7 @@ virDomainFree(virDomainPtr domain)
 
     virCheckDomainReturn(domain, -1);
 
-    virObjectUnref(domain);
+    g_clear_object(&domain);
     return 0;
 }
 
@@ -590,13 +590,13 @@ virDomainFree(virDomainPtr domain)
 int
 virDomainRef(virDomainPtr domain)
 {
-    VIR_DOMAIN_DEBUG(domain, "refs=%d", domain ? domain->parent.u.s.refs : 0);
+    VIR_DOMAIN_DEBUG(domain);
 
     virResetLastError();
 
     virCheckDomainReturn(domain, -1);
 
-    virObjectRef(domain);
+    g_object_ref(domain);
     return 0;
 }
 

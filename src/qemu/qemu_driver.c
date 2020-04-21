@@ -1089,11 +1089,7 @@ qemuStateStop(void)
             ret = -1;
 
  cleanup:
-    if (domains) {
-        for (i = 0; i < numDomains; i++)
-            virObjectUnref(domains[i]);
-        VIR_FREE(domains);
-    }
+    virGObjectListFreeCount(domains, numDomains);
 
     return ret;
 }

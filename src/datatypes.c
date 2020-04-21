@@ -35,11 +35,27 @@ VIR_LOG_INIT("datatypes");
 
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
-virClassPtr virDomainClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
-static void virDomainDispose(void *obj);
+
+G_DEFINE_TYPE(virDomain, vir_domain, G_TYPE_OBJECT);
+static void virDomainDispose(GObject *obj);
+static void virDomainFinalize(GObject *obj);
+
+static void
+vir_domain_init(virDomain *dom G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_domain_class_init(virDomainClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virDomainDispose;
+    obj->finalize = virDomainFinalize;
+}
 
 G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
 static void virDomainCheckpointDispose(GObject *obj);
@@ -310,7 +326,6 @@ virDataTypesOnceInit(void)
 
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
-    DECLARE_CLASS(virDomain);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
@@ -475,7 +490,7 @@ virConnectCloseCallbackDataGetCallback(virConnectCloseCallbackDataPtr closeData)
  * @id: domain ID
  *
  * Allocates a new domain object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the domain object, or NULL on error.
  */
@@ -485,17 +500,16 @@ virGetDomain(virConnectPtr conn,
              const unsigned char *uuid,
              int id)
 {
-    virDomainPtr ret = NULL;
+    g_autoptr(virDomain) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
-    virCheckNonNullArgGoto(uuid, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
+    virCheckNonNullArgReturn(uuid, NULL);
 
-    if (!(ret = virObjectNew(virDomainClass)))
-        goto error;
+    ret = VIR_DOMAIN(g_object_new(VIR_TYPE_DOMAIN, NULL));
 
     ret->name = g_strdup(name);
 
@@ -503,34 +517,46 @@ virGetDomain(virConnectPtr conn,
     ret->id = id;
     memcpy(&(ret->uuid[0]), uuid, VIR_UUID_BUFLEN);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 /**
  * virDomainDispose:
  * @obj: the domain to release
  *
- * Unconditionally release all memory associated with a domain.
- * The domain object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virDomainDispose(void *obj)
+virDomainDispose(GObject *obj)
 {
-    virDomainPtr domain = obj;
+    virDomainPtr domain = VIR_DOMAIN(obj);
+
+    virObjectUnref(domain->conn);
+    domain->conn = NULL;
+
+    G_OBJECT_CLASS(vir_domain_parent_class)->dispose(obj);
+}
+
+/**
+ * virDomainFinalize:
+ * @obj: the domain to release
+ *
+ * Unconditionally releases all memory associated with a domain.
+ * The domain object must not be used once this method returns.
+ */
+static void
+virDomainFinalize(GObject *obj)
+{
+    virDomainPtr domain = VIR_DOMAIN(obj);
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virUUIDFormat(domain->uuid, uuidstr);
     VIR_DEBUG("release domain %p %s %s", domain, domain->name, uuidstr);
 
     VIR_FREE(domain->name);
-    virObjectUnref(domain->conn);
+
+    G_OBJECT_CLASS(vir_domain_parent_class)->finalize(obj);
 }
 
 
@@ -1296,7 +1322,7 @@ virGetDomainCheckpoint(virDomainPtr domain,
     ret = VIR_DOMAIN_CHECKPOINT(g_object_new(VIR_TYPE_DOMAIN_CHECKPOINT, NULL));
     ret->name = g_strdup(name);
 
-    ret->domain = virObjectRef(domain);
+    ret->domain = g_object_ref(domain);
 
     return g_steal_pointer(&ret);
 }
@@ -1314,8 +1340,7 @@ virDomainCheckpointDispose(GObject *obj)
 {
     virDomainCheckpointPtr checkpoint = VIR_DOMAIN_CHECKPOINT(obj);
 
-    virObjectUnref(checkpoint->domain);
-    checkpoint->domain = NULL;
+    g_clear_object(&checkpoint->domain);
 
     G_OBJECT_CLASS(vir_domain_checkpoint_parent_class)->dispose(obj);
 }
@@ -1363,7 +1388,7 @@ virGetDomainSnapshot(virDomainPtr domain, const char *name)
     ret = VIR_DOMAIN_SNAPSHOT(g_object_new(VIR_TYPE_DOMAIN_SNAPSHOT, NULL));
     ret->name = g_strdup(name);
 
-    ret->domain = virObjectRef(domain);
+    ret->domain = g_object_ref(domain);
 
     return g_steal_pointer(&ret);
 }
@@ -1381,8 +1406,7 @@ virDomainSnapshotDispose(GObject *obj)
 {
     virDomainSnapshotPtr snapshot = VIR_DOMAIN_SNAPSHOT(obj);
 
-    virObjectUnref(snapshot->domain);
-    snapshot->domain = NULL;
+    g_clear_object(&snapshot->domain);
 
     G_OBJECT_CLASS(vir_domain_snapshot_parent_class)->dispose(obj);
 }

@@ -2264,7 +2264,7 @@ remoteDispatchDomainGetSchedulerType(virNetServerPtr server G_GNUC_UNUSED,
                                      remote_domain_get_scheduler_type_args *args,
                                      remote_domain_get_scheduler_type_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *type;
     int nparams;
     int rv = -1;
@@ -2286,7 +2286,6 @@ remoteDispatchDomainGetSchedulerType(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2298,7 +2297,7 @@ remoteDispatchDomainGetSchedulerParameters(virNetServerPtr server G_GNUC_UNUSED,
                                            remote_domain_get_scheduler_parameters_args *args,
                                            remote_domain_get_scheduler_parameters_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int rv = -1;
@@ -2334,7 +2333,6 @@ remoteDispatchDomainGetSchedulerParameters(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2346,7 +2344,7 @@ remoteDispatchDomainGetSchedulerParametersFlags(virNetServerPtr server G_GNUC_UN
                                                 remote_domain_get_scheduler_parameters_flags_args *args,
                                                 remote_domain_get_scheduler_parameters_flags_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int rv = -1;
@@ -2383,7 +2381,6 @@ remoteDispatchDomainGetSchedulerParametersFlags(virNetServerPtr server G_GNUC_UN
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2395,7 +2392,7 @@ remoteDispatchDomainMemoryStats(virNetServerPtr server G_GNUC_UNUSED,
                                 remote_domain_memory_stats_args *args,
                                 remote_domain_memory_stats_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virDomainMemoryStatPtr stats = NULL;
     int nr_stats;
     size_t i;
@@ -2437,7 +2434,6 @@ remoteDispatchDomainMemoryStats(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     VIR_FREE(stats);
     return rv;
 }
@@ -2450,7 +2446,7 @@ remoteDispatchDomainBlockPeek(virNetServerPtr server G_GNUC_UNUSED,
                               remote_domain_block_peek_args *args,
                               remote_domain_block_peek_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *path;
     unsigned long long offset;
     size_t size;
@@ -2489,7 +2485,6 @@ remoteDispatchDomainBlockPeek(virNetServerPtr server G_GNUC_UNUSED,
         virNetMessageSaveError(rerr);
         VIR_FREE(ret->buffer.buffer_val);
     }
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2502,7 +2497,7 @@ remoteDispatchDomainBlockStatsFlags(virNetServerPtr server G_GNUC_UNUSED,
                                     remote_domain_block_stats_flags_ret *ret)
 {
     virTypedParameterPtr params = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     const char *path = args->path;
     int nparams = 0;
     unsigned int flags;
@@ -2550,7 +2545,6 @@ remoteDispatchDomainBlockStatsFlags(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2562,7 +2556,7 @@ remoteDispatchDomainMemoryPeek(virNetServerPtr server G_GNUC_UNUSED,
                                remote_domain_memory_peek_args *args,
                                remote_domain_memory_peek_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     unsigned long long offset;
     size_t size;
     unsigned int flags;
@@ -2599,7 +2593,6 @@ remoteDispatchDomainMemoryPeek(virNetServerPtr server G_GNUC_UNUSED,
         virNetMessageSaveError(rerr);
         VIR_FREE(ret->buffer.buffer_val);
     }
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2611,7 +2604,7 @@ remoteDispatchDomainGetSecurityLabel(virNetServerPtr server G_GNUC_UNUSED,
                                      remote_domain_get_security_label_args *args,
                                      remote_domain_get_security_label_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virSecurityLabelPtr seclabel = NULL;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -2639,7 +2632,6 @@ remoteDispatchDomainGetSecurityLabel(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     VIR_FREE(seclabel);
     return rv;
 }
@@ -2652,7 +2644,7 @@ remoteDispatchDomainGetSecurityLabelList(virNetServerPtr server G_GNUC_UNUSED,
                                          remote_domain_get_security_label_list_args *args,
                                          remote_domain_get_security_label_list_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virSecurityLabelPtr seclabels = NULL;
     int len, rv = -1;
     size_t i;
@@ -2689,7 +2681,6 @@ remoteDispatchDomainGetSecurityLabelList(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     VIR_FREE(seclabels);
     return rv;
 }
@@ -2738,7 +2729,7 @@ remoteDispatchDomainGetVcpuPinInfo(virNetServerPtr server G_GNUC_UNUSED,
                                    remote_domain_get_vcpu_pin_info_args *args,
                                    remote_domain_get_vcpu_pin_info_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     unsigned char *cpumaps = NULL;
     int num;
     int rv = -1;
@@ -2788,7 +2779,6 @@ remoteDispatchDomainGetVcpuPinInfo(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     VIR_FREE(cpumaps);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2800,7 +2790,7 @@ remoteDispatchDomainPinEmulator(virNetServerPtr server G_GNUC_UNUSED,
                                 remote_domain_pin_emulator_args *args)
 {
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
     if (!conn)
@@ -2820,7 +2810,6 @@ remoteDispatchDomainPinEmulator(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2833,7 +2822,7 @@ remoteDispatchDomainGetEmulatorPinInfo(virNetServerPtr server G_GNUC_UNUSED,
                                        remote_domain_get_emulator_pin_info_args *args,
                                        remote_domain_get_emulator_pin_info_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     unsigned char *cpumaps = NULL;
     int r;
     int rv = -1;
@@ -2867,7 +2856,6 @@ remoteDispatchDomainGetEmulatorPinInfo(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     VIR_FREE(cpumaps);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2879,7 +2867,7 @@ remoteDispatchDomainGetVcpus(virNetServerPtr server G_GNUC_UNUSED,
                              remote_domain_get_vcpus_args *args,
                              remote_domain_get_vcpus_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virVcpuInfoPtr info = NULL;
     unsigned char *cpumaps = NULL;
     int info_len;
@@ -2945,7 +2933,6 @@ remoteDispatchDomainGetVcpus(virNetServerPtr server G_GNUC_UNUSED,
     }
     VIR_FREE(cpumaps);
     VIR_FREE(info);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -2960,7 +2947,7 @@ remoteDispatchDomainGetIOThreadInfo(virNetServerPtr server G_GNUC_UNUSED,
     int rv = -1;
     size_t i;
     virDomainIOThreadInfoPtr *info = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     remote_domain_iothread_info *dst;
     int ninfo = 0;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -3010,7 +2997,6 @@ remoteDispatchDomainGetIOThreadInfo(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     if (ninfo >= 0)
         for (i = 0; i < ninfo; i++)
             virDomainIOThreadInfoFree(info[i]);
@@ -3128,7 +3114,7 @@ remoteDispatchDomainGetMemoryParameters(virNetServerPtr server G_GNUC_UNUSED,
                                         remote_domain_get_memory_parameters_args *args,
                                         remote_domain_get_memory_parameters_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     unsigned int flags;
@@ -3176,7 +3162,6 @@ remoteDispatchDomainGetMemoryParameters(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3188,7 +3173,7 @@ remoteDispatchDomainGetNumaParameters(virNetServerPtr server G_GNUC_UNUSED,
                                       remote_domain_get_numa_parameters_args *args,
                                       remote_domain_get_numa_parameters_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     unsigned int flags;
@@ -3236,7 +3221,6 @@ remoteDispatchDomainGetNumaParameters(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3248,7 +3232,7 @@ remoteDispatchDomainGetBlkioParameters(virNetServerPtr server G_GNUC_UNUSED,
                                        remote_domain_get_blkio_parameters_args *args,
                                        remote_domain_get_blkio_parameters_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     unsigned int flags;
@@ -3296,7 +3280,6 @@ remoteDispatchDomainGetBlkioParameters(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3444,7 +3427,7 @@ remoteDispatchDomainGetLaunchSecurityInfo(virNetServerPtr server G_GNUC_UNUSED,
                                           remote_domain_get_launch_security_info_args *args,
                                           remote_domain_get_launch_security_info_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int rv = -1;
@@ -3472,7 +3455,6 @@ remoteDispatchDomainGetLaunchSecurityInfo(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3484,7 +3466,7 @@ remoteDispatchDomainGetPerfEvents(virNetServerPtr server G_GNUC_UNUSED,
                                   remote_domain_get_perf_events_args *args,
                                   remote_domain_get_perf_events_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int rv = -1;
@@ -3512,7 +3494,6 @@ remoteDispatchDomainGetPerfEvents(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3524,7 +3505,7 @@ remoteDispatchDomainGetBlockJobInfo(virNetServerPtr server G_GNUC_UNUSED,
                                     remote_domain_get_block_job_info_args *args,
                                     remote_domain_get_block_job_info_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virDomainBlockJobInfo tmp;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -3549,7 +3530,6 @@ remoteDispatchDomainGetBlockJobInfo(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -3561,7 +3541,7 @@ remoteDispatchDomainGetBlockIoTune(virNetServerPtr server G_GNUC_UNUSED,
                                    remote_domain_get_block_io_tune_args *args,
                                    remote_domain_get_block_io_tune_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
@@ -3609,7 +3589,6 @@ remoteDispatchDomainGetBlockIoTune(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4416,7 +4395,7 @@ remoteDispatchDomainGetState(virNetServerPtr server G_GNUC_UNUSED,
                              remote_domain_get_state_args *args,
                              remote_domain_get_state_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -4434,7 +4413,6 @@ remoteDispatchDomainGetState(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4532,7 +4510,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNU
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
     virMutexLock(&priv->lock);
@@ -4590,7 +4568,6 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server G_GNU
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4705,7 +4682,7 @@ qemuDispatchDomainMonitorCommand(virNetServerPtr server G_GNUC_UNUSED,
                                  qemu_domain_monitor_command_args *args,
                                  qemu_domain_monitor_command_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -4724,7 +4701,6 @@ qemuDispatchDomainMonitorCommand(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4738,7 +4714,7 @@ remoteDispatchDomainMigrateBegin3(virNetServerPtr server G_GNUC_UNUSED,
                                   remote_domain_migrate_begin3_ret *ret)
 {
     char *xml = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *dname;
     char *xmlin;
     char *cookieout = NULL;
@@ -4772,7 +4748,6 @@ remoteDispatchDomainMigrateBegin3(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4838,7 +4813,7 @@ remoteDispatchDomainMigratePerform3(virNetServerPtr server G_GNUC_UNUSED,
                                     remote_domain_migrate_perform3_args *args,
                                     remote_domain_migrate_perform3_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *xmlin;
     char *dname;
     char *uri;
@@ -4877,7 +4852,6 @@ remoteDispatchDomainMigratePerform3(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4890,7 +4864,7 @@ remoteDispatchDomainMigrateFinish3(virNetServerPtr server G_GNUC_UNUSED,
                                    remote_domain_migrate_finish3_args *args,
                                    remote_domain_migrate_finish3_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *cookieout = NULL;
     int cookieoutlen = 0;
     char *uri;
@@ -4927,7 +4901,6 @@ remoteDispatchDomainMigrateFinish3(virNetServerPtr server G_GNUC_UNUSED,
         virNetMessageSaveError(rerr);
         VIR_FREE(cookieout);
     }
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -4939,7 +4912,7 @@ remoteDispatchDomainMigrateConfirm3(virNetServerPtr server G_GNUC_UNUSED,
                                     virNetMessageErrorPtr rerr,
                                     remote_domain_migrate_confirm3_args *args)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -4960,7 +4933,6 @@ remoteDispatchDomainMigrateConfirm3(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5035,7 +5007,7 @@ remoteDispatchDomainOpenGraphics(virNetServerPtr server G_GNUC_UNUSED,
                                  virNetMessageErrorPtr rerr,
                                  remote_domain_open_graphics_args *args)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     int fd = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -5061,7 +5033,6 @@ remoteDispatchDomainOpenGraphics(virNetServerPtr server G_GNUC_UNUSED,
     VIR_FORCE_CLOSE(fd);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5073,7 +5044,7 @@ remoteDispatchDomainOpenGraphicsFd(virNetServerPtr server G_GNUC_UNUSED,
                                    virNetMessageErrorPtr rerr,
                                    remote_domain_open_graphics_fd_args *args)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     int fd = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -5101,7 +5072,6 @@ remoteDispatchDomainOpenGraphicsFd(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
 
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5114,7 +5084,7 @@ remoteDispatchDomainGetInterfaceParameters(virNetServerPtr server G_GNUC_UNUSED,
                                            remote_domain_get_interface_parameters_args *args,
                                            remote_domain_get_interface_parameters_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     const char *device = args->device;
     int nparams = 0;
@@ -5163,7 +5133,6 @@ remoteDispatchDomainGetInterfaceParameters(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5175,7 +5144,7 @@ remoteDispatchDomainGetCPUStats(virNetServerPtr server G_GNUC_UNUSED,
                                 remote_domain_get_cpu_stats_args *args,
                                 remote_domain_get_cpu_stats_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int rv = -1;
     int percpu_len = 0;
@@ -5232,7 +5201,6 @@ remoteDispatchDomainGetCPUStats(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
          virNetMessageSaveError(rerr);
     virTypedParamsFree(params, args->ncpus * args->nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5245,7 +5213,7 @@ remoteDispatchDomainGetDiskErrors(virNetServerPtr server G_GNUC_UNUSED,
                                   remote_domain_get_disk_errors_ret *ret)
 {
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virDomainDiskErrorPtr errors = NULL;
     int len = 0;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -5283,7 +5251,6 @@ remoteDispatchDomainGetDiskErrors(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     if (errors && len > 0) {
         size_t i;
         for (i = 0; i < len; i++)
@@ -5439,7 +5406,7 @@ lxcDispatchDomainOpenNamespace(virNetServerPtr server G_GNUC_UNUSED,
     int rv = -1;
     int *fdlist = NULL;
     int ret;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     size_t i;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -5472,7 +5439,6 @@ lxcDispatchDomainOpenNamespace(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5484,7 +5450,7 @@ remoteDispatchDomainGetJobStats(virNetServerPtr server G_GNUC_UNUSED,
                                 remote_domain_get_job_stats_args *args,
                                 remote_domain_get_job_stats_ret *ret)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int rv = -1;
@@ -5513,7 +5479,6 @@ remoteDispatchDomainGetJobStats(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5526,7 +5491,7 @@ remoteDispatchDomainMigrateBegin3Params(virNetServerPtr server G_GNUC_UNUSED,
                                         remote_domain_migrate_begin3_params_ret *ret)
 {
     char *xml = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     char *cookieout = NULL;
@@ -5567,7 +5532,6 @@ remoteDispatchDomainMigrateBegin3Params(virNetServerPtr server G_GNUC_UNUSED,
     virTypedParamsFree(params, nparams);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5705,7 +5669,7 @@ remoteDispatchDomainMigratePerform3Params(virNetServerPtr server G_GNUC_UNUSED,
 {
     virTypedParameterPtr params = NULL;
     int nparams = 0;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *cookieout = NULL;
     int cookieoutlen = 0;
     char *dconnuri;
@@ -5748,7 +5712,6 @@ remoteDispatchDomainMigratePerform3Params(virNetServerPtr server G_GNUC_UNUSED,
     virTypedParamsFree(params, nparams);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5763,7 +5726,7 @@ remoteDispatchDomainMigrateFinish3Params(virNetServerPtr server G_GNUC_UNUSED,
 {
     virTypedParameterPtr params = NULL;
     int nparams = 0;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     char *cookieout = NULL;
     int cookieoutlen = 0;
     int rv = -1;
@@ -5805,7 +5768,6 @@ remoteDispatchDomainMigrateFinish3Params(virNetServerPtr server G_GNUC_UNUSED,
         virNetMessageSaveError(rerr);
         VIR_FREE(cookieout);
     }
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5819,7 +5781,7 @@ remoteDispatchDomainMigrateConfirm3Params(virNetServerPtr server G_GNUC_UNUSED,
 {
     virTypedParameterPtr params = NULL;
     int nparams = 0;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -5853,7 +5815,6 @@ remoteDispatchDomainMigrateConfirm3Params(virNetServerPtr server G_GNUC_UNUSED,
     virTypedParamsFree(params, nparams);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5916,7 +5877,7 @@ remoteDispatchDomainCreateXMLWithFiles(virNetServerPtr server G_GNUC_UNUSED,
                                        remote_domain_create_xml_with_files_ret *ret)
 {
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int *files = NULL;
     unsigned int nfiles = 0;
     size_t i;
@@ -5948,7 +5909,6 @@ remoteDispatchDomainCreateXMLWithFiles(virNetServerPtr server G_GNUC_UNUSED,
     VIR_FREE(files);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -5961,7 +5921,7 @@ static int remoteDispatchDomainCreateWithFiles(virNetServerPtr server G_GNUC_UNU
                                                remote_domain_create_with_files_ret *ret)
 {
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int *files = NULL;
     unsigned int nfiles = 0;
     size_t i;
@@ -5996,7 +5956,6 @@ static int remoteDispatchDomainCreateWithFiles(virNetServerPtr server G_GNUC_UNU
     VIR_FREE(files);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -6493,7 +6452,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUS
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     const char *event = args->event ? *args->event : NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -6547,7 +6506,6 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server G_GNUC_UNUS
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -6606,7 +6564,7 @@ remoteDispatchDomainGetTime(virNetServerPtr server G_GNUC_UNUSED,
                             remote_domain_get_time_ret *ret)
 {
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     long long seconds;
     unsigned int nseconds;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -6627,7 +6585,6 @@ remoteDispatchDomainGetTime(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(dom);
     return rv;
 }
 
@@ -6939,7 +6896,7 @@ remoteDispatchDomainGetFSInfo(virNetServerPtr server G_GNUC_UNUSED,
     int rv = -1;
     size_t i, j;
     virDomainFSInfoPtr *info = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     remote_domain_fsinfo *dst;
     int ninfo = 0;
     size_t ndisk;
@@ -7023,7 +6980,6 @@ remoteDispatchDomainGetFSInfo(virNetServerPtr server G_GNUC_UNUSED,
             VIR_FREE(ret->info.info_val);
         }
     }
-    virObjectUnref(dom);
     if (ninfo >= 0)
         for (i = 0; i < ninfo; i++)
             virDomainFSInfoFree(info[i]);
@@ -7123,7 +7079,7 @@ remoteDispatchDomainInterfaceAddresses(virNetServerPtr server G_GNUC_UNUSED,
 {
     size_t i;
     int rv = -1;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virDomainInterfacePtr *ifaces = NULL;
     int ifaces_count = 0;
     virConnectPtr conn = remoteGetHypervisorConn(client);
@@ -7145,8 +7101,6 @@ remoteDispatchDomainInterfaceAddresses(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-
-    virObjectUnref(dom);
 
     if (ifaces && ifaces_count > 0) {
         for (i = 0; i < ifaces_count; i++)
@@ -7419,7 +7373,7 @@ remoteDispatchDomainGetGuestInfo(virNetServerPtr server G_GNUC_UNUSED,
 {
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
 
@@ -7445,7 +7399,6 @@ remoteDispatchDomainGetGuestInfo(virNetServerPtr server G_GNUC_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virTypedParamsFree(params, nparams);
-    virObjectUnref(dom);
 
     return rv;
 }

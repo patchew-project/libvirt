@@ -985,7 +985,7 @@ libxlDoMigrateSrcP2P(libxlDriverPrivatePtr driver,
                      const char *uri,
                      unsigned int flags)
 {
-    virDomainPtr ddomain = NULL;
+    g_autoptr(virDomain) ddomain = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     int maxparams = 0;
@@ -1113,7 +1113,6 @@ libxlDoMigrateSrcP2P(libxlDriverPrivatePtr driver,
     }
 
     if (ddomain) {
-        virObjectUnref(ddomain);
         ret = 0;
     } else {
         ret = -1;

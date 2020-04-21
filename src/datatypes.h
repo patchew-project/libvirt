@@ -31,7 +31,9 @@
 #include <glib-object.h>
 
 extern virClassPtr virConnectClass;
-extern virClassPtr virDomainClass;
+
+#define VIR_TYPE_DOMAIN vir_domain_get_type()
+G_DECLARE_FINAL_TYPE(virDomain, vir_domain, VIR, DOMAIN, GObject);
 
 #define VIR_TYPE_DOMAIN_CHECKPOINT vir_domain_checkpoint_get_type()
 G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
@@ -110,8 +112,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckDomainReturn(obj, retval) \
     do { \
-        virDomainPtr _dom = (obj); \
-        if (!virObjectIsClass(_dom, virDomainClass) || \
+        virDomainPtr _dom = VIR_DOMAIN(obj); \
+        if (_dom == NULL || \
             !virObjectIsClass(_dom->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -122,8 +124,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     } while (0)
 #define virCheckDomainGoto(obj, label) \
     do { \
-        virDomainPtr _dom = (obj); \
-        if (!virObjectIsClass(_dom, virDomainClass) || \
+        virDomainPtr _dom = VIR_DOMAIN(obj); \
+        if (_dom == NULL || \
             !virObjectIsClass(_dom->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -365,7 +367,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     do { \
         virDomainCheckpointPtr _check = VIR_DOMAIN_CHECKPOINT(obj); \
         if (_check == NULL || \
-            !virObjectIsClass(_check->domain, virDomainClass) || \
+            !VIR_IS_DOMAIN(_check->domain) || \
             !virObjectIsClass(_check->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_CHECKPOINT, \
                                  VIR_ERR_INVALID_DOMAIN_CHECKPOINT, \
@@ -380,7 +382,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
     do { \
         virDomainSnapshotPtr _snap = (obj); \
         if (_snap == NULL || \
-            !virObjectIsClass(_snap->domain, virDomainClass) || \
+            !VIR_IS_DOMAIN(_snap->domain) || \
             !virObjectIsClass(_snap->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT, \
                                  VIR_ERR_INVALID_DOMAIN_SNAPSHOT, \
@@ -427,7 +429,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
         char _uuidstr[VIR_UUID_STRING_BUFLEN]; \
         const char *_domname = NULL; \
  \
-        if (!virObjectIsClass(dom, virDomainClass)) { \
+        if (!VIR_IS_DOMAIN(dom)) { \
             memset(_uuidstr, 0, sizeof(_uuidstr)); \
         } else { \
             virUUIDFormat((dom)->uuid, _uuidstr); \
@@ -641,7 +643,7 @@ struct _virAdmClient {
 * Internal structure associated to a domain
 */
 struct _virDomain {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *name;                          /* the domain external name */
     int id;                              /* the domain ID */

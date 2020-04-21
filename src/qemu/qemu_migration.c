@@ -3993,7 +3993,7 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
                                   unsigned long resource,
                                   qemuMigrationParamsPtr migParams)
 {
-    virDomainPtr ddomain = NULL;
+    g_autoptr(virDomain) ddomain = NULL;
     char *uri_out = NULL;
     char *cookie = NULL;
     char *dom_xml = NULL;
@@ -4103,7 +4103,6 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
 
  cleanup:
     if (ddomain) {
-        virObjectUnref(ddomain);
         ret = 0;
     } else {
         ret = -1;
@@ -4142,7 +4141,7 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
                                   bool useParams,
                                   unsigned long flags)
 {
-    virDomainPtr ddomain = NULL;
+    g_autoptr(virDomain) ddomain = NULL;
     char *uri_out = NULL;
     char *cookiein = NULL;
     char *cookieout = NULL;
@@ -4439,7 +4438,6 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
 
  cleanup:
     if (ddomain) {
-        virObjectUnref(ddomain);
         ret = 0;
     } else {
         ret = -1;

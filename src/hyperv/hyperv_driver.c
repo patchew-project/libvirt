@@ -1206,7 +1206,6 @@ hypervConnectListAllDomains(virConnectPtr conn,
     virDomainPtr *doms = NULL;
     int count = 0;
     int ret = -1;
-    size_t i;
 
     virCheckFlags(VIR_CONNECT_LIST_DOMAINS_FILTERS_ALL, -1);
 
@@ -1308,12 +1307,7 @@ hypervConnectListAllDomains(virConnectPtr conn,
     ret = count;
 
  cleanup:
-    if (doms) {
-        for (i = 0; i < count; ++i)
-            virObjectUnref(doms[i]);
-
-        VIR_FREE(doms);
-    }
+    virGObjectListFreeCount(doms, count);
 
     hypervFreeObject(priv, (hypervObject *)computerSystemList);
 

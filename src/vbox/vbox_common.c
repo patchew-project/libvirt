@@ -2287,7 +2287,7 @@ static virDomainPtr vboxDomainCreateXML(virConnectPtr conn, const char *xml,
      * change this behaviour to the expected one.
      */
 
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -2297,11 +2297,10 @@ static virDomainPtr vboxDomainCreateXML(virConnectPtr conn, const char *xml,
 
     if (vboxDomainCreate(dom) < 0) {
         vboxDomainUndefineFlags(dom, 0);
-        virObjectUnref(dom);
         return NULL;
     }
 
-    return dom;
+    return g_steal_pointer(&dom);
 }
 
 static int vboxDomainIsActive(virDomainPtr dom)
@@ -7618,11 +7617,7 @@ vboxConnectListAllDomains(virConnectPtr conn,
     ret = count;
 
  cleanup:
-    if (doms) {
-        for (i = 0; i < count; i++)
-            virObjectUnref(doms[i]);
-    }
-    VIR_FREE(doms);
+    virGObjectListFreeCount(doms, count);
 
     gVBoxAPI.UArray.vboxArrayRelease(&machines);
     return ret;
