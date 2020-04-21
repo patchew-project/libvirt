@@ -4081,7 +4081,7 @@ prlsdkCreateVm(vzDriverPtr driver, virDomainDefPtr def)
 static int
 virStorageTranslatePoolLocal(virConnectPtr conn, virStorageSourcePtr src)
 {
-    virStoragePoolPtr pool = NULL;
+    g_autoptr(virStoragePool) pool = NULL;
     virStorageVolPtr vol = NULL;
     virStorageVolInfo info;
     int ret = -1;
@@ -4115,7 +4115,6 @@ virStorageTranslatePoolLocal(virConnectPtr conn, virStorageSourcePtr src)
     ret = 0;
 
  cleanup:
-    virObjectUnref(pool);
     virObjectUnref(vol);
     return ret;
 }

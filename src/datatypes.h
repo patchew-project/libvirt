@@ -36,7 +36,6 @@ extern virClassPtr virNodeDeviceClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 extern virClassPtr virStorageVolClass;
-extern virClassPtr virStoragePoolClass;
 
 #define VIR_TYPE_DOMAIN_CHECKPOINT vir_domain_checkpoint_get_type()
 G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
@@ -70,6 +69,9 @@ G_DECLARE_FINAL_TYPE(virNWFilterBinding,
                      VIR,
                      NW_FILTER_BINDING,
                      GObject);
+
+#define VIR_TYPE_STORAGE_POOL vir_storage_pool_get_type()
+G_DECLARE_FINAL_TYPE(virStoragePool, vir_storage_pool, VIR, STORAGE_POOL, GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -191,8 +193,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckStoragePoolReturn(obj, retval) \
     do { \
-        virStoragePoolPtr _pool = (obj); \
-        if (!virObjectIsClass(_pool, virStoragePoolClass) || \
+        virStoragePoolPtr _pool = VIR_STORAGE_POOL(obj); \
+        if (_pool == NULL || \
             !virObjectIsClass(_pool->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_POOL, \
@@ -205,8 +207,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckStoragePoolGoto(obj, label) \
     do { \
-        virStoragePoolPtr _pool= (obj); \
-        if (!virObjectIsClass(_pool, virStoragePoolClass) || \
+        virStoragePoolPtr _pool= VIR_STORAGE_POOL(obj); \
+        if (_pool == NULL || \
             !virObjectIsClass(_pool->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_POOL, \
@@ -683,7 +685,7 @@ struct _virInterface {
 * Internal structure associated to a storage pool
 */
 struct _virStoragePool {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *name;                          /* the storage pool external name */
     unsigned char uuid[VIR_UUID_BUFLEN]; /* the storage pool unique identifier */
@@ -696,7 +698,6 @@ struct _virStoragePool {
     virFreeCallback privateDataFreeFunc;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStoragePool, virObjectUnref);
 
 
 /**

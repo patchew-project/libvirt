@@ -40,7 +40,6 @@ virClassPtr virNodeDeviceClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
 virClassPtr virStorageVolClass;
-virClassPtr virStoragePoolClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
@@ -49,7 +48,6 @@ static void virNodeDeviceDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 static void virStorageVolDispose(void *obj);
-static void virStoragePoolDispose(void *obj);
 
 G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
 static void virDomainCheckpointDispose(GObject *obj);
@@ -177,6 +175,24 @@ vir_nw_filter_binding_class_init(virNWFilterBindingClass *klass)
     obj->finalize = virNWFilterBindingFinalize;
 }
 
+G_DEFINE_TYPE(virStoragePool, vir_storage_pool, G_TYPE_OBJECT);
+static void virStoragePoolDispose(GObject *obj);
+static void virStoragePoolFinalize(GObject *obj);
+
+static void
+vir_storage_pool_init(virStoragePool *pool G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_storage_pool_class_init(virStoragePoolClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virStoragePoolDispose;
+    obj->finalize = virStoragePoolFinalize;
+}
+
 virClassPtr virAdmConnectClass;
 virClassPtr virAdmConnectCloseCallbackDataClass;
 
@@ -235,7 +251,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
     DECLARE_CLASS(virStorageVol);
-    DECLARE_CLASS(virStoragePool);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
@@ -681,7 +696,7 @@ virInterfaceFinalize(GObject *obj)
  * @freeFunc: private data cleanup function pointer specific to driver
  *
  * Allocates a new storage pool object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the storage pool object, or NULL on error.
  */
@@ -690,17 +705,16 @@ virGetStoragePool(virConnectPtr conn, const char *name,
                   const unsigned char *uuid,
                   void *privateData, virFreeCallback freeFunc)
 {
-    virStoragePoolPtr ret = NULL;
+    g_autoptr(virStoragePool) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
-    virCheckNonNullArgGoto(uuid, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
+    virCheckNonNullArgReturn(uuid, NULL);
 
-    if (!(ret = virObjectNew(virStoragePoolClass)))
-        goto error;
+    ret = VIR_STORAGE_POOL(g_object_new(VIR_TYPE_STORAGE_POOL, NULL));
 
     ret->name = g_strdup(name);
 
@@ -711,11 +725,7 @@ virGetStoragePool(virConnectPtr conn, const char *name,
     ret->privateData = privateData;
     ret->privateDataFreeFunc = freeFunc;
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
@@ -723,16 +733,31 @@ virGetStoragePool(virConnectPtr conn, const char *name,
  * virStoragePoolDispose:
  * @obj: the storage pool to release
  *
- * Unconditionally release all memory associated with a pool.
- * The pool object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virStoragePoolDispose(void *obj)
+virStoragePoolDispose(GObject *obj)
 {
-    virStoragePoolPtr pool = obj;
+    virStoragePoolPtr pool = VIR_STORAGE_POOL(obj);
+
+    virObjectUnref(pool->conn);
+    pool->conn = NULL;
+
+    G_OBJECT_CLASS(vir_storage_pool_parent_class)->dispose(obj);
+}
+
+/**
+ * virStoragePoolFinalize:
+ * @obj: the storage pool to release
+ *
+ * Unconditionally releases all memory associated with a pool.
+ * The pool object must not be used once this method returns.
+ */
+static void
+virStoragePoolFinalize(GObject *obj)
+{
+    virStoragePoolPtr pool = VIR_STORAGE_POOL(obj);
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virUUIDFormat(pool->uuid, uuidstr);
@@ -742,7 +767,8 @@ virStoragePoolDispose(void *obj)
         pool->privateDataFreeFunc(pool->privateData);
 
     VIR_FREE(pool->name);
-    virObjectUnref(pool->conn);
+
+    G_OBJECT_CLASS(vir_storage_pool_parent_class)->finalize(obj);
 }
 
 

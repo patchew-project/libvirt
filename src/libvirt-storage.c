@@ -846,7 +846,7 @@ virStoragePoolFree(virStoragePoolPtr pool)
 
     virCheckStoragePoolReturn(pool, -1);
 
-    virObjectUnref(pool);
+    g_object_unref(pool);
     return 0;
 
 }
@@ -872,13 +872,13 @@ virStoragePoolFree(virStoragePoolPtr pool)
 int
 virStoragePoolRef(virStoragePoolPtr pool)
 {
-    VIR_DEBUG("pool=%p refs=%d", pool, pool ? pool->parent.u.s.refs : 0);
+    VIR_DEBUG("pool=%p", pool);
 
     virResetLastError();
 
     virCheckStoragePoolReturn(pool, -1);
 
-    virObjectRef(pool);
+    g_object_ref(pool);
     return 0;
 }
 

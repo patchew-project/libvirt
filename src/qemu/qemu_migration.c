@@ -174,7 +174,7 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
                               unsigned long long capacity)
 {
     int ret = -1;
-    virStoragePoolPtr pool = NULL;
+    g_autoptr(virStoragePool) pool = NULL;
     virStorageVolPtr vol = NULL;
     char *volName = NULL, *basePath = NULL;
     char *volStr = NULL;
@@ -269,7 +269,6 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
     VIR_FREE(basePath);
     VIR_FREE(volStr);
     virObjectUnref(vol);
-    virObjectUnref(pool);
     return ret;
 }
 
