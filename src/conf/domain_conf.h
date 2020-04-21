@@ -528,7 +528,7 @@ typedef enum {
 struct _virDomainDiskDef {
     virStorageSourcePtr src; /* non-NULL.  XXX Allow NULL for empty cdrom? */
 
-    virObjectPtr privateData;
+    GObject *privateData;
 
     int device; /* enum virDomainDiskDevice */
     int bus; /* enum virDomainDiskBus */
@@ -852,7 +852,7 @@ struct _virDomainFSDef {
     virTristateSwitch posix_lock;
     virTristateSwitch flock;
     virDomainVirtioOptionsPtr virtio;
-    virObjectPtr privateData;
+    GObject *privateData;
 };
 
 
@@ -1071,7 +1071,7 @@ struct _virDomainNetDef {
     unsigned int mtu;
     virNetDevCoalescePtr coalesce;
     virDomainVirtioOptionsPtr virtio;
-    virObjectPtr privateData;
+    GObject *privateData;
 };
 
 typedef enum {
@@ -1190,7 +1190,7 @@ struct _virDomainChrSourceReconnectDef {
 struct _virDomainChrSourceDef {
     GObject parent;
     int type; /* virDomainChrType */
-    virObjectPtr privateData;
+    GObject *privateData;
     union {
         /* no <source> for null, vc, stdio */
         struct {
@@ -1493,7 +1493,7 @@ struct _virDomainVideoDriverDef {
 };
 
 struct _virDomainVideoDef {
-    virObjectPtr privateData;
+    GObject *privateData;
 
     int type;   /* enum virDomainVideoType */
     unsigned int ram;  /* kibibytes (multiples of 1024) */
@@ -1640,7 +1640,7 @@ struct _virDomainGraphicsListenDef {
 };
 
 struct _virDomainGraphicsDef {
-    virObjectPtr privateData;
+    GObject *privateData;
 
     /* Port value discipline:
      * Value -1 is legacy syntax indicating that it should be auto-allocated.
@@ -2318,7 +2318,7 @@ struct _virDomainVcpuDef {
 
     virDomainThreadSchedParam sched;
 
-    virObjectPtr privateData;
+    GObject *privateData;
 };
 
 struct _virDomainBlkiotune {
@@ -2416,7 +2416,7 @@ typedef enum {
 } virDomainVsockModel;
 
 struct _virDomainVsockDef {
-    virObjectPtr privateData;
+    GObject *privateData;
 
     virDomainVsockModel model;
     unsigned int guest_cid;
@@ -2774,7 +2774,7 @@ struct _virDomainDefParserConfig {
 
 typedef void *(*virDomainXMLPrivateDataAllocFunc)(void *);
 typedef void (*virDomainXMLPrivateDataFreeFunc)(void *);
-typedef virObjectPtr (*virDomainXMLPrivateDataNewFunc)(void);
+typedef GObject* (*virDomainXMLPrivateDataNewFunc)(void);
 typedef int (*virDomainXMLPrivateDataFormatFunc)(virBufferPtr,
                                                  virDomainObjPtr);
 typedef int (*virDomainXMLPrivateDataParseFunc)(xmlXPathContextPtr,

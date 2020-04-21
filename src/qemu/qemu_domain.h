@@ -433,13 +433,8 @@ struct _qemuDomainObjPrivate {
 #define QEMU_DOMAIN_PRIVATE(vm) \
     ((qemuDomainObjPrivatePtr) (vm)->privateData)
 
-#define QEMU_DOMAIN_DISK_PRIVATE(disk) \
-    ((qemuDomainDiskPrivatePtr) (disk)->privateData)
-
-typedef struct _qemuDomainDiskPrivate qemuDomainDiskPrivate;
-typedef qemuDomainDiskPrivate *qemuDomainDiskPrivatePtr;
 struct _qemuDomainDiskPrivate {
-    virObject parent;
+    GObject parent;
 
     /* ideally we want a smarter way to interlock block jobs on single qemu disk
      * in the future, but for now we just disallow any concurrent job on a
@@ -457,13 +452,20 @@ struct _qemuDomainDiskPrivate {
     char *nodeCopyOnRead; /* nodename of the disk-wide copy-on-read blockdev layer */
 };
 
-#define QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src) \
-    ((qemuDomainStorageSourcePrivatePtr) (src)->privateData)
+#define QEMU_TYPE_DOMAIN_DISK_PRIVATE qemu_domain_disk_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainDiskPrivate,
+                     qemu_domain_disk_private,
+                     QEMU,
+                     DOMAIN_DISK,
+                     GObject);
+typedef qemuDomainDiskPrivate *qemuDomainDiskPrivatePtr;
 
-typedef struct _qemuDomainStorageSourcePrivate qemuDomainStorageSourcePrivate;
-typedef qemuDomainStorageSourcePrivate *qemuDomainStorageSourcePrivatePtr;
+#define QEMU_DOMAIN_DISK_PRIVATE(disk) \
+    ((qemuDomainDiskPrivatePtr) (disk)->privateData)
+
+
 struct _qemuDomainStorageSourcePrivate {
-    virObject parent;
+    GObject parent;
 
     /* data required for authentication to the storage source */
     qemuDomainSecretInfoPtr secinfo;
@@ -475,12 +477,23 @@ struct _qemuDomainStorageSourcePrivate {
     qemuDomainSecretInfoPtr httpcookie;
 };
 
-virObjectPtr qemuDomainStorageSourcePrivateNew(void);
+#define QEMU_TYPE_DOMAIN_STORAGE_SOURCE_PRIVATE qemu_domain_storage_source_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainStorageSourcePrivate,
+                     qemu_domain_storage_source_private,
+                     QEMU,
+                     DOMAIN_STORAGE_SOURCE,
+                     GObject);
+typedef qemuDomainStorageSourcePrivate *qemuDomainStorageSourcePrivatePtr;
 
-typedef struct _qemuDomainVcpuPrivate qemuDomainVcpuPrivate;
-typedef qemuDomainVcpuPrivate *qemuDomainVcpuPrivatePtr;
+#define QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src) \
+    ((qemuDomainStorageSourcePrivatePtr) (src)->privateData)
+
+
+GObject *qemuDomainStorageSourcePrivateNew(void);
+
+
 struct _qemuDomainVcpuPrivate {
-    virObject parent;
+    GObject parent;
 
     pid_t tid; /* vcpu thread id */
     int enable_id; /* order in which the vcpus were enabled in qemu */
@@ -500,6 +513,14 @@ struct _qemuDomainVcpuPrivate {
     int vcpus;
 };
 
+#define QEMU_TYPE_DOMAIN_VCPU_PRIVATE qemu_domain_vcpu_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainVcpuPrivate,
+                     qemu_domain_vcpu_private,
+                     QEMU,
+                     DOMAIN_VCPU,
+                     GObject);
+typedef qemuDomainVcpuPrivate *qemuDomainVcpuPrivatePtr;
+
 #define QEMU_DOMAIN_VCPU_PRIVATE(vcpu) \
     ((qemuDomainVcpuPrivatePtr) (vcpu)->privateData)
 
@@ -513,76 +534,112 @@ struct qemuDomainDiskInfo {
     char *nodename;
 };
 
-#define QEMU_DOMAIN_CHR_SOURCE_PRIVATE(dev) \
-    ((qemuDomainChrSourcePrivatePtr) (dev)->privateData)
-
-typedef struct _qemuDomainChrSourcePrivate qemuDomainChrSourcePrivate;
-typedef qemuDomainChrSourcePrivate *qemuDomainChrSourcePrivatePtr;
 struct _qemuDomainChrSourcePrivate {
-    virObject parent;
+    GObject parent;
 
     /* for char devices using secret
      * NB: *not* to be written to qemu domain object XML */
     qemuDomainSecretInfoPtr secinfo;
 };
 
+#define QEMU_TYPE_DOMAIN_CHR_SOURCE_PRIVATE qemu_domain_chr_source_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainChrSourcePrivate,
+                     qemu_domain_chr_source_private,
+                     QEMU,
+                     DOMAIN_CHR_SOURCE,
+                     GObject);
+typedef qemuDomainChrSourcePrivate *qemuDomainChrSourcePrivatePtr;
 
-typedef struct _qemuDomainVsockPrivate qemuDomainVsockPrivate;
-typedef qemuDomainVsockPrivate *qemuDomainVsockPrivatePtr;
+#define QEMU_DOMAIN_CHR_SOURCE_PRIVATE(dev) \
+    ((qemuDomainChrSourcePrivatePtr) (dev)->privateData)
+
+
 struct _qemuDomainVsockPrivate {
-    virObject parent;
+    GObject parent;
 
     int vhostfd;
 };
 
+#define QEMU_TYPE_DOMAIN_VSOCK_PRIVATE qemu_domain_vsock_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainVsockPrivate,
+                     qemu_domain_vsock_private,
+                     QEMU,
+                     DOMAIN_VSOCK,
+                     GObject);
+typedef qemuDomainVsockPrivate *qemuDomainVsockPrivatePtr;
 
-#define QEMU_DOMAIN_VIDEO_PRIVATE(dev) \
-    ((qemuDomainVideoPrivatePtr) (dev)->privateData)
 
-typedef struct _qemuDomainVideoPrivate qemuDomainVideoPrivate;
-typedef qemuDomainVideoPrivate *qemuDomainVideoPrivatePtr;
 struct _qemuDomainVideoPrivate {
-    virObject parent;
+    GObject parent;
 
     int vhost_user_fd;
 };
 
+#define QEMU_TYPE_DOMAIN_VIDEO_PRIVATE qemu_domain_video_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainVideoPrivate,
+                     qemu_domain_video_private,
+                     QEMU,
+                     DOMAIN_VIDEO,
+                     GObject);
+typedef qemuDomainVideoPrivate *qemuDomainVideoPrivatePtr;
 
-#define QEMU_DOMAIN_GRAPHICS_PRIVATE(dev) \
-    ((qemuDomainGraphicsPrivatePtr) (dev)->privateData)
+#define QEMU_DOMAIN_VIDEO_PRIVATE(dev) \
+    ((qemuDomainVideoPrivatePtr) (dev)->privateData)
 
-typedef struct _qemuDomainGraphicsPrivate qemuDomainGraphicsPrivate;
-typedef qemuDomainGraphicsPrivate *qemuDomainGraphicsPrivatePtr;
+
 struct _qemuDomainGraphicsPrivate {
-    virObject parent;
+    GObject parent;
 
     char *tlsAlias;
     qemuDomainSecretInfoPtr secinfo;
 };
 
+#define QEMU_TYPE_DOMAIN_GRAPHICS_PRIVATE qemu_domain_graphics_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainGraphicsPrivate,
+                     qemu_domain_graphics_private,
+                     QEMU,
+                     DOMAIN_GRAPHICS,
+                     GObject);
+typedef qemuDomainGraphicsPrivate *qemuDomainGraphicsPrivatePtr;
 
-#define QEMU_DOMAIN_NETWORK_PRIVATE(dev) \
-    ((qemuDomainNetworkPrivatePtr) (dev)->privateData)
+#define QEMU_DOMAIN_GRAPHICS_PRIVATE(dev) \
+    ((qemuDomainGraphicsPrivatePtr) (dev)->privateData)
 
-typedef struct _qemuDomainNetworkPrivate qemuDomainNetworkPrivate;
-typedef qemuDomainNetworkPrivate *qemuDomainNetworkPrivatePtr;
+
 struct _qemuDomainNetworkPrivate {
-    virObject parent;
+    GObject parent;
 
     qemuSlirpPtr slirp;
 };
 
+#define QEMU_TYPE_DOMAIN_NETWORK_PRIVATE qemu_domain_network_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainNetworkPrivate,
+                     qemu_domain_network_private,
+                     QEMU,
+                     DOMAIN_NETWORK,
+                     GObject);
+typedef qemuDomainNetworkPrivate *qemuDomainNetworkPrivatePtr;
 
-#define QEMU_DOMAIN_FS_PRIVATE(dev) \
-    ((qemuDomainFSPrivatePtr) (dev)->privateData)
+#define QEMU_DOMAIN_NETWORK_PRIVATE(dev) \
+    ((qemuDomainNetworkPrivatePtr) (dev)->privateData)
 
-typedef struct _qemuDomainFSPrivate qemuDomainFSPrivate;
-typedef qemuDomainFSPrivate *qemuDomainFSPrivatePtr;
+
 struct _qemuDomainFSPrivate {
-    virObject parent;
+    GObject parent;
 
     char *vhostuser_fs_sock;
 };
+
+#define QEMU_TYPE_DOMAIN_FS_PRIVATE qemu_domain_fs_private_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainFSPrivate,
+                     qemu_domain_fs_private,
+                     QEMU,
+                     DOMAIN_FS,
+                     GObject);
+typedef qemuDomainFSPrivate *qemuDomainFSPrivatePtr;
+
+#define QEMU_DOMAIN_FS_PRIVATE(dev) \
+    ((qemuDomainFSPrivatePtr) (dev)->privateData)
 
 
 typedef enum {

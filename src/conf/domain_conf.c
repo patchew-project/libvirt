@@ -1785,7 +1785,7 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         virDomainGraphicsListenDefClear(&def->listens[i]);
     VIR_FREE(def->listens);
 
-    virObjectUnref(def->privateData);
+    g_clear_object(&def->privateData);
     VIR_FREE(def);
 }
 
@@ -1833,7 +1833,7 @@ static virDomainVcpuDefPtr
 virDomainVcpuDefNew(virDomainXMLOptionPtr xmlopt)
 {
     virDomainVcpuDefPtr ret = NULL;
-    g_autoptr(virObject) priv = NULL;
+    g_autoptr(GObject) priv = NULL;
 
     if (xmlopt && xmlopt->privateData.vcpuNew &&
         !(priv = xmlopt->privateData.vcpuNew()))
@@ -1856,7 +1856,7 @@ virDomainVcpuDefFree(virDomainVcpuDefPtr info)
 
     virBitmapFree(info->cpumask);
     info->cpumask = NULL;
-    virObjectUnref(info->privateData);
+    g_clear_object(&info->privateData);
     VIR_FREE(info);
 }
 
@@ -2158,7 +2158,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
     VIR_FREE(def->blkdeviotune.group_name);
     VIR_FREE(def->virtio);
     virDomainDeviceInfoClear(&def->info);
-    virObjectUnref(def->privateData);
+    g_clear_object(&def->privateData);
 
     VIR_FREE(def);
 }
@@ -2361,7 +2361,7 @@ void virDomainFSDefFree(virDomainFSDefPtr def)
     VIR_FREE(def->dst);
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def->virtio);
-    virObjectUnref(def->privateData);
+    g_clear_object(&def->privateData);
     VIR_FREE(def->binary);
 
     VIR_FREE(def);
@@ -2422,7 +2422,7 @@ virDomainVsockDefFree(virDomainVsockDefPtr vsock)
     if (!vsock)
         return;
 
-    virObjectUnref(vsock->privateData);
+    g_clear_object(&vsock->privateData);
     virDomainDeviceInfoClear(&vsock->info);
     VIR_FREE(vsock);
 }
@@ -2510,7 +2510,7 @@ virDomainNetDefFree(virDomainNetDefPtr def)
     if (!def)
         return;
     virDomainNetDefClear(def);
-    virObjectUnref(def->privateData);
+    g_clear_object(&def->privateData);
     VIR_FREE(def);
 }
 
@@ -2651,8 +2651,7 @@ virDomainChrSourceDefDispose(GObject *obj)
 {
     virDomainChrSourceDefPtr def = VIR_DOMAIN_CHR_SOURCE_DEF(obj);
 
-    virObjectUnref(def->privateData);
-    def->privateData = NULL;
+    g_clear_object(&def->privateData);
 
     G_OBJECT_CLASS(vir_domain_chr_source_def_parent_class)->dispose(obj);
 }
@@ -2909,7 +2908,7 @@ virDomainVideoDefClear(virDomainVideoDefPtr def)
     if (def->driver)
         VIR_FREE(def->driver->vhost_user_binary);
     VIR_FREE(def->driver);
-    virObjectUnref(def->privateData);
+    g_clear_object(&def->privateData);
 
     memset(def, 0, sizeof(*def));
 }
@@ -27098,7 +27097,7 @@ virDomainRNGDefFree(virDomainRNGDefPtr def)
         VIR_FREE(def->source.file);
         break;
     case VIR_DOMAIN_RNG_BACKEND_EGD:
-        virObjectUnref(def->source.chardev);
+        g_clear_object(&def->source.chardev);
         break;
     case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
     case VIR_DOMAIN_RNG_BACKEND_LAST:
