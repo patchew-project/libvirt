@@ -32,29 +32,27 @@
 
 VIR_LOG_INIT("bhyve.bhyve_conf");
 
-static virClassPtr virBhyveDriverConfigClass;
-static void virBhyveDriverConfigDispose(void *obj);
+G_DEFINE_TYPE(virBhyveDriverConfig, vir_bhyve_driver_config, G_TYPE_OBJECT);
+static void virBhyveDriverConfigFinalize(GObject *obj);
 
-static int virBhyveConfigOnceInit(void)
+static void
+vir_bhyve_driver_config_init(virBhyveDriverConfig *cfg G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virBhyveDriverConfig, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virBhyveConfig);
+static void
+vir_bhyve_driver_config_class_init(virBhyveDriverConfigClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virBhyveDriverConfigFinalize;
+}
 
 virBhyveDriverConfigPtr
 virBhyveDriverConfigNew(void)
 {
-    virBhyveDriverConfigPtr cfg;
-
-    if (virBhyveConfigInitialize() < 0)
-        return NULL;
-
-    if (!(cfg = virObjectNew(virBhyveDriverConfigClass)))
-        return NULL;
+    virBhyveDriverConfigPtr cfg =
+        VIR_BHYVE_DRIVER_CONFIG(g_object_new(VIR_TYPE_BHYVE_DRIVER_CONFIG, NULL));
 
     cfg->firmwareDir = g_strdup(DATADIR "/uefi-firmware");
 
@@ -87,17 +85,19 @@ virBhyveDriverGetConfig(bhyveConnPtr driver)
 {
     virBhyveDriverConfigPtr cfg;
     bhyveDriverLock(driver);
-    cfg = virObjectRef(driver->config);
+    cfg = g_object_ref(driver->config);
     bhyveDriverUnlock(driver);
     return cfg;
 }
 
 static void
-virBhyveDriverConfigDispose(void *obj)
+virBhyveDriverConfigFinalize(GObject *obj)
 {
-    virBhyveDriverConfigPtr cfg = obj;
+    virBhyveDriverConfigPtr cfg = VIR_BHYVE_DRIVER_CONFIG(obj);
 
     VIR_FREE(cfg->firmwareDir);
+
+    G_OBJECT_CLASS(vir_bhyve_driver_config_parent_class)->finalize(obj);
 }
 
 void

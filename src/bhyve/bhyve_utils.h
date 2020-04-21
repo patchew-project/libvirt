@@ -29,16 +29,23 @@
 #include "hypervisor/virclosecallbacks.h"
 #include "virportallocator.h"
 
+#include <glib-object.h>
+
 #define BHYVE_AUTOSTART_DIR    SYSCONFDIR "/libvirt/bhyve/autostart"
 #define BHYVE_CONFIG_DIR       SYSCONFDIR "/libvirt/bhyve"
 #define BHYVE_STATE_DIR        RUNSTATEDIR "/libvirt/bhyve"
 #define BHYVE_LOG_DIR          LOCALSTATEDIR "/log/libvirt/bhyve"
 
-typedef struct _virBhyveDriverConfig virBhyveDriverConfig;
+#define VIR_TYPE_BHYVE_DRIVER_CONFIG vir_bhyve_driver_config_get_type()
+G_DECLARE_FINAL_TYPE(virBhyveDriverConfig,
+                     vir_bhyve_driver_config,
+                     VIR,
+                     BHYVE_DRIVER_CONFIG,
+                     GObject);
 typedef struct _virBhyveDriverConfig *virBhyveDriverConfigPtr;
 
 struct _virBhyveDriverConfig {
-    virObject parent;
+    GObject parent;
 
     char *firmwareDir;
 };
