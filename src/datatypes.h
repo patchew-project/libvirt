@@ -46,10 +46,11 @@ extern virClassPtr virStorageVolClass;
 extern virClassPtr virStoragePoolClass;
 
 extern virClassPtr virAdmConnectClass;
-extern virClassPtr virAdmClientClass;
 
 #define VIR_TYPE_ADM_SERVER vir_adm_server_get_type()
 G_DECLARE_FINAL_TYPE(virAdmServer, vir_adm_server, VIR, ADM_SERVER, GObject);
+#define VIR_TYPE_ADM_CLIENT vir_adm_client_get_type()
+G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckConnectReturn(obj, retval) \
     do { \
@@ -447,8 +448,8 @@ G_DECLARE_FINAL_TYPE(virAdmServer, vir_adm_server, VIR, ADM_SERVER, GObject);
 
 #define virCheckAdmClientReturn(obj, retval) \
     do { \
-        virAdmClientPtr _clt = (obj); \
-        if (!virObjectIsClass(_clt, virAdmClientClass) || \
+        virAdmClientPtr _clt = VIR_ADM_CLIENT(obj); \
+        if (_clt == NULL || \
             !VIR_IS_ADM_SERVER(_clt->srv) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
@@ -460,8 +461,8 @@ G_DECLARE_FINAL_TYPE(virAdmServer, vir_adm_server, VIR, ADM_SERVER, GObject);
     } while (0)
 #define virCheckAdmClientGoto(obj, label) \
     do { \
-        virAdmClientPtr _clt = (obj); \
-        if (!virObjectIsClass(_clt, virAdmClientClass) || \
+        virAdmClientPtr _clt = VIR_ADM_CLIENT(obj); \
+        if (_clt == NULL || \
             !VIR_IS_ADM_SERVER(_clt->srv) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
@@ -588,7 +589,7 @@ struct _virAdmServer {
  * Internal structure associated to a client connected to daemon
  */
 struct _virAdmClient {
-    virObject parent;
+    GObject parent;
     virAdmServerPtr srv;            /* pointer to the server client is
                                      * connected to, which also holds a
                                      * reference back to the admin connection

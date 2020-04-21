@@ -676,7 +676,7 @@ int virAdmClientFree(virAdmClientPtr client)
 
     virCheckAdmClientReturn(client, -1);
 
-    virObjectUnref(client);
+    g_clear_object(&client);
     return 0;
 }
 
