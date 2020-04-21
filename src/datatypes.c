@@ -36,12 +36,10 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virStreamClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virStreamDispose(void *obj);
 
 G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
 static void virDomainCheckpointDispose(GObject *obj);
@@ -241,6 +239,24 @@ vir_storage_vol_class_init(virStorageVolClass *klass)
     obj->finalize = virStorageVolFinalize;
 }
 
+G_DEFINE_TYPE(virStream, vir_stream, G_TYPE_OBJECT);
+static void virStreamDispose(GObject *obj);
+static void virStreamFinalize(GObject *obj);
+
+static void
+vir_stream_init(virStream *strm G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_stream_class_init(virStreamClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virStreamDispose;
+    obj->finalize = virStreamFinalize;
+}
+
 virClassPtr virAdmConnectClass;
 virClassPtr virAdmConnectCloseCallbackDataClass;
 
@@ -295,7 +311,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virStream);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
@@ -1049,7 +1064,7 @@ virSecretFinalize(GObject *obj)
  * @conn: the hypervisor connection
  *
  * Allocates a new stream object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the stream object, or NULL on error.
  */
@@ -1061,8 +1076,7 @@ virGetStream(virConnectPtr conn)
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    if (!(ret = virObjectNew(virStreamClass)))
-        return NULL;
+    ret = VIR_STREAM(g_object_new(VIR_TYPE_STREAM, NULL));
 
     ret->conn = virObjectRef(conn);
 
@@ -1073,21 +1087,37 @@ virGetStream(virConnectPtr conn)
  * virStreamDispose:
  * @obj: the stream to release
  *
- * Unconditionally release all memory associated with a stream.
- * The stream object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virStreamDispose(void *obj)
+virStreamDispose(GObject *obj)
 {
-    virStreamPtr st = obj;
+    virStreamPtr st = VIR_STREAM(obj);
+
+    virObjectUnref(st->conn);
+    st->conn = NULL;
+
+    G_OBJECT_CLASS(vir_stream_parent_class)->dispose(obj);
+}
+
+/**
+ * virStreamFinalize:
+ * @obj: the stream to release
+ *
+ * Unconditionally releases all memory associated with a stream.
+ * The stream object must not be used once this method returns.
+ */
+static void
+virStreamFinalize(GObject *obj)
+{
+    virStreamPtr st = VIR_STREAM(obj);
     VIR_DEBUG("release dev %p", st);
 
     if (st->ff)
         st->ff(st->privateData);
-    virObjectUnref(st->conn);
+
+    G_OBJECT_CLASS(vir_stream_parent_class)->finalize(obj);
 }
 
 

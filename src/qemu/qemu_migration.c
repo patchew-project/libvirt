@@ -4000,7 +4000,7 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
     int cookielen = 0, ret;
     virErrorPtr orig_err = NULL;
     bool cancelled;
-    virStreamPtr st = NULL;
+    g_autoptr(virStream) st = NULL;
     unsigned long destflags;
 
     VIR_DEBUG("driver=%p, sconn=%p, dconn=%p, vm=%p, dconnuri=%s, "
@@ -4109,7 +4109,6 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
         ret = -1;
     }
 
-    virObjectUnref(st);
 
     virErrorRestore(&orig_err);
     VIR_FREE(uri_out);
@@ -4153,7 +4152,7 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
     int ret = -1;
     virErrorPtr orig_err = NULL;
     bool cancelled = true;
-    virStreamPtr st = NULL;
+    g_autoptr(virStream) st = NULL;
     unsigned long destflags;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
@@ -4446,7 +4445,6 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
         ret = -1;
     }
 
-    virObjectUnref(st);
 
     virErrorRestore(&orig_err);
     VIR_FREE(uri_out);

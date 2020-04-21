@@ -207,6 +207,7 @@ my %gobject_impl = (
     virSecret => 1,
     virStoragePool => 1,
     virStorageVol => 1,
+    virStream => 1,
 );
 
 sub use_gobject {
@@ -1068,7 +1069,7 @@ elsif ($mode eq "server") {
             push(@free_list_on_error, "    virStreamAbort(st);");
             push(@free_list_on_error, "    daemonFreeClientStream(client, stream);");
             push(@free_list_on_error, "} else {");
-            push(@free_list_on_error, "    virObjectUnref(st);");
+            push(@free_list_on_error, "    g_clear_object(&st);");
             push(@free_list_on_error, "}");
         }
 

@@ -5641,7 +5641,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UN
     char *cookieout = NULL;
     int cookieoutlen = 0;
     int rv = -1;
-    virStreamPtr st = NULL;
+    g_autoptr(virStream) st = NULL;
     daemonClientStreamPtr stream = NULL;
     virConnectPtr conn = remoteGetHypervisorConn(client);
 
@@ -5688,7 +5688,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server G_GNUC_UN
             virStreamAbort(st);
             daemonFreeClientStream(client, stream);
         } else {
-            virObjectUnref(st);
+            g_clear_object(&st);
         }
     }
     return rv;

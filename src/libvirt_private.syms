@@ -1357,6 +1357,7 @@ vir_nw_filter_get_type;
 vir_secret_get_type;
 vir_storage_pool_get_type;
 vir_storage_vol_get_type;
+vir_stream_get_type;
 virConnectClass;
 virConnectCloseCallbackDataCall;
 virConnectCloseCallbackDataClass;
@@ -1379,7 +1380,6 @@ virGetStoragePool;
 virGetStorageVol;
 virGetStream;
 virNewConnectCloseCallbackData;
-virStreamClass;
 
 
 # driver.h
