@@ -672,16 +672,20 @@ void qemuProcessEventFree(struct qemuProcessEvent *event);
 G_DECLARE_FINAL_TYPE(qemuDomainLogContext, qemu_domain_log_context, QEMU, DOMAIN_LOG_CONTEXT, GObject);
 typedef qemuDomainLogContext *qemuDomainLogContextPtr;
 
-typedef struct _qemuDomainSaveCookie qemuDomainSaveCookie;
-typedef qemuDomainSaveCookie *qemuDomainSaveCookiePtr;
 struct _qemuDomainSaveCookie {
-    virObject parent;
+    GObject parent;
 
     virCPUDefPtr cpu;
     bool slirpHelper;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuDomainSaveCookie, virObjectUnref);
+#define QEMU_TYPE_DOMAIN_SAVE_COOKIE qemu_domain_save_cookie_get_type()
+G_DECLARE_FINAL_TYPE(qemuDomainSaveCookie,
+                     qemu_domain_save_cookie,
+                     QEMU,
+                     DOMAIN_SAVE_COOKIE,
+                     GObject);
+typedef qemuDomainSaveCookie *qemuDomainSaveCookiePtr;
 
 typedef struct _qemuDomainXmlNsDef qemuDomainXmlNsDef;
 typedef qemuDomainXmlNsDef *qemuDomainXmlNsDefPtr;

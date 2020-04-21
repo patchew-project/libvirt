@@ -129,7 +129,7 @@ virDomainSnapshotDefDispose(void *obj)
     for (i = 0; i < def->ndisks; i++)
         virDomainSnapshotDiskDefClear(&def->disks[i]);
     VIR_FREE(def->disks);
-    virObjectUnref(def->cookie);
+    g_clear_object(&def->cookie);
 }
 
 int

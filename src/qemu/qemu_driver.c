@@ -2872,7 +2872,7 @@ virQEMUSaveDataNew(char *domXML,
     data->xml = g_steal_pointer(&domXML);
 
     if (cookieObj &&
-        !(data->cookie = virSaveCookieFormat((virObjectPtr) cookieObj,
+        !(data->cookie = virSaveCookieFormat(G_OBJECT(cookieObj),
                                              virDomainXMLOptionGetSaveCookie(xmlopt))))
         goto error;
 
@@ -6837,7 +6837,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     g_autoptr(qemuDomainSaveCookie) cookie = NULL;
     int rc = 0;
 
-    if (virSaveCookieParseString(data->cookie, (virObjectPtr *)&cookie,
+    if (virSaveCookieParseString(data->cookie, (GObject **)&cookie,
                                  virDomainXMLOptionGetSaveCookie(driver->xmlopt)) < 0)
         goto cleanup;
 
@@ -14478,7 +14478,7 @@ qemuDomainSnapshotCreateActiveInternal(virQEMUDriverPtr driver,
     if (ret < 0)
         goto cleanup;
 
-    if (!(snapdef->cookie = (virObjectPtr) qemuDomainSaveCookieNew(vm)))
+    if (!(snapdef->cookie = G_OBJECT(qemuDomainSaveCookieNew(vm))))
         goto cleanup;
 
     if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_HALT) {
@@ -15486,7 +15486,7 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
         if (!(xml = qemuDomainDefFormatLive(driver, priv->qemuCaps,
                                             vm->def, priv->origCPU,
                                             true, true)) ||
-            !(snapdef->cookie = (virObjectPtr) qemuDomainSaveCookieNew(vm)))
+            !(snapdef->cookie = G_OBJECT(qemuDomainSaveCookieNew(vm))))
             goto cleanup;
 
         if (!(data = virQEMUSaveDataNew(xml,
