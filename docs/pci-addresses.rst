@@ -235,3 +235,43 @@ guest OS rather than as ``0001:08:00.1``, which is the address of the
 device on the host.
 
 Of course, all the rules and behaviors described above still apply.
+
+
+Reserved addresses
+==================
+
+Due to some historical reasons hypervisors might expect some PCI
+devices to appear at certain addresses instead of 'random' ones.
+For QEMU this is machine type and guest architecture dependant.
+But to give you at least a gist here is list of reserved PCI
+addresses:
+
+For ``I440FX`` the following addresses are reserved:
+
+============  ======================
+0000:00:01.0  ISA bridge
+0000:00:01.1  primary IDE controller
+0000:00:01.2  PIIX3 USB controller
+0000:00:01.3  PCI bridge
+0000:00:02.0  primary video card
+============  ======================
+
+For ``Q35`` the following addresses are reserved:
+
+============  =======================
+0000:00:1f.2  primary SATA controller
+0000:00:1f.0  ISA bridge
+0000:00:1f.3  SMBus
+0000:00:01.0  primary video card
+============  =======================
+
+and the following are recommended (libvirt will try to place
+corresponding devices there because that's how real ``Q35`` would
+do it, but won't fail if the address is already taken):
+
+============  ===============
+0000:00:1a.0  USB2 controller
+0000:00:1b.0  ICH9 sound chip
+0000:00:1d.0  USB2 controller
+0000:00:1e.0  dmi-to-pci bridge
+============  ===============
