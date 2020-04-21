@@ -45,17 +45,25 @@ VIR_ENUM_IMPL(virDomainCapsFeature,
 );
 
 static virClassPtr virDomainCapsClass;
-static virClassPtr virDomainCapsCPUModelsClass;
+G_DEFINE_TYPE(virDomainCapsCPUModels, vir_domain_caps_cpu_models, G_TYPE_OBJECT);
 
 static void virDomainCapsDispose(void *obj);
-static void virDomainCapsCPUModelsDispose(void *obj);
+static void virDomainCapsCPUModelsFinalize(GObject *obj);
+
+static void vir_domain_caps_cpu_models_init(virDomainCapsCPUModels *mod G_GNUC_UNUSED)
+{
+}
+
+static void vir_domain_caps_cpu_models_class_init(virDomainCapsCPUModelsClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virDomainCapsCPUModelsFinalize;
+}
 
 static int virDomainCapsOnceInit(void)
 {
     if (!VIR_CLASS_NEW(virDomainCaps, virClassForObjectLockable()))
-        return -1;
-
-    if (!VIR_CLASS_NEW(virDomainCapsCPUModels, virClassForObject()))
         return -1;
 
     return 0;
@@ -107,9 +115,9 @@ virDomainCapsDispose(void *obj)
 
 
 static void
-virDomainCapsCPUModelsDispose(void *obj)
+virDomainCapsCPUModelsFinalize(GObject *obj)
 {
-    virDomainCapsCPUModelsPtr cpuModels = obj;
+    virDomainCapsCPUModelsPtr cpuModels = VIR_DOMAIN_CAPS_CPU_MODELS(obj);
     size_t i;
 
     for (i = 0; i < cpuModels->nmodels; i++) {
@@ -118,6 +126,8 @@ virDomainCapsCPUModelsDispose(void *obj)
     }
 
     VIR_FREE(cpuModels->models);
+
+    G_OBJECT_CLASS(vir_domain_caps_cpu_models_parent_class)->finalize(obj);
 }
 
 
@@ -147,30 +157,26 @@ virDomainCapsNew(const char *path,
 virDomainCapsCPUModelsPtr
 virDomainCapsCPUModelsNew(size_t nmodels)
 {
-    virDomainCapsCPUModelsPtr cpuModels = NULL;
+    g_autoptr(virDomainCapsCPUModels) cpuModels = NULL;
 
     if (virDomainCapsInitialize() < 0)
         return NULL;
 
-    if (!(cpuModels = virObjectNew(virDomainCapsCPUModelsClass)))
-        return NULL;
+    cpuModels = VIR_DOMAIN_CAPS_CPU_MODELS(
+            g_object_new(VIR_TYPE_DOMAIN_CAPS_CPU_MODELS, NULL));
 
     if (VIR_ALLOC_N(cpuModels->models, nmodels) < 0)
-        goto error;
+        return NULL;
     cpuModels->nmodels_max = nmodels;
 
-    return cpuModels;
-
- error:
-    virObjectUnref(cpuModels);
-    return NULL;
+    return g_steal_pointer(&cpuModels);
 }
 
 
 virDomainCapsCPUModelsPtr
 virDomainCapsCPUModelsCopy(virDomainCapsCPUModelsPtr old)
 {
-    virDomainCapsCPUModelsPtr cpuModels;
+    g_autoptr(virDomainCapsCPUModels) cpuModels = NULL;
     size_t i;
 
     if (!(cpuModels = virDomainCapsCPUModelsNew(old->nmodels)))
@@ -181,14 +187,10 @@ virDomainCapsCPUModelsCopy(virDomainCapsCPUModelsPtr old)
                                       old->models[i].name,
                                       old->models[i].usable,
                                       old->models[i].blockers) < 0)
-            goto error;
+            return NULL;
     }
 
-    return cpuModels;
-
- error:
-    virObjectUnref(cpuModels);
-    return NULL;
+    return g_steal_pointer(&cpuModels);
 }
 
 

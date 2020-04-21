@@ -204,6 +204,7 @@ virDomainAuditVcpu;
 
 
 # conf/domain_capabilities.h
+vir_domain_caps_cpu_models_get_type;
 virDomainCapsCPUModelsAdd;
 virDomainCapsCPUModelsCopy;
 virDomainCapsCPUModelsGet;

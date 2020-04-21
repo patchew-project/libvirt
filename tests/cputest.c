@@ -571,7 +571,7 @@ cpuTestCPUID(bool guest, const void *arg)
     char *host = NULL;
     virCPUDefPtr cpu = NULL;
     char *result = NULL;
-    virDomainCapsCPUModelsPtr models = NULL;
+    g_autoptr(virDomainCapsCPUModels) models = NULL;
 
     hostFile = g_strdup_printf("%s/cputestdata/%s-cpuid-%s.xml", abs_srcdir,
                                virArchToString(data->arch), data->host);
@@ -613,7 +613,6 @@ cpuTestCPUID(bool guest, const void *arg)
     virCPUDataFree(hostData);
     virCPUDefFree(cpu);
     VIR_FREE(result);
-    virObjectUnref(models);
     return ret;
 }
 
@@ -785,8 +784,8 @@ cpuTestUpdateLive(const void *arg)
     virCPUDataPtr disabledData = NULL;
     char *expectedFile = NULL;
     virCPUDefPtr expected = NULL;
-    virDomainCapsCPUModelsPtr hvModels = NULL;
-    virDomainCapsCPUModelsPtr models = NULL;
+    g_autoptr(virDomainCapsCPUModels) hvModels = NULL;
+    g_autoptr(virDomainCapsCPUModels) models = NULL;
     int ret = -1;
 
     cpuFile = g_strdup_printf("cpuid-%s-guest", data->host);
@@ -862,8 +861,6 @@ cpuTestUpdateLive(const void *arg)
     virCPUDataFree(disabledData);
     VIR_FREE(expectedFile);
     virCPUDefFree(expected);
-    virObjectUnref(hvModels);
-    virObjectUnref(models);
     return ret;
 }
 
@@ -935,7 +932,7 @@ static const char *ppc_models_list[] = { "POWER6", "POWER7", "POWER8", NULL };
 static virDomainCapsCPUModelsPtr
 cpuTestInitModels(const char **list)
 {
-    virDomainCapsCPUModelsPtr cpus;
+    g_autoptr(virDomainCapsCPUModels) cpus = NULL;
     const char **model;
 
     if (!(cpus = virDomainCapsCPUModelsNew(0)))
@@ -944,25 +941,21 @@ cpuTestInitModels(const char **list)
     for (model = list; *model; model++) {
         if (virDomainCapsCPUModelsAdd(cpus, *model,
                                       VIR_DOMCAPS_CPU_USABLE_UNKNOWN, NULL) < 0)
-            goto error;
+            return NULL;
     }
 
-    return cpus;
-
- error:
-    virObjectUnref(cpus);
-    return NULL;
+    return g_steal_pointer(&cpus);
 }
 
 
 static int
 mymain(void)
 {
-    virDomainCapsCPUModelsPtr model486 = NULL;
-    virDomainCapsCPUModelsPtr nomodel = NULL;
-    virDomainCapsCPUModelsPtr models = NULL;
-    virDomainCapsCPUModelsPtr haswell = NULL;
-    virDomainCapsCPUModelsPtr ppc_models = NULL;
+    g_autoptr(virDomainCapsCPUModels) model486 = NULL;
+    g_autoptr(virDomainCapsCPUModels) nomodel = NULL;
+    g_autoptr(virDomainCapsCPUModels) models = NULL;
+    g_autoptr(virDomainCapsCPUModels) haswell = NULL;
+    g_autoptr(virDomainCapsCPUModels) ppc_models = NULL;
     int ret = 0;
 
 #if WITH_QEMU
@@ -1272,12 +1265,6 @@ mymain(void)
 #if WITH_QEMU
     qemuTestDriverFree(&driver);
 #endif
-
-    virObjectUnref(model486);
-    virObjectUnref(nomodel);
-    virObjectUnref(models);
-    virObjectUnref(haswell);
-    virObjectUnref(ppc_models);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
