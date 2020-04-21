@@ -310,7 +310,6 @@ udevConnectListAllInterfaces(virConnectPtr conn,
     struct udev_list_entry *dev_entry;
     virInterfacePtr *ifaces_list = NULL;
     virInterfacePtr iface_obj;
-    int tmp_count;
     int count = 0;
     int status = 0;
     int ret;
@@ -419,12 +418,7 @@ udevConnectListAllInterfaces(virConnectPtr conn,
         udev_enumerate_unref(enumerate);
     udev_unref(udev);
 
-    if (ifaces) {
-        for (tmp_count = 0; tmp_count < count; tmp_count++)
-            virObjectUnref(ifaces_list[tmp_count]);
-    }
-
-    VIR_FREE(ifaces_list);
+    virGObjectListFreeCount(ifaces_list, count);
 
     return ret;
 

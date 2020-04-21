@@ -36,7 +36,6 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virInterfaceClass;
 virClassPtr virNodeDeviceClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
@@ -46,7 +45,6 @@ virClassPtr virStoragePoolClass;
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virInterfaceDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
@@ -87,6 +85,24 @@ vir_domain_snapshot_class_init(virDomainSnapshotClass *klass)
 
     obj->dispose = virDomainSnapshotDispose;
     obj->finalize = virDomainSnapshotFinalize;
+}
+
+G_DEFINE_TYPE(virInterface, vir_interface, G_TYPE_OBJECT);
+static void virInterfaceDispose(GObject *obj);
+static void virInterfaceFinalize(GObject *obj);
+
+static void
+vir_interface_init(virInterface *iface G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_interface_class_init(virInterfaceClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virInterfaceDispose;
+    obj->finalize = virInterfaceFinalize;
 }
 
 G_DEFINE_TYPE(virNetwork, vir_network, G_TYPE_OBJECT);
@@ -215,7 +231,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNodeDevice);
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
@@ -590,59 +605,70 @@ virNetworkPortFinalize(GObject *obj)
  * @mac: pointer to the mac
  *
  * Allocates a new interface object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the interface object, or NULL on error.
  */
 virInterfacePtr
 virGetInterface(virConnectPtr conn, const char *name, const char *mac)
 {
-    virInterfacePtr ret = NULL;
+    g_autoptr(virInterface) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
 
     /* a NULL mac from caller is okay. Treat it as blank */
     if (mac == NULL)
        mac = "";
 
-    if (!(ret = virObjectNew(virInterfaceClass)))
-        goto error;
+    ret = VIR_INTERFACE(g_object_new(VIR_TYPE_INTERFACE, NULL));
 
     ret->name = g_strdup(name);
     ret->mac = g_strdup(mac);
 
     ret->conn = virObjectRef(conn);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 /**
  * virInterfaceDispose:
  * @obj: the interface to release
  *
- * Unconditionally release all memory associated with an interface.
- * The interface object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virInterfaceDispose(void *obj)
+virInterfaceDispose(GObject *obj)
 {
-    virInterfacePtr iface = obj;
+    virInterfacePtr iface = VIR_INTERFACE(obj);
+
+    virObjectUnref(iface->conn);
+    iface->conn = NULL;
+
+    G_OBJECT_CLASS(vir_interface_parent_class)->dispose(obj);
+}
+
+/**
+ * virInterfaceFinalize:
+ * @obj: the interface to release
+ *
+ * Unconditionally releases all memory associated with an interface.
+ * The interface object must not be used once this method returns.
+ */
+static void
+virInterfaceFinalize(GObject *obj)
+{
+    virInterfacePtr iface = VIR_INTERFACE(obj);
     VIR_DEBUG("release interface %p %s", iface, iface->name);
 
     VIR_FREE(iface->name);
     VIR_FREE(iface->mac);
-    virObjectUnref(iface->conn);
+
+    G_OBJECT_CLASS(vir_interface_parent_class)->finalize(obj);
 }
 
 

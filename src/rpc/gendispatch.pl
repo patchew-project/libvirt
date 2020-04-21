@@ -198,6 +198,7 @@ my %gobject_impl = (
     virAdmServer => 1,
     virDomainCheckpoint => 1,
     virDomainSnapshot => 1,
+    virInterface => 1,
     virNetwork => 1,
     virNetworkPort => 1,
     virNWFilter => 1,

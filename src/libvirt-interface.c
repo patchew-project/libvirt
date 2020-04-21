@@ -642,13 +642,13 @@ virInterfaceDestroy(virInterfacePtr iface, unsigned int flags)
 int
 virInterfaceRef(virInterfacePtr iface)
 {
-    VIR_DEBUG("iface=%p refs=%d", iface, iface ? iface->parent.u.s.refs : 0);
+    VIR_DEBUG("iface=%p", iface);
 
     virResetLastError();
 
     virCheckInterfaceReturn(iface, -1);
 
-    virObjectRef(iface);
+    g_object_ref(iface);
     return 0;
 }
 
@@ -671,7 +671,7 @@ virInterfaceFree(virInterfacePtr iface)
 
     virCheckInterfaceReturn(iface, -1);
 
-    virObjectUnref(iface);
+    g_object_unref(iface);
     return 0;
 }
 

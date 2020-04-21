@@ -738,12 +738,7 @@ netcfConnectListAllInterfaces(virConnectPtr conn,
             VIR_FREE(names[i]);
     VIR_FREE(names);
 
-    if (tmp_iface_objs) {
-        for (i = 0; i < niface_objs; i++)
-            virObjectUnref(tmp_iface_objs[i]);
-        VIR_FREE(tmp_iface_objs);
-    }
-
+    virGObjectListFreeCount(tmp_iface_objs, niface_objs);
     virObjectUnlock(driver);
     return ret;
 }
