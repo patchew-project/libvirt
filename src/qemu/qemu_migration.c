@@ -512,7 +512,7 @@ qemuMigrationSrcNBDStorageCopyReady(virDomainObjPtr vm,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-        qemuBlockJobDataPtr job;
+        g_autoptr(qemuBlockJobData) job = NULL;
 
         if (!diskPriv->migrating)
             continue;
@@ -526,11 +526,8 @@ qemuMigrationSrcNBDStorageCopyReady(virDomainObjPtr vm,
         qemuBlockJobUpdate(vm, job, asyncJob);
         if (job->state == VIR_DOMAIN_BLOCK_JOB_FAILED) {
             qemuMigrationNBDReportMirrorError(job, disk->dst);
-            virObjectUnref(job);
             return -1;
         }
-
-        virObjectUnref(job);
 
         if (disk->mirrorState != VIR_DOMAIN_DISK_MIRROR_STATE_READY)
             notReady++;
@@ -570,7 +567,7 @@ qemuMigrationSrcNBDCopyCancelled(virDomainObjPtr vm,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-        qemuBlockJobDataPtr job;
+        g_autoptr(qemuBlockJobData) job = NULL;
 
         if (!diskPriv->migrating)
             continue;
@@ -597,8 +594,6 @@ qemuMigrationSrcNBDCopyCancelled(virDomainObjPtr vm,
 
         if (job->state == VIR_DOMAIN_BLOCK_JOB_COMPLETED)
             completed++;
-
-        virObjectUnref(job);
     }
 
     /* Updating completed block job drops the lock thus we have to recheck
@@ -704,14 +699,13 @@ qemuMigrationSrcNBDCopyCancel(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-        qemuBlockJobDataPtr job;
+        g_autoptr(qemuBlockJobData) job = NULL;
 
         if (!(job = qemuBlockJobDiskGetJob(disk)) ||
             !qemuBlockJobIsRunning(job))
             diskPriv->migrating = false;
 
         if (!diskPriv->migrating) {
-            virObjectUnref(job);
             continue;
         }
 
@@ -726,8 +720,6 @@ qemuMigrationSrcNBDCopyCancel(virQEMUDriverPtr driver,
             qemuBlockJobSyncEnd(vm, job, asyncJob);
             diskPriv->migrating = false;
         }
-
-        virObjectUnref(job);
     }
 
     while ((rv = qemuMigrationSrcNBDCopyCancelled(vm, asyncJob, check)) != 1) {
@@ -5437,7 +5429,7 @@ qemuMigrationSrcCancel(virQEMUDriverPtr driver,
             storage = true;
         }
 
-        virObjectUnref(job);
+        g_clear_object(&job);
     }
 
     if (storage &&

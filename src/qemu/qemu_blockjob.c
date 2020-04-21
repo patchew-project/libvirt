@@ -71,8 +71,23 @@ VIR_ENUM_IMPL(qemuBlockjob,
               "create",
               "broken");
 
-static virClassPtr qemuBlockJobDataClass;
+G_DEFINE_TYPE(qemuBlockJobData, qemu_block_job_data, G_TYPE_OBJECT);
+static void qemuBlockJobDataDispose(GObject *obj);
+static void qemuBlockJobDataFinalize(GObject *obj);
 
+static void
+qemu_block_job_data_init(qemuBlockJobData *job G_GNUC_UNUSED)
+{
+}
+
+static void
+qemu_block_job_data_class_init(qemuBlockJobDataClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = qemuBlockJobDataDispose;
+    obj->finalize = qemuBlockJobDataFinalize;
+}
 
 static void
 qemuBlockJobDataDisposeJobdata(qemuBlockJobDataPtr job)
@@ -88,43 +103,38 @@ qemuBlockJobDataDisposeJobdata(qemuBlockJobDataPtr job)
 
 
 static void
-qemuBlockJobDataDispose(void *obj)
+qemuBlockJobDataDispose(GObject *obj)
 {
-    qemuBlockJobDataPtr job = obj;
+    qemuBlockJobDataPtr job = QEMU_BLOCK_JOB_DATA(obj);
 
     virObjectUnref(job->chain);
+    job->chain = NULL;
     virObjectUnref(job->mirrorChain);
+    job->mirrorChain = NULL;
+
+    G_OBJECT_CLASS(qemu_block_job_data_parent_class)->dispose(obj);
+}
+
+static void
+qemuBlockJobDataFinalize(GObject *obj)
+{
+    qemuBlockJobDataPtr job = QEMU_BLOCK_JOB_DATA(obj);
 
     qemuBlockJobDataDisposeJobdata(job);
 
     g_free(job->name);
     g_free(job->errmsg);
+
+    G_OBJECT_CLASS(qemu_block_job_data_parent_class)->finalize(obj);
 }
 
-
-static int
-qemuBlockJobDataOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(qemuBlockJobData, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-
-VIR_ONCE_GLOBAL_INIT(qemuBlockJobData);
 
 qemuBlockJobDataPtr
 qemuBlockJobDataNew(qemuBlockJobType type,
                     const char *name)
 {
-    g_autoptr(qemuBlockJobData) job = NULL;
-
-    if (qemuBlockJobDataInitialize() < 0)
-        return NULL;
-
-    if (!(job = virObjectNew(qemuBlockJobDataClass)))
-        return NULL;
+    g_autoptr(qemuBlockJobData) job =
+        QEMU_BLOCK_JOB_DATA(g_object_new(QEMU_TYPE_BLOCK_JOB_DATA, NULL));
 
     job->name = g_strdup(name);
 
@@ -180,15 +190,15 @@ qemuBlockJobRegister(qemuBlockJobDataPtr job,
         return -1;
     }
 
-    if (virHashAddEntry(priv->blockjobs, job->name, virObjectRef(job)) < 0) {
-        virObjectUnref(job);
+    if (virHashAddEntry(priv->blockjobs, job->name, g_object_ref(job)) < 0) {
+        g_object_unref(job);
         return -1;
     }
 
     if (disk) {
         job->disk = disk;
         job->chain = virObjectRef(disk->src);
-        QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = virObjectRef(job);
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = g_object_ref(job);
     }
 
     if (savestatus)
@@ -209,8 +219,7 @@ qemuBlockJobUnregister(qemuBlockJobDataPtr job,
         diskPriv = QEMU_DOMAIN_DISK_PRIVATE(job->disk);
 
         if (job == diskPriv->blockjob) {
-            virObjectUnref(diskPriv->blockjob);
-            diskPriv->blockjob = NULL;
+            g_clear_object(&diskPriv->blockjob);
         }
 
         job->disk = NULL;
@@ -427,7 +436,7 @@ qemuBlockJobDiskGetJob(virDomainDiskDefPtr disk)
     if (!job)
         return NULL;
 
-    return virObjectRef(job);
+    return g_object_ref(job);
 }
 
 
@@ -466,7 +475,7 @@ qemuBlockJobStartupFinalize(virDomainObjPtr vm,
     if (job->state == QEMU_BLOCKJOB_STATE_NEW)
         qemuBlockJobUnregister(job, vm);
 
-    virObjectUnref(job);
+    g_object_unref(job);
 }
 
 
@@ -1738,7 +1747,7 @@ qemuBlockJobGetByDisk(virDomainDiskDefPtr disk)
     if (!job)
         return NULL;
 
-    return virObjectRef(job);
+    return g_object_ref(job);
 }
 
 
