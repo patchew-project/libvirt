@@ -193,6 +193,22 @@ sub get_conn_method {
     return "remoteGetHypervisorConn";
 }
 
+my %gobject_impl = (
+);
+
+sub use_gobject {
+    (my $typename = shift) =~ s/Ptr$//;
+    return exists($gobject_impl{$typename});
+}
+
+sub get_unref_method {
+    my $type = shift;
+    if (use_gobject($type)) {
+        return "g_object_unref";
+    }
+    return "virObjectUnref";
+}
+
 # Read the input file (usually remote_protocol.x) and form an
 # opinion about the name, args and return type of each RPC.
 my ($name, $ProcName, $id, $flags, %calls, @calls, %opts);
@@ -584,6 +600,7 @@ elsif ($mode eq "server") {
                     next
                 } elsif ($args_member =~ m/^remote_nonnull_(domain|network|network_port|storage_pool|storage_vol|interface|secret|nwfilter|nwfilter_binding) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
+                    my $unref_impl = get_unref_method("vir${type_name}");
 
                     push(@vars_list, "vir${type_name}Ptr $2 = NULL");
                     push(@getters_list,
@@ -591,9 +608,11 @@ elsif ($mode eq "server") {
                          "        goto cleanup;\n");
                     push(@args_list, "$2");
                     push(@free_list,
-                         "    virObjectUnref($2);");
+                         "    if ($2)\n" .
+                         "        $unref_impl($2);");
                 } elsif ($args_member =~ m/^remote_nonnull_domain_(checkpoint|snapshot) (\S+);$/) {
                     my $type_name = name_to_TypeName($1);
+                    my $unref_impl = get_unref_method("virDomain${type_name}");
 
                     push(@vars_list, "virDomainPtr dom = NULL");
                     push(@vars_list, "virDomain${type_name}Ptr ${1} = NULL");
@@ -605,7 +624,8 @@ elsif ($mode eq "server") {
                          "        goto cleanup;\n");
                     push(@args_list, "$1");
                     push(@free_list,
-                         "    virObjectUnref($1);\n" .
+                         "    if ($1)\n" .
+                         "        $unref_impl($1);\n" .
                          "    virObjectUnref(dom);");
                 } elsif ($args_member =~ m/^(?:(?:admin|remote)_string|remote_uuid) (\S+)<\S+>;/) {
                     push(@args_list, $conn_var) if !@args_list;
@@ -686,6 +706,7 @@ elsif ($mode eq "server") {
                     }
                 } elsif ($args_member =~ m/^admin_nonnull_(server) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
+                    my $unref_impl = get_unref_method("virNet${type_name}");
 
                     push(@vars_list, "virNet${type_name}Ptr $2 = NULL");
                     push(@getters_list,
@@ -693,9 +714,11 @@ elsif ($mode eq "server") {
                          "        goto cleanup;\n");
                     push(@args_list, "$2");
                     push(@free_list,
-                         "    virObjectUnref($2);");
+                         "    if ($2)\n" .
+                         "        $unref_impl($2);");
                 } elsif ($args_member =~ m/^admin_nonnull_(client) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
+                    my $unref_impl = get_unref_method("virNetServer${type_name}");
 
                     push(@vars_list, "virNetServerPtr srv = NULL");
                     push(@vars_list, "virNetServer${type_name}Ptr $2 = NULL");
@@ -706,7 +729,9 @@ elsif ($mode eq "server") {
                          "    if (!($2 = get_nonnull_$1(srv, args->$2)))\n" .
                          "        goto cleanup;\n");
                     push(@args_list, "$2");
-                    push(@free_list, "    virObjectUnref($2);");
+                    push(@free_list,
+                         "    if ($2)\n" .
+                         "        $unref_impl($2);");
                     push(@free_list, "    virObjectUnref(srv);");
                 } elsif ($args_member =~ m/^(\/)?\*/) {
                     # ignore comments
@@ -815,10 +840,12 @@ elsif ($mode eq "server") {
                         $single_ret_var = undef;
                         $single_ret_by_ref = 1;
                     } else {
+                        my $unref_impl = get_unref_method("vir${type_name}");
                         push(@vars_list, "vir${type_name}Ptr $2 = NULL");
                         push(@ret_list, "make_nonnull_$1(&ret->$2, $2);\n");
                         push(@free_list,
-                             "    virObjectUnref($2);");
+                             "    if ($2)\n" .
+                             "        $unref_impl($2);");
                         $single_ret_var = $2;
                         $single_ret_by_ref = 0;
                         $single_ret_check = " == NULL";
@@ -929,18 +956,22 @@ elsif ($mode eq "server") {
                     die "opaque array without insert@<offset> annotation: $ret_member";
                 } elsif ($ret_member =~ m/^admin_nonnull_(server|client) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
+                    my $unref_impl;
 
                     if ($1 eq "client") {
+                        $unref_impl = get_unref_method("virNetServer${type_name}");
                         push(@vars_list, "virNetServer${type_name}Ptr $2 = NULL");
                         push(@ret_list, "make_nonnull_$1(&ret->$2, $2);\n");
                         push(@ret_list, "make_nonnull_server(&ret->$2.srv, srv);\n");
                     } else {
+                        $unref_impl = get_unref_method("virNet${type_name}");
                         push(@vars_list, "virNet${type_name}Ptr $2 = NULL");
                         push(@ret_list, "make_nonnull_$1(&ret->$2, $2);");
                     }
 
                     push(@free_list,
-                         "    virObjectUnref($2);");
+                         "    if ($2)\n" .
+                         "        $unref_impl($2);");
                     $single_ret_var = $2;
                     $single_ret_by_ref = 0;
                     $single_ret_check = " == NULL";
@@ -1245,11 +1276,12 @@ elsif ($mode eq "server") {
         }
 
         if ($modern_ret_as_list) {
-            print "    if (result) {\n";
-            print "        for (i = 0; i < nresults; i++)\n";
-            print "            virObjectUnref(result[i]);\n";
-            print "    }\n";
-            print "    VIR_FREE(result);\n";
+            if (use_gobject($modern_ret_struct_name)) {
+                print "    virGObjectListFreeCount";
+            } else {
+                print "    virObjectListFreeCount";
+            }
+            print "(result, nresults);\n";
         }
 
         print "    return rv;\n";
@@ -2003,12 +2035,12 @@ elsif ($mode eq "client") {
                 print "    }\n";
             }
             if ($modern_ret_as_list) {
-                print "    if (tmp_results) {\n";
-                print "        for (i = 0; i < ret.$single_ret_list_name.${single_ret_list_name}_len; i++)\n";
-                print "            virObjectUnref(tmp_results[i]);\n";
-                print "        VIR_FREE(tmp_results);\n";
-                print "    }\n";
-                print "\n";
+                if (use_gobject($modern_ret_var_type)) {
+                    print "    virGObjectListFreeCount";
+                } else {
+                    print "    virObjectListFreeCount";
+                }
+                print "(tmp_results, ret.$single_ret_list_name.${single_ret_list_name}_len);\n";
             }
             print "    xdr_free((xdrproc_t)xdr_$call->{ret}, (char *)&ret);\n";
         }
