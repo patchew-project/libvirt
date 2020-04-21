@@ -37,7 +37,6 @@ virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
 virClassPtr virInterfaceClass;
-virClassPtr virNetworkClass;
 virClassPtr virNetworkPortClass;
 virClassPtr virNodeDeviceClass;
 virClassPtr virSecretClass;
@@ -49,7 +48,6 @@ static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
 static void virInterfaceDispose(void *obj);
-static void virNetworkDispose(void *obj);
 static void virNetworkPortDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
 static void virSecretDispose(void *obj);
@@ -91,6 +89,24 @@ vir_domain_snapshot_class_init(virDomainSnapshotClass *klass)
 
     obj->dispose = virDomainSnapshotDispose;
     obj->finalize = virDomainSnapshotFinalize;
+}
+
+G_DEFINE_TYPE(virNetwork, vir_network, G_TYPE_OBJECT);
+static void virNetworkDispose(GObject *obj);
+static void virNetworkFinalize(GObject *obj);
+
+static void
+vir_network_init(virNetwork *net G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_network_class_init(virNetworkClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virNetworkDispose;
+    obj->finalize = virNetworkFinalize;
 }
 
 G_DEFINE_TYPE(virNWFilter, vir_nw_filter, G_TYPE_OBJECT);
@@ -184,7 +200,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
     DECLARE_CLASS(virInterface);
-    DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNetworkPort);
     DECLARE_CLASS(virNodeDevice);
     DECLARE_CLASS(virSecret);
@@ -421,58 +436,69 @@ virDomainDispose(void *obj)
  * @uuid: pointer to the uuid
  *
  * Allocates a new network object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the network object, or NULL on error.
  */
 virNetworkPtr
 virGetNetwork(virConnectPtr conn, const char *name, const unsigned char *uuid)
 {
-    virNetworkPtr ret = NULL;
+    g_autoptr(virNetwork) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
-    virCheckNonNullArgGoto(uuid, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
+    virCheckNonNullArgReturn(uuid, NULL);
 
-    if (!(ret = virObjectNew(virNetworkClass)))
-        goto error;
+    ret = VIR_NETWORK(g_object_new(VIR_TYPE_NETWORK, NULL));
 
     ret->name = g_strdup(name);
 
     ret->conn = virObjectRef(conn);
     memcpy(&(ret->uuid[0]), uuid, VIR_UUID_BUFLEN);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 /**
  * virNetworkDispose:
  * @obj: the network to release
  *
- * Unconditionally release all memory associated with a network.
- * The network object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virNetworkDispose(void *obj)
+virNetworkDispose(GObject *obj)
 {
-    virNetworkPtr network = obj;
+    virNetworkPtr network = VIR_NETWORK(obj);
+
+    virObjectUnref(network->conn);
+    network->conn = NULL;
+
+    G_OBJECT_CLASS(vir_network_parent_class)->dispose(obj);
+}
+
+/**
+ * virNetworkFinalize:
+ * @obj: the network to release
+ *
+ * Unconditionally releases all memory associated with a network.
+ * The network object must not be used once this method returns.
+ */
+static void
+virNetworkFinalize(GObject *obj)
+{
+    virNetworkPtr network = VIR_NETWORK(obj);
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virUUIDFormat(network->uuid, uuidstr);
     VIR_DEBUG("release network %p %s %s", network, network->name, uuidstr);
 
     VIR_FREE(network->name);
-    virObjectUnref(network->conn);
+
+    G_OBJECT_CLASS(vir_network_parent_class)->finalize(obj);
 }
 
 
@@ -500,7 +526,7 @@ virGetNetworkPort(virNetworkPtr net, const unsigned char *uuid)
     if (!(ret = virObjectNew(virNetworkPortClass)))
         goto error;
 
-    ret->net = virObjectRef(net);
+    ret->net = g_object_ref(net);
     memcpy(&(ret->uuid[0]), uuid, VIR_UUID_BUFLEN);
 
     return ret;
@@ -529,7 +555,7 @@ virNetworkPortDispose(void *obj)
     virUUIDFormat(port->uuid, uuidstr);
     VIR_DEBUG("release network port %p %s", port, uuidstr);
 
-    virObjectUnref(port->net);
+    g_object_unref(port->net);
 }
 
 

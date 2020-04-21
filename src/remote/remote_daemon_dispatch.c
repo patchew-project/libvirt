@@ -6014,7 +6014,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     int rv = -1;
     daemonClientEventCallbackPtr callback = NULL;
     daemonClientEventCallbackPtr ref;
-    virNetworkPtr net = NULL;
+    g_autoptr(virNetwork) net = NULL;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virConnectPtr conn = remoteGetNetworkConn(client);
@@ -6074,7 +6074,6 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server G_GNUC_UNUSE
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(net);
     return rv;
 }
 
@@ -6756,7 +6755,7 @@ remoteDispatchNetworkGetDHCPLeases(virNetServerPtr server G_GNUC_UNUSED,
     int rv = -1;
     size_t i;
     virNetworkDHCPLeasePtr *leases = NULL;
-    virNetworkPtr net = NULL;
+    g_autoptr(virNetwork) net = NULL;
     int nleases = 0;
     virConnectPtr conn = remoteGetNetworkConn(client);
 
@@ -6806,7 +6805,6 @@ remoteDispatchNetworkGetDHCPLeases(virNetServerPtr server G_GNUC_UNUSED,
         for (i = 0; i < nleases; i++)
             virNetworkDHCPLeaseFree(leases[i]);
     VIR_FREE(leases);
-    virObjectUnref(net);
     return rv;
 }
 
@@ -7228,12 +7226,11 @@ static virNetworkPortPtr
 get_nonnull_network_port(virConnectPtr conn, remote_nonnull_network_port port)
 {
     virNetworkPortPtr ret;
-    virNetworkPtr net;
-    net = virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
+    g_autoptr(virNetwork) net =
+        virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
     if (!net)
         return NULL;
     ret = virGetNetworkPort(net, BAD_CAST port.uuid);
-    virObjectUnref(net);
     return ret;
 }
 

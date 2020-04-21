@@ -1429,10 +1429,7 @@ virNetworkObjListExport(virConnectPtr conn,
     ret = data.nnets;
  cleanup:
     virObjectRWUnlock(netobjs);
-    while (data.nets && data.nnets)
-        virObjectUnref(data.nets[--data.nnets]);
-
-    VIR_FREE(data.nets);
+    virGObjectListFreeCount(data.nets, data.nnets);
     return ret;
 }
 

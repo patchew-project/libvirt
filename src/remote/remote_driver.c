@@ -5456,7 +5456,7 @@ remoteNetworkBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_network_event_lifecycle_msg *msg = evdata;
-    virNetworkPtr net;
+    g_autoptr(virNetwork) net = NULL;
     virObjectEventPtr event = NULL;
 
     net = get_nonnull_network(conn, msg->net);
@@ -5465,7 +5465,6 @@ remoteNetworkBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virNetworkEventLifecycleNew(net->name, net->uuid, msg->event,
                                         msg->detail);
-    virObjectUnref(net);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -8270,12 +8269,11 @@ static virNetworkPortPtr
 get_nonnull_network_port(virConnectPtr conn, remote_nonnull_network_port port)
 {
     virNetworkPortPtr ret;
-    virNetworkPtr net;
-    net = virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
+    g_autoptr(virNetwork) net =
+        virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
     if (!net)
         return NULL;
     ret = virGetNetworkPort(net, BAD_CAST port.uuid);
-    virObjectUnref(net);
     return ret;
 }
 

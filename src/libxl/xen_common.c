@@ -1709,7 +1709,7 @@ xenFormatNet(virConnectPtr conn,
 
     case VIR_DOMAIN_NET_TYPE_NETWORK:
     {
-        virNetworkPtr network = virNetworkLookupByName(conn, net->data.network.name);
+        g_autoptr(virNetwork) network = virNetworkLookupByName(conn, net->data.network.name);
         char *bridge;
         if (!network) {
             virReportError(VIR_ERR_NO_NETWORK, "%s",
@@ -1717,7 +1717,6 @@ xenFormatNet(virConnectPtr conn,
             return -1;
         }
         bridge = virNetworkGetBridgeName(network);
-        virObjectUnref(network);
         if (!bridge) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("network %s is not active"),
