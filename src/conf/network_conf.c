@@ -70,6 +70,13 @@ VIR_ENUM_IMPL(virNetworkTaint,
               "hook-script",
 );
 
+VIR_ENUM_IMPL(virNetworkDHCPLeaseTimeUnit,
+              VIR_NETWORK_DHCP_LEASETIME_UNIT_LAST,
+              "seconds",
+              "mins",
+              "hours",
+);
+
 static virClassPtr virNetworkXMLOptionClass;
 
 static void
@@ -133,11 +140,19 @@ virNetworkForwardPfDefClear(virNetworkForwardPfDefPtr def)
 
 
 static void
+virNetworkDHCPLeaseTimeDefClear(virNetworkDHCPLeaseTimeDefPtr lease)
+{
+    VIR_FREE(lease);
+}
+
+
+static void
 virNetworkDHCPHostDefClear(virNetworkDHCPHostDefPtr def)
 {
     VIR_FREE(def->mac);
     VIR_FREE(def->id);
     VIR_FREE(def->name);
+    VIR_FREE(def->lease);
 }
 
 
@@ -145,6 +160,9 @@ static void
 virNetworkIPDefClear(virNetworkIPDefPtr def)
 {
     VIR_FREE(def->family);
+
+    while (def->nranges)
+        virNetworkDHCPLeaseTimeDefClear(def->ranges[--def->nranges].lease);
     VIR_FREE(def->ranges);
 
     while (def->nhosts)
@@ -391,11 +409,55 @@ int virNetworkIPDefNetmask(const virNetworkIPDef *def,
 
 
 static int
-virSocketAddrRangeParseXML(const char *networkName,
-                           virNetworkIPDefPtr ipdef,
-                           xmlNodePtr node,
-                           virSocketAddrRangePtr range)
+virNetworkDHCPLeaseTimeDefParseXML(virNetworkDHCPLeaseTimeDefPtr *lease,
+                                   xmlNodePtr node)
 {
+    virNetworkDHCPLeaseTimeDefPtr new_lease = *lease;
+    g_autofree char *expiry = NULL, *unit = NULL;
+
+    if (!(expiry = virXMLPropString(node, "expiry")))
+        return 0;
+
+    if (VIR_ALLOC(new_lease) < 0)
+        return -1;
+
+    if (virStrToLong_ul(expiry, NULL, 10, &new_lease->expiry) < 0)
+        return -1;
+
+    if (!(unit = virXMLPropString(node, "unit")))
+        new_lease->unit = VIR_NETWORK_DHCP_LEASETIME_UNIT_MINUTES;
+    else
+        new_lease->unit = virNetworkDHCPLeaseTimeUnitTypeFromString(unit);
+
+    /* infinite */
+    if (new_lease->expiry > 0) {
+        /* This boundary check is related to dnsmasq man page settings:
+         * "The minimum lease time is two minutes." */
+        if ((new_lease->unit == VIR_NETWORK_DHCP_LEASETIME_UNIT_SECONDS &&
+             new_lease->expiry < 120) ||
+            (new_lease->unit == VIR_NETWORK_DHCP_LEASETIME_UNIT_MINUTES &&
+             new_lease->expiry < 2)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("The minimum lease time should be greater "
+                             "than 2 minutes"));
+            return -1;
+        }
+    }
+
+    *lease = new_lease;
+
+    return 0;
+}
+
+
+static int
+virNetworkDHCPRangeDefParseXML(const char *networkName,
+                               virNetworkIPDefPtr ipdef,
+                               xmlNodePtr node,
+                               virNetworkDHCPRangeDefPtr range)
+{
+    virSocketAddrRangePtr addr = &range->addr;
+    xmlNodePtr cur = node->children;
     char *start = NULL, *end = NULL;
     int ret = -1;
 
@@ -405,7 +467,7 @@ virSocketAddrRangeParseXML(const char *networkName,
                        networkName);
         goto cleanup;
     }
-    if (virSocketAddrParse(&range->start, start, AF_UNSPEC) < 0)
+    if (virSocketAddrParse(&addr->start, start, AF_UNSPEC) < 0)
         goto cleanup;
 
     if (!(end = virXMLPropString(node, "end"))) {
@@ -414,13 +476,23 @@ virSocketAddrRangeParseXML(const char *networkName,
                        networkName);
         goto cleanup;
     }
-    if (virSocketAddrParse(&range->end, end, AF_UNSPEC) < 0)
+    if (virSocketAddrParse(&addr->end, end, AF_UNSPEC) < 0)
         goto cleanup;
 
     /* do a sanity check of the range */
-    if (virSocketAddrGetRange(&range->start, &range->end, &ipdef->address,
+    if (virSocketAddrGetRange(&addr->start, &addr->end, &ipdef->address,
                               virNetworkIPDefPrefix(ipdef)) < 0)
         goto cleanup;
+
+    while (cur != NULL) {
+        if (cur->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(cur, "lease")) {
+
+            if (virNetworkDHCPLeaseTimeDefParseXML(&range->lease, cur) < 0)
+                goto cleanup;
+        }
+        cur = cur->next;
+    }
 
     ret = 0;
 
@@ -441,6 +513,7 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
     char *mac = NULL, *name = NULL, *ip = NULL, *id = NULL;
     virMacAddr addr;
     virSocketAddr inaddr;
+    xmlNodePtr cur = node->children;
     int ret = -1;
 
     mac = virXMLPropString(node, "mac");
@@ -533,6 +606,16 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
         }
     }
 
+    while (cur != NULL) {
+        if (cur->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(cur, "lease")) {
+
+            if (virNetworkDHCPLeaseTimeDefParseXML(&host->lease, cur) < 0)
+                goto cleanup;
+        }
+        cur = cur->next;
+    }
+
     host->mac = mac;
     mac = NULL;
     host->id = id;
@@ -559,7 +642,7 @@ virNetworkDHCPDefParseXML(const char *networkName,
 {
     int ret = -1;
     xmlNodePtr cur;
-    virSocketAddrRange range;
+    virNetworkDHCPRangeDef range;
     virNetworkDHCPHostDef host;
 
     memset(&range, 0, sizeof(range));
@@ -570,7 +653,7 @@ virNetworkDHCPDefParseXML(const char *networkName,
         if (cur->type == XML_ELEMENT_NODE &&
             virXMLNodeNameEqual(cur, "range")) {
 
-            if (virSocketAddrRangeParseXML(networkName, def, cur, &range) < 0)
+            if (virNetworkDHCPRangeDefParseXML(networkName, def, cur, &range) < 0)
                 goto cleanup;
             if (VIR_APPEND_ELEMENT(def->ranges, def->nranges, range) < 0)
                 goto cleanup;
@@ -583,7 +666,6 @@ virNetworkDHCPDefParseXML(const char *networkName,
                 goto cleanup;
             if (VIR_APPEND_ELEMENT(def->hosts, def->nhosts, host) < 0)
                 goto cleanup;
-
         } else if (VIR_SOCKET_ADDR_IS_FAMILY(&def->address, AF_INET) &&
                    cur->type == XML_ELEMENT_NODE &&
                    virXMLNodeNameEqual(cur, "bootp")) {
@@ -2300,20 +2382,39 @@ virNetworkIPDefFormat(virBufferPtr buf,
         virBufferAdjustIndent(buf, 2);
 
         for (i = 0; i < def->nranges; i++) {
-            char *saddr = virSocketAddrFormat(&def->ranges[i].start);
+            virSocketAddrRange addr = def->ranges[i].addr;
+            virNetworkDHCPLeaseTimeDefPtr lease = def->ranges[i].lease;
+
+            char *saddr = virSocketAddrFormat(&addr.start);
             if (!saddr)
                 return -1;
-            char *eaddr = virSocketAddrFormat(&def->ranges[i].end);
+            char *eaddr = virSocketAddrFormat(&addr.end);
             if (!eaddr) {
                 VIR_FREE(saddr);
                 return -1;
             }
-            virBufferAsprintf(buf, "<range start='%s' end='%s'/>\n",
+            virBufferAsprintf(buf, "<range start='%s' end='%s'",
                               saddr, eaddr);
+            if (lease) {
+                virBufferAddLit(buf, ">\n");
+                virBufferAdjustIndent(buf, 2);
+                if (!lease->expiry) {
+                    virBufferAddLit(buf, "<lease expiry='0'/>\n");
+                } else {
+                    virBufferAsprintf(buf, "<lease expiry='%lu' unit='%s'/>\n",
+                                      lease->expiry,
+                                      virNetworkDHCPLeaseTimeUnitTypeToString(lease->unit));
+                }
+                virBufferAdjustIndent(buf, -2);
+                virBufferAddLit(buf, "</range>\n");
+            } else {
+                virBufferAddLit(buf, "/>\n");
+            }
             VIR_FREE(saddr);
             VIR_FREE(eaddr);
         }
         for (i = 0; i < def->nhosts; i++) {
+            virNetworkDHCPLeaseTimeDefPtr lease = def->hosts[i].lease;
             virBufferAddLit(buf, "<host");
             if (def->hosts[i].mac)
                 virBufferAsprintf(buf, " mac='%s'", def->hosts[i].mac);
@@ -2328,7 +2429,21 @@ virNetworkIPDefFormat(virBufferPtr buf,
                 virBufferAsprintf(buf, " ip='%s'", ipaddr);
                 VIR_FREE(ipaddr);
             }
-            virBufferAddLit(buf, "/>\n");
+            if (lease) {
+                virBufferAddLit(buf, ">\n");
+                virBufferAdjustIndent(buf, 2);
+                if (!lease->expiry) {
+                    virBufferAddLit(buf, "<lease expiry='0'/>\n");
+                } else {
+                    virBufferAsprintf(buf, "<lease expiry='%lu' unit='%s'/>\n",
+                                      lease->expiry,
+                                      virNetworkDHCPLeaseTimeUnitTypeToString(lease->unit));
+                }
+                virBufferAdjustIndent(buf, -2);
+                virBufferAddLit(buf, "</host>\n");
+            } else {
+                virBufferAddLit(buf, "/>\n");
+            }
         }
         if (def->bootfile) {
             virBufferEscapeString(buf, "<bootp file='%s'",
@@ -2343,7 +2458,6 @@ virNetworkIPDefFormat(virBufferPtr buf,
             virBufferAddLit(buf, "/>\n");
 
         }
-
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</dhcp>\n");
     }
@@ -3080,7 +3194,7 @@ virNetworkDefUpdateIPDHCPRange(virNetworkDefPtr def,
 {
     size_t i;
     virNetworkIPDefPtr ipdef = virNetworkIPDefByIndex(def, parentIndex);
-    virSocketAddrRange range;
+    virNetworkDHCPRangeDef range;
 
     memset(&range, 0, sizeof(range));
 
@@ -3100,11 +3214,11 @@ virNetworkDefUpdateIPDHCPRange(virNetworkDefPtr def,
         return -1;
     }
 
-    if (virSocketAddrRangeParseXML(def->name, ipdef, ctxt->node, &range) < 0)
+    if (virNetworkDHCPRangeDefParseXML(def->name, ipdef, ctxt->node, &range) < 0)
         return -1;
 
     if (VIR_SOCKET_ADDR_FAMILY(&ipdef->address)
-        != VIR_SOCKET_ADDR_FAMILY(&range.start)) {
+        != VIR_SOCKET_ADDR_FAMILY(&range.addr.start)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("the address family of a dhcp range must match "
                          "the address family of the dhcp element's parent"));
@@ -3113,8 +3227,9 @@ virNetworkDefUpdateIPDHCPRange(virNetworkDefPtr def,
 
     /* check if an entry with same name/address/ip already exists */
     for (i = 0; i < ipdef->nranges; i++) {
-        if (virSocketAddrEqual(&range.start, &ipdef->ranges[i].start) &&
-            virSocketAddrEqual(&range.end, &ipdef->ranges[i].end)) {
+        virSocketAddrRange addr = ipdef->ranges[i].addr;
+        if (virSocketAddrEqual(&range.addr.start, &addr.start) &&
+            virSocketAddrEqual(&range.addr.end, &addr.end)) {
             break;
         }
     }
@@ -3126,8 +3241,8 @@ virNetworkDefUpdateIPDHCPRange(virNetworkDefPtr def,
             return -1;
 
         if (i < ipdef->nranges) {
-            char *startip = virSocketAddrFormat(&range.start);
-            char *endip = virSocketAddrFormat(&range.end);
+            char *startip = virSocketAddrFormat(&range.addr.start);
+            char *endip = virSocketAddrFormat(&range.addr.end);
 
             virReportError(VIR_ERR_OPERATION_INVALID,
                            _("there is an existing dhcp range entry in "
