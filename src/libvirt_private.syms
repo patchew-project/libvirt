@@ -220,6 +220,7 @@ virSEVCapabilitiesFree;
 
 
 # conf/domain_conf.h
+vir_domain_chr_source_def_get_type;
 vir_domain_xml_option_get_type;
 virBlkioDeviceArrayClear;
 virDiskNameParse;

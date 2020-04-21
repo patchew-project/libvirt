@@ -7388,8 +7388,7 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     if (priv->monConfig) {
         if (priv->monConfig->type == VIR_DOMAIN_CHR_TYPE_UNIX)
             unlink(priv->monConfig->data.nix.path);
-        virObjectUnref(priv->monConfig);
-        priv->monConfig = NULL;
+        g_clear_object(&priv->monConfig);
     }
 
     qemuDomainObjStopWorker(vm);
