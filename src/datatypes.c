@@ -36,13 +36,11 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virSecretClass;
 virClassPtr virStreamClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 
 G_DEFINE_TYPE(virDomainCheckpoint, vir_domain_checkpoint, G_TYPE_OBJECT);
@@ -189,6 +187,24 @@ vir_nw_filter_binding_class_init(virNWFilterBindingClass *klass)
     obj->finalize = virNWFilterBindingFinalize;
 }
 
+G_DEFINE_TYPE(virSecret, vir_secret, G_TYPE_OBJECT);
+static void virSecretDispose(GObject *obj);
+static void virSecretFinalize(GObject *obj);
+
+static void
+vir_secret_init(virSecret *sec G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_secret_class_init(virSecretClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virSecretDispose;
+    obj->finalize = virSecretFinalize;
+}
+
 G_DEFINE_TYPE(virStoragePool, vir_storage_pool, G_TYPE_OBJECT);
 static void virStoragePoolDispose(GObject *obj);
 static void virStoragePoolFinalize(GObject *obj);
@@ -279,7 +295,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
@@ -962,7 +977,7 @@ virNodeDeviceFinalize(GObject *obj)
  * @uuid: secret UUID
  *
  * Allocates a new secret object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the secret object, or NULL on error.
  */
@@ -970,16 +985,15 @@ virSecretPtr
 virGetSecret(virConnectPtr conn, const unsigned char *uuid,
              int usageType, const char *usageID)
 {
-    virSecretPtr ret = NULL;
+    g_autoptr(virSecret) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(uuid, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(uuid, NULL);
 
-    if (!(ret = virObjectNew(virSecretClass)))
-        return NULL;
+    ret = VIR_SECRET(g_object_new(VIR_TYPE_SECRET, NULL));
 
     memcpy(&(ret->uuid[0]), uuid, VIR_UUID_BUFLEN);
     ret->usageType = usageType;
@@ -987,34 +1001,46 @@ virGetSecret(virConnectPtr conn, const unsigned char *uuid,
 
     ret->conn = virObjectRef(conn);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 /**
  * virSecretDispose:
  * @obj: the secret to release
  *
- * Unconditionally release all memory associated with a secret.
- * The secret object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virSecretDispose(void *obj)
+virSecretDispose(GObject *obj)
 {
-    virSecretPtr secret = obj;
+    virSecretPtr secret = VIR_SECRET(obj);
+
+    virObjectUnref(secret->conn);
+    secret->conn = NULL;
+
+    G_OBJECT_CLASS(vir_secret_parent_class)->dispose(obj);
+}
+
+/**
+ * virSecretFinalize:
+ * @obj: the secret to release
+ *
+ * Unconditionally releases all memory associated with a secret.
+ * The secret object must not be used once this method returns.
+ */
+static void
+virSecretFinalize(GObject *obj)
+{
+    virSecretPtr secret = VIR_SECRET(obj);
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virUUIDFormat(secret->uuid, uuidstr);
     VIR_DEBUG("release secret %p %s", secret, uuidstr);
 
     VIR_FREE(secret->usageID);
-    virObjectUnref(secret->conn);
+
+    G_OBJECT_CLASS(vir_secret_parent_class)->finalize(obj);
 }
 
 

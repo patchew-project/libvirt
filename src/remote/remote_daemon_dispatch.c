@@ -4382,7 +4382,7 @@ remoteDispatchSecretGetValue(virNetServerPtr server G_GNUC_UNUSED,
                              remote_secret_get_value_args *args,
                              remote_secret_get_value_ret *ret)
 {
-    virSecretPtr secret = NULL;
+    g_autoptr(virSecret) secret = NULL;
     size_t value_size;
     unsigned char *value;
     int rv = -1;
@@ -4405,7 +4405,6 @@ remoteDispatchSecretGetValue(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(secret);
     return rv;
 }
 
@@ -6375,7 +6374,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
-    virSecretPtr secret = NULL;
+    g_autoptr(virSecret) secret = NULL;
     virConnectPtr conn = remoteGetSecretConn(client);
 
     virMutexLock(&priv->lock);
@@ -6433,7 +6432,6 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server G_GNUC_UNUSED
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(secret);
     return rv;
 }
 

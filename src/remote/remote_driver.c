@@ -5559,7 +5559,7 @@ remoteSecretBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_secret_event_lifecycle_msg *msg = evdata;
-    virSecretPtr secret;
+    g_autoptr(virSecret) secret = NULL;
     virObjectEventPtr event = NULL;
 
     secret = get_nonnull_secret(conn, msg->secret);
@@ -5568,7 +5568,6 @@ remoteSecretBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virSecretEventLifecycleNew(secret->uuid, secret->usageType, secret->usageID,
                                        msg->event, msg->detail);
-    virObjectUnref(secret);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5581,7 +5580,7 @@ remoteSecretBuildEventValueChanged(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_secret_event_value_changed_msg *msg = evdata;
-    virSecretPtr secret;
+    g_autoptr(virSecret) secret = NULL;
     virObjectEventPtr event = NULL;
 
     secret = get_nonnull_secret(conn, msg->secret);
@@ -5589,7 +5588,6 @@ remoteSecretBuildEventValueChanged(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virSecretEventValueChangedNew(secret->uuid, secret->usageType, secret->usageID);
-    virObjectUnref(secret);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
