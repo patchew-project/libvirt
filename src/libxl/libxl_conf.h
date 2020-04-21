@@ -37,6 +37,7 @@
 #include "virfirmware.h"
 #include "libxl_capabilities.h"
 #include "libxl_logger.h"
+#include <glib-object.h>
 
 #define LIBXL_DRIVER_NAME "xenlight"
 #define LIBXL_VNC_PORT_MIN  5900
@@ -60,11 +61,17 @@
 typedef struct _libxlDriverPrivate libxlDriverPrivate;
 typedef libxlDriverPrivate *libxlDriverPrivatePtr;
 
-typedef struct _libxlDriverConfig libxlDriverConfig;
+#define LIBXL_TYPE_DRIVER_CONFIG libxl_driver_config_get_type()
+G_DECLARE_FINAL_TYPE(libxlDriverConfig,
+                     libxl_driver_config,
+                     LIBXL,
+                     DRIVER_CONFIG,
+                     GObject);
+
 typedef libxlDriverConfig *libxlDriverConfigPtr;
 
 struct _libxlDriverConfig {
-    virObject parent;
+    GObject parent;
 
     const libxl_version_info *verInfo;
     unsigned int version;
@@ -102,7 +109,6 @@ struct _libxlDriverConfig {
     size_t nfirmwares;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(libxlDriverConfig, virObjectUnref);
 
 
 struct _libxlDriverPrivate {
