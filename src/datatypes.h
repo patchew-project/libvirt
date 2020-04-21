@@ -28,6 +28,8 @@
 #include "virobject.h"
 #include "viruuid.h"
 
+#include <glib-object.h>
+
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
 extern virClassPtr virDomainCheckpointClass;
@@ -44,8 +46,10 @@ extern virClassPtr virStorageVolClass;
 extern virClassPtr virStoragePoolClass;
 
 extern virClassPtr virAdmConnectClass;
-extern virClassPtr virAdmServerClass;
 extern virClassPtr virAdmClientClass;
+
+#define VIR_TYPE_ADM_SERVER vir_adm_server_get_type()
+G_DECLARE_FINAL_TYPE(virAdmServer, vir_adm_server, VIR, ADM_SERVER, GObject);
 
 #define virCheckConnectReturn(obj, retval) \
     do { \
@@ -419,8 +423,8 @@ extern virClassPtr virAdmClientClass;
 
 #define virCheckAdmServerReturn(obj, retval) \
     do { \
-        virAdmServerPtr _srv = (obj); \
-        if (!virObjectIsClass(_srv, virAdmServerClass) || \
+        virAdmServerPtr _srv = VIR_ADM_SERVER(obj); \
+        if (_srv == NULL || \
             !virObjectIsClass(_srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -431,8 +435,8 @@ extern virClassPtr virAdmClientClass;
     } while (0)
 #define virCheckAdmServerGoto(obj, label) \
     do { \
-        virAdmServerPtr _srv = (obj); \
-        if (!virObjectIsClass(_srv, virAdmServerClass) || \
+        virAdmServerPtr _srv = VIR_ADM_SERVER(obj); \
+        if (_srv == NULL || \
             !virObjectIsClass(_srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -445,7 +449,7 @@ extern virClassPtr virAdmClientClass;
     do { \
         virAdmClientPtr _clt = (obj); \
         if (!virObjectIsClass(_clt, virAdmClientClass) || \
-            !virObjectIsClass(_clt->srv, virAdmServerClass) || \
+            !VIR_IS_ADM_SERVER(_clt->srv) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -458,7 +462,7 @@ extern virClassPtr virAdmClientClass;
     do { \
         virAdmClientPtr _clt = (obj); \
         if (!virObjectIsClass(_clt, virAdmClientClass) || \
-            !virObjectIsClass(_clt->srv, virAdmServerClass) || \
+            !VIR_IS_ADM_SERVER(_clt->srv) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -573,7 +577,7 @@ struct _virAdmConnect {
  * Internal structure associated to a daemon server
  */
 struct _virAdmServer {
-    virObject parent;
+    GObject parent;
     virAdmConnectPtr conn;          /* pointer back to the admin connection */
     char *name;                     /* the server external name */
 };

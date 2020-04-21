@@ -71,10 +71,26 @@ virClassPtr virAdmConnectCloseCallbackDataClass;
 static void virAdmConnectDispose(void *obj);
 static void virAdmConnectCloseCallbackDataDispose(void *obj);
 
-virClassPtr virAdmServerClass;
 virClassPtr virAdmClientClass;
-static void virAdmServerDispose(void *obj);
 static void virAdmClientDispose(void *obj);
+
+G_DEFINE_TYPE(virAdmServer, vir_adm_server, G_TYPE_OBJECT);
+static void virAdmServerDispose(GObject *obj);
+static void virAdmServerFinalize(GObject *obj);
+
+static void
+vir_adm_server_init(virAdmServer *srv G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_adm_server_class_init(virAdmServerClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virAdmServerDispose;
+    obj->finalize = virAdmServerFinalize;
+}
 
 static int
 virDataTypesOnceInit(void)
@@ -105,7 +121,6 @@ virDataTypesOnceInit(void)
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
-    DECLARE_CLASS(virAdmServer);
     DECLARE_CLASS(virAdmClient);
 
 #undef DECLARE_CLASS_COMMON
@@ -1173,31 +1188,40 @@ virAdmConnectCloseCallbackDataRegister(virAdmConnectCloseCallbackDataPtr cbdata,
 virAdmServerPtr
 virAdmGetServer(virAdmConnectPtr conn, const char *name)
 {
-    virAdmServerPtr ret = NULL;
+    g_autoptr(virAdmServer) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
-        goto error;
+        return NULL;
 
-    if (!(ret = virObjectNew(virAdmServerClass)))
-        goto error;
+    ret = VIR_ADM_SERVER(g_object_new(VIR_TYPE_ADM_SERVER, NULL));
+
     ret->name = g_strdup(name);
 
     ret->conn = virObjectRef(conn);
 
-    return ret;
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 static void
-virAdmServerDispose(void *obj)
+virAdmServerDispose(GObject *obj)
 {
-    virAdmServerPtr srv = obj;
+    virAdmServerPtr srv = VIR_ADM_SERVER(obj);
+
+    virObjectUnref(srv->conn);
+    srv->conn = NULL;
+
+    G_OBJECT_CLASS(vir_adm_server_parent_class)->dispose(obj);
+}
+
+static void
+virAdmServerFinalize(GObject *obj)
+{
+    virAdmServerPtr srv = VIR_ADM_SERVER(obj);
     VIR_DEBUG("release server srv=%p name=%s", srv, srv->name);
 
     VIR_FREE(srv->name);
-    virObjectUnref(srv->conn);
+
+    G_OBJECT_CLASS(vir_adm_server_parent_class)->finalize(obj);
 }
 
 virAdmClientPtr
@@ -1215,7 +1239,7 @@ virAdmGetClient(virAdmServerPtr srv, const unsigned long long id,
     ret->id = id;
     ret->timestamp = timestamp;
     ret->transport = transport;
-    ret->srv = virObjectRef(srv);
+    ret->srv = g_object_ref(srv);
 
     return ret;
  error:
@@ -1229,5 +1253,5 @@ virAdmClientDispose(void *obj)
     virAdmClientPtr clt = obj;
     VIR_DEBUG("release client clt=%p, id=%llu", clt, clt->id);
 
-    virObjectUnref(clt->srv);
+    g_clear_object(&clt->srv);
 }

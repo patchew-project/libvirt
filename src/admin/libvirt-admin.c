@@ -586,7 +586,7 @@ int virAdmServerFree(virAdmServerPtr srv)
 
     virCheckAdmServerReturn(srv, -1);
 
-    virObjectUnref(srv);
+    g_clear_object(&srv);
     return 0;
 }
 
