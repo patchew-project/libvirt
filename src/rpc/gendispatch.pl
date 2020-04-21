@@ -197,6 +197,7 @@ my %gobject_impl = (
     virAdmClient => 1,
     virAdmServer => 1,
     virDomainCheckpoint => 1,
+    virDomainSnapshot => 1,
 );
 
 sub use_gobject {

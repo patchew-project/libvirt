@@ -1347,6 +1347,7 @@ virCPUx86FeatureFilterSelectMSR;
 
 # datatypes.h
 vir_domain_checkpoint_get_type;
+vir_domain_snapshot_get_type;
 virConnectClass;
 virConnectCloseCallbackDataCall;
 virConnectCloseCallbackDataClass;
@@ -1354,7 +1355,6 @@ virConnectCloseCallbackDataGetCallback;
 virConnectCloseCallbackDataRegister;
 virConnectCloseCallbackDataUnregister;
 virDomainClass;
-virDomainSnapshotClass;
 virGetConnect;
 virGetDomain;
 virGetDomainCheckpoint;

@@ -32,7 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virDomainSnapshotClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
 extern virClassPtr virNetworkPortClass;
@@ -49,6 +48,13 @@ G_DECLARE_FINAL_TYPE(virDomainCheckpoint,
                      vir_domain_checkpoint,
                      VIR,
                      DOMAIN_CHECKPOINT,
+                     GObject);
+
+#define VIR_TYPE_DOMAIN_SNAPSHOT vir_domain_snapshot_get_type()
+G_DECLARE_FINAL_TYPE(virDomainSnapshot,
+                     vir_domain_snapshot,
+                     VIR,
+                     DOMAIN_SNAPSHOT,
                      GObject);
 
 extern virClassPtr virAdmConnectClass;
@@ -349,7 +355,7 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 #define virCheckDomainSnapshotReturn(obj, retval) \
     do { \
         virDomainSnapshotPtr _snap = (obj); \
-        if (!virObjectIsClass(_snap, virDomainSnapshotClass) || \
+        if (_snap == NULL || \
             !virObjectIsClass(_snap->domain, virDomainClass) || \
             !virObjectIsClass(_snap->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT, \
@@ -767,7 +773,7 @@ struct _virDomainCheckpoint {
  * Internal structure associated with a domain snapshot
  */
 struct _virDomainSnapshot {
-    virObject parent;
+    GObject parent;
     char *name;
     virDomainPtr domain;
 };
