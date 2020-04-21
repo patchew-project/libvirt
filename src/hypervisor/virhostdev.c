@@ -44,8 +44,23 @@ VIR_LOG_INIT("util.hostdev");
 
 static virHostdevManagerPtr manager; /* global hostdev manager, never freed */
 
-static virClassPtr virHostdevManagerClass;
-static void virHostdevManagerDispose(void *obj);
+G_DEFINE_TYPE(virHostdevManager, vir_hostdev_manager, G_TYPE_OBJECT);
+
+static void virHostdevManagerDispose(GObject *obj);
+static void virHostdevManagerFinalize(GObject *obj);
+
+static void vir_hostdev_manager_init(virHostdevManager *mgr G_GNUC_UNUSED)
+{
+}
+
+static void vir_hostdev_manager_class_init(virHostdevManagerClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virHostdevManagerDispose;
+    obj->finalize = virHostdevManagerFinalize;
+}
+
 static virHostdevManagerPtr virHostdevManagerNew(void);
 
 struct virHostdevIsPCINodeDeviceUsedData {
@@ -112,9 +127,6 @@ static int virHostdevIsPCINodeDeviceUsed(virPCIDeviceAddressPtr devAddr, void *o
 
 static int virHostdevManagerOnceInit(void)
 {
-    if (!VIR_CLASS_NEW(virHostdevManager, virClassForObject()))
-        return -1;
-
     if (!(manager = virHostdevManagerNew()))
         return -1;
 
@@ -124,18 +136,36 @@ static int virHostdevManagerOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(virHostdevManager);
 
 static void
-virHostdevManagerDispose(void *obj)
+virHostdevManagerDispose(GObject *obj)
 {
-    virHostdevManagerPtr hostdevMgr = obj;
+    virHostdevManagerPtr hostdevMgr = VIR_HOSTDEV_MANAGER(obj);
 
     virObjectUnref(hostdevMgr->activePCIHostdevs);
+    hostdevMgr->activePCIHostdevs = NULL;
     virObjectUnref(hostdevMgr->inactivePCIHostdevs);
+    hostdevMgr->inactivePCIHostdevs = NULL;
     virObjectUnref(hostdevMgr->activeUSBHostdevs);
+    hostdevMgr->activeUSBHostdevs = NULL;
     virObjectUnref(hostdevMgr->activeSCSIHostdevs);
+    hostdevMgr->activeSCSIHostdevs = NULL;
     virObjectUnref(hostdevMgr->activeSCSIVHostHostdevs);
+    hostdevMgr->activeSCSIVHostHostdevs = NULL;
     virObjectUnref(hostdevMgr->activeMediatedHostdevs);
+    hostdevMgr->activeMediatedHostdevs = NULL;
     virObjectUnref(hostdevMgr->activeNVMeHostdevs);
+    hostdevMgr->activeNVMeHostdevs = NULL;
+
+    G_OBJECT_CLASS(vir_hostdev_manager_parent_class)->dispose(obj);
+}
+
+static void
+virHostdevManagerFinalize(GObject *obj)
+{
+    virHostdevManagerPtr hostdevMgr = VIR_HOSTDEV_MANAGER(obj);
+
     VIR_FREE(hostdevMgr->stateDir);
+
+    G_OBJECT_CLASS(vir_hostdev_manager_parent_class)->finalize(obj);
 }
 
 static virHostdevManagerPtr
@@ -144,8 +174,7 @@ virHostdevManagerNew(void)
     g_autoptr(virHostdevManager) hostdevMgr = NULL;
     bool privileged = geteuid() == 0;
 
-    if (!(hostdevMgr = virObjectNew(virHostdevManagerClass)))
-        return NULL;
+    hostdevMgr = VIR_HOSTDEV_MANAGER(g_object_new(VIR_TYPE_HOSTDEV_MANAGER, NULL));
 
     if (!(hostdevMgr->activePCIHostdevs = virPCIDeviceListNew()))
         return NULL;
@@ -206,7 +235,7 @@ virHostdevManagerGetDefault(void)
     if (virHostdevManagerInitialize() < 0)
         return NULL;
 
-    return virObjectRef(manager);
+    return g_object_ref(manager);
 }
 
 /**

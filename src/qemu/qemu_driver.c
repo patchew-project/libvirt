@@ -1113,7 +1113,7 @@ qemuStateCleanup(void)
     virPortAllocatorRangeFree(qemu_driver->webSocketPorts);
     virPortAllocatorRangeFree(qemu_driver->remotePorts);
     virHashFree(qemu_driver->sharedDevices);
-    virObjectUnref(qemu_driver->hostdevMgr);
+    g_clear_object(&qemu_driver->hostdevMgr);
     virObjectUnref(qemu_driver->securityManager);
     virObjectUnref(qemu_driver->domainEventState);
     virObjectUnref(qemu_driver->qemuCapsCache);
