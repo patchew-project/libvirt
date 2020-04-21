@@ -196,6 +196,7 @@ sub get_conn_method {
 my %gobject_impl = (
     virAdmClient => 1,
     virAdmServer => 1,
+    virDomainCheckpoint => 1,
 );
 
 sub use_gobject {
