@@ -7170,7 +7170,7 @@ remoteDispatchNetworkPortGetParameters(virNetServerPtr server G_GNUC_UNUSED,
                                        remote_network_port_get_parameters_ret *ret)
 {
     int rv = -1;
-    virNetworkPortPtr port = NULL;
+    g_autoptr(virNetworkPort) port = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     virConnectPtr conn = remoteGetNetworkConn(client);
@@ -7196,7 +7196,6 @@ remoteDispatchNetworkPortGetParameters(virNetServerPtr server G_GNUC_UNUSED,
  cleanup:
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(port);
     virTypedParamsFree(params, nparams);
     return rv;
 }
@@ -7225,13 +7224,11 @@ get_nonnull_network(virConnectPtr conn, remote_nonnull_network network)
 static virNetworkPortPtr
 get_nonnull_network_port(virConnectPtr conn, remote_nonnull_network_port port)
 {
-    virNetworkPortPtr ret;
     g_autoptr(virNetwork) net =
         virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
     if (!net)
         return NULL;
-    ret = virGetNetworkPort(net, BAD_CAST port.uuid);
-    return ret;
+    return virGetNetworkPort(net, BAD_CAST port.uuid);
 }
 
 static virInterfacePtr

@@ -8268,13 +8268,11 @@ get_nonnull_network(virConnectPtr conn, remote_nonnull_network network)
 static virNetworkPortPtr
 get_nonnull_network_port(virConnectPtr conn, remote_nonnull_network_port port)
 {
-    virNetworkPortPtr ret;
     g_autoptr(virNetwork) net =
         virGetNetwork(conn, port.net.name, BAD_CAST port.net.uuid);
     if (!net)
         return NULL;
-    ret = virGetNetworkPort(net, BAD_CAST port.uuid);
-    return ret;
+    return virGetNetworkPort(net, BAD_CAST port.uuid);
 }
 
 static virInterfacePtr

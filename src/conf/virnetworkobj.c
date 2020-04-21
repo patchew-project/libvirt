@@ -1821,10 +1821,7 @@ virNetworkObjPortListExport(virNetworkPtr net,
 
     ret = data.nports;
  cleanup:
-    while (data.ports && data.nports)
-        virObjectUnref(data.ports[--data.nports]);
-
-    VIR_FREE(data.ports);
+    virGObjectListFreeCount(data.ports, data.nports);
     return ret;
 }
 
