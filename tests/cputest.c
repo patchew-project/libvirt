@@ -519,8 +519,7 @@ cpuTestMakeQEMUCaps(const struct data *data)
     return qemuCaps;
 
  error:
-    virObjectUnref(qemuCaps);
-    qemuCaps = NULL;
+    g_clear_object(&qemuCaps);
     goto cleanup;
 }
 
@@ -529,7 +528,7 @@ static int
 cpuTestGetCPUModels(const struct data *data,
                     virDomainCapsCPUModelsPtr *models)
 {
-    virQEMUCapsPtr qemuCaps;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
 
     *models = NULL;
 
@@ -541,8 +540,6 @@ cpuTestGetCPUModels(const struct data *data,
         return -1;
 
     *models = virQEMUCapsGetCPUModels(qemuCaps, VIR_DOMAIN_VIRT_KVM, NULL, NULL);
-
-    virObjectUnref(qemuCaps);
 
     return 0;
 }
@@ -876,7 +873,7 @@ static int
 cpuTestJSONCPUID(const void *arg)
 {
     const struct data *data = arg;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     virCPUDefPtr cpu = NULL;
     char *result = NULL;
     int ret = -1;
@@ -898,7 +895,6 @@ cpuTestJSONCPUID(const void *arg)
     ret = cpuTestCompareXML(data->arch, cpu, result);
 
  cleanup:
-    virObjectUnref(qemuCaps);
     virCPUDefFree(cpu);
     VIR_FREE(result);
     return ret;
@@ -909,7 +905,7 @@ static int
 cpuTestJSONSignature(const void *arg)
 {
     const struct data *data = arg;
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     virCPUDataPtr hostData = NULL;
     qemuMonitorCPUModelInfoPtr modelInfo;
     int ret = -1;
@@ -924,7 +920,6 @@ cpuTestJSONSignature(const void *arg)
     ret = cpuTestCompareSignature(data, hostData);
 
  cleanup:
-    virObjectUnref(qemuCaps);
     virCPUDataFree(hostData);
     return ret;
 }

@@ -24,52 +24,50 @@
 #include "virfile.h"
 #include "virfilecache.h"
 
+#include <glib-object.h>
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
 
 struct _testFileCacheObj {
-    virObject parent;
+    GObject parent;
     char *data;
 };
-typedef struct _testFileCacheObj testFileCacheObj;
+#define TYPE_TEST_FILE_CACHE_OBJ test_file_cache_obj_get_type()
+G_DECLARE_FINAL_TYPE(testFileCacheObj, test_file_cache_obj, TEST, FILE_CACHE_OBJ, GObject);
 typedef testFileCacheObj *testFileCacheObjPtr;
 
 
-static virClassPtr testFileCacheObjClass;
+G_DEFINE_TYPE(testFileCacheObj, test_file_cache_obj, G_TYPE_OBJECT);
 
 
 static void
-testFileCacheObjDispose(void *opaque)
+testFileCacheObjFinalize(GObject *opaque)
 {
-    testFileCacheObjPtr obj = opaque;
+    testFileCacheObjPtr obj = TEST_FILE_CACHE_OBJ(opaque);
     VIR_FREE(obj->data);
+
+    G_OBJECT_CLASS(test_file_cache_obj_parent_class)->finalize(opaque);
 }
 
-
-static int
-testFileCacheObjOnceInit(void)
+static void
+test_file_cache_obj_init(testFileCacheObj *obj G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(testFileCacheObj, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
+static void
+test_file_cache_obj_class_init(testFileCacheObjClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
-VIR_ONCE_GLOBAL_INIT(testFileCacheObj);
+    obj->finalize = testFileCacheObjFinalize;
+}
 
 
 static testFileCacheObjPtr
 testFileCacheObjNew(const char *data)
 {
-    testFileCacheObjPtr obj;
-
-    if (testFileCacheObjInitialize() < 0)
-        return NULL;
-
-    if (!(obj = virObjectNew(testFileCacheObjClass)))
-        return NULL;
+    testFileCacheObjPtr obj = TEST_FILE_CACHE_OBJ(g_object_new(TYPE_TEST_FILE_CACHE_OBJ, NULL));
 
     obj->data = g_strdup(data);
 
@@ -87,27 +85,27 @@ typedef testFileCachePriv *testFileCachePrivPtr;
 
 
 static bool
-testFileCacheIsValid(void *data,
+testFileCacheIsValid(GObject *data,
                      void *priv)
 {
     testFileCachePrivPtr testPriv = priv;
-    testFileCacheObjPtr obj = data;
+    testFileCacheObjPtr obj = TEST_FILE_CACHE_OBJ(data);
 
-    return STREQ(testPriv->expectData, obj->data);
+    return obj && STREQ(testPriv->expectData, obj->data);
 }
 
 
-static void *
+static GObject *
 testFileCacheNewData(const char *name G_GNUC_UNUSED,
                      void *priv)
 {
     testFileCachePrivPtr testPriv = priv;
 
-    return testFileCacheObjNew(testPriv->newData);
+    return G_OBJECT(testFileCacheObjNew(testPriv->newData));
 }
 
 
-static void *
+static GObject *
 testFileCacheLoadFile(const char *filename,
                       const char *name G_GNUC_UNUSED,
                       void *priv G_GNUC_UNUSED)
@@ -121,12 +119,12 @@ testFileCacheLoadFile(const char *filename,
     obj = testFileCacheObjNew(data);
 
     VIR_FREE(data);
-    return obj;
+    return G_OBJECT(obj);
 }
 
 
 static int
-testFileCacheSaveFile(void *data G_GNUC_UNUSED,
+testFileCacheSaveFile(GObject *data G_GNUC_UNUSED,
                       const char *filename G_GNUC_UNUSED,
                       void *priv)
 {
@@ -160,9 +158,8 @@ typedef testFileCacheData *testFileCacheDataPtr;
 static int
 testFileCache(const void *opaque)
 {
-    int ret = -1;
     const testFileCacheData *data = opaque;
-    testFileCacheObjPtr obj = NULL;
+    g_autoptr(testFileCacheObj) obj = NULL;
     testFileCachePrivPtr testPriv = virFileCacheGetPriv(data->cache);
 
     testPriv->dataSaved = false;
@@ -171,27 +168,23 @@ testFileCache(const void *opaque)
 
     if (!(obj = virFileCacheLookup(data->cache, data->name))) {
         fprintf(stderr, "Getting cached data failed.\n");
-        goto cleanup;
+        return -1;
     }
 
     if (!obj->data || STRNEQ(data->expectData, obj->data)) {
         fprintf(stderr, "Expect data '%s', loaded data '%s'.\n",
                 data->expectData, NULLSTR(obj->data));
-        goto cleanup;
+        return -1;
     }
 
     if (data->expectSave != testPriv->dataSaved) {
         fprintf(stderr, "Expect data to be saved '%s', data saved '%s'.\n",
                 data->expectSave ? "yes" : "no",
                 testPriv->dataSaved ? "yes" : "no");
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    virObjectUnref(obj);
-    return ret;
+    return 0;
 }
 
 

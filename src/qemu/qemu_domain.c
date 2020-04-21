@@ -2250,8 +2250,7 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     VIR_FREE(priv->machineName);
 
-    virObjectUnref(priv->qemuCaps);
-    priv->qemuCaps = NULL;
+    g_clear_object(&priv->qemuCaps);
 
     VIR_FREE(priv->pidfile);
 
@@ -4955,7 +4954,7 @@ qemuDomainDefPostParse(virDomainDefPtr def,
 {
     virQEMUDriverPtr driver = opaque;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
-    virQEMUCapsPtr qemuCaps = parseOpaque;
+    virQEMUCapsPtr qemuCaps = VIR_QEMU_CAPS(parseOpaque);
 
     /* Note that qemuCaps may be NULL when this function is called. This
      * function shall not fail in that case. It will be re-run on VM startup
@@ -5910,7 +5909,7 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     /* Note that qemuCaps may be NULL when this function is called. This
      * function shall not fail in that case. It will be re-run on VM startup
      * with the capabilities populated. */
-    virQEMUCapsPtr qemuCaps = parseOpaque;
+    virQEMUCapsPtr qemuCaps = VIR_QEMU_CAPS(parseOpaque);
     int ret = -1;
 
     switch ((virDomainDeviceType) dev->type) {
@@ -5998,7 +5997,7 @@ qemuDomainDefAssignAddresses(virDomainDef *def,
     /* Note that qemuCaps may be NULL when this function is called. This
      * function shall not fail in that case. It will be re-run on VM startup
      * with the capabilities populated. */
-    virQEMUCapsPtr qemuCaps = parseOpaque;
+    virQEMUCapsPtr qemuCaps = VIR_QEMU_CAPS(parseOpaque);
     bool newDomain = parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE;
 
     /* Skip address assignment if @qemuCaps is not present. In such case devices
@@ -6031,9 +6030,9 @@ qemuDomainPostParseDataAlloc(const virDomainDef *def,
 static void
 qemuDomainPostParseDataFree(void *parseOpaque)
 {
-    virQEMUCapsPtr qemuCaps = parseOpaque;
+    virQEMUCapsPtr qemuCaps = VIR_QEMU_CAPS(parseOpaque);
 
-    virObjectUnref(qemuCaps);
+    g_clear_object(&qemuCaps);
 }
 
 
@@ -6876,7 +6875,7 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
         g_autoptr(virQEMUCaps) qCaps = NULL;
 
         if (qemuCaps) {
-            qCaps = virObjectRef(qemuCaps);
+            qCaps = g_object_ref(qemuCaps);
         } else {
             if (!(qCaps = virQEMUCapsCacheLookupCopy(driver->qemuCapsCache,
                                                      def->virtType,

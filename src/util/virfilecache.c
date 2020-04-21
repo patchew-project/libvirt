@@ -34,6 +34,7 @@
 #include "virlog.h"
 #include "virobject.h"
 #include "virstring.h"
+#include <glib-object.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -125,59 +126,51 @@ virFileCacheGetFileName(virFileCachePtr cache,
 static int
 virFileCacheLoad(virFileCachePtr cache,
                  const char *name,
-                 void **data)
+                 GObject **data)
 {
     g_autofree char *file = NULL;
-    int ret = -1;
-    void *loadData = NULL;
+    g_autoptr(GObject) loadData = NULL;
 
     *data = NULL;
 
     if (!(file = virFileCacheGetFileName(cache, name)))
-        return ret;
+        return -1;
 
     if (!virFileExists(file)) {
         if (errno == ENOENT) {
             VIR_DEBUG("No cached data '%s' for '%s'", file, name);
-            ret = 0;
-            goto cleanup;
+            return 0;
         }
         virReportSystemError(errno,
                              _("Unable to access cache '%s' for '%s'"),
                              file, name);
-        goto cleanup;
+        return -1;
     }
 
     if (!(loadData = cache->handlers.loadFile(file, name, cache->priv))) {
         VIR_WARN("Failed to load cached data from '%s' for '%s': %s",
                  file, name, virGetLastErrorMessage());
         virResetLastError();
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     if (!cache->handlers.isValid(loadData, cache->priv)) {
         VIR_DEBUG("Outdated cached capabilities '%s' for '%s'", file, name);
         unlink(file);
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     VIR_DEBUG("Loaded cached data '%s' for '%s'", file, name);
 
-    ret = 1;
-    *data = g_steal_pointer(&loadData);
-
- cleanup:
-    virObjectUnref(loadData);
-    return ret;
+    g_set_object(data, loadData);
+    return 1;
 }
 
 
 static int
 virFileCacheSave(virFileCachePtr cache,
                  const char *name,
-                 void *data)
+                 GObject *data)
 {
     g_autofree char *file = NULL;
 
@@ -195,7 +188,7 @@ static void *
 virFileCacheNewData(virFileCachePtr cache,
                     const char *name)
 {
-    void *data = NULL;
+    g_autoptr(GObject) data = NULL;
     int rv;
 
     if ((rv = virFileCacheLoad(cache, name, &data)) < 0)
@@ -206,12 +199,11 @@ virFileCacheNewData(virFileCachePtr cache,
             return NULL;
 
         if (virFileCacheSave(cache, name, data) < 0) {
-            virObjectUnref(data);
-            data = NULL;
+            return NULL;
         }
     }
 
-    return data;
+    return g_steal_pointer(&data);
 }
 
 
@@ -275,8 +267,7 @@ virFileCacheValidate(virFileCachePtr cache,
         if (*data) {
             VIR_DEBUG("Caching data '%p' for '%s'", *data, name);
             if (virHashAddEntry(cache->table, name, *data) < 0) {
-                virObjectUnref(*data);
-                *data = NULL;
+                g_clear_object(data);
             }
         }
     }
@@ -306,7 +297,7 @@ virFileCacheLookup(virFileCachePtr cache,
     data = virHashLookup(cache->table, name);
     virFileCacheValidate(cache, name, &data);
 
-    virObjectRef(data);
+    g_object_ref(data);
     virObjectUnlock(cache);
 
     return data;
@@ -337,7 +328,7 @@ virFileCacheLookupByFunc(virFileCachePtr cache,
     data = virHashSearch(cache->table, iter, iterData, (void **)&name);
     virFileCacheValidate(cache, name, &data);
 
-    virObjectRef(data);
+    g_object_ref(data);
     virObjectUnlock(cache);
 
     return data;

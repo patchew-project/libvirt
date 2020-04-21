@@ -45,7 +45,7 @@ int
 main(int argc, char **argv)
 {
     virThread thread;
-    virQEMUCapsPtr caps;
+    g_autoptr(virQEMUCaps) caps = NULL;
     const char *mock = VIR_TEST_MOCK("qemucapsprobe");
 
     if (!virFileIsExecutable(mock)) {
@@ -77,8 +77,6 @@ main(int argc, char **argv)
     if (!(caps = virQEMUCapsNewForBinaryInternal(VIR_ARCH_NONE, argv[1], "/tmp",
                                                  -1, -1, 0, NULL)))
         return EXIT_FAILURE;
-
-    virObjectUnref(caps);
 
     return EXIT_SUCCESS;
 }
