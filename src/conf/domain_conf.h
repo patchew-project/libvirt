@@ -58,6 +58,8 @@
 #include "virresctrl.h"
 #include "virenum.h"
 
+#include <glib-object.h>
+
 /* Flags for the 'type' field in virDomainDeviceDef */
 typedef enum {
     VIR_DOMAIN_DEVICE_NONE = 0,
@@ -2815,6 +2817,13 @@ typedef bool (*virDomainABIStabilityDomain)(const virDomainDef *src,
 struct _virDomainABIStability {
     virDomainABIStabilityDomain domain;
 };
+
+#define VIR_TYPE_DOMAIN_XML_OPTION vir_domain_xml_option_get_type()
+G_DECLARE_FINAL_TYPE(virDomainXMLOption,
+                     vir_domain_xml_option,
+                     VIR,
+                     DOMAIN_XML_OPTION,
+                     GObject);
 
 virDomainXMLOptionPtr virDomainXMLOptionNew(virDomainDefParserConfigPtr config,
                                             virDomainXMLPrivateDataCallbacksPtr priv,

@@ -1121,7 +1121,7 @@ qemuStateCleanup(void)
     virObjectUnref(qemu_driver->securityManager);
     virObjectUnref(qemu_driver->domainEventState);
     virObjectUnref(qemu_driver->qemuCapsCache);
-    virObjectUnref(qemu_driver->xmlopt);
+    g_clear_object(&qemu_driver->xmlopt);
     virCPUDefFree(qemu_driver->hostcpu);
     virCapabilitiesHostNUMAUnref(qemu_driver->hostnuma);
     g_clear_object(&qemu_driver->caps);

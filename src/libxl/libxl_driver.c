@@ -507,7 +507,7 @@ libxlStateCleanup(void)
         return -1;
 
     virObjectUnref(libxl_driver->hostdevMgr);
-    virObjectUnref(libxl_driver->xmlopt);
+    g_clear_object(&libxl_driver->xmlopt);
     virObjectUnref(libxl_driver->domains);
     virPortAllocatorRangeFree(libxl_driver->reservedGraphicsPorts);
     virPortAllocatorRangeFree(libxl_driver->migrationPorts);

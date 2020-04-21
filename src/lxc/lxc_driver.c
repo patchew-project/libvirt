@@ -1613,7 +1613,7 @@ static int lxcStateCleanup(void)
     virObjectUnref(lxc_driver->hostdevMgr);
     g_clear_object(&lxc_driver->caps);
     virObjectUnref(lxc_driver->securityManager);
-    virObjectUnref(lxc_driver->xmlopt);
+    g_clear_object(&lxc_driver->xmlopt);
 
     if (lxc_driver->lockFD != -1)
         virPidFileRelease(lxc_driver->config->stateDir, "driver", lxc_driver->lockFD);

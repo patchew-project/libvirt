@@ -1182,7 +1182,7 @@ bhyveStateCleanup(void)
 
     virObjectUnref(bhyve_driver->domains);
     g_clear_object(&bhyve_driver->caps);
-    virObjectUnref(bhyve_driver->xmlopt);
+    g_clear_object(&bhyve_driver->xmlopt);
     virSysinfoDefFree(bhyve_driver->hostsysinfo);
     virObjectUnref(bhyve_driver->closeCallbacks);
     virObjectUnref(bhyve_driver->domainEventState);

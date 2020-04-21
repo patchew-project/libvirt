@@ -149,7 +149,7 @@ static void vzDriverDispose(void * obj)
     prlsdkDisconnect(driver);
     virObjectUnref(driver->domains);
     g_clear_object(&driver->caps);
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
     virObjectUnref(driver->domainEventState);
     virSysinfoDefFree(driver->hostsysinfo);
 }

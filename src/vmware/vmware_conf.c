@@ -55,7 +55,7 @@ vmwareFreeDriver(struct vmware_driver *driver)
     virMutexDestroy(&driver->lock);
     virObjectUnref(driver->domains);
     g_clear_object(&driver->caps);
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
     VIR_FREE(driver->vmrun);
     VIR_FREE(driver);
 }
