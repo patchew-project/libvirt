@@ -159,3 +159,7 @@ virObjectListFree(void *list);
 void
 virObjectListFreeCount(void *list,
                        size_t count);
+
+void
+virGObjectListFreeCount(void *list,
+                        size_t count);

@@ -29,6 +29,7 @@
 #include "virlog.h"
 #include "virprobe.h"
 #include "virstring.h"
+#include <glib-object.h>
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -633,6 +634,29 @@ virObjectListFreeCount(void *list,
 
     for (i = 0; i < count; i++)
         virObjectUnref(((void **)list)[i]);
+
+    VIR_FREE(list);
+}
+
+
+/**
+ * virGObjectListFreeCount:
+ * @list: A pointer to a list of GObject pointers to free
+ * @count: Number of elements in the list.
+ *
+ * Unrefs all members of @list and frees the list itself.
+ */
+void
+virGObjectListFreeCount(void *list,
+                        size_t count)
+{
+    size_t i;
+
+    if (!list)
+        return;
+
+    for (i = 0; i < count; i++)
+        g_clear_object(&((GObject **)list)[i]);
 
     VIR_FREE(list);
 }
