@@ -43,31 +43,25 @@ VIR_LOG_INIT("bhyve.bhyve_capabilities");
 virCapsPtr
 virBhyveCapsBuild(void)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        return NULL;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     if ((guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_HVM,
                                          VIR_ARCH_X86_64,
                                          "bhyve",
                                          NULL, 0, NULL)) == NULL)
-        goto error;
+        return NULL;
 
     if (virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_BHYVE,
                                       NULL, NULL, 0, NULL) == NULL)
-        goto error;
+        return NULL;
 
     if (!(caps->host.cpu = virCPUProbeHost(caps->host.arch)))
         VIR_WARN("Failed to get host CPU");
 
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 int

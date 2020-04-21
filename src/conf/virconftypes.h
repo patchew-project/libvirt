@@ -27,8 +27,7 @@
 typedef struct _virBlkioDevice virBlkioDevice;
 typedef virBlkioDevice *virBlkioDevicePtr;
 
-typedef struct _virCaps virCaps;
-typedef virCaps *virCapsPtr;
+typedef struct _virCaps *virCapsPtr;
 
 typedef struct _virCapsDomainData virCapsDomainData;
 typedef virCapsDomainData *virCapsDomainDataPtr;

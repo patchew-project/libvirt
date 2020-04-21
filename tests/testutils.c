@@ -909,9 +909,7 @@ virCapsPtr virTestGenericCapsInit(void)
     g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
 
-    if ((caps = virCapabilitiesNew(VIR_ARCH_X86_64,
-                                   false, false)) == NULL)
-        return NULL;
+    caps = virCapabilitiesNew(VIR_ARCH_X86_64, false, false);
 
     if ((guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_HVM, VIR_ARCH_I686,
                                          "/usr/bin/acme-virt", NULL,

@@ -51,6 +51,7 @@ virDomainBackupDefParseString;
 
 
 # conf/capabilities.h
+vir_caps_get_type;
 virCapabilitiesAddGuest;
 virCapabilitiesAddGuestDomain;
 virCapabilitiesAddGuestFeature;

@@ -245,7 +245,7 @@ testQemuHotplug(const void *data)
     unsigned int device_parse_flags = 0;
     virDomainObjPtr vm = NULL;
     virDomainDeviceDefPtr dev = NULL;
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     qemuMonitorTestPtr test_mon = NULL;
     qemuDomainObjPrivatePtr priv = NULL;
 
@@ -356,7 +356,6 @@ testQemuHotplug(const void *data)
         test->vm = NULL;
     }
     virDomainDeviceDefFree(dev);
-    virObjectUnref(caps);
     qemuMonitorTestFree(test_mon);
     return ((ret < 0 && fail) || (!ret && !fail)) ? 0 : -1;
 }
@@ -412,7 +411,7 @@ testQemuHotplugCpuPrepare(const char *test,
                           virHashTablePtr qmpschema)
 {
     qemuDomainObjPrivatePtr priv = NULL;
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     char *prefix = NULL;
     struct testQemuHotplugCpuData *data = NULL;
 
@@ -464,7 +463,6 @@ testQemuHotplugCpuPrepare(const char *test,
     return data;
 
  error:
-    virObjectUnref(caps);
     testQemuHotplugCpuDataFree(data);
     VIR_FREE(prefix);
     return NULL;

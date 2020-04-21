@@ -103,7 +103,7 @@ mymain(void)
     DO_TEST_GET_FS("/dev/pts", false);
     DO_TEST_GET_FS("/doesnotexist", false);
 
-    virObjectUnref(caps);
+    g_clear_object(&caps);
     virObjectUnref(xmlopt);
 
  cleanup:

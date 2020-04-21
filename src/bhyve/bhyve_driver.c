@@ -126,22 +126,21 @@ bhyveAutostartDomains(bhyveConnPtr driver)
  * Get a reference to the virCapsPtr instance for the
  * driver.
  *
- * The caller must release the reference with virObjetUnref
+ * The caller must release the reference with g_object_unref
  *
  * Returns: a reference to a virCapsPtr instance or NULL
  */
 virCapsPtr ATTRIBUTE_NONNULL(1)
 bhyveDriverGetCapabilities(bhyveConnPtr driver)
 {
-    return virObjectRef(driver->caps);
+    return g_object_ref(driver->caps);
 }
 
 static char *
 bhyveConnectGetCapabilities(virConnectPtr conn)
 {
     bhyveConnPtr privconn = conn->privateData;
-    virCapsPtr caps;
-    char *xml = NULL;
+    g_autoptr(virCaps) caps = NULL;
 
     if (virConnectGetCapabilitiesEnsureACL(conn) < 0)
         return NULL;
@@ -149,15 +148,10 @@ bhyveConnectGetCapabilities(virConnectPtr conn)
     if (!(caps = bhyveDriverGetCapabilities(privconn))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Unable to get Capabilities"));
-        goto cleanup;
+        return NULL;
     }
 
-    if (!(xml = virCapabilitiesFormatXML(caps)))
-        goto cleanup;
-
- cleanup:
-    virObjectUnref(caps);
-    return xml;
+    return virCapabilitiesFormatXML(caps);
 }
 
 static virDomainObjPtr
@@ -508,7 +502,7 @@ bhyveDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
     virDomainDefPtr oldDef = NULL;
     virDomainObjPtr vm = NULL;
     virObjectEventPtr event = NULL;
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE;
 
     virCheckFlags(VIR_DOMAIN_DEFINE_VALIDATE, NULL);
@@ -555,7 +549,6 @@ bhyveDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
-    virObjectUnref(caps);
     virDomainDefFree(def);
     virDomainDefFree(oldDef);
     virDomainObjEndAPI(&vm);
@@ -1188,7 +1181,7 @@ bhyveStateCleanup(void)
         return -1;
 
     virObjectUnref(bhyve_driver->domains);
-    virObjectUnref(bhyve_driver->caps);
+    g_clear_object(&bhyve_driver->caps);
     virObjectUnref(bhyve_driver->xmlopt);
     virSysinfoDefFree(bhyve_driver->hostsysinfo);
     virObjectUnref(bhyve_driver->closeCallbacks);
@@ -1440,19 +1433,19 @@ bhyveConnectCompareCPU(virConnectPtr conn,
 {
     bhyveConnPtr driver = conn->privateData;
     int ret = VIR_CPU_COMPARE_ERROR;
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     bool failIncompatible;
 
     virCheckFlags(VIR_CONNECT_COMPARE_CPU_FAIL_INCOMPATIBLE,
                   VIR_CPU_COMPARE_ERROR);
 
     if (virConnectCompareCPUEnsureACL(conn) < 0)
-        goto cleanup;
+        return ret;
 
     failIncompatible = !!(flags & VIR_CONNECT_COMPARE_CPU_FAIL_INCOMPATIBLE);
 
     if (!(caps = bhyveDriverGetCapabilities(driver)))
-        goto cleanup;
+        return ret;
 
     if (!caps->host.cpu ||
         !caps->host.cpu->model) {
@@ -1468,8 +1461,6 @@ bhyveConnectCompareCPU(virConnectPtr conn,
                                xmlDesc, failIncompatible);
     }
 
- cleanup:
-    virObjectUnref(caps);
     return ret;
 }
 

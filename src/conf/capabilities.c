@@ -54,18 +54,8 @@ VIR_ENUM_IMPL(virCapsHostPMTarget,
               "suspend_mem", "suspend_disk", "suspend_hybrid",
 );
 
-static virClassPtr virCapsClass;
-static void virCapsDispose(void *obj);
+G_DEFINE_TYPE(virCaps, vir_caps, G_TYPE_OBJECT);
 
-static int virCapabilitiesOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(virCaps, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-VIR_ONCE_GLOBAL_INIT(virCapabilities);
 
 /**
  * virCapabilitiesNew:
@@ -80,13 +70,7 @@ virCapabilitiesNew(virArch hostarch,
                    bool offlineMigrate,
                    bool liveMigrate)
 {
-    virCapsPtr caps;
-
-    if (virCapabilitiesInitialize() < 0)
-        return NULL;
-
-    if (!(caps = virObjectNew(virCapsClass)))
-        return NULL;
+    virCapsPtr caps = VIR_CAPS(g_object_new(VIR_TYPE_CAPS, NULL));
 
     caps->host.arch = hostarch;
     caps->host.offlineMigrate = offlineMigrate;
@@ -225,9 +209,19 @@ virCapabilitiesClearSecModel(virCapsHostSecModelPtr secmodel)
 }
 
 static void
-virCapsDispose(void *object)
+virCapsDispose(GObject *object)
 {
-    virCapsPtr caps = object;
+    virCapsPtr caps = VIR_CAPS(object);
+
+    g_clear_object(&caps->host.resctrl);
+
+    G_OBJECT_CLASS(vir_caps_parent_class)->dispose(object);
+}
+
+static void
+virCapsFinalize(GObject *object)
+{
+    virCapsPtr caps = VIR_CAPS(object);
     size_t i;
 
     for (i = 0; i < caps->npools; i++)
@@ -266,7 +260,22 @@ virCapsDispose(void *object)
     VIR_FREE(caps->host.netprefix);
     VIR_FREE(caps->host.pagesSize);
     virCPUDefFree(caps->host.cpu);
-    g_clear_object(&caps->host.resctrl);
+
+    G_OBJECT_CLASS(vir_caps_parent_class)->finalize(object);
+}
+
+static void
+vir_caps_init(virCaps *caps G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_caps_class_init(virCapsClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virCapsDispose;
+    obj->finalize = virCapsFinalize;
 }
 
 /**

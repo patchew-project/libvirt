@@ -54,7 +54,7 @@ vmwareFreeDriver(struct vmware_driver *driver)
 
     virMutexDestroy(&driver->lock);
     virObjectUnref(driver->domains);
-    virObjectUnref(driver->caps);
+    g_clear_object(&driver->caps);
     virObjectUnref(driver->xmlopt);
     VIR_FREE(driver->vmrun);
     VIR_FREE(driver);
@@ -64,12 +64,10 @@ vmwareFreeDriver(struct vmware_driver *driver)
 virCapsPtr
 vmwareCapsInit(void)
 {
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest = NULL;
 
-    if ((caps = virCapabilitiesNew(virArchFromHost(),
-                                   false, false)) == NULL)
-        goto error;
+    caps = virCapabilitiesNew(virArchFromHost(), false, false);
 
     if (!(caps->host.numa = virCapabilitiesHostNUMANewHost()))
         goto error;
@@ -116,11 +114,10 @@ vmwareCapsInit(void)
         guest = NULL;
     }
 
-    return caps;
+    return g_steal_pointer(&caps);
 
  error:
     virCapabilitiesFreeGuest(guest);
-    virObjectUnref(caps);
     return NULL;
 }
 

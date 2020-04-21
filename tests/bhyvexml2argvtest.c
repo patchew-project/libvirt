@@ -249,7 +249,7 @@ mymain(void)
     driver.bhyvecaps &= ~BHYVE_CAP_CPUTOPOLOGY;
     DO_TEST_FAILURE("cputopology");
 
-    virObjectUnref(driver.caps);
+    g_clear_object(&driver.caps);
     virObjectUnref(driver.xmlopt);
     virPortAllocatorRangeFree(driver.remotePorts);
 

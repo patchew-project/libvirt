@@ -40,7 +40,7 @@ virStoragePoolCapsDispose(void *obj)
     virStoragePoolCapsPtr caps = obj;
     VIR_DEBUG("obj=%p", caps);
 
-    virObjectUnref(caps->driverCaps);
+    g_clear_object(&caps->driverCaps);
 }
 
 
@@ -66,7 +66,7 @@ virStoragePoolCapsNew(virCapsPtr driverCaps)
     if (!(caps = virObjectLockableNew(virStoragePoolCapsClass)))
         return NULL;
 
-    caps->driverCaps = virObjectRef(driverCaps);
+    caps->driverCaps = g_object_ref(driverCaps);
 
     return caps;
 }

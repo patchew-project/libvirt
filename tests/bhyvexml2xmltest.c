@@ -127,7 +127,7 @@ mymain(void)
     /* USB xhci tablet */
     DO_TEST_DIFFERENT("input-xhci-tablet");
 
-    virObjectUnref(driver.caps);
+    g_clear_object(&driver.caps);
     virObjectUnref(driver.xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
