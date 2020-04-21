@@ -19,8 +19,8 @@
 #pragma once
 
 #include "internal.h"
+#include <glib-object.h>
 
-#include "virobject.h"
 #include "virbitmap.h"
 #include "virenum.h"
 
@@ -93,7 +93,9 @@ struct _virResctrlInfoMon {
     unsigned int cache_level;
 };
 
-typedef struct _virResctrlInfo virResctrlInfo;
+#define VIR_TYPE_RESCTRL_INFO vir_resctrl_info_get_type()
+G_DECLARE_FINAL_TYPE(virResctrlInfo, vir_resctrl_info, VIR, RESCTRL_INFO, GObject);
+
 typedef virResctrlInfo *virResctrlInfoPtr;
 
 virResctrlInfoPtr
@@ -111,10 +113,11 @@ virResctrlInfoGetMemoryBandwidth(virResctrlInfoPtr resctrl,
                                  unsigned int level,
                                  virResctrlInfoMemBWPerNodePtr control);
 /* Alloc-related things */
-typedef struct _virResctrlAlloc virResctrlAlloc;
+#define VIR_TYPE_RESCTRL_ALLOC vir_resctrl_alloc_get_type()
+G_DECLARE_FINAL_TYPE(virResctrlAlloc, vir_resctrl_alloc, VIR, RESCTRL_ALLOC, GObject);
+
 typedef virResctrlAlloc *virResctrlAllocPtr;
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virResctrlAlloc, virObjectUnref);
 
 
 typedef int virResctrlAllocForeachCacheCallback(unsigned int level,
@@ -190,7 +193,9 @@ virResctrlInfoGetMonitorPrefix(virResctrlInfoPtr resctrl,
 
 /* Monitor-related things */
 
-typedef struct _virResctrlMonitor virResctrlMonitor;
+#define VIR_TYPE_RESCTRL_MONITOR vir_resctrl_monitor_get_type()
+G_DECLARE_FINAL_TYPE(virResctrlMonitor, vir_resctrl_monitor, VIR, RESCTRL_MONITOR, GObject);
+
 typedef virResctrlMonitor *virResctrlMonitorPtr;
 
 typedef struct _virResctrlMonitorStats virResctrlMonitorStats;

@@ -3304,7 +3304,7 @@ virDomainResctrlMonDefFree(virDomainResctrlMonDefPtr domresmon)
         return;
 
     virBitmapFree(domresmon->vcpus);
-    virObjectUnref(domresmon->instance);
+    g_clear_object(&domresmon->instance);
     VIR_FREE(domresmon);
 }
 
@@ -3320,7 +3320,7 @@ virDomainResctrlDefFree(virDomainResctrlDefPtr resctrl)
     for (i = 0; i < resctrl->nmonitors; i++)
         virDomainResctrlMonDefFree(resctrl->monitors[i]);
 
-    virObjectUnref(resctrl->alloc);
+    g_clear_object(&resctrl->alloc);
     virBitmapFree(resctrl->vcpus);
     VIR_FREE(resctrl->monitors);
     VIR_FREE(resctrl);
@@ -19950,11 +19950,6 @@ virDomainResctrlMonDefParse(virDomainDefPtr def,
         domresmon->tag = tag;
 
         domresmon->instance = virResctrlMonitorNew();
-        if (!domresmon->instance) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Could not create monitor"));
-            goto cleanup;
-        }
 
         if (tag == VIR_RESCTRL_MONITOR_TYPE_CACHE) {
             tmp = virXMLPropString(nodes[i], "level");
@@ -20064,7 +20059,7 @@ virDomainResctrlNew(xmlNodePtr node,
         goto cleanup;
     }
 
-    resctrl->alloc = virObjectRef(alloc);
+    resctrl->alloc = g_object_ref(alloc);
 
     ret = g_steal_pointer(&resctrl);
  cleanup:
@@ -20111,8 +20106,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         return -1;
     }
 
-    if (!(alloc = virResctrlAllocNew()))
-        return -1;
+    alloc = virResctrlAllocNew();
 
     for (i = 0; i < n; i++) {
         if (virDomainCachetuneDefParseCache(ctxt, nodes[i], alloc) < 0)
@@ -20297,10 +20291,9 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
         return -1;
 
     if (resctrl) {
-        alloc = virObjectRef(resctrl->alloc);
+        alloc = g_object_ref(resctrl->alloc);
     } else {
-        if (!(alloc = virResctrlAllocNew()))
-            return -1;
+        alloc = virResctrlAllocNew();
     }
 
     /* First, parse <memorytune/node> element if any <node> element exists */

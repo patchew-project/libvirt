@@ -112,12 +112,6 @@ typedef struct _virResctrlAllocMemBW virResctrlAllocMemBW;
 typedef virResctrlAllocMemBW *virResctrlAllocMemBWPtr;
 
 
-/* Class definitions and initializations */
-static virClassPtr virResctrlInfoClass;
-static virClassPtr virResctrlAllocClass;
-static virClassPtr virResctrlMonitorClass;
-
-
 /* virResctrlInfo */
 struct _virResctrlInfoPerType {
     /* Kernel-provided information */
@@ -182,7 +176,7 @@ struct _virResctrlInfoMongrp {
 };
 
 struct _virResctrlInfo {
-    virObject parent;
+    GObject parent;
 
     virResctrlInfoPerLevelPtr *levels;
     size_t nlevels;
@@ -192,14 +186,17 @@ struct _virResctrlInfo {
     virResctrlInfoMongrpPtr monitor_info;
 };
 
+/* Class definitions and initializations */
+G_DEFINE_TYPE(virResctrlInfo, vir_resctrl_info, G_TYPE_OBJECT);
+
 
 static void
-virResctrlInfoDispose(void *obj)
+virResctrlInfoFinalize(GObject *obj)
 {
     size_t i = 0;
     size_t j = 0;
 
-    virResctrlInfoPtr resctrl = obj;
+    virResctrlInfoPtr resctrl = VIR_RESCTRL_INFO(obj);
 
     for (i = 0; i < resctrl->nlevels; i++) {
         virResctrlInfoPerLevelPtr level = resctrl->levels[i];
@@ -221,6 +218,8 @@ virResctrlInfoDispose(void *obj)
     VIR_FREE(resctrl->membw_info);
     VIR_FREE(resctrl->levels);
     VIR_FREE(resctrl->monitor_info);
+
+    G_OBJECT_CLASS(vir_resctrl_info_parent_class)->finalize(obj);
 }
 
 
@@ -334,7 +333,7 @@ struct _virResctrlAllocMemBW {
 };
 
 struct _virResctrlAlloc {
-    virObject parent;
+    GObject parent;
 
     virResctrlAllocPerLevelPtr *levels;
     size_t nlevels;
@@ -355,7 +354,7 @@ struct _virResctrlAlloc {
  * memory bandwidth.
  */
 struct _virResctrlMonitor {
-    virObject parent;
+    GObject parent;
 
     /* Each virResctrlMonitor is associated with one specific allocation,
      * either the root directory allocation under /sys/fs/resctrl or a
@@ -372,15 +371,20 @@ struct _virResctrlMonitor {
     char *path;
 };
 
+/* Class definitions and initializations */
+G_DEFINE_TYPE(virResctrlAlloc, vir_resctrl_alloc, G_TYPE_OBJECT);
+G_DEFINE_TYPE(virResctrlMonitor, vir_resctrl_monitor, G_TYPE_OBJECT);
+
+
 
 static void
-virResctrlAllocDispose(void *obj)
+virResctrlAllocFinalize(GObject *obj)
 {
     size_t i = 0;
     size_t j = 0;
     size_t k = 0;
 
-    virResctrlAllocPtr alloc = obj;
+    virResctrlAllocPtr alloc = VIR_RESCTRL_ALLOC(obj);
 
     for (i = 0; i < alloc->nlevels; i++) {
         virResctrlAllocPerLevelPtr level = alloc->levels[i];
@@ -419,38 +423,71 @@ virResctrlAllocDispose(void *obj)
     VIR_FREE(alloc->id);
     VIR_FREE(alloc->path);
     VIR_FREE(alloc->levels);
+
+    G_OBJECT_CLASS(vir_resctrl_alloc_parent_class)->finalize(obj);
 }
 
 
 static void
-virResctrlMonitorDispose(void *obj)
+virResctrlMonitorDispose(GObject *obj)
 {
-    virResctrlMonitorPtr monitor = obj;
+    virResctrlMonitorPtr monitor = VIR_RESCTRL_MONITOR(obj);
 
-    virObjectUnref(monitor->alloc);
+    g_clear_object(&monitor->alloc);
+
+    G_OBJECT_CLASS(vir_resctrl_alloc_parent_class)->dispose(obj);
+}
+
+static void
+virResctrlMonitorFinalize(GObject *obj)
+{
+    virResctrlMonitorPtr monitor = VIR_RESCTRL_MONITOR(obj);
+
     VIR_FREE(monitor->id);
     VIR_FREE(monitor->path);
+
+    G_OBJECT_CLASS(vir_resctrl_monitor_parent_class)->finalize(obj);
 }
 
-
-/* Global initialization for classes */
-static int
-virResctrlOnceInit(void)
+static void
+vir_resctrl_info_init(virResctrlInfo *resctrlinfo G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virResctrlInfo, virClassForObject()))
-        return -1;
-
-    if (!VIR_CLASS_NEW(virResctrlAlloc, virClassForObject()))
-        return -1;
-
-    if (!VIR_CLASS_NEW(virResctrlMonitor, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virResctrl);
+static void
+vir_resctrl_info_class_init(virResctrlInfoClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
 
+    obj->finalize = virResctrlInfoFinalize;
+}
+
+static void
+vir_resctrl_alloc_init(virResctrlAlloc *resctrlalloc G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_resctrl_alloc_class_init(virResctrlAllocClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virResctrlAllocFinalize;
+}
+
+static void
+vir_resctrl_monitor_init(virResctrlMonitor *resctrlmon G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_resctrl_monitor_class_init(virResctrlMonitorClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virResctrlMonitorDispose;
+    obj->finalize = virResctrlMonitorFinalize;
+}
 
 /* Common functions */
 static int
@@ -793,21 +830,13 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
 virResctrlInfoPtr
 virResctrlInfoNew(void)
 {
-    virResctrlInfoPtr ret = NULL;
-
-    if (virResctrlInitialize() < 0)
-        return NULL;
-
-    ret = virObjectNew(virResctrlInfoClass);
-    if (!ret)
-        return NULL;
+    g_autoptr(virResctrlInfo) ret = VIR_RESCTRL_INFO(g_object_new(VIR_TYPE_RESCTRL_INFO, NULL));
 
     if (virResctrlGetInfo(ret) < 0) {
-        virObjectUnref(ret);
         return NULL;
     }
 
-    return ret;
+    return g_steal_pointer(&ret);
 }
 
 
@@ -1034,10 +1063,7 @@ virResctrlInfoGetMonitorPrefix(virResctrlInfoPtr resctrl,
 virResctrlAllocPtr
 virResctrlAllocNew(void)
 {
-    if (virResctrlInitialize() < 0)
-        return NULL;
-
-    return virObjectNew(virResctrlAllocClass);
+    return VIR_RESCTRL_ALLOC(g_object_new(VIR_TYPE_RESCTRL_ALLOC, NULL));
 }
 
 
@@ -1769,8 +1795,7 @@ virResctrlAllocGetGroup(virResctrlInfoPtr resctrl,
 
  error:
     VIR_FREE(schemata);
-    virObjectUnref(*alloc);
-    *alloc = NULL;
+    g_clear_object(alloc);
     return -1;
 }
 
@@ -1779,9 +1804,7 @@ static virResctrlAllocPtr
 virResctrlAllocGetDefault(virResctrlInfoPtr resctrl)
 {
     virResctrlAllocPtr ret = NULL;
-    int rv = virResctrlAllocGetGroup(resctrl, ".", &ret);
-
-    if (rv == -2) {
+    if (virResctrlAllocGetGroup(resctrl, ".", &ret) == -2) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Could not read schemata file for the default group"));
     }
@@ -1836,9 +1859,6 @@ virResctrlAllocNewFromInfo(virResctrlInfoPtr info)
     virResctrlAllocPtr ret = virResctrlAllocNew();
     virBitmapPtr mask = NULL;
 
-    if (!ret)
-        return NULL;
-
     for (i = 0; i < info->nlevels; i++) {
         virResctrlInfoPerLevelPtr i_level = info->levels[i];
 
@@ -1884,8 +1904,7 @@ virResctrlAllocNewFromInfo(virResctrlInfoPtr info)
     virBitmapFree(mask);
     return ret;
  error:
-    virObjectUnref(ret);
-    ret = NULL;
+    g_clear_object(&ret);
     goto cleanup;
 }
 
@@ -1907,7 +1926,7 @@ virResctrlAllocPtr
 virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
 {
     virResctrlAllocPtr ret = NULL;
-    virResctrlAllocPtr alloc = NULL;
+    g_autoptr(virResctrlAlloc) alloc = NULL;
     struct dirent *ent = NULL;
     DIR *dirp = NULL;
     int rv = -1;
@@ -1927,7 +1946,7 @@ virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
         goto error;
 
     virResctrlAllocSubtract(ret, alloc);
-    virObjectUnref(alloc);
+    g_clear_object(&alloc);
 
     if (virDirOpen(&dirp, SYSFS_RESCTRL_PATH) < 0)
         goto error;
@@ -1948,20 +1967,17 @@ virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
         }
 
         virResctrlAllocSubtract(ret, alloc);
-        virObjectUnref(alloc);
-        alloc = NULL;
+        g_clear_object(&alloc);
     }
     if (rv < 0)
         goto error;
 
  cleanup:
-    virObjectUnref(alloc);
     VIR_DIR_CLOSE(dirp);
     return ret;
 
  error:
-    virObjectUnref(ret);
-    ret = NULL;
+    g_clear_object(&ret);
     goto cleanup;
 }
 
@@ -2229,10 +2245,9 @@ static int
 virResctrlAllocAssign(virResctrlInfoPtr resctrl,
                       virResctrlAllocPtr alloc)
 {
-    int ret = -1;
     unsigned int level = 0;
-    virResctrlAllocPtr alloc_free = NULL;
-    virResctrlAllocPtr alloc_default = NULL;
+    g_autoptr(virResctrlAlloc) alloc_free = NULL;
+    g_autoptr(virResctrlAlloc) alloc_default = NULL;
 
     alloc_free = virResctrlAllocGetUnused(resctrl);
     if (!alloc_free)
@@ -2240,16 +2255,16 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
 
     alloc_default = virResctrlAllocGetDefault(resctrl);
     if (!alloc_default)
-        goto cleanup;
+        return -1;
 
     if (virResctrlAllocMemoryBandwidth(resctrl, alloc) < 0)
-        goto cleanup;
+        return -1;
 
     if (virResctrlAllocCopyMasks(alloc, alloc_default) < 0)
-        goto cleanup;
+        return -1;
 
     if (virResctrlAllocCopyMemBW(alloc, alloc_default) < 0)
-        goto cleanup;
+        return -1;
 
     for (level = 0; level < alloc->nlevels; level++) {
         virResctrlAllocPerLevelPtr a_level = alloc->levels[level];
@@ -2266,7 +2281,7 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Cache level %d does not support tuning"),
                            level);
-            goto cleanup;
+            return -1;
         }
 
         for (type = 0; type < VIR_CACHE_TYPE_LAST; type++) {
@@ -2282,7 +2297,7 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
                                _("Cache level %d does not support tuning for "
                                  "scope type '%s'"),
                                level, virCacheTypeToString(type));
-                goto cleanup;
+                return -1;
             }
 
             for (cache = 0; cache < a_type->nsizes; cache++) {
@@ -2290,16 +2305,12 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
                 virResctrlInfoPerTypePtr i_type = i_level->types[type];
 
                 if (virResctrlAllocFindUnused(alloc, i_type, f_type, level, type, cache) < 0)
-                    goto cleanup;
+                    return -1;
             }
         }
     }
 
-    ret = 0;
- cleanup:
-    virObjectUnref(alloc_free);
-    virObjectUnref(alloc_default);
-    return ret;
+    return 0;
 }
 
 
@@ -2506,10 +2517,7 @@ virResctrlAllocRemove(virResctrlAllocPtr alloc)
 virResctrlMonitorPtr
 virResctrlMonitorNew(void)
 {
-    if (virResctrlInitialize() < 0)
-        return NULL;
-
-    return virObjectNew(virResctrlMonitorClass);
+    return VIR_RESCTRL_MONITOR(g_object_new(VIR_TYPE_RESCTRL_MONITOR, NULL));
 }
 
 
@@ -2623,7 +2631,7 @@ void
 virResctrlMonitorSetAlloc(virResctrlMonitorPtr monitor,
                           virResctrlAllocPtr alloc)
 {
-    monitor->alloc = virObjectRef(alloc);
+    monitor->alloc = g_object_ref(alloc);
 }
 
 

@@ -266,7 +266,7 @@ virCapsDispose(void *object)
     VIR_FREE(caps->host.netprefix);
     VIR_FREE(caps->host.pagesSize);
     virCPUDefFree(caps->host.cpu);
-    virObjectUnref(caps->host.resctrl);
+    g_clear_object(&caps->host.resctrl);
 }
 
 /**

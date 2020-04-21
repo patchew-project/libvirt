@@ -2916,6 +2916,9 @@ virRandomInt;
 
 
 # util/virresctrl.h
+vir_resctrl_alloc_get_type;
+vir_resctrl_info_get_type;
+vir_resctrl_monitor_get_type;
 virCacheKernelTypeFromString;
 virCacheKernelTypeToString;
 virCacheTypeFromString;
