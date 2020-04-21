@@ -1939,6 +1939,7 @@ virDevMapperGetTargets;
 
 
 # util/virdnsmasq.h
+dnsmasq_caps_get_type;
 dnsmasqAddDhcpHost;
 dnsmasqAddHost;
 dnsmasqCapsGet;

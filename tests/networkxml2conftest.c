@@ -101,11 +101,11 @@ static int
 mymain(void)
 {
     int ret = 0;
-    dnsmasqCapsPtr restricted
+    g_autoptr(dnsmasqCaps) restricted
         = dnsmasqCapsNewFromBuffer("Dnsmasq version 2.48", DNSMASQ);
-    dnsmasqCapsPtr full
+    g_autoptr(dnsmasqCaps) full
         = dnsmasqCapsNewFromBuffer("Dnsmasq version 2.63\n--bind-dynamic", DNSMASQ);
-    dnsmasqCapsPtr dhcpv6
+    g_autoptr(dnsmasqCaps) dhcpv6
         = dnsmasqCapsNewFromBuffer("Dnsmasq version 2.64\n--bind-dynamic", DNSMASQ);
 
 #define DO_TEST(xname, xcaps) \
@@ -142,10 +142,6 @@ mymain(void)
     DO_TEST("dhcp6host-routed-network", dhcpv6);
     DO_TEST("ptr-domains-auto", dhcpv6);
     DO_TEST("dnsmasq-options", dhcpv6);
-
-    virObjectUnref(dhcpv6);
-    virObjectUnref(full);
-    virObjectUnref(restricted);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
