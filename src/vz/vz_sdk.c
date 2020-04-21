@@ -4082,9 +4082,8 @@ static int
 virStorageTranslatePoolLocal(virConnectPtr conn, virStorageSourcePtr src)
 {
     g_autoptr(virStoragePool) pool = NULL;
-    virStorageVolPtr vol = NULL;
+    g_autoptr(virStorageVol) vol = NULL;
     virStorageVolInfo info;
-    int ret = -1;
 
     if (!(pool = virStoragePoolLookupByName(conn, src->srcpool->pool)))
         return -1;
@@ -4093,30 +4092,26 @@ virStorageTranslatePoolLocal(virConnectPtr conn, virStorageSourcePtr src)
                        _("storage pool '%s' containing volume '%s' "
                          "is not active"), src->srcpool->pool,
                        src->srcpool->volume);
-        goto cleanup;
+        return -1;
     }
 
     if (!(vol = virStorageVolLookupByName(pool, src->srcpool->volume)))
-        goto cleanup;
+        return -1;
 
     if (virStorageVolGetInfo(vol, &info) < 0)
-        goto cleanup;
+        return -1;
 
     if (info.type != VIR_STORAGE_VOL_PLOOP) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unsupported volume format '%s'"),
                        virStorageVolTypeToString(info.type));
-        goto cleanup;
+        return -1;
     }
 
     if (!(src->path = virStorageVolGetPath(vol)))
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virObjectUnref(vol);
-    return ret;
+    return 0;
 }
 
 

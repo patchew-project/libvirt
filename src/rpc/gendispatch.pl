@@ -204,6 +204,7 @@ my %gobject_impl = (
     virNWFilter => 1,
     virNWFilterBinding => 1,
     virStoragePool => 1,
+    virStorageVol => 1,
 );
 
 sub use_gobject {
