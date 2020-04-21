@@ -24,12 +24,18 @@
 #include <rpc/xdr.h>
 
 #include "virnetmessage.h"
-#include "virobject.h"
+#include "internal.h"
+#include <glib-object.h>
 
 typedef struct _virNetClient virNetClient;
 typedef virNetClient *virNetClientPtr;
 
-typedef struct _virNetClientProgram virNetClientProgram;
+#define VIR_TYPE_NET_CLIENT_PROGRAM vir_net_client_program_get_type()
+G_DECLARE_FINAL_TYPE(virNetClientProgram,
+                     vir_net_client_program,
+                     VIR,
+                     NET_CLIENT_PROGRAM,
+                     GObject);
 typedef virNetClientProgram *virNetClientProgramPtr;
 
 typedef struct _virNetClientProgramEvent virNetClientProgramEvent;

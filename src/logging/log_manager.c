@@ -83,12 +83,11 @@ virLogManagerConnect(bool privileged,
                                        daemonPath)))
         goto error;
 
-    if (!(*prog = virNetClientProgramNew(VIR_LOG_MANAGER_PROTOCOL_PROGRAM,
-                                         VIR_LOG_MANAGER_PROTOCOL_PROGRAM_VERSION,
-                                         NULL,
-                                         0,
-                                         NULL)))
-        goto error;
+    *prog = virNetClientProgramNew(VIR_LOG_MANAGER_PROTOCOL_PROGRAM,
+                                   VIR_LOG_MANAGER_PROTOCOL_PROGRAM_VERSION,
+                                   NULL,
+                                   0,
+                                   NULL);
 
     if (virNetClientAddProgram(client, *prog) < 0)
         goto error;
@@ -103,7 +102,7 @@ virLogManagerConnect(bool privileged,
     VIR_FREE(logdpath);
     virNetClientClose(client);
     virObjectUnref(client);
-    virObjectUnref(*prog);
+    g_clear_object(prog);
     return NULL;
 }
 
@@ -135,7 +134,7 @@ virLogManagerFree(virLogManagerPtr mgr)
 
     if (mgr->client)
         virNetClientClose(mgr->client);
-    virObjectUnref(mgr->program);
+    g_clear_object(&mgr->program);
     virObjectUnref(mgr->client);
 
     VIR_FREE(mgr);

@@ -198,7 +198,7 @@ static void virLXCMonitorDispose(void *opaque)
     VIR_DEBUG("mon=%p", mon);
     if (mon->cb.destroy)
         (mon->cb.destroy)(mon, mon->vm);
-    virObjectUnref(mon->program);
+    g_clear_object(&mon->program);
     virObjectUnref(mon->vm);
 }
 
