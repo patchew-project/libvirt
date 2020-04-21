@@ -199,6 +199,7 @@ my %gobject_impl = (
     virDomainCheckpoint => 1,
     virDomainSnapshot => 1,
     virNWFilter => 1,
+    virNWFilterBinding => 1,
 );
 
 sub use_gobject {

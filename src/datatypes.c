@@ -40,7 +40,6 @@ virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
 virClassPtr virNetworkPortClass;
 virClassPtr virNodeDeviceClass;
-virClassPtr virNWFilterBindingClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
 virClassPtr virStorageVolClass;
@@ -53,7 +52,6 @@ static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
 static void virNetworkPortDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
-static void virNWFilterBindingDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 static void virStorageVolDispose(void *obj);
@@ -111,6 +109,24 @@ vir_nw_filter_class_init(virNWFilterClass *klass)
 
     obj->dispose = virNWFilterDispose;
     obj->finalize = virNWFilterFinalize;
+}
+
+G_DEFINE_TYPE(virNWFilterBinding, vir_nw_filter_binding, G_TYPE_OBJECT);
+static void virNWFilterBindingDispose(GObject *obj);
+static void virNWFilterBindingFinalize(GObject *obj);
+
+static void
+vir_nw_filter_binding_init(virNWFilterBinding *bdg G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_nw_filter_binding_class_init(virNWFilterBindingClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virNWFilterBindingDispose;
+    obj->finalize = virNWFilterBindingFinalize;
 }
 
 virClassPtr virAdmConnectClass;
@@ -171,7 +187,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNetworkPort);
     DECLARE_CLASS(virNodeDevice);
-    DECLARE_CLASS(virNWFilterBinding);
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
     DECLARE_CLASS(virStorageVol);
@@ -980,7 +995,7 @@ virNWFilterFinalize(GObject *obj)
  * @filtername: name of the network filter
  *
  * Allocates a new network filter binding object. When the object is no longer
- * needed, virObjectUnref() must be called in order to not leak data.
+ * needed, g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the network filter binding object, or NULL on error.
  */
@@ -988,16 +1003,15 @@ virNWFilterBindingPtr
 virGetNWFilterBinding(virConnectPtr conn, const char *portdev,
                       const char *filtername)
 {
-    virNWFilterBindingPtr ret = NULL;
+    g_autoptr(virNWFilterBinding) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(portdev, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(portdev, NULL);
 
-    if (!(ret = virObjectNew(virNWFilterBindingClass)))
-        goto error;
+    ret = VIR_NW_FILTER_BINDING(g_object_new(VIR_TYPE_NW_FILTER_BINDING, NULL));
 
     ret->portdev = g_strdup(portdev);
 
@@ -1005,11 +1019,7 @@ virGetNWFilterBinding(virConnectPtr conn, const char *portdev,
 
     ret->conn = virObjectRef(conn);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
@@ -1017,22 +1027,38 @@ virGetNWFilterBinding(virConnectPtr conn, const char *portdev,
  * virNWFilterBindingDispose:
  * @obj: the network filter binding to release
  *
- * Unconditionally release all memory associated with a nwfilter binding.
- * The nwfilter binding object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virNWFilterBindingDispose(void *obj)
+virNWFilterBindingDispose(GObject *obj)
 {
-    virNWFilterBindingPtr binding = obj;
+    virNWFilterBindingPtr binding = VIR_NW_FILTER_BINDING(obj);
+
+    virObjectUnref(binding->conn);
+    binding->conn = NULL;
+
+    G_OBJECT_CLASS(vir_nw_filter_binding_parent_class)->dispose(obj);
+}
+
+/**
+ * virNWFilterBindingFinalize:
+ * @obj: the network filter binding to release
+ *
+ * Unconditionally releases all memory associated with a nwfilter binding.
+ * The nwfilter binding object must not be used once this method returns.
+ */
+static void
+virNWFilterBindingFinalize(GObject *obj)
+{
+    virNWFilterBindingPtr binding = VIR_NW_FILTER_BINDING(obj);
 
     VIR_DEBUG("release binding %p %s", binding, binding->portdev);
 
     VIR_FREE(binding->portdev);
     VIR_FREE(binding->filtername);
-    virObjectUnref(binding->conn);
+
+    G_OBJECT_CLASS(vir_nw_filter_binding_parent_class)->finalize(obj);
 }
 
 
