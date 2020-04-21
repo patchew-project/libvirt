@@ -367,7 +367,7 @@ daemonCreateClientStream(virNetServerClientPtr client,
 
     stream->refs = 1;
     stream->priv = priv;
-    stream->prog = virObjectRef(prog);
+    stream->prog = g_object_ref(prog);
     stream->procedure = header->proc;
     stream->serial = header->serial;
     stream->filterID = -1;
@@ -399,7 +399,7 @@ int daemonFreeClientStream(virNetServerClientPtr client,
     VIR_DEBUG("client=%p, proc=%d, serial=%u",
               client, stream->procedure, stream->serial);
 
-    virObjectUnref(stream->prog);
+    g_clear_object(&stream->prog);
 
     msg = stream->rx;
     while (msg) {

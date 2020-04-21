@@ -35,7 +35,7 @@
 VIR_LOG_INIT("rpc.netserverprogram");
 
 struct _virNetServerProgram {
-    virObject parent;
+    GObject parent;
 
     unsigned program;
     unsigned version;
@@ -44,32 +44,23 @@ struct _virNetServerProgram {
 };
 
 
-static virClassPtr virNetServerProgramClass;
-static void virNetServerProgramDispose(void *obj);
+G_DEFINE_TYPE(virNetServerProgram, vir_net_server_program, G_TYPE_OBJECT);
 
-static int virNetServerProgramOnceInit(void)
+static void vir_net_server_program_init(virNetServerProgram *prog G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virNetServerProgram, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virNetServerProgram);
-
+static void vir_net_server_program_class_init(virNetServerProgramClass *klass G_GNUC_UNUSED)
+{
+}
 
 virNetServerProgramPtr virNetServerProgramNew(unsigned program,
                                               unsigned version,
                                               virNetServerProgramProcPtr procs,
                                               size_t nprocs)
 {
-    virNetServerProgramPtr prog;
-
-    if (virNetServerProgramInitialize() < 0)
-        return NULL;
-
-    if (!(prog = virObjectNew(virNetServerProgramClass)))
-        return NULL;
+    virNetServerProgramPtr prog =
+        VIR_NET_SERVER_PROGRAM(g_object_new(VIR_TYPE_NET_SERVER_PROGRAM, NULL));
 
     prog->program = program;
     prog->version = version;
@@ -566,9 +557,4 @@ int virNetServerProgramSendStreamHole(virNetServerProgramPtr prog,
         return -1;
 
     return virNetServerClientSendMessage(client, msg);
-}
-
-
-void virNetServerProgramDispose(void *obj G_GNUC_UNUSED)
-{
 }

@@ -641,8 +641,8 @@ virLogDaemonUsage(const char *argv0, bool privileged)
 int main(int argc, char **argv) {
     virNetServerPtr logSrv = NULL;
     virNetServerPtr adminSrv = NULL;
-    virNetServerProgramPtr logProgram = NULL;
-    virNetServerProgramPtr adminProgram = NULL;
+    g_autoptr(virNetServerProgram) logProgram = NULL;
+    g_autoptr(virNetServerProgram) adminProgram = NULL;
     char *remote_config_file = NULL;
     int statuswrite = -1;
     int ret = 1;
@@ -916,26 +916,20 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!(logProgram = virNetServerProgramNew(VIR_LOG_MANAGER_PROTOCOL_PROGRAM,
-                                              VIR_LOG_MANAGER_PROTOCOL_PROGRAM_VERSION,
-                                              virLogManagerProtocolProcs,
-                                              virLogManagerProtocolNProcs))) {
-        ret = VIR_DAEMON_ERR_INIT;
-        goto cleanup;
-    }
+    logProgram = virNetServerProgramNew(VIR_LOG_MANAGER_PROTOCOL_PROGRAM,
+                                        VIR_LOG_MANAGER_PROTOCOL_PROGRAM_VERSION,
+                                        virLogManagerProtocolProcs,
+                                        virLogManagerProtocolNProcs);
     if (virNetServerAddProgram(logSrv, logProgram) < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
 
     if (adminSrv != NULL) {
-        if (!(adminProgram = virNetServerProgramNew(ADMIN_PROGRAM,
-                                                    ADMIN_PROTOCOL_VERSION,
-                                                    adminProcs,
-                                                    adminNProcs))) {
-            ret = VIR_DAEMON_ERR_INIT;
-            goto cleanup;
-        }
+        adminProgram = virNetServerProgramNew(ADMIN_PROGRAM,
+                                              ADMIN_PROTOCOL_VERSION,
+                                              adminProcs,
+                                              adminNProcs);
         if (virNetServerAddProgram(adminSrv, adminProgram) < 0) {
             ret = VIR_DAEMON_ERR_INIT;
             goto cleanup;
@@ -971,8 +965,6 @@ int main(int argc, char **argv) {
         ret = 0;
 
  cleanup:
-    virObjectUnref(logProgram);
-    virObjectUnref(adminProgram);
     virObjectUnref(logSrv);
     virObjectUnref(adminSrv);
     virLogDaemonFree(logDaemon);

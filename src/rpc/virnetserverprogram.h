@@ -23,7 +23,8 @@
 
 #include "virnetmessage.h"
 #include "virnetserverclient.h"
-#include "virobject.h"
+#include "internal.h"
+#include <glib-object.h>
 
 typedef struct _virNetDaemon virNetDaemon;
 typedef virNetDaemon *virNetDaemonPtr;
@@ -31,7 +32,12 @@ typedef virNetDaemon *virNetDaemonPtr;
 typedef struct _virNetServerService virNetServerService;
 typedef virNetServerService *virNetServerServicePtr;
 
-typedef struct _virNetServerProgram virNetServerProgram;
+#define VIR_TYPE_NET_SERVER_PROGRAM vir_net_server_program_get_type()
+G_DECLARE_FINAL_TYPE(virNetServerProgram,
+                     vir_net_server_program,
+                     VIR,
+                     NET_SERVER_PROGRAM,
+                     GObject);
 typedef virNetServerProgram *virNetServerProgramPtr;
 
 typedef struct _virNetServerProgramProc virNetServerProgramProc;

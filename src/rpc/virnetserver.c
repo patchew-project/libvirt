@@ -154,13 +154,13 @@ static void virNetServerHandleJob(void *jobOpaque, void *opaque)
     if (virNetServerProcessMsg(srv, job->client, job->prog, job->msg) < 0)
         goto error;
 
-    virObjectUnref(job->prog);
+    g_clear_object(&job->prog);
     virObjectUnref(job->client);
     VIR_FREE(job);
     return;
 
  error:
-    virObjectUnref(job->prog);
+    g_clear_object(&job->prog);
     virNetMessageFree(job->msg);
     virNetServerClientClose(job->client);
     virObjectUnref(job->client);
@@ -218,14 +218,14 @@ virNetServerDispatchNewMessage(virNetServerClientPtr client,
         job->msg = msg;
 
         if (prog) {
-            job->prog = virObjectRef(prog);
+            job->prog = g_object_ref(prog);
             priority = virNetServerProgramGetPriority(prog, msg->header.proc);
         }
 
         if (virThreadPoolSendJob(srv->workers, priority, job) < 0) {
             virObjectUnref(client);
             VIR_FREE(job);
-            virObjectUnref(prog);
+            g_clear_object(&prog);
             goto error;
         }
     } else {
@@ -825,7 +825,7 @@ int virNetServerAddProgram(virNetServerPtr srv,
     if (VIR_EXPAND_N(srv->programs, srv->nprograms, 1) < 0)
         goto error;
 
-    srv->programs[srv->nprograms-1] = virObjectRef(prog);
+    srv->programs[srv->nprograms-1] = g_object_ref(prog);
 
     virObjectUnlock(srv);
     return 0;
@@ -917,9 +917,7 @@ void virNetServerDispose(void *obj)
         virObjectUnref(srv->services[i]);
     VIR_FREE(srv->services);
 
-    for (i = 0; i < srv->nprograms; i++)
-        virObjectUnref(srv->programs[i]);
-    VIR_FREE(srv->programs);
+    virGObjectListFreeCount(srv->programs, srv->nprograms);
 
     for (i = 0; i < srv->nclients; i++)
         virObjectUnref(srv->clients[i]);
