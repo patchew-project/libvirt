@@ -866,7 +866,6 @@ virNodeDeviceObjListExportCallback(void *payload,
         virNodeDeviceObjMatch(obj, data->flags)) {
         if (data->devices) {
             if (!(device = virGetNodeDevice(data->conn, def->name))) {
-                virObjectUnref(device);
                 data->error = true;
                 goto cleanup;
             }
@@ -914,7 +913,7 @@ virNodeDeviceObjListExport(virConnectPtr conn,
     return data.ndevices;
 
  cleanup:
-    virObjectListFree(data.devices);
+    virGObjectListFreeCount(data.devices, data.ndevices);
     return -1;
 }
 

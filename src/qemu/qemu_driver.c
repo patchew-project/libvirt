@@ -12957,7 +12957,7 @@ qemuNodeDeviceDetachFlags(virNodeDevicePtr dev,
     bool vfio = qemuHostdevHostSupportsPassthroughVFIO();
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     virCheckFlags(0, -1);
 
@@ -13018,7 +13018,6 @@ qemuNodeDeviceDetachFlags(virNodeDevicePtr dev,
  cleanup:
     virPCIDeviceFree(pci);
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     return ret;
 }
@@ -13040,7 +13039,7 @@ qemuNodeDeviceReAttach(virNodeDevicePtr dev)
     g_autofree char *xml = NULL;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     if (!(nodeconn = virGetConnectNodeDev()))
         goto cleanup;
@@ -13078,7 +13077,6 @@ qemuNodeDeviceReAttach(virNodeDevicePtr dev)
     virPCIDeviceFree(pci);
  cleanup:
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     return ret;
 }
@@ -13094,7 +13092,7 @@ qemuNodeDeviceReset(virNodeDevicePtr dev)
     g_autofree char *xml = NULL;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     if (!(nodeconn = virGetConnectNodeDev()))
         goto cleanup;
@@ -13132,7 +13130,6 @@ qemuNodeDeviceReset(virNodeDevicePtr dev)
     virPCIDeviceFree(pci);
  cleanup:
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     return ret;
 }

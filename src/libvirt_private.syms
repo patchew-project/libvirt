@@ -1351,6 +1351,7 @@ vir_domain_snapshot_get_type;
 vir_interface_get_type;
 vir_network_get_type;
 vir_network_port_get_type;
+vir_node_device_get_type;
 vir_nw_filter_binding_get_type;
 vir_nw_filter_get_type;
 vir_storage_pool_get_type;
@@ -1377,7 +1378,6 @@ virGetStoragePool;
 virGetStorageVol;
 virGetStream;
 virNewConnectCloseCallbackData;
-virNodeDeviceClass;
 virSecretClass;
 virStreamClass;
 

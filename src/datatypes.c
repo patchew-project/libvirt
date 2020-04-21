@@ -36,14 +36,12 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virNodeDeviceClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virNodeDeviceDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 
@@ -135,6 +133,24 @@ vir_network_port_class_init(virNetworkPortClass *klass)
 
     obj->dispose = virNetworkPortDispose;
     obj->finalize = virNetworkPortFinalize;
+}
+
+G_DEFINE_TYPE(virNodeDevice, vir_node_device, G_TYPE_OBJECT);
+static void virNodeDeviceDispose(GObject *obj);
+static void virNodeDeviceFinalize(GObject *obj);
+
+static void
+vir_node_device_init(virNodeDevice *dev G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_node_device_class_init(virNodeDeviceClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->dispose = virNodeDeviceDispose;
+    obj->finalize = virNodeDeviceFinalize;
 }
 
 G_DEFINE_TYPE(virNWFilter, vir_nw_filter, G_TYPE_OBJECT);
@@ -263,7 +279,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virNodeDevice);
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
 
@@ -879,32 +894,27 @@ virStorageVolFinalize(GObject *obj)
  * @name: device name (unique on node)
  *
  * Allocates a new node device object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the node device object, or NULL on error.
  */
 virNodeDevicePtr
 virGetNodeDevice(virConnectPtr conn, const char *name)
 {
-    virNodeDevicePtr ret = NULL;
+    g_autoptr(virNodeDevice) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
 
-    if (!(ret = virObjectNew(virNodeDeviceClass)))
-        goto error;
+    ret = VIR_NODE_DEVICE(g_object_new(VIR_TYPE_NODE_DEVICE, NULL));
 
     ret->name = g_strdup(name);
 
     ret->conn = virObjectRef(conn);
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
@@ -912,22 +922,37 @@ virGetNodeDevice(virConnectPtr conn, const char *name)
  * virNodeDeviceDispose:
  * @obj: the node device to release
  *
- * Unconditionally release all memory associated with a device.
- * The device object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
+ * Unreferences the associated connection object, which may also be
+ * released if its ref count hits zero.
  */
 static void
-virNodeDeviceDispose(void *obj)
+virNodeDeviceDispose(GObject *obj)
 {
-    virNodeDevicePtr dev = obj;
+    virNodeDevicePtr dev = VIR_NODE_DEVICE(obj);
+
+    virObjectUnref(dev->conn);
+    dev->conn = NULL;
+
+    G_OBJECT_CLASS(vir_node_device_parent_class)->dispose(obj);
+}
+
+/**
+ * virNodeDeviceFinalize:
+ * @obj: the node device to release
+ *
+ * Unconditionally releases all memory associated with a device.
+ * The device object must not be used once this method returns.
+ */
+static void
+virNodeDeviceFinalize(GObject *obj)
+{
+    virNodeDevicePtr dev = VIR_NODE_DEVICE(obj);
     VIR_DEBUG("release dev %p %s", dev, dev->name);
 
     VIR_FREE(dev->name);
     VIR_FREE(dev->parentName);
 
-    virObjectUnref(dev->conn);
+    G_OBJECT_CLASS(vir_node_device_parent_class)->finalize(obj);
 }
 
 

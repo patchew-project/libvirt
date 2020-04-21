@@ -20,6 +20,7 @@
 
 #include "internal.h"
 
+#include "datatypes.h"
 #include "node_device_util.h"
 #include "virlog.h"
 #include "virscsihost.h"
@@ -45,7 +46,7 @@ char *
 virNodeDeviceGetParentName(virConnectPtr conn,
                            const char *nodedev_name)
 {
-    virNodeDevicePtr device = NULL;
+    g_autoptr(virNodeDevice) device = NULL;
     char *parent;
 
     if (!(device = virNodeDeviceLookupByName(conn, nodedev_name))) {
@@ -56,7 +57,6 @@ virNodeDeviceGetParentName(virConnectPtr conn,
     }
 
     parent = g_strdup(virNodeDeviceGetParent(device));
-    virObjectUnref(device);
 
     return parent;
 }

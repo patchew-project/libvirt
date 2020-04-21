@@ -5787,7 +5787,7 @@ libxlNodeDeviceDetachFlags(virNodeDevicePtr dev,
     libxlDriverPrivatePtr driver = dev->conn->privateData;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     virCheckFlags(0, -1);
 
@@ -5837,7 +5837,6 @@ libxlNodeDeviceDetachFlags(virNodeDevicePtr dev,
  cleanup:
     virPCIDeviceFree(pci);
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     VIR_FREE(xml);
     return ret;
@@ -5860,7 +5859,7 @@ libxlNodeDeviceReAttach(virNodeDevicePtr dev)
     libxlDriverPrivatePtr driver = dev->conn->privateData;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     if (!(nodeconn = virGetConnectNodeDev()))
         goto cleanup;
@@ -5901,7 +5900,6 @@ libxlNodeDeviceReAttach(virNodeDevicePtr dev)
  cleanup:
     virPCIDeviceFree(pci);
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     VIR_FREE(xml);
     return ret;
@@ -5918,7 +5916,7 @@ libxlNodeDeviceReset(virNodeDevicePtr dev)
     libxlDriverPrivatePtr driver = dev->conn->privateData;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
     virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     if (!(nodeconn = virGetConnectNodeDev()))
         goto cleanup;
@@ -5959,7 +5957,6 @@ libxlNodeDeviceReset(virNodeDevicePtr dev)
  cleanup:
     virPCIDeviceFree(pci);
     virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
     virObjectUnref(nodeconn);
     VIR_FREE(xml);
     return ret;
