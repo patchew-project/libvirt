@@ -573,6 +573,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "fsdev.multidevs",
               "virtio.packed",
               "pcie-root-port.hotplug",
+              "tcg-disabled",
     );
 
 
@@ -1014,13 +1015,16 @@ virQEMUCapsInitGuestFromBinary(virCapsPtr caps,
     virCapabilitiesAddGuestFeatureWithToggle(guest, VIR_CAPS_GUEST_FEATURE_TYPE_DISKSNAPSHOT,
                                              true, false);
 
-    if (virCapabilitiesAddGuestDomain(guest,
-                                      VIR_DOMAIN_VIRT_QEMU,
-                                      NULL,
-                                      NULL,
-                                      0,
-                                      NULL) == NULL)
-        goto cleanup;
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_TCG_DISABLED)) {
+        if (virCapabilitiesAddGuestDomain(guest,
+                                          VIR_DOMAIN_VIRT_QEMU,
+                                          NULL,
+                                          NULL,
+                                          0,
+                                          NULL) == NULL) {
+            goto cleanup;
+        }
+    }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         if (virCapabilitiesAddGuestDomain(guest,
@@ -2295,7 +2299,8 @@ bool
 virQEMUCapsIsVirtTypeSupported(virQEMUCapsPtr qemuCaps,
                                virDomainVirtType virtType)
 {
-    if (virtType == VIR_DOMAIN_VIRT_QEMU)
+    if (virtType == VIR_DOMAIN_VIRT_QEMU &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_TCG_DISABLED))
         return true;
 
     if (virtType == VIR_DOMAIN_VIRT_KVM &&
@@ -5150,6 +5155,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
      * off.
      */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_TCG_DISABLED) &&
         virQEMUCapsInitQMPSingle(qemuCaps, libDir, runUid, runGid, true) < 0)
         return -1;
 
