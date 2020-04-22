@@ -6810,13 +6810,14 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
     *ret_def = def;
     *ret_data = data;
 
+ cleanup:
     return fd;
 
  error:
     virDomainDefFree(def);
     virQEMUSaveDataFree(data);
     VIR_FORCE_CLOSE(fd);
-    return -1;
+    goto cleanup;
 }
 
 static int ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(6)
