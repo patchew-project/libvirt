@@ -2576,7 +2576,35 @@ virQEMUCapsProbeQMPGenericProps(virQEMUCapsPtr qemuCaps,
 }
 
 static int
-virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
+virQEMUCapsProbeQMPTCGState(virQEMUCapsPtr qemuCaps,
+                            char **values,
+                            int nvalues)
+{
+    size_t i;
+    bool found = false;
+    /*
+     * As of version 2.10, QEMU can be built without the TCG.
+     * */
+    if (qemuCaps->version < 2010000)
+        return 0;
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+        return 0;
+
+    for (i = 0; i < nvalues; i++) {
+        if (STREQ(values[i], "tcg-accel")) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_TCG_DISABLED);
+
+    return 0;
+}
+
+static int
+virQEMUCapsProbeQMPTypes(virQEMUCapsPtr qemuCaps,
                            qemuMonitorPtr mon)
 {
     int nvalues;
@@ -2584,6 +2612,8 @@ virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
 
     if ((nvalues = qemuMonitorGetObjectTypes(mon, &values)) < 0)
         return -1;
+
+    virQEMUCapsProbeQMPTCGState(qemuCaps, values, nvalues);
     virQEMUCapsProcessStringFlags(qemuCaps,
                                   G_N_ELEMENTS(virQEMUCapsObjectTypes),
                                   virQEMUCapsObjectTypes,
@@ -5047,7 +5077,7 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
 
     if (virQEMUCapsProbeQMPEvents(qemuCaps, mon) < 0)
         return -1;
-    if (virQEMUCapsProbeQMPDevices(qemuCaps, mon) < 0)
+    if (virQEMUCapsProbeQMPTypes(qemuCaps, mon) < 0)
         return -1;
     if (virQEMUCapsProbeQMPMachineTypes(qemuCaps, type, mon) < 0)
         return -1;
