@@ -4984,6 +4984,20 @@ virQEMUCapsProbeQMPSchemaCapabilities(virQEMUCapsPtr qemuCaps,
 #define QEMU_MIN_MINOR 5
 #define QEMU_MIN_MICRO 0
 
+virDomainVirtType
+virQEMUCapsGetVirtType(virQEMUCapsPtr qemuCaps)
+{
+    virDomainVirtType type;
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+        type = VIR_DOMAIN_VIRT_KVM;
+    else if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_TCG_DISABLED))
+        type = VIR_DOMAIN_VIRT_QEMU;
+    else
+        type = VIR_DOMAIN_VIRT_NONE;
+
+    return type;
+}
+
 int
 virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
                           qemuMonitorPtr mon)
@@ -5028,11 +5042,7 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
         return -1;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
-        type = VIR_DOMAIN_VIRT_KVM;
-    else
-        type = VIR_DOMAIN_VIRT_QEMU;
-
+    type = virQEMUCapsGetVirtType(qemuCaps);
     accel = virQEMUCapsGetAccel(qemuCaps, type);
 
     if (virQEMUCapsProbeQMPEvents(qemuCaps, mon) < 0)
@@ -5525,10 +5535,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
         goto cleanup;
     }
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
-        capsType = VIR_DOMAIN_VIRT_KVM;
-    else
-        capsType = VIR_DOMAIN_VIRT_QEMU;
+    capsType = virQEMUCapsGetVirtType(qemuCaps);
 
     if (virttype == VIR_DOMAIN_VIRT_NONE)
         virttype = capsType;
