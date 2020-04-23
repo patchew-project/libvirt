@@ -17439,6 +17439,9 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
 
+    if (qemuDomainSupportsCheckpointsBlockjobs(vm) < 0)
+        goto endjob;
+
     if (!(disk = qemuDomainDiskByName(vm->def, path)))
         goto endjob;
 
@@ -17994,6 +17997,9 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
 
+    if (qemuDomainSupportsCheckpointsBlockjobs(vm) < 0)
+        goto endjob;
+
     if (!(disk = qemuDomainDiskByName(vm->def, path)))
         goto endjob;
 
@@ -18278,9 +18284,6 @@ qemuDomainBlockRebase(virDomainPtr dom, const char *path, const char *base,
     if (virDomainBlockRebaseEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (qemuDomainSupportsCheckpointsBlockjobs(vm) < 0)
-        goto cleanup;
-
     /* For normal rebase (enhanced blockpull), the common code handles
      * everything, including vm cleanup. */
     if (!(flags & VIR_DOMAIN_BLOCK_REBASE_COPY))
@@ -18364,9 +18367,6 @@ qemuDomainBlockCopy(virDomainPtr dom, const char *disk, const char *destxml,
     if (virDomainBlockCopyEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (qemuDomainSupportsCheckpointsBlockjobs(vm) < 0)
-        goto cleanup;
-
     for (i = 0; i < nparams; i++) {
         virTypedParameterPtr param = &params[i];
 
@@ -18425,11 +18425,6 @@ qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
         return -1;
 
     if (virDomainBlockPullEnsureACL(dom->conn, vm->def) < 0) {
-        virDomainObjEndAPI(&vm);
-        return -1;
-    }
-
-    if (qemuDomainSupportsCheckpointsBlockjobs(vm) < 0) {
         virDomainObjEndAPI(&vm);
         return -1;
     }
