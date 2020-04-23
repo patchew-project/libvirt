@@ -3034,6 +3034,105 @@ mymain(void)
                         QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
 
     DO_TEST_CAPS_LATEST("virtio-options");
+    DO_TEST("virtio-options-controller-iommu", QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-disk-iommu", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-fs-iommu", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-input-iommu", QEMU_CAPS_VIRTIO_MOUSE,
+            QEMU_CAPS_VIRTIO_KEYBOARD,
+            QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-memballoon-iommu",
+            QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-net-iommu", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-rng-iommu", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+            QEMU_CAPS_OBJECT_RNG_RANDOM,
+            QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-video-iommu", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_VIRTIO_GPU_VIRGL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VHOST_USER_GPU,
+            QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM);
+    DO_TEST("virtio-options-controller-ats", QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-disk-ats", QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-fs-ats", QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-input-ats", QEMU_CAPS_VIRTIO_MOUSE,
+            QEMU_CAPS_VIRTIO_KEYBOARD,
+            QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-memballoon-ats",
+            QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-net-ats", QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-rng-ats", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+            QEMU_CAPS_OBJECT_RNG_RANDOM,
+            QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-video-ats", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_VIRTIO_GPU_VIRGL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VHOST_USER_GPU,
+            QEMU_CAPS_VIRTIO_PCI_ATS);
+    DO_TEST("virtio-options-controller-packed", QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-disk-packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-fs-packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-input-packed", QEMU_CAPS_VIRTIO_MOUSE,
+            QEMU_CAPS_VIRTIO_KEYBOARD,
+            QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-memballoon-packed",
+            QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-net-packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-rng-packed", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+            QEMU_CAPS_OBJECT_RNG_RANDOM,
+            QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST("virtio-options-video-packed", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_DEVICE_VIRTIO_GPU,
+            QEMU_CAPS_VIRTIO_GPU_VIRGL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VHOST_USER_GPU,
+            QEMU_CAPS_VIRTIO_PACKED_QUEUES);
+    DO_TEST_FAILURE("virtio-options-controller-iommu", QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_FAILURE("virtio-options-disk-iommu", NONE);
+    DO_TEST_FAILURE("virtio-options-fs-iommu", NONE);
+    DO_TEST_FAILURE("virtio-options-input-iommu", QEMU_CAPS_VIRTIO_MOUSE,
+                    QEMU_CAPS_VIRTIO_KEYBOARD);
+    DO_TEST_FAILURE("virtio-options-memballoon-iommu", NONE);
+    DO_TEST_FAILURE("virtio-options-net-iommu", NONE);
+    DO_TEST_FAILURE("virtio-options-rng-iommu", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+                    QEMU_CAPS_OBJECT_RNG_RANDOM);
+    DO_TEST_FAILURE("virtio-options-video-iommu", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_VIRTIO_GPU_VIRGL,
+                    QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+                    QEMU_CAPS_DEVICE_VHOST_USER_GPU);
+    DO_TEST_FAILURE("virtio-options-controller-ats", QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_FAILURE("virtio-options-disk-ats", NONE);
+    DO_TEST_FAILURE("virtio-options-fs-ats", NONE);
+    DO_TEST_FAILURE("virtio-options-input-ats", QEMU_CAPS_VIRTIO_MOUSE,
+                    QEMU_CAPS_VIRTIO_KEYBOARD);
+    DO_TEST_FAILURE("virtio-options-memballoon-ats", NONE);
+    DO_TEST_FAILURE("virtio-options-net-ats", NONE);
+    DO_TEST_FAILURE("virtio-options-rng-ats", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+                    QEMU_CAPS_OBJECT_RNG_RANDOM);
+    DO_TEST_FAILURE("virtio-options-video-ats", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_VIRTIO_GPU_VIRGL,
+                    QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+                    QEMU_CAPS_DEVICE_VHOST_USER_GPU);
+    DO_TEST_FAILURE("virtio-options-controller-packed", QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_FAILURE("virtio-options-disk-packed", NONE);
+    DO_TEST_FAILURE("virtio-options-fs-packed", NONE);
+    DO_TEST_FAILURE("virtio-options-input-packed", QEMU_CAPS_VIRTIO_MOUSE,
+                    QEMU_CAPS_VIRTIO_KEYBOARD);
+    DO_TEST_FAILURE("virtio-options-memballoon-packed", NONE);
+    DO_TEST_FAILURE("virtio-options-net-packed", NONE);
+    DO_TEST_FAILURE("virtio-options-rng-packed", QEMU_CAPS_DEVICE_VIRTIO_RNG,
+                    QEMU_CAPS_OBJECT_RNG_RANDOM);
+    DO_TEST_FAILURE("virtio-options-video-packed", QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_DEVICE_VIRTIO_GPU,
+                    QEMU_CAPS_VIRTIO_GPU_VIRGL,
+                    QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+                    QEMU_CAPS_DEVICE_VHOST_USER_GPU);
 
     DO_TEST("fd-memory-numa-topology", QEMU_CAPS_OBJECT_MEMORY_FILE,
             QEMU_CAPS_KVM);
