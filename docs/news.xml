@@ -88,6 +88,18 @@
           hotplugging PCI devices.
         </description>
       </change>
+      <change>
+        <summary>
+          Lease time option included for network DHCP settings
+        </summary>
+        <description>
+          Dnsmasq does not support to configure a global lease time. There
+          is no configuration option that could specify lease time. The
+          only way to configure lease time is setting it for each range's
+          and host's lines mainly. Libvirt now can configure lease time
+          for <code>range</code> and <code>host</code>.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
