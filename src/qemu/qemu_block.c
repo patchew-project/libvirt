@@ -418,10 +418,16 @@ qemuBlockStorageSourceGetURI(virStorageSourcePtr src)
     if (VIR_ALLOC(uri) < 0)
         return NULL;
 
-    if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
+    if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP ||
+        src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_RDMA ||
+        src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER)
         uri->port = src->hosts->port;
 
+    if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
         uri->scheme = g_strdup(virStorageNetProtocolTypeToString(src->protocol));
+    } else if (src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI &&
+               src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER) {
+        uri->scheme = g_strdup("iser");
     } else {
         uri->scheme = g_strdup_printf("%s+%s",
                                       virStorageNetProtocolTypeToString(src->protocol),
@@ -497,6 +503,7 @@ qemuBlockStorageSourceBuildJSONSocketAddress(virStorageNetHostDefPtr host,
             return NULL;
         break;
 
+    case VIR_STORAGE_NET_HOST_TRANS_ISER:
     case VIR_STORAGE_NET_HOST_TRANS_RDMA:
     case VIR_STORAGE_NET_HOST_TRANS_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -743,6 +750,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
 {
     qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
     g_autofree char *target = NULL;
+    const char *transport = NULL;
     char *lunStr = NULL;
     char *username = NULL;
     char *objalias = NULL;
@@ -762,6 +770,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
      */
 
     target = g_strdup(src->path);
+    transport = virStorageNetHostTransportTypeToString(src->hosts->transport);
 
     /* Separate the target and lun */
     if ((lunStr = strchr(target, '/'))) {
@@ -791,7 +800,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
                                           "s:portal", portal,
                                           "s:target", target,
                                           "u:lun", lun,
-                                          "s:transport", "tcp",
+                                          "s:transport", transport,
                                           "S:user", username,
                                           "S:password-secret", objalias,
                                           "S:initiator-name", src->initiator.iqn,
@@ -2063,7 +2072,8 @@ qemuBlockGetBackingStoreString(virStorageSourcePtr src,
         /* generate simplified URIs for the easy cases */
         if (actualType == VIR_STORAGE_TYPE_NETWORK &&
             src->nhosts == 1 &&
-            src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP &&
+            (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP ||
+             src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER) &&
             src->timeout == 0 &&
             src->ncookies == 0 &&
             src->sslverify == VIR_TRISTATE_BOOL_ABSENT &&

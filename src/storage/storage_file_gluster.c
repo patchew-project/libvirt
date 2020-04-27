@@ -78,6 +78,13 @@ virStorageFileBackendGlusterInitServer(virStorageFileBackendGlusterPrivPtr priv,
         hoststr = host->socket;
         break;
 
+    case VIR_STORAGE_NET_HOST_TRANS_ISER:
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("invalid transport '%s' for gluster host"),
+                       transport);
+        return -1;
+        break;
+
     case VIR_STORAGE_NET_HOST_TRANS_LAST:
         break;
     }

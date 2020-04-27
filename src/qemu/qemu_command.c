@@ -1443,6 +1443,16 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
                 return -1;
             }
         }
+
+        if (disk->src &&
+            disk->src->hosts &&
+            disk->src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_ISCSI_TRANSPORT_ISER)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                    _("iSCSI iser transport is not supported by this "
+                      "QEMU binary"));
+            return -1;
+        }
     }
 
     if (disk->serial &&
@@ -4887,6 +4897,13 @@ qemuBuildSCSIiSCSIHostdevDrvStr(virDomainHostdevDefPtr dev,
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
     qemuDomainStorageSourcePrivatePtr srcPriv =
         QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(iscsisrc->src);
+
+    if (iscsisrc->src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_ISCSI_TRANSPORT_ISER)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("This QEMU doesn't support iSCSI iser transport"));
+        return NULL;
+    }
 
     if (qemuDiskSourceNeedsProps(iscsisrc->src, qemuCaps)) {
         if (!(srcprops = qemuDiskSourceGetProps(iscsisrc->src)))

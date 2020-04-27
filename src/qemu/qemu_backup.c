@@ -88,6 +88,7 @@ qemuBackupPrepare(virDomainBackupDefPtr def)
             /* TODO: Do we need to mess with selinux? */
             break;
 
+        case VIR_STORAGE_NET_HOST_TRANS_ISER:
         case VIR_STORAGE_NET_HOST_TRANS_RDMA:
         case VIR_STORAGE_NET_HOST_TRANS_LAST:
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

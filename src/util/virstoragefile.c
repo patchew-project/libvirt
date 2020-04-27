@@ -97,6 +97,7 @@ VIR_ENUM_IMPL(virStorageNetHostTransport,
               "tcp",
               "unix",
               "rdma",
+              "iser",
 );
 
 VIR_ENUM_IMPL(virStorageSourcePoolMode,
@@ -2839,10 +2840,15 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
 
     if (!scheme[0] ||
         (src->protocol = virStorageNetProtocolTypeFromString(scheme[0])) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("invalid backing protocol '%s'"),
-                       NULLSTR(scheme[0]));
-        return -1;
+        if (STRNEQ(scheme[0], "iser")) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("invalid backing protocol '%s'"),
+                           NULLSTR(scheme[0]));
+            return -1;
+        }
+
+        src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
+        src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_ISER;
     }
 
     if (scheme[1] &&
@@ -3523,14 +3529,17 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
         return -1;
 
     src->nhosts = 1;
+    src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
-    if (STRNEQ_NULLABLE(transport, "tcp")) {
+    if (STRNEQ(transport, "tcp") && STRNEQ(transport, "iser") && transport) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("only TCP transport is supported for iSCSI volumes"));
+                       _("only TCP or iSER transport is supported for iSCSI "
+                         "volumes"));
         return -1;
     }
 
-    src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+    if (transport)
+        src->hosts->transport = virStorageNetHostTransportTypeFromString(transport);
 
     if (!portal) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -4710,7 +4719,8 @@ virStorageSourceNetworkAssignDefaultPorts(virStorageSourcePtr src)
     size_t i;
 
     for (i = 0; i < src->nhosts; i++) {
-        if (src->hosts[i].transport == VIR_STORAGE_NET_HOST_TRANS_TCP &&
+        if ((src->hosts[i].transport == VIR_STORAGE_NET_HOST_TRANS_TCP ||
+             src->hosts[i].transport == VIR_STORAGE_NET_HOST_TRANS_ISER) &&
             src->hosts[i].port == 0)
             src->hosts[i].port = virStorageSourceNetworkDefaultPort(src->protocol);
     }
