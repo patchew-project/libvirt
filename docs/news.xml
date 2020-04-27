@@ -46,6 +46,16 @@
     <section title="New features">
       <change>
         <summary>
+          qemu: support iSER transport of iscsi
+        </summary>
+        <description>
+          The iSCSI Extensions for RDMA, also named iSER, is introduce to QEMU
+          since 2.9. In libvirt, it can be used by
+          <code>transport='iser'</code> in the host element of iscsi source.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: support disabling hotplug/unplug of PCIe devices
         </summary>
         <description>
