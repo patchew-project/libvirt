@@ -3327,10 +3327,12 @@
             </table>
             <p>
             gluster supports "tcp", "rdma", "unix" as valid values for the
-            transport attribute.  nbd supports "tcp" and "unix".  Others only
-            support "tcp".  If nothing is specified, "tcp" is assumed. If the
-            transport is "unix", the socket attribute specifies the path to an
-            AF_UNIX socket.
+            transport attribute.  nbd supports "tcp" and "unix". iscsi supports
+            "tcp" and "iser"
+            <span class="since">Since libvirt 6.3.0(QEMU 2.9)</span>. Others
+            only support "tcp". If nothing is specified, "tcp" is assumed.
+            If the transport is "unix", the socket attribute specifies
+            the path to an AF_UNIX socket.
             </p>
           </dd>
           <dt><code>snapshot</code></dt>
