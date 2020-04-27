@@ -455,6 +455,7 @@ virDomainHubTypeFromString;
 virDomainHubTypeToString;
 virDomainHypervTypeFromString;
 virDomainHypervTypeToString;
+virDomainIBSTypeToString;
 virDomainInputBusTypeToString;
 virDomainInputDefFind;
 virDomainInputDefFree;
