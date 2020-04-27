@@ -1064,7 +1064,10 @@ mymain(void)
     DO_TEST("disk-network-nbd", NONE);
     DO_TEST_CAPS_VER("disk-network-nbd", "2.12.0");
     DO_TEST_CAPS_LATEST("disk-network-nbd");
-    DO_TEST("disk-network-iscsi", QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_SCSI_BLOCK);
+    DO_TEST("disk-network-iscsi",
+            QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_SCSI_BLOCK,
+            QEMU_CAPS_ISCSI_TRANSPORT_ISER);
     DO_TEST("disk-network-iscsi-modern",
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_SCSI_BLOCK,

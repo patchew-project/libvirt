@@ -1297,6 +1297,10 @@ mymain(void)
                        "<source protocol='nbd' name='/exp'>\n"
                        "  <host transport='unix' socket='/tmp/sock'/>\n"
                        "</source>\n");
+    TEST_BACKING_PARSE("iser://example.org:1234/exportname",
+                       "<source protocol='iscsi' name='exportname'>\n"
+                       "  <host name='example.org' port='1234' transport='iser'/>\n"
+                       "</source>\n");
     TEST_BACKING_PARSE_FULL("iscsi://testuser:testpass@example.org:1234/exportname",
                             "<source protocol='iscsi' name='exportname'>\n"
                             "  <host name='example.org' port='1234'/>\n"
@@ -1532,6 +1536,16 @@ mymain(void)
                             "}",
                        "<source protocol='iscsi' name='iqn.2016-12.com.virttest:emulated-iscsi-noauth.target/0'>\n"
                        "  <host name='test.org' port='3260'/>\n"
+                       "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"iscsi\","
+                                       "\"transport\":\"iser\","
+                                       "\"portal\":\"test.org\","
+                                       "\"target\":\"iqn.2016-12.com.virttest:emulated-iscsi-noauth.target\","
+                                       "\"lun\":\"1\""
+                                      "}"
+                            "}",
+                       "<source protocol='iscsi' name='iqn.2016-12.com.virttest:emulated-iscsi-noauth.target/1'>\n"
+                       "  <host name='test.org' port='3260' transport='iser'/>\n"
                        "</source>\n");
     TEST_BACKING_PARSE_FULL("json:{\"file\":{\"driver\":\"iscsi\","
                                             "\"transport\":\"tcp\","
