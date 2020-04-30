@@ -466,6 +466,9 @@ Requires: dbus
 # For uid creation during pre
 Requires(pre): shadow-utils
 
+# For managing persistent mediated devices
+Recommends: mdevctl
+
 %description daemon
 Server side daemon required to manage the virtualization capabilities
 of recent versions of Linux. Requires a hypervisor specific sub-RPM

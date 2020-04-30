@@ -30,6 +30,7 @@
 #include "datatypes.h"
 #include "viralloc.h"
 #include "virfile.h"
+#include "virjson.h"
 #include "virstring.h"
 #include "node_device_conf.h"
 #include "node_device_event.h"
@@ -40,6 +41,7 @@
 #include "viraccessapicheck.h"
 #include "virnetdev.h"
 #include "virutil.h"
+#include "vircommand.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
 
@@ -304,6 +306,30 @@ nodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
     return device;
 }
 
+static virNodeDevicePtr
+nodeDeviceLookupMediatedDeviceByUUID(virConnectPtr conn,
+                                     const char *uuid,
+                                     unsigned int flags)
+{
+    virNodeDeviceObjPtr obj = NULL;
+    virNodeDeviceDefPtr def;
+    virNodeDevicePtr device = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!(obj = virNodeDeviceObjListFindMediatedDeviceByUUID(driver->devs,
+                                                             uuid)))
+        return NULL;
+
+    def = virNodeDeviceObjGetDef(obj);
+
+    if ((device = virGetNodeDevice(conn, def->name)))
+        device->parentName = g_strdup(def->parent);
+
+    virNodeDeviceObjEndAPI(&obj);
+    return device;
+}
+
 
 char *
 nodeDeviceGetXMLDesc(virNodeDevicePtr device,
@@ -488,6 +514,23 @@ nodeDeviceFindNewDevice(virConnectPtr conn,
     return device;
 }
 
+static virNodeDevicePtr
+nodeDeviceFindNewMediatedDeviceFunc(virConnectPtr conn,
+                                    const void *opaque)
+{
+    const char *uuid = opaque;
+    return nodeDeviceLookupMediatedDeviceByUUID(conn, uuid, 0);
+}
+
+static virNodeDevicePtr
+nodeDeviceFindNewMediatedDevice(virConnectPtr conn,
+                                const char *mdev_uuid)
+{
+    return nodeDeviceFindNewDevice(conn,
+                                   nodeDeviceFindNewMediatedDeviceFunc,
+                                   mdev_uuid);
+}
+
 typedef struct _NewSCISHostFuncData
 {
     const char *wwnn;
@@ -523,6 +566,68 @@ nodeDeviceHasCapability(virNodeDeviceDefPtr def, virNodeDevCapType type)
     }
 
     return false;
+}
+
+static int
+virNodeDeviceDefToMdevctlConfig(virNodeDeviceDefPtr def, char **buf)
+{
+    size_t i;
+    virNodeDevCapMdevPtr mdev = &def->caps->data.mdev;
+    g_autoptr(virJSONValue) json = virJSONValueNewObject();
+
+    if (virJSONValueObjectAppendString(json, "mdev_type", mdev->type) < 0)
+        return -1;
+    if (virJSONValueObjectAppendString(json, "start", "manual") < 0)
+        return -1;
+    if (mdev->attributes) {
+        g_autoptr(virJSONValue) attributes = virJSONValueNewArray();
+        for (i = 0; i < mdev->nattributes; i++) {
+            virMediatedDeviceAttrPtr attr = mdev->attributes[i];
+            g_autoptr(virJSONValue) jsonattr = virJSONValueNewObject();
+
+            if (virJSONValueObjectAppendString(jsonattr, attr->name, attr->value) < 0)
+                return -1;
+            if (virJSONValueArrayAppend(attributes, g_steal_pointer(&jsonattr)) < 0)
+                return -1;
+        }
+        if (virJSONValueObjectAppend(json, "attrs", g_steal_pointer(&attributes)) < 0)
+            return -1;
+    }
+
+    *buf = virJSONValueToString(json, false);
+    if (*buf == NULL)
+        return -1;
+
+    return 0;
+}
+
+static int
+virMdevctlStart(const char *parent, const char *json_file, char **uuid)
+{
+    int status;
+    g_autofree char *mdevctl = virFindFileInPath(MDEVCTL);
+    if (!mdevctl)
+        return -1;
+
+    g_autoptr(virCommand) cmd = virCommandNewArgList(mdevctl,
+                                                     "start",
+                                                     "-p",
+                                                     parent,
+                                                     "--jsonfile",
+                                                     json_file,
+                                                     NULL);
+    virCommandAddEnvPassCommon(cmd);
+    virCommandSetOutputBuffer(cmd, uuid);
+
+    /* an auto-generated uuid is returned via stdout if no uuid is specified in
+     * the mdevctl args */
+    if (virCommandRun(cmd, &status) < 0 || status != 0)
+        return -1;
+
+    /* remove newline */
+    *uuid = g_strstrip(*uuid);
+
+    return 0;
 }
 
 virNodeDevicePtr
@@ -569,6 +674,78 @@ nodeDeviceCreateXML(virConnectPtr conn,
                            _("no node device for '%s' with matching "
                              "wwnn '%s' and wwpn '%s'"),
                            def->name, wwnn, wwpn);
+    } else if (nodeDeviceHasCapability(def, VIR_NODE_DEV_CAP_MDEV)) {
+        virNodeDeviceObjPtr parent_dev = NULL;
+        virNodeDeviceDefPtr parent_def = NULL;
+        virNodeDevCapsDefPtr parent_caps = NULL;
+        g_autofree char *uuid = NULL;
+        g_autofree char *parent_pci = NULL;
+
+        if (def->parent == NULL) {
+            virReportError(VIR_ERR_NO_NODE_DEVICE, "%s",
+                           _("cannot create a mediated device without a parent"));
+            return NULL;
+        }
+
+        if ((parent_dev = virNodeDeviceObjListFindByName(driver->devs, def->parent)) == NULL) {
+            virReportError(VIR_ERR_NO_NODE_DEVICE,
+                           _("could not find parent device '%s'"), def->parent);
+            return NULL;
+        }
+
+        parent_def = virNodeDeviceObjGetDef(parent_dev);
+        for (parent_caps = parent_def->caps; parent_caps != NULL; parent_caps = parent_caps->next) {
+            if (parent_caps->data.type == VIR_NODE_DEV_CAP_PCI_DEV) {
+                virPCIDeviceAddress addr = {
+                    .domain = parent_caps->data.pci_dev.domain,
+                    .bus = parent_caps->data.pci_dev.bus,
+                    .slot = parent_caps->data.pci_dev.slot,
+                    .function = parent_caps->data.pci_dev.function
+                };
+
+                parent_pci = virPCIDeviceAddressAsString(&addr);
+                break;
+            }
+        }
+
+        virNodeDeviceObjEndAPI(&parent_dev);
+
+        if (parent_pci == NULL) {
+            virReportError(VIR_ERR_NO_NODE_DEVICE,
+                           _("unable to find PCI address for parent device '%s'"), def->parent);
+            return NULL;
+        }
+
+        /* Convert node device definition to a JSON string formatted for
+         * mdevctl */
+        g_autofree char *json = NULL;
+        if (virNodeDeviceDefToMdevctlConfig(def, &json) < 0) {
+            virReportError(VIR_ERR_NO_NODE_DEVICE, "%s",
+                           _("couldn't convert node device def to mdevctl JSON"));
+            return NULL;
+        }
+
+        g_autofree char *tmp = g_build_filename(driver->stateDir, "mdev-json-XXXXXX", NULL);
+        gint tmpfd;
+
+        if ((tmpfd = g_mkstemp_full(tmp, O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR)) < 0) {
+            virReportSystemError(errno, "%s", _("Failed to open temp file for write"));
+            return NULL;
+        }
+        if (safewrite(tmpfd, json, strlen(json)) != strlen(json) ||
+            VIR_CLOSE(tmpfd) < 0) {
+            virReportSystemError(errno, "%s", _("Failed to write temp file"));
+            return NULL;
+        }
+
+        if (virMdevctlStart(parent_pci, tmp, &uuid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Unable to start mediated device"));
+            return NULL;
+        }
+
+        if (uuid && uuid[0] != '\0')
+            device = nodeDeviceFindNewMediatedDevice(conn, uuid);
     } else {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Unsupported device type"));
