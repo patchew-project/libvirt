@@ -2482,6 +2482,8 @@ virMacMapRemove;
 virMacMapWriteFile;
 
 # util/virmdev.h
+virMediatedDeviceAttrFree;
+virMediatedDeviceAttrNew;
 virMediatedDeviceFree;
 virMediatedDeviceGetIOMMUGroupDev;
 virMediatedDeviceGetIOMMUGroupNum;
