@@ -28,6 +28,16 @@ test ! -r "$sysconfdir"/rc.d/init.d/functions ||
 # Make sure this file is recognized as having translations: _("dummy")
 . "@bindir@"/gettext.sh
 
+# Avoid output being listed under gettext PID and being truncated
+unbuffered_gettext () {
+    msg="$(gettext "$1")"
+    echo "$msg"
+}
+unbuffered_eval_gettext () {
+    msg="$(eval_gettext "$1")"
+    echo "$msg"
+}
+
 export TEXTDOMAIN="@PACKAGE@" TEXTDOMAINDIR="@localedir@"
 
 URIS=default
@@ -91,7 +101,7 @@ test_connect()
     if run_virsh "$uri" connect 2>/dev/null; then
         return 0;
     else
-        eval_gettext "Can't connect to \$uri. Skipping."
+        unbuffered_eval_gettext "Can't connect to \$uri. Skipping."
         return 1
     fi
 }
@@ -160,7 +170,7 @@ start() {
     [ -f "$LISTFILE" ] || { started; return 0; }
 
     if [ "x$ON_BOOT" != xstart ]; then
-        gettext "libvirt-guests is configured not to start any guests on boot"
+        unbuffered_gettext "libvirt-guests is configured not to start any guests on boot"
         echo
         rm -f "$LISTFILE"
         started
@@ -184,19 +194,19 @@ start() {
         done
         set +f
         if ! "$configured"; then
-            eval_gettext "Ignoring guests on \$uri URI"; echo
+            unbuffered_eval_gettext "Ignoring guests on \$uri URI"; echo
             continue
         fi
 
         test_connect "$uri" || continue
 
-        eval_gettext "Resuming guests on \$uri URI..."; echo
+        unbuffered_eval_gettext "Resuming guests on \$uri URI..."; echo
         for guest in $list; do
             local name=$(guest_name "$uri" "$guest")
-            eval_gettext "Resuming guest \$name: "
+            unbuffered_eval_gettext "Resuming guest \$name: "
             if guest_is_on "$uri" "$guest"; then
                 if "$guest_running"; then
-                    gettext "already active"; echo
+                    unbuffered_gettext "already active"; echo
                 else
                     if "$isfirst"; then
                         isfirst=false
@@ -205,7 +215,7 @@ start() {
                     fi
                     retval run_virsh "$uri" start $bypass "$name" \
                         >/dev/null && \
-                    gettext "done"; echo
+                    unbuffered_gettext "done"; echo
                     if "$sync_time"; then
                         run_virsh "$uri" domtime --sync "$name" >/dev/null
                     fi
@@ -226,7 +236,7 @@ suspend_guest()
     local uri=$1
     local guest=$2
     local name=$(guest_name "$uri" "$guest")
-    local label=$(eval_gettext "Suspending \$name: ")
+    local label=$(unbuffered_eval_gettext "Suspending \$name: ")
     local bypass=
     local slept=0
 
@@ -249,7 +259,7 @@ suspend_guest()
             fi
         fi
     done
-    retval wait "$virsh_pid" && printf '%s%s\n' "$label" "$(gettext "done")"
+    retval wait "$virsh_pid" && printf '%s%s\n' "$label" "$(unbuffered_gettext "done")"
 }
 
 # shutdown_guest URI GUEST
@@ -265,16 +275,16 @@ shutdown_guest()
     local format=
     local slept=
 
-    eval_gettext "Starting shutdown on guest: \$name"
+    unbuffered_eval_gettext "Starting shutdown on guest: \$name"
     echo
     retval run_virsh "$uri" shutdown "$guest" >/dev/null || return
 
     if [ $timeout -gt 0 ]; then
         check_timeout=true
-        format=$(eval_gettext "Waiting for guest %s to shut down, %d seconds left\n")
+        format=$(unbuffered_eval_gettext "Waiting for guest %s to shut down, %d seconds left\n")
     else
         slept=0
-        format=$(eval_gettext "Waiting for guest %s to shut down\n")
+        format=$(unbuffered_eval_gettext "Waiting for guest %s to shut down\n")
     fi
     while ! $check_timeout || [ "$timeout" -gt 0 ]; do
         sleep 1
@@ -296,9 +306,9 @@ shutdown_guest()
 
     if guest_is_on "$uri" "$guest"; then
         if "$guest_running"; then
-            eval_gettext "Shutdown of guest \$name failed to complete in time."
+            unbuffered_eval_gettext "Shutdown of guest \$name failed to complete in time."
         else
-            eval_gettext "Shutdown of guest \$name complete."
+            unbuffered_eval_gettext "Shutdown of guest \$name complete."
         fi
         echo
     fi
@@ -313,7 +323,7 @@ shutdown_guest_async()
     local guest=$2
     local name=$(guest_name "$uri" "$guest")
 
-    eval_gettext "Starting shutdown on guest: \$name"
+    unbuffered_eval_gettext "Starting shutdown on guest: \$name"
     echo
     retval run_virsh "$uri" shutdown "$guest" > /dev/null
 }
@@ -339,7 +349,7 @@ check_guests_shutdown()
     guests_shutting_down=
     for guest in $guests_to_check; do
         if ! guest_is_on "$uri" "$guest" >/dev/null 2>&1; then
-            eval_gettext "Failed to determine state of guest: \$guest. Not tracking it anymore."
+            unbuffered_eval_gettext "Failed to determine state of guest: \$guest. Not tracking it anymore."
             echo
             continue
         fi
@@ -366,7 +376,7 @@ print_guests_shutdown()
 
         local name=$(guest_name "$uri" "$guest")
         if [ -n "$name" ]; then
-            eval_gettext "Shutdown of guest \$name complete."
+            unbuffered_eval_gettext "Shutdown of guest \$name complete."
             echo
         fi
     done
@@ -386,10 +396,10 @@ shutdown_guests_parallel()
 
     if [ $timeout -gt 0 ]; then
         check_timeout=true
-        format=$(eval_gettext "Waiting for %d guests to shut down, %d seconds left\n")
+        format=$(unbuffered_eval_gettext "Waiting for %d guests to shut down, %d seconds left\n")
     else
         slept=0
-        format=$(eval_gettext "Waiting for %d guests to shut down\n")
+        format=$(unbuffered_eval_gettext "Waiting for %d guests to shut down\n")
     fi
     while [ -n "$on_shutdown" ] || [ -n "$guests" ]; do
         while [ -n "$guests" ] &&
@@ -417,7 +427,7 @@ shutdown_guests_parallel()
             fi
             timeout=$(($timeout - 1))
             if [ $timeout -le 0 ]; then
-                eval_gettext "Timeout expired while shutting down domains"; echo
+                unbuffered_eval_gettext "Timeout expired while shutting down domains"; echo
                 RETVAL=1
                 return
             fi
@@ -447,7 +457,7 @@ stop() {
     if [ "/x$ON_SHUTDOWN" = xshutdown ]; then
         suspending=false
         if [ $SHUTDOWN_TIMEOUT -lt 0 ]; then
-            gettext "SHUTDOWN_TIMEOUT must be equal or greater than 0"
+            unbuffered_gettext "SHUTDOWN_TIMEOUT must be equal or greater than 0"
             echo
             RETVAL=6
             return
@@ -461,7 +471,7 @@ stop() {
 
         test_connect "$uri" || continue
 
-        eval_gettext "Running guests on \$uri URI: "
+        unbuffered_eval_gettext "Running guests on \$uri URI: "
 
         local list=$(list_guests "$uri")
         if [ $? -eq 0 ]; then
@@ -473,7 +483,7 @@ stop() {
             done
 
             if "$empty"; then
-                gettext "no running guests."
+                unbuffered_gettext "no running guests."
             fi
             echo
         fi
@@ -486,7 +496,7 @@ stop() {
 
                 for uuid in $transient; do
                     if "$empty"; then
-                        eval_gettext "Not suspending transient guests on URI: \$uri: "
+                        unbuffered_eval_gettext "Not suspending transient guests on URI: \$uri: "
                         empty=false
                     else
                         printf ", "
@@ -497,14 +507,14 @@ stop() {
                 # reload domain list to contain only persistent guests
                 list=$(list_guests "$uri" "--persistent")
                 if [ $? -ne 0 ]; then
-                    eval_gettext "Failed to list persistent guests on \$uri"
+                    unbuffered_eval_gettext "Failed to list persistent guests on \$uri"
                     echo
                     RETVAL=1
                     set +f
                     return
                 fi
             else
-                gettext "Failed to list transient guests"
+                unbuffered_gettext "Failed to list transient guests"
                 echo
                 RETVAL=1
                 set +f
@@ -521,9 +531,9 @@ stop() {
     if [ -s "$LISTFILE" ]; then
         while read uri list; do
             if "$suspending"; then
-                eval_gettext "Suspending guests on \$uri URI..."; echo
+                unbuffered_eval_gettext "Suspending guests on \$uri URI..."; echo
             else
-                eval_gettext "Shutting down guests on \$uri URI..."; echo
+                unbuffered_eval_gettext "Shutting down guests on \$uri URI..."; echo
             fi
 
             if [ "$PARALLEL_SHUTDOWN" -gt 1 ] &&
@@ -566,14 +576,14 @@ gueststatus() {
 # since there is no external daemon process matching this init script.
 rh_status() {
     if [ -f "$LISTFILE" ]; then
-        gettext "stopped, with saved guests"; echo
+        unbuffered_gettext "stopped, with saved guests"; echo
         RETVAL=3
     else
         if [ -f "$VAR_SUBSYS_LIBVIRT_GUESTS" ]; then
-            gettext "started"; echo
+            unbuffered_gettext "started"; echo
             RETVAL=0
         else
-            gettext "stopped, with no saved guests"; echo
+            unbuffered_gettext "stopped, with no saved guests"; echo
             RETVAL=3
         fi
     fi
@@ -583,7 +593,7 @@ rh_status() {
 # Display usage string, then exit with VAL (defaults to 2).
 usage() {
     local program_name=$0
-    eval_gettext "Usage: \$program_name {start|stop|status|restart|"\
+    unbuffered_eval_gettext "Usage: \$program_name {start|stop|status|restart|"\
 "condrestart|try-restart|reload|force-reload|gueststatus|shutdown}"; echo
     exit ${1-2}
 }
