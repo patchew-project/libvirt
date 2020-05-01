@@ -27,6 +27,7 @@
 
 static int (*real_virGetDeviceID)(const char *path, int *maj, int *min);
 static bool (*real_virFileExists)(const char *path);
+static char *(*real_virGetUserRuntimeDirectory)(void);
 
 static void
 init_syms(void)
@@ -36,6 +37,7 @@ init_syms(void)
 
     VIR_MOCK_REAL_INIT(virGetDeviceID);
     VIR_MOCK_REAL_INIT(virFileExists);
+    VIR_MOCK_REAL_INIT(virGetUserRuntimeDirectory);
 }
 
 unsigned long long
@@ -105,4 +107,11 @@ qemuProcessStartManagedPRDaemon(virDomainObjPtr vm G_GNUC_UNUSED)
 void
 qemuProcessKillManagedPRDaemon(virDomainObjPtr vm G_GNUC_UNUSED)
 {
+}
+
+char *
+virGetUserRuntimeDirectory(void)
+{
+    return g_build_filename(g_getenv("LIBVIRT_FAKE_ROOT_DIR"),
+                            "user-runtime-directory", NULL);
 }
