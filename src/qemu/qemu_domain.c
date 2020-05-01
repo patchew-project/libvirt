@@ -6212,9 +6212,6 @@ qemuDomainObjCanSetJob(qemuDomainObjPrivatePtr priv,
              priv->job.agentActive == QEMU_AGENT_JOB_NONE));
 }
 
-/* Give up waiting for mutex after 30 seconds */
-#define QEMU_JOB_WAIT_TIME (1000ull * 30)
-
 /**
  * qemuDomainObjBeginJobInternal:
  * @driver: qemu driver
@@ -6225,7 +6222,7 @@ qemuDomainObjCanSetJob(qemuDomainObjPrivatePtr priv,
  *
  * Acquires job for a domain object which must be locked before
  * calling. If there's already a job running waits up to
- * QEMU_JOB_WAIT_TIME after which the functions fails reporting
+ * cfg->qemuJobWaitTime after which the functions fails reporting
  * an error unless @nowait is set.
  *
  * If @nowait is true this function tries to acquire job and if
@@ -6272,7 +6269,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         return -1;
 
     priv->jobs_queued++;
-    then = now + QEMU_JOB_WAIT_TIME;
+    then = now + 1000ull * cfg->qemuJobWaitTime;
 
  retry:
     if ((!async && job != QEMU_JOB_DESTROY) &&

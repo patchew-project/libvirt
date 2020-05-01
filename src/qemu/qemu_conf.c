@@ -272,6 +272,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
     cfg->keepAliveInterval = 5;
     cfg->keepAliveCount = 5;
     cfg->seccompSandbox = -1;
+    cfg->qemuJobWaitTime = 30;
 
     cfg->logTimestamp = true;
     cfg->glusterDebugLevel = 4;
@@ -654,6 +655,8 @@ virQEMUDriverConfigLoadProcessEntry(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueUInt(conf, "max_files", &cfg->maxFiles) < 0)
         return -1;
     if (virConfGetValueUInt(conf, "max_threads_per_process", &cfg->maxThreadsPerProc) < 0)
+        return -1;
+    if (virConfGetValueUInt(conf, "qemu_job_wait_time", &cfg->qemuJobWaitTime) < 0)
         return -1;
 
     if (virConfGetValueType(conf, "max_core") == VIR_CONF_STRING) {

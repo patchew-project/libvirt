@@ -119,6 +119,15 @@
           Bounds Checking) and IBS (Indirect Branch Speculation).
         </description>
       </change>
+      <change>
+        <summary>
+          conf: Add job wait time setting to qemu.conf
+        </summary>
+        <description>
+          How many seconds the new job waits for the existing job to finish.
+          This only affects if you are using qemu as driver.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
