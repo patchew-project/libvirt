@@ -85,13 +85,13 @@ x64-centos-8:
   <<: *native_build_extra_job_definition
   image: quay.io/libvirt/buildenv-libvirt-centos-8:latest
 
-x64-fedora-30:
-  <<: *native_build_default_job_definition
-  image: quay.io/libvirt/buildenv-libvirt-fedora-30:latest
-
 x64-fedora-31:
   <<: *native_build_extra_job_definition
   image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+
+x64-fedora-32:
+  <<: *native_build_default_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-fedora-32:latest
 
 x64-fedora-rawhide:
   <<: *native_build_default_job_definition
@@ -101,13 +101,13 @@ x64-opensuse-151:
   <<: *native_build_default_job_definition
   image: quay.io/libvirt/buildenv-libvirt-opensuse-151:latest
 
-x64-ubuntu-1604:
-  <<: *native_build_default_job_definition
-  image: quay.io/libvirt/buildenv-libvirt-ubuntu-1604:latest
-
 x64-ubuntu-1804:
   <<: *native_build_extra_job_definition
   image: quay.io/libvirt/buildenv-libvirt-ubuntu-1804:latest
+
+x64-ubuntu-2004:
+  <<: *native_build_default_job_definition
+  image: quay.io/libvirt/buildenv-libvirt-ubuntu-2004:latest
 
 
 # Cross compiled build jobs
@@ -148,13 +148,13 @@ mipsel-debian-sid:
   <<: *cross_build_extra_job_definition
   image: quay.io/libvirt/buildenv-libvirt-debian-sid-cross-mipsel:latest
 
-mingw32-fedora-30:
+mingw32-fedora-rawhide:
   <<: *cross_build_default_job_definition
-  image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw32:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-rawhide-cross-mingw32:latest
 
-mingw64-fedora-30:
+mingw64-fedora-rawhide:
   <<: *cross_build_default_job_definition
-  image: quay.io/libvirt/buildenv-libvirt-fedora-30-cross-mingw64:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-rawhide-cross-mingw64:latest
 
 
 # This artifact published by this job is downloaded by libvirt.org to
@@ -172,7 +172,7 @@ website:
     - $MAKE -C docs install
     - cd ..
     - mv vroot/share/doc/libvirt/html/ website
-  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-32:latest
   artifacts:
     expose_as: 'Website'
     name: 'website'
@@ -191,7 +191,7 @@ codestyle:
     - cd build
     - ../autogen.sh || (cat config.log && exit 1)
     - $MAKE syntax-check
-  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-32:latest
 
 
 # This artifact published by this job is downloaded to push to Weblate
@@ -211,7 +211,7 @@ potfile:
     - $MAKE -C po libvirt.pot
     - cd ..
     - mv build/po/libvirt.pot libvirt.pot
-  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-32:latest
   artifacts:
     expose_as: 'Potfile'
     name: 'potfile'
@@ -226,7 +226,7 @@ potfile:
 # to test developer's personal branches.
 dco:
   stage: prebuild
-  image: quay.io/libvirt/buildenv-libvirt-fedora-31:latest
+  image: quay.io/libvirt/buildenv-libvirt-fedora-32:latest
   before_script:
     - *script_variables
   script:
