@@ -767,6 +767,9 @@ int virTestMain(int argc,
         preloads[npreloads] = NULL;
     }
 
+    setenv("HOME", "/bad-test-used-env-home", 1);
+    setenv("XDG_RUNTIME_DIR", "/bad-test-used-env-xdg-runtime-dir", 1);
+
     va_start(ap, func);
     while ((lib = va_arg(ap, const char *))) {
         if (!virFileIsExecutable(lib)) {
