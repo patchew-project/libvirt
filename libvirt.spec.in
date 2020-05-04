@@ -496,6 +496,7 @@ Requires: libvirt-libs = %{version}-%{release}
 Requires: dnsmasq >= 2.41
 Requires: radvd
 Requires: iptables
+Requires: python3-libxml2
 
 %description daemon-driver-network
 The network driver plugin for the libvirtd daemon, providing
@@ -1630,6 +1631,7 @@ exit 0
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
 %attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
+%{_prefix}/lib/NetworkManager/dispatcher.d/50-libvirt-check-nets
 
 %if %{with_firewalld_zone}
 %{_prefix}/lib/firewalld/zones/libvirt.xml

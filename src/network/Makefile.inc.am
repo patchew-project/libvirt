@@ -170,6 +170,9 @@ install-data-network:
 	( cd $(DESTDIR)$(confdir)/qemu/networks/autostart && \
 	  rm -f default.xml && \
 	  $(LN_S) ../default.xml default.xml )
+	$(MKDIR_P) "$(DESTDIR)$(prefix)/lib/NetworkManager/dispatcher.d"
+	$(INSTALL_DATA) $(srcdir)/network/nm-dispatcher-check-nets.py \
+	  $(DESTDIR)$(prefix)/lib/NetworkManager/dispatcher.d/50-libvirt-check-nets
 if WITH_FIREWALLD_ZONE
 	$(MKDIR_P) "$(DESTDIR)$(prefix)/lib/firewalld/zones"
 	$(INSTALL_DATA) $(srcdir)/network/libvirt.zone \
@@ -189,7 +192,10 @@ endif WITH_FIREWALLD_ZONE
 
 endif WITH_NETWORK
 
-EXTRA_DIST += network/default.xml network/libvirt.zone
+EXTRA_DIST += \
+  network/default.xml \
+  network/nm-dispatcher-check-nets.py \
+  network/libvirt.zone
 
 .PHONY: \
 	install-data-network \
