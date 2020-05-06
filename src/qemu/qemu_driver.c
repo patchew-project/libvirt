@@ -17106,10 +17106,8 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                                              qemuDomainSnapshotCountExternal,
                                              &external);
         if (external) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("deletion of %d external disk snapshots not "
-                             "supported yet"), external);
-            goto endjob;
+            if (qemuDomainSnapshotDeleteExternal(vm, driver, snap, flags) < 0)
+                goto endjob;
         }
     }
 
