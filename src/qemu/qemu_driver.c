@@ -18441,25 +18441,27 @@ qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
 }
 
 static int
-qemuDomainBlockCommitImpl(virDomainObjPtr vm,
-                          virQEMUDriverPtr driver,
-                          const char *path,
-                          const char *base,
-                          const char *top,
-                          unsigned long bandwidth,
-                          unsigned int flags)
+qemuDomainBlockCommitCommon(virDomainObjPtr vm,
+                            virQEMUDriverPtr driver,
+                            virDomainDiskDefPtr disk,
+                            virStorageSourcePtr baseSource,
+                            virStorageSourcePtr topSource,
+                            virStorageSourcePtr topParentSource,
+                            unsigned long bandwidth,
+                            unsigned int flags)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     const char *device = NULL;
     const char *jobname = NULL;
     int ret = -1;
-    virDomainDiskDefPtr disk = NULL;
-    virStorageSourcePtr topSource;
-    unsigned int topIndex = 0;
-    virStorageSourcePtr baseSource = NULL;
-    unsigned int baseIndex = 0;
-    virStorageSourcePtr top_parent = NULL;
     bool clean_access = false;
+    /* TODO the following 2 are just for error reporting. Originally these
+     * could have been either paths or indexed identifiers (like 'vda[1]').
+     * Now the error reporting will always use paths instead of what the
+     * user originally specified.  Find out if this is fine, find a solution
+     * if it isn't. */
+    const char *path = disk->src->path;
+    const char *base = baseSource->path;
     g_autofree char *topPath = NULL;
     g_autofree char *basePath = NULL;
     g_autofree char *backingPath = NULL;
@@ -18473,9 +18475,6 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
     g_autoptr(virJSONValue) bitmapDisableActions = NULL;
     VIR_AUTOSTRINGLIST bitmapDisableList = NULL;
 
-    if (virDomainObjCheckActive(vm) < 0)
-        goto endjob;
-
     blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
 
     /* Convert bandwidth MiB to bytes, if necessary */
@@ -18488,9 +18487,6 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
         }
         speed <<= 20;
     }
-
-    if (!(disk = qemuDomainDiskByName(vm->def, path)))
-        goto endjob;
 
     if (virStorageSourceIsEmpty(disk->src)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -18510,14 +18506,6 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
                        _("deleting committed images is not supported by this VM"));
         goto endjob;
     }
-
-    if (!top || STREQ(top, disk->dst))
-        topSource = disk->src;
-    else if (virStorageFileParseChainIndex(disk->dst, top, &topIndex) < 0 ||
-             !(topSource = virStorageFileChainLookup(disk->src, NULL,
-                                                     top, topIndex,
-                                                     &top_parent)))
-        goto endjob;
 
     if (topSource == disk->src) {
         if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_ACTIVE_COMMIT)) {
@@ -18546,13 +18534,6 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
         goto endjob;
     }
 
-    if (!base && (flags & VIR_DOMAIN_BLOCK_COMMIT_SHALLOW))
-        baseSource = topSource->backingStore;
-    else if (virStorageFileParseChainIndex(disk->dst, base, &baseIndex) < 0 ||
-             !(baseSource = virStorageFileChainLookup(disk->src, topSource,
-                                                      base, baseIndex, NULL)))
-        goto endjob;
-
     if ((flags & VIR_DOMAIN_BLOCK_COMMIT_SHALLOW) &&
         baseSource != topSource->backingStore) {
         virReportError(VIR_ERR_INVALID_ARG,
@@ -18580,8 +18561,8 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
             goto endjob;
         }
 
-        if (blockdev && top_parent &&
-            qemuBlockUpdateRelativeBacking(vm, top_parent, disk->src) < 0)
+        if (blockdev && topParentSource &&
+            qemuBlockUpdateRelativeBacking(vm, topParentSource, disk->src) < 0)
             goto endjob;
 
         if (virStorageFileGetRelativeBackingPath(topSource, baseSource,
@@ -18607,11 +18588,11 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
                                            false, false, false) < 0)
         goto endjob;
 
-    if (top_parent && top_parent != disk->src) {
-        /* While top_parent is topmost image, we don't need to remember its
+    if (topParentSource && topParentSource != disk->src) {
+        /* While topParentSource is topmost image, we don't need to remember its
          * owner as it will be overwritten upon finishing the commit. Hence,
          * pass chainTop = false. */
-        if (qemuDomainStorageSourceAccessAllow(driver, vm, top_parent,
+        if (qemuDomainStorageSourceAccessAllow(driver, vm, topParentSource,
                                                false, false, false) < 0)
             goto endjob;
     }
@@ -18637,7 +18618,7 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
         }
     }
 
-    if (!(job = qemuBlockJobDiskNewCommit(vm, disk, top_parent, topSource,
+    if (!(job = qemuBlockJobDiskNewCommit(vm, disk, topParentSource, topSource,
                                           baseSource, &bitmapDisableList,
                                           flags & VIR_DOMAIN_BLOCK_COMMIT_DELETE,
                                           flags)))
@@ -18657,7 +18638,7 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
         nodetop = topSource->nodeformat;
         nodebase = baseSource->nodeformat;
         device = qemuDomainDiskGetTopNodename(disk);
-        if (!backingPath && top_parent &&
+        if (!backingPath && topParentSource &&
             !(backingPath = qemuBlockGetBackingStoreString(baseSource, false)))
             goto endjob;
 
@@ -18714,8 +18695,8 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
         /* Revert access to read-only, if possible.  */
         qemuDomainStorageSourceAccessAllow(driver, vm, baseSource,
                                            true, false, false);
-        if (top_parent && top_parent != disk->src)
-            qemuDomainStorageSourceAccessAllow(driver, vm, top_parent,
+        if (topParentSource && topParentSource != disk->src)
+            qemuDomainStorageSourceAccessAllow(driver, vm, topParentSource,
                                                true, false, false);
 
         virErrorRestore(&orig_err);
@@ -18723,6 +18704,47 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
     qemuBlockJobStartupFinalize(vm, job);
 
     return ret;
+}
+
+static int
+qemuDomainBlockCommitImpl(virDomainObjPtr vm,
+                          virQEMUDriverPtr driver,
+                          const char *path,
+                          const char *base,
+                          const char *top,
+                          unsigned long bandwidth,
+                          unsigned int flags)
+{
+    virDomainDiskDefPtr disk = NULL;
+    virStorageSourcePtr topSource;
+    unsigned int topIndex = 0;
+    virStorageSourcePtr baseSource = NULL;
+    unsigned int baseIndex = 0;
+    virStorageSourcePtr top_parent = NULL;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        return -1;
+
+    if (!(disk = qemuDomainDiskByName(vm->def, path)))
+        return -1;
+
+    if (!top || STREQ(top, disk->dst))
+        topSource = disk->src;
+    else if (virStorageFileParseChainIndex(disk->dst, top, &topIndex) < 0 ||
+             !(topSource = virStorageFileChainLookup(disk->src, NULL,
+                                                     top, topIndex,
+                                                     &top_parent)))
+        return -1;
+
+    if (!base && (flags & VIR_DOMAIN_BLOCK_COMMIT_SHALLOW))
+        baseSource = topSource->backingStore;
+    else if (virStorageFileParseChainIndex(disk->dst, base, &baseIndex) < 0 ||
+             !(baseSource = virStorageFileChainLookup(disk->src, topSource,
+                                                      base, baseIndex, NULL)))
+        return -1;
+
+    return qemuDomainBlockCommitCommon(vm, driver, disk, baseSource, topSource,
+                                       top_parent, bandwidth, flags);
 }
 
 
