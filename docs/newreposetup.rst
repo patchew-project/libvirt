@@ -71,6 +71,26 @@ required under the **Settings** page:
 
     * *Require approval from code owners*: disabled
 
+    * *Branch*: ``v*-maint``
+
+    * *Allowed to merge*: Developers + Maintainers
+
+    * *Allowed to push*: None (or Developers + Maintainers if MRs not used)
+
+    * *Require approval from code owners*: disabled
+
+  * **Protected tags**
+
+    * *Tag*: ``v*``
+
+    * *Allowed to create*: Developers + Maintainers
+
+* **CI/CD**
+
+  * **Runners**
+
+    * *Shared runners*: Enable shared runners
+
 GitHub configuration
 ====================
 
