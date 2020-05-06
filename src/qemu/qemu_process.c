@@ -7605,7 +7605,7 @@ void qemuProcessStop(virQEMUDriverPtr driver,
             virDomainDiskDefPtr disk = def->disks[i];
 
             if (disk->mirror)
-                qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->mirror);
+                qemuDomainStorageSourceAccessRevoke(driver, vm, disk->mirror);
 
             qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->src);
         }
