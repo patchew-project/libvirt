@@ -121,4 +121,4 @@ int virDomainMomentUpdateRelations(virDomainMomentObjListPtr moments);
 int virDomainMomentCheckCycles(virDomainMomentObjListPtr list,
                                virDomainMomentDefPtr def,
                                const char *domname);
-virDomainMomentObjPtr virDomainMomentFindLeaf(virDomainMomentObjListPtr list);
+virDomainMomentObjPtr virDomainMomentObjListFindLeaf(virDomainMomentObjListPtr list);

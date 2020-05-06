@@ -588,7 +588,7 @@ virDomainMomentCheckCycles(virDomainMomentObjListPtr list,
 
 /* If there is exactly one leaf node, return that node. */
 virDomainMomentObjPtr
-virDomainMomentFindLeaf(virDomainMomentObjListPtr list)
+virDomainMomentObjListFindLeaf(virDomainMomentObjListPtr list)
 {
     virDomainMomentObjPtr moment = &list->metaroot;
 

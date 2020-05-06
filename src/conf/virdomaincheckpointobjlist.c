@@ -186,7 +186,7 @@ virDomainCheckpointUpdateRelations(virDomainCheckpointObjListPtr checkpoints,
     int ret = virDomainMomentUpdateRelations(checkpoints->base);
 
     if (ret == 0)
-        *leaf = virDomainMomentFindLeaf(checkpoints->base);
+        *leaf = virDomainMomentObjListFindLeaf(checkpoints->base);
     return ret;
 }
 
