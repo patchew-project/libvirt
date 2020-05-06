@@ -163,6 +163,12 @@ qemuDomainBlockCommitImpl(virDomainObjPtr vm,
                           unsigned long bandwidth,
                           unsigned int flags);
 
+static int
+qemuDomainBlockJobAbortImpl(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            const char *path,
+                            unsigned int flags);
+
 /* Looks up the domain object from snapshot and unlocks the
  * driver. The returned domain object is locked and ref'd and the
  * caller must call virDomainObjEndAPI() on it. */
@@ -17541,45 +17547,31 @@ qemuDomainBlockPullCommon(virDomainObjPtr vm,
     return ret;
 }
 
-
 static int
-qemuDomainBlockJobAbort(virDomainPtr dom,
-                        const char *path,
-                        unsigned int flags)
+qemuDomainBlockJobAbortImpl(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            const char *path,
+                            unsigned int flags)
 {
-    virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainDiskDefPtr disk = NULL;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     bool pivot = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT);
     bool async = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC);
     g_autoptr(qemuBlockJobData) job = NULL;
-    virDomainObjPtr vm;
     qemuDomainObjPrivatePtr priv = NULL;
     bool blockdev = false;
     int ret = -1;
 
-    virCheckFlags(VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC |
-                  VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT, -1);
-
-    if (!(vm = qemuDomainObjFromDomain(dom)))
+    if (virDomainObjCheckActive(vm) < 0)
         return -1;
 
-    if (virDomainBlockJobAbortEnsureACL(dom->conn, vm->def) < 0)
-        goto cleanup;
-
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
-        goto cleanup;
-
-    if (virDomainObjCheckActive(vm) < 0)
-        goto endjob;
-
     if (!(disk = qemuDomainDiskByName(vm->def, path)))
-        goto endjob;
+        return -1;
 
     if (!(job = qemuBlockJobDiskGetJob(disk))) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("disk %s does not have an active block job"), disk->dst);
-        goto endjob;
+        return -1;
     }
 
     priv = vm->privateData;
@@ -17650,6 +17642,34 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
  endjob:
     if (job && !async)
         qemuBlockJobSyncEnd(vm, job, QEMU_ASYNC_JOB_NONE);
+
+    return ret;
+}
+
+
+static int
+qemuDomainBlockJobAbort(virDomainPtr dom,
+                        const char *path,
+                        unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC |
+                  VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT, -1);
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainBlockJobAbortEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    ret = qemuDomainBlockJobAbortImpl(driver, vm, path, flags);
+
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
