@@ -16942,6 +16942,65 @@ qemuDomainSnapshotDeleteExternalLaunchJobs(virDomainObjPtr vm,
 
 
 static int
+qemuDomainSnapshotDeleteExternalWaitForJobs(virDomainObjPtr vm,
+                                            virQEMUDriverPtr driver,
+                                            const virBlockCommitDesc *blockCommitDescs,
+                                            int numDescs)
+{
+    size_t i;
+
+    for (i = 0; i < numDescs; i++) {
+        virDomainDiskDefPtr disk = blockCommitDescs[i].disk;
+        bool isActive = blockCommitDescs[i].isActive;
+
+        /* wait for the blockcommit job to finish (in particular, reach
+         * one of the finished QEMU_BLOCKJOB_STATE_* states)... */
+        g_autoptr(qemuBlockJobData) job = NULL;
+
+        if (!(job = qemuBlockJobDiskGetJob(disk))) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                        _("disk %s does not have an active block job"), disk->dst);
+            return -1;
+        }
+
+        qemuBlockJobSyncBegin(job);
+        qemuBlockJobUpdate(vm, job, QEMU_ASYNC_JOB_NONE);
+        while (job->state != QEMU_BLOCKJOB_STATE_READY &&
+               job->state != QEMU_BLOCKJOB_STATE_FAILED &&
+               job->state != QEMU_BLOCKJOB_STATE_CANCELLED &&
+               job->state != QEMU_BLOCKJOB_STATE_COMPLETED) {
+
+            if (virDomainObjWait(vm) < 0)
+                return -1;
+            qemuBlockJobUpdate(vm, job, QEMU_ASYNC_JOB_NONE);
+        }
+        qemuBlockJobSyncEnd(vm, job, QEMU_ASYNC_JOB_NONE);
+
+        if ((isActive && job->state != QEMU_BLOCKJOB_STATE_READY) ||
+            (!isActive && job->state != QEMU_BLOCKJOB_STATE_COMPLETED)) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                        _("blockcomit job failed for disk %s"), disk->dst);
+            /* TODO Apr 30, 2020: how to handle this?  Bailing out doesn't
+             * seem an obvious option in this case as all blockjobs are now
+             * created and running - if any of them are to fail they will,
+             * regardless of whether we break here.  It might make more
+             * sense to continue and at least report all errors. */
+            /*return -1;*/
+        }
+
+        /* ... and pivot if necessary */
+        if (isActive) {
+            if (qemuDomainBlockJobAbortImpl(driver, vm, disk->dst,
+                                            VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT) < 0)
+                return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                          unsigned int flags)
 {
