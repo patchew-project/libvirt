@@ -207,6 +207,20 @@ virDomainMomentMoveChildren(virDomainMomentObjPtr from,
 }
 
 
+/* If there is exactly one leaf node, return that node. */
+virDomainMomentObjPtr
+virDomainMomentFindLeaf(virDomainMomentObjPtr moment)
+{
+    if (moment->nchildren != 1)
+        return NULL;
+    while (moment->nchildren == 1)
+        moment = moment->first_child;
+    if (moment->nchildren == 0)
+        return moment;
+    return NULL;
+}
+
+
 static virDomainMomentObjPtr
 virDomainMomentObjNew(void)
 {
@@ -586,17 +600,8 @@ virDomainMomentCheckCycles(virDomainMomentObjListPtr list,
     return 0;
 }
 
-/* If there is exactly one leaf node, return that node. */
 virDomainMomentObjPtr
 virDomainMomentObjListFindLeaf(virDomainMomentObjListPtr list)
 {
-    virDomainMomentObjPtr moment = &list->metaroot;
-
-    if (moment->nchildren != 1)
-        return NULL;
-    while (moment->nchildren == 1)
-        moment = moment->first_child;
-    if (moment->nchildren == 0)
-        return moment;
-    return NULL;
+    return virDomainMomentFindLeaf(&list->metaroot);
 }

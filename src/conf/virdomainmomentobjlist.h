@@ -62,6 +62,7 @@ void virDomainMomentMoveChildren(virDomainMomentObjPtr from,
                                  virDomainMomentObjPtr to);
 void virDomainMomentLinkParent(virDomainMomentObjListPtr moments,
                                virDomainMomentObjPtr moment);
+virDomainMomentObjPtr virDomainMomentFindLeaf(virDomainMomentObjPtr moment);
 
 virDomainMomentObjListPtr virDomainMomentObjListNew(void);
 void virDomainMomentObjListFree(virDomainMomentObjListPtr moments);
