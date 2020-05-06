@@ -155,6 +155,16 @@ static int qemuOpenFileAs(uid_t fallback_uid, gid_t fallback_gid,
 static virQEMUDriverPtr qemu_driver;
 
 static int
+qemuDomainBlockCommitCommon(virDomainObjPtr vm,
+                            virQEMUDriverPtr driver,
+                            virDomainDiskDefPtr disk,
+                            virStorageSourcePtr baseSource,
+                            virStorageSourcePtr topSource,
+                            virStorageSourcePtr topParentSource,
+                            unsigned long bandwidth,
+                            unsigned int flags);
+
+static int
 qemuDomainBlockCommitImpl(virDomainObjPtr vm,
                           virQEMUDriverPtr driver,
                           const char *path,
@@ -16903,6 +16913,31 @@ qemuDomainSnapshotDeleteExternalGetJobDescriptors(virDomainObjPtr vm,
     }
 
     return g_steal_pointer(&blockCommitDescs);
+}
+
+
+static int
+qemuDomainSnapshotDeleteExternalLaunchJobs(virDomainObjPtr vm,
+                                           virQEMUDriverPtr driver,
+                                           const virBlockCommitDesc *blockCommitDescs,
+                                           int numDescs)
+{
+    size_t i;
+
+    for (i = 0; i < numDescs; i++) {
+        virDomainDiskDefPtr disk = blockCommitDescs[i].disk;
+        virStorageSourcePtr baseSource = blockCommitDescs[i].baseSource;
+        virStorageSourcePtr topSource = blockCommitDescs[i].topSource;
+        virStorageSourcePtr topParentSource = blockCommitDescs[i].topParentSource;
+        int blockCommitFlags = blockCommitDescs[i].blockCommitFlags;
+
+        if (qemuDomainBlockCommitCommon(vm, driver, disk, baseSource,
+                                        topSource, topParentSource,
+                                        0, blockCommitFlags) < 0)
+            return -1;
+    }
+
+    return 0;
 }
 
 
