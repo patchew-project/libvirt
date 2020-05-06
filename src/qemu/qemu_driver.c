@@ -16752,6 +16752,160 @@ qemuDomainMomentReparentChildren(void *payload,
 }
 
 
+/* Blockcommit operation descriptor.  Holds data required to launch and
+ * conclude an individual blockcommit job.  Generic parameters
+ * (virDomainObjPtr, virQEMUDriverPtr) are not stored as they are assumed to be
+ * available at the point of blockcommit invocation. */
+
+typedef struct {
+    virDomainDiskDefPtr disk;
+    virStorageSourcePtr baseSource;
+    virStorageSourcePtr topSource;
+    virStorageSourcePtr topParentSource;
+    int blockCommitFlags;
+    bool isActive;  /* used to find out if pivot is needed to finish the job */
+} virBlockCommitDesc;
+
+/* Transforms a snapshot into an array of descriptors of blockcommit jobs
+ * required to delete the snapshot, one descriptor per affected disk.  Also
+ * runs sanity checks for each affected disk and each individual job to make
+ * sure the deletion is safe to perform.  Returns NULL if safety cannot be
+ * guaranteed.
+ *
+ * (A snapshot is considered safe to delete if, loosely speaking, we can be
+ * reasonably sure that all disks it touches are still those that were there
+ * when the snapshot was created.  For instance, a different disk might be
+ * attached to the VM under the same target name, or a disk included in the
+ * snapshot might be reattached to the VM under a different target name.  If
+ * any such thing happens between the times of snapshot creation and deletion,
+ * that shapshot would not be considered safe to delete.) */
+
+static virBlockCommitDesc *
+qemuDomainSnapshotDeleteExternalGetJobDescriptors(virDomainObjPtr vm,
+                                        virDomainMomentObjPtr snap,
+                                        unsigned int flags)
+{
+    size_t i;
+    bool isActive;
+    virDomainSnapshotDefPtr snapdef = virDomainSnapshotObjGetDef(snap);
+    virDomainMomentObjPtr parent = snap->parent;
+    virDomainSnapshotDefPtr parentdef = virDomainSnapshotObjGetDef(parent);
+    g_autofree virBlockCommitDesc *blockCommitDescs = g_new(virBlockCommitDesc, snapdef->ndisks);
+    int blockCommitFlags = VIR_DOMAIN_BLOCK_COMMIT_DELETE;
+
+    if (flags & (VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN |
+                 VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN_ONLY)) {
+        isActive = true;
+    } else {
+        isActive = snap == virDomainSnapshotGetCurrent(vm->snapshots);
+    }
+
+    if (isActive)
+        blockCommitFlags |= VIR_DOMAIN_BLOCK_COMMIT_ACTIVE;
+
+    for (i = 0; i < snapdef->ndisks; i++) {
+        virDomainSnapshotDiskDefPtr snapDisk = &(snapdef->disks[i]);
+        const char *diskName = snapDisk->name;
+        virStorageSourcePtr baseSource = NULL;
+        virStorageSourcePtr topSource = NULL;
+        virStorageSourcePtr topParentSource = NULL;
+        virDomainDiskDefPtr domDiskNow;
+        virDomainDiskDefPtr domDiskThen = virDomainDiskByTarget(snapdef->parent.dom, diskName);
+        virStorageSourcePtr snapSource = NULL;
+        virStorageSourcePtr snapParentSource = NULL;
+        unsigned int snapIndex;
+
+        if (!(domDiskNow = qemuDomainDiskByName(vm->def, diskName))) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("can't delete %s, disk '%s' not found in running VM"),
+                           snapdef->parent.name, diskName);
+            return NULL;
+        }
+        if (snapDisk->src->type != VIR_STORAGE_TYPE_FILE ||
+            domDiskNow->src->type != VIR_STORAGE_TYPE_FILE) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("can't delete %s, only storage type 'file' is supported"),
+                           snapdef->parent.name);
+            return NULL;
+        }
+
+        /* TODO Apr 24, 2020: this is not great long-term as it still looks up
+         * essentially just by path (or target[index]), far from a full
+         * comparison operator for virStorageSources */
+        if (virStorageFileParseChainIndex(domDiskNow->dst, snapDisk->src->path, &snapIndex) < 0 ||
+                 !(snapSource = virStorageFileChainLookup(domDiskNow->src, NULL,
+                                                          snapDisk->src->path, snapIndex,
+                                                          &snapParentSource)))
+            return NULL;
+
+        if (flags & VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN_ONLY) {
+            baseSource = snapSource;
+        } else {
+            if (parentdef == NULL) {
+                baseSource = virStorageFileChainLookup(domDiskNow->src, NULL, NULL, 0, NULL);
+                if (!baseSource)
+                    return NULL;
+            } else {
+                baseSource = snapSource->backingStore;
+            }
+        }
+
+        if (flags & (VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN | VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN_ONLY)) {
+            topSource = domDiskNow->src;
+        } else {
+            topSource = snapSource;
+            topParentSource = snapParentSource;
+        }
+
+        if (topSource == NULL) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("can't delete %s, couldn't find top (TODO improve this message)"),
+                           snapdef->parent.name);
+            return NULL;
+        }
+
+        if (baseSource == NULL) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("can't delete %s, couldn't find base (TODO improve this message)"),
+                           snapdef->parent.name);
+            return NULL;
+        }
+
+        /* Check if the disk called 'diskName' is the same as it was at the
+         * point 'snap' was created.  This is more of a heuristic test as
+         * virStorageSources don't seem to be well equipped for establishing
+         * identity.  The idea is based on the assumption that snapshots can
+         * only be removed mid-chain, not added.  If that holds, the currently
+         * running chain has to be the same as it was when 'snap' was created
+         * *minus* the snapshots that were deleted in the meantime, if any.  In
+         * other words, the chain back at the time of 'snap's creation has to
+         * be an ordered superset of the currently running disk's chain. */
+        virStorageSourcePtr chainNow = snapSource->backingStore;
+        virStorageSourcePtr chainThen = NULL;
+        for (; virStorageSourceIsBacking(chainNow); chainNow = chainNow->backingStore) {
+            chainThen = virStorageFileChainLookup(domDiskThen->src,
+                                                  chainThen, chainNow->path, 0, NULL);
+            if (!chainThen) {
+                virReportError(VIR_ERR_OPERATION_INVALID,
+                               _("can't delete %s, disk '%s' doesn't seem the same as when it was created (%s is in %s's backing chain now but it wasn't when the snapshot was created)"),
+                               snapdef->parent.name, diskName, chainNow->path,
+                               snapdef->parent.name);
+                return NULL;
+            }
+        }
+
+        blockCommitDescs[i].disk = domDiskNow;
+        blockCommitDescs[i].baseSource = baseSource;
+        blockCommitDescs[i].topSource = topSource;
+        blockCommitDescs[i].topParentSource = topParentSource;
+        blockCommitDescs[i].blockCommitFlags = blockCommitFlags;
+        blockCommitDescs[i].isActive = isActive;
+    }
+
+    return g_steal_pointer(&blockCommitDescs);
+}
+
+
 static int
 qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                          unsigned int flags)
