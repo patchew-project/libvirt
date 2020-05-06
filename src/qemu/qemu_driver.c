@@ -154,6 +154,15 @@ static int qemuOpenFileAs(uid_t fallback_uid, gid_t fallback_gid,
 
 static virQEMUDriverPtr qemu_driver;
 
+static int
+qemuDomainBlockCommitImpl(virDomainObjPtr vm,
+                          virQEMUDriverPtr driver,
+                          const char *path,
+                          const char *base,
+                          const char *top,
+                          unsigned long bandwidth,
+                          unsigned int flags);
+
 /* Looks up the domain object from snapshot and unlocks the
  * driver. The returned domain object is locked and ref'd and the
  * caller must call virDomainObjEndAPI() on it. */
@@ -18431,18 +18440,16 @@ qemuDomainBlockPull(virDomainPtr dom, const char *path, unsigned long bandwidth,
     return qemuDomainBlockPullCommon(vm, path, NULL, bandwidth, flags);
 }
 
-
 static int
-qemuDomainBlockCommit(virDomainPtr dom,
-                      const char *path,
-                      const char *base,
-                      const char *top,
-                      unsigned long bandwidth,
-                      unsigned int flags)
+qemuDomainBlockCommitImpl(virDomainObjPtr vm,
+                          virQEMUDriverPtr driver,
+                          const char *path,
+                          const char *base,
+                          const char *top,
+                          unsigned long bandwidth,
+                          unsigned int flags)
 {
-    virQEMUDriverPtr driver = dom->conn->privateData;
-    qemuDomainObjPrivatePtr priv;
-    virDomainObjPtr vm = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     const char *device = NULL;
     const char *jobname = NULL;
     int ret = -1;
@@ -18465,22 +18472,6 @@ qemuDomainBlockCommit(virDomainPtr dom,
     bool blockdev = false;
     g_autoptr(virJSONValue) bitmapDisableActions = NULL;
     VIR_AUTOSTRINGLIST bitmapDisableList = NULL;
-
-    virCheckFlags(VIR_DOMAIN_BLOCK_COMMIT_SHALLOW |
-                  VIR_DOMAIN_BLOCK_COMMIT_ACTIVE |
-                  VIR_DOMAIN_BLOCK_COMMIT_RELATIVE |
-                  VIR_DOMAIN_BLOCK_COMMIT_DELETE |
-                  VIR_DOMAIN_BLOCK_COMMIT_BANDWIDTH_BYTES, -1);
-
-    if (!(vm = qemuDomainObjFromDomain(dom)))
-        goto cleanup;
-    priv = vm->privateData;
-
-    if (virDomainBlockCommitEnsureACL(dom->conn, vm->def) < 0)
-        goto cleanup;
-
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
-        goto cleanup;
 
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
@@ -18730,12 +18721,47 @@ qemuDomainBlockCommit(virDomainPtr dom,
         virErrorRestore(&orig_err);
     }
     qemuBlockJobStartupFinalize(vm, job);
+
+    return ret;
+}
+
+
+static int
+qemuDomainBlockCommit(virDomainPtr dom,
+                      const char *path,
+                      const char *base,
+                      const char *top,
+                      unsigned long bandwidth,
+                      unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_BLOCK_COMMIT_SHALLOW |
+                  VIR_DOMAIN_BLOCK_COMMIT_ACTIVE |
+                  VIR_DOMAIN_BLOCK_COMMIT_RELATIVE |
+                  VIR_DOMAIN_BLOCK_COMMIT_DELETE |
+                  VIR_DOMAIN_BLOCK_COMMIT_BANDWIDTH_BYTES, -1);
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainBlockCommitEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    ret = qemuDomainBlockCommitImpl(vm, driver, path, base, top, bandwidth, flags);
+
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainObjEndAPI(&vm);
     return ret;
 }
+
 
 static int
 qemuDomainOpenGraphics(virDomainPtr dom,
