@@ -1049,6 +1049,7 @@ virDomainListCheckpoints;
 # conf/virdomainmomentobjlist.h
 virDomainMomentDropChildren;
 virDomainMomentDropParent;
+virDomainMomentFindLeaf;
 virDomainMomentForEachChild;
 virDomainMomentForEachDescendant;
 virDomainMomentMoveChildren;

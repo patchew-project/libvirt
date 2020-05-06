@@ -17001,6 +17001,70 @@ qemuDomainSnapshotDeleteExternalWaitForJobs(virDomainObjPtr vm,
 
 
 static int
+qemuDomainSnapshotDeleteExternal(virDomainObjPtr vm,
+                                 virQEMUDriverPtr driver,
+                                 virDomainMomentObjPtr snap,
+                                 unsigned int flags)
+{
+    /* TODO Apr 29, 2020: ultimately, use 'flags' to set this.  Until that
+     * is supported, just run always synchronously. */
+    bool async = false;
+    virDomainSnapshotDefPtr snapdef = virDomainSnapshotObjGetDef(snap);
+    virDomainMomentObjPtr leaf = snap->nchildren ? virDomainMomentFindLeaf(snap) : snap;
+    virDomainMomentObjPtr parent = snap->parent;
+    g_autofree virBlockCommitDesc *blockCommitDescs = NULL;
+    int numBlockCommits = snapdef->ndisks;
+
+    /* This function only works if the chain below 'snap' is linear.  If
+     * there's no unique leaf it means the chain of 'snap's children
+     * branches at some point.  Also, if there *is* a leaf but it's not
+     * the current snapshot, bail out as well. */
+    if (leaf == NULL) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("can't delete '%s', snapshot chain branches"),
+                       snapdef->parent.name);
+        return -1;
+    }
+    if (leaf != virDomainSnapshotGetCurrent(vm->snapshots)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("can't delete '%s', leaf snapshot is not current"),
+                       snapdef->parent.name);
+        return -1;
+    }
+    if (parent->nchildren > 1) {
+        /* TODO 'snap's parent has multiple children, meaning it's a
+         * branching point in snapshot tree.  This means we can't
+         * delete 'snap' by commiting into its parent as doing so would
+         * corrupt the other branches rooted in the parent.  We might
+         * still be able to delete 'snap' though by pulling into its
+         * child/children. */
+
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("can't delete %s, its parent has multiple children"),
+                       snapdef->parent.name);
+        return -1;
+    }
+
+    if (!virDomainObjIsActive(vm))
+        return -1;
+
+    blockCommitDescs = qemuDomainSnapshotDeleteExternalGetJobDescriptors(vm, snap, flags);
+    if (blockCommitDescs == NULL)
+        return -1;
+
+    if (qemuDomainSnapshotDeleteExternalLaunchJobs(vm, driver, blockCommitDescs, numBlockCommits) < 0)
+        return -1;
+
+    if (!async) {
+        if (qemuDomainSnapshotDeleteExternalWaitForJobs(vm, driver, blockCommitDescs, numBlockCommits) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                          unsigned int flags)
 {
