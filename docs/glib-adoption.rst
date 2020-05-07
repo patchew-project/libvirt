@@ -53,44 +53,85 @@ The following libvirt APIs have been deleted already:
 ``VIR_STRDUP``, ``VIR_STRNDUP``
    Prefer the GLib APIs ``g_strdup`` and ``g_strndup``.
 
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| deleted version               | GLib version                         | Notes                                     |
-+===============================+======================================+===========================================+
-| ``VIR_AUTOPTR``               | ``g_autoptr``                        |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_AUTOCLEAN``             | ``g_auto``                           |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_AUTOFREE``              | ``g_autofree``                       | The GLib version does not use parentheses |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_AUTOUNREF``             | ``g_autoptr``                        | The cleanup function needs to be defined  |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_DEFINE_AUTOPTR_FUNC``   | ``G_DEFINE_AUTOPTR_CLEANUP_FUNC``    |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_DEFINE_AUTOCLEAN_FUNC`` | ``G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC`` |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_STEAL_PTR``             | ``g_steal_pointer``                  | ``a = f(&b)`` instead of ``f(a, b)``      |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_RETURN_PTR``            | ``return g_steal_pointer``           |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ARRAY_CARDINALITY``         | ``G_N_ELEMENTS``                     |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_FALLTHROUGH``     | ``G_GNUC_FALLTHROUGH``               |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_FMT_PRINTF``      | ``G_GNUC_PRINTF``                    |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_NOINLINE``        | ``G_GNUC_NO_INLINE``                 |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_NORETURN``        | ``G_GNUC_NORETURN``                  |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_RETURN_CHECK``    | ``G_GNUC_WARN_UNUSED_RESULT``        |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_SENTINEL``        | ``G_GNUC_NULL_TERMINATED``           |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``ATTRIBUTE_UNUSED``          | ``G_GNUC_UNUSED``                    |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_STRDUP``                | ``g_strdup``                         |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``VIR_STRNDUP``               | ``g_strndup``                        |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
-| ``virStrerror``               | ``g_strerror``                       |                                           |
-+-------------------------------+--------------------------------------+-------------------------------------------+
+.. list-table::
+   :header-rows: 1
+
+   * - deleted version
+     - GLib version
+     - Notes
+
+   * - ``VIR_AUTOPTR``
+     - ``g_autoptr``
+     -
+
+   * - ``VIR_AUTOCLEAN``
+     - ``g_auto``
+     -
+
+   * - ``VIR_AUTOFREE``
+     - ``g_autofree``
+     - The GLib version does not use parentheses
+
+   * - ``VIR_AUTOUNREF``
+     - ``g_autoptr``
+     - The cleanup function needs to be defined
+
+   * - ``VIR_DEFINE_AUTOPTR_FUNC``
+     - ``G_DEFINE_AUTOPTR_CLEANUP_FUNC``
+     -
+
+   * - ``VIR_DEFINE_AUTOCLEAN_FUNC``
+     - ``G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC``
+     -
+
+   * - ``VIR_STEAL_PTR``
+     - ``g_steal_pointer``
+     - ``a = f(&b)`` instead of ``f(a, b)``
+
+   * - ``VIR_RETURN_PTR``
+     - ``return g_steal_pointer``
+     -
+
+   * - ``ARRAY_CARDINALITY``
+     - ``G_N_ELEMENTS``
+     -
+
+   * - ``ATTRIBUTE_FALLTHROUGH``
+     - ``G_GNUC_FALLTHROUGH``
+     -
+
+   * - ``ATTRIBUTE_FMT_PRINTF``
+     - ``G_GNUC_PRINTF``
+     -
+
+   * - ``ATTRIBUTE_NOINLINE``
+     - ``G_GNUC_NO_INLINE``
+     -
+
+   * - ``ATTRIBUTE_NORETURN``
+     - ``G_GNUC_NORETURN``
+     -
+
+   * - ``ATTRIBUTE_RETURN_CHECK``
+     - ``G_GNUC_WARN_UNUSED_RESULT``
+     -
+
+   * - ``ATTRIBUTE_SENTINEL``
+     - ``G_GNUC_NULL_TERMINATED``
+     -
+
+   * - ``ATTRIBUTE_UNUSED``
+     - ``G_GNUC_UNUSED``
+     -
+
+   * - ``VIR_STRDUP``
+     - ``g_strdup``
+     -
+
+   * - ``VIR_STRNDUP``
+     - ``g_strndup``
+     -
+
+   * - ``virStrerror``
+     - ``g_strerror``
+     -
