@@ -221,13 +221,13 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
         break;
 
     case VIR_STORAGE_TYPE_NETWORK:
-        VIR_DEBUG("Skipping creation of network disk '%s'",
+    case VIR_STORAGE_TYPE_NVME:
+        VIR_DEBUG("Skipping creation of disk '%s'",
                   disk->dst);
         return 0;
 
     case VIR_STORAGE_TYPE_BLOCK:
     case VIR_STORAGE_TYPE_DIR:
-    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
