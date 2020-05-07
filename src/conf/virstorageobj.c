@@ -2077,8 +2077,10 @@ virStoragePoolObjListExport(virConnectPtr conn,
 
     virObjectRWLockRead(poolobjs);
 
-    if (pools && VIR_ALLOC_N(data.pools, virHashSize(poolobjs->objs) + 1) < 0)
-        goto error;
+    if (pools && VIR_ALLOC_N(data.pools, virHashSize(poolobjs->objs) + 1) < 0) {
+        virObjectRWUnlock(poolobjs);
+        return -1;
+    }
 
     virHashForEach(poolobjs->objs, virStoragePoolObjListExportCallback, &data);
     virObjectRWUnlock(poolobjs);
