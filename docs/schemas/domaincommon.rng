@@ -4676,6 +4676,23 @@
     </optional>
   </define>
 
+  <define name="tpmproxy">
+    <element name="tpmproxy">
+      <optional>
+        <attribute name="model">
+          <choice>
+            <value>spapr-tpm-proxy</value>
+          </choice>
+        </attribute>
+      </optional>
+      <element name="device">
+        <attribute name="path">
+          <ref name="filePath"/>
+        </attribute>
+      </element>
+    </element>
+  </define>
+
   <define name="vsock">
     <element name="vsock">
       <optional>
@@ -5279,6 +5296,7 @@
             <ref name="tpm"/>
             <ref name="shmem"/>
             <ref name="memorydev"/>
+            <ref name="tpmproxy"/>
           </choice>
         </zeroOrMore>
         <optional>

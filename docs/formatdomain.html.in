@@ -8849,6 +8849,48 @@ qemu-kvm -net nic,model=? /dev/null
       </dd>
     </dl>
 
+    <h4><a id="elementsTpmProxy">TPM Proxy device</a></h4>
+
+    <p>
+      The TPM Proxy device allows a QEMU guest to interact with an
+      existing TPM Resource Manager in the host. A TPM Resource Manager
+      enables a TPM device to be securely multiplexed across several
+      guests. Only one TPM Proxy device is allowed per guest.
+    </p>
+    <p>
+      A guest using the TPM Proxy device does not have access to all the
+      features a TPM device provides. This means that a guest can have both
+      a TPM Proxy and a TPM device assigned at the same time.
+    </p>
+    <p>
+      The TPM Proxy device is currently available only for pSeries guests.
+      <span class="since">since 6.4.0</span>
+    </p>
+    <p>
+     Example: usage of the TPM Proxy device
+    </p>
+<pre>
+...
+&lt;devices&gt;
+  &lt;tpmproxy model='spapr-tpm-proxy'&gt;
+    &lt;device path='/dev/tpmrm0'/&gt;
+  &lt;/tpmproxy&gt;
+&lt;/devices&gt;
+...
+</pre>
+
+    <dl>
+      <dt><code>model</code></dt>
+      <dd>
+        <p>
+          The <code>model</code> attribute specifies what device
+          model QEMU provides to the guest. If no model name is provided,
+          <code>spapr-tpm-proxy</code> will automatically be chosen for
+          PPC64 architectures.
+        </p>
+      </dd>
+    </dl>
+
     <h4><a id="elementsNVRAM">NVRAM device</a></h4>
     <p>
       nvram device is always added to pSeries guest on PPC64, and its address
