@@ -610,6 +610,10 @@ mymain(void)
     DO_TEST("controller-usb-order",
             QEMU_CAPS_PIIX_DISABLE_S3,
             QEMU_CAPS_PIIX_DISABLE_S4);
+    DO_TEST("ppc64-tpmproxy",
+            QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
+            QEMU_CAPS_PCI_OHCI,
+            QEMU_CAPS_DEVICE_SPAPR_TPM_PROXY);
 
     DO_TEST_FULL("seclabel-dynamic-baselabel", WHEN_INACTIVE,
                  ARG_QEMU_CAPS, NONE);
