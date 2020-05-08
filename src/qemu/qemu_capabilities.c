@@ -580,6 +580,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "machine.pseries.cap-sbbc",
               "machine.pseries.cap-ibs",
               "tcg",
+              "pvscsi",
     );
 
 
@@ -1301,6 +1302,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "tpm-spapr", QEMU_CAPS_DEVICE_TPM_SPAPR },
     { "vhost-user-fs-device", QEMU_CAPS_DEVICE_VHOST_USER_FS },
     { "tcg-accel", QEMU_CAPS_TCG },
+    { "pvscsi", QEMU_CAPS_SCSI_PVSCSI },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
