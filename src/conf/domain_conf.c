@@ -13779,6 +13779,50 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
     return NULL;
 }
 
+static virDomainTPMProxyDefPtr
+virDomainTPMProxyDefParseXML(virDomainXMLOptionPtr xmlopt,
+                             xmlNodePtr node,
+                             xmlXPathContextPtr ctxt,
+                             unsigned int flags)
+{
+    virDomainTPMProxyDefPtr def;
+    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    g_autofree char *path = NULL;
+    g_autofree char *model = NULL;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    def->model = VIR_DOMAIN_TPMPROXY_MODEL_DEFAULT;
+
+    model = virXMLPropString(node, "model");
+    if (model != NULL &&
+        (def->model = virDomainTPMProxyModelTypeFromString(model)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unknown TPM Proxy frontend model '%s'"), model);
+        goto error;
+    }
+
+    ctxt->node = node;
+
+    path = virXPathString("string(./device/@path)", ctxt);
+    if (!path) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing TPM Proxy device path"));
+        goto error;
+    }
+    def->path = g_steal_pointer(&path);
+
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
+        goto error;
+
+    return def;
+
+ error:
+    virDomainTPMProxyDefFree(def);
+    return NULL;
+}
+
 static virDomainPanicDefPtr
 virDomainPanicDefParseXML(virDomainXMLOptionPtr xmlopt,
                           xmlNodePtr node,
@@ -17076,6 +17120,10 @@ virDomainDeviceDefParse(const char *xmlStr,
             return NULL;
         break;
     case VIR_DOMAIN_DEVICE_TPMPROXY:
+        if (!(dev->data.tpmproxy = virDomainTPMProxyDefParseXML(xmlopt, node,
+                                                                ctxt, flags)))
+            return NULL;
+        break;
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -22020,6 +22068,23 @@ virDomainDefParseXML(xmlDocPtr xml,
 
     if (n > 0) {
         if (!(def->tpm = virDomainTPMDefParseXML(xmlopt, nodes[0], ctxt, flags)))
+            goto error;
+    }
+    VIR_FREE(nodes);
+
+    /* Parse TPM Proxy device */
+    if ((n = virXPathNodeSet("./devices/tpmproxy", ctxt, &nodes)) < 0)
+        goto error;
+
+    if (n > 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("only a single TPM Proxy device is supported"));
+        goto error;
+    }
+
+    if (n > 0) {
+        if (!(def->tpmproxy = virDomainTPMProxyDefParseXML(xmlopt, nodes[0],
+                                                           ctxt, flags)))
             goto error;
     }
     VIR_FREE(nodes);
@@ -27167,6 +27232,26 @@ virDomainTPMDefFormat(virBufferPtr buf,
 
 
 static int
+virDomainTPMProxyDefFormat(virBufferPtr buf,
+                           virDomainTPMProxyDefPtr def,
+                           unsigned int flags)
+{
+    virBufferAsprintf(buf, "<tpmproxy model='%s'>\n",
+                      virDomainTPMProxyModelTypeToString(def->model));
+    virBufferAdjustIndent(buf, 2);
+    virBufferEscapeString(buf, "<device path='%s'/>\n", def->path);
+
+    if (virDomainDeviceInfoFormat(buf, &def->info, flags) < 0)
+        return -1;
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</tpmproxy>\n");
+
+    return 0;
+}
+
+
+static int
 virDomainSoundDefFormat(virBufferPtr buf,
                         virDomainSoundDefPtr def,
                         unsigned int flags)
@@ -29853,6 +29938,11 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
             goto error;
     }
 
+    if (def->tpmproxy) {
+        if (virDomainTPMProxyDefFormat(buf, def->tpmproxy, flags) < 0)
+            goto error;
+    }
+
     for (n = 0; n < def->ngraphics; n++) {
         if (virDomainGraphicsDefFormat(buf, def->graphics[n], flags) < 0)
             goto error;
@@ -31038,13 +31128,15 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     case VIR_DOMAIN_DEVICE_VSOCK:
         rc = virDomainVsockDefFormat(&buf, src->data.vsock);
         break;
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        rc = virDomainTPMProxyDefFormat(&buf, src->data.tpmproxy, flags);
+        break;
 
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_IOMMU:
-    case VIR_DOMAIN_DEVICE_TPMPROXY:
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Copying definition of '%d' type "
