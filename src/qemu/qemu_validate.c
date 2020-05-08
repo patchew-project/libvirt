@@ -3327,6 +3327,38 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
 
 
 static int
+qemuValidateDomainDeviceDefTPMProxy(virDomainTPMProxyDef *tpmproxy,
+                                    const virDomainDef *def,
+                                    virQEMUCapsPtr qemuCaps)
+{
+    if (!ARCH_IS_PPC64(def->os.arch)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("TPM Proxy device is only supported "
+                         "for PPC64 guests"));
+        return -1;
+    }
+
+    switch ((virDomainTPMProxyModel)tpmproxy->model) {
+    case VIR_DOMAIN_TPMPROXY_MODEL_DEFAULT:
+    case VIR_DOMAIN_TPMPROXY_MODEL_SPAPR:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SPAPR_TPM_PROXY)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("TPM Proxy is not supported "
+                             "with this QEMU binary"));
+            return -1;
+        }
+        break;
+    case VIR_DOMAIN_TPMPROXY_MODEL_LAST:
+    default:
+        virReportEnumRangeError(virDomainTPMProxyModel,
+                                tpmproxy->model);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
 qemuValidateDomainDeviceDefInput(const virDomainInputDef *input,
                                  const virDomainDef *def,
                                  virQEMUCapsPtr qemuCaps)
@@ -3720,6 +3752,11 @@ qemuValidateDomainDeviceDef(const virDomainDeviceDef *dev,
 
     case VIR_DOMAIN_DEVICE_MEMORY:
         ret = qemuValidateDomainDeviceDefMemory(dev->data.memory, qemuCaps);
+        break;
+
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        ret = qemuValidateDomainDeviceDefTPMProxy(dev->data.tpmproxy,
+                                                  def, qemuCaps);
         break;
 
     case VIR_DOMAIN_DEVICE_LEASE:

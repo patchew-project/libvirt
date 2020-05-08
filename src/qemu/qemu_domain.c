@@ -5924,6 +5924,16 @@ qemuDomainTPMDefPostParse(virDomainTPMDefPtr tpm,
 
 
 static int
+qemuDomainTPMProxyDefPostParse(virDomainTPMProxyDefPtr tpmproxy)
+{
+    if (tpmproxy->model == VIR_DOMAIN_TPMPROXY_MODEL_DEFAULT)
+        tpmproxy->model = VIR_DOMAIN_TPMPROXY_MODEL_SPAPR;
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                              const virDomainDef *def,
                              unsigned int parseFlags,
@@ -5978,6 +5988,10 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
 
     case VIR_DOMAIN_DEVICE_TPM:
         ret = qemuDomainTPMDefPostParse(dev->data.tpm, def->os.arch);
+        break;
+
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        ret = qemuDomainTPMProxyDefPostParse(dev->data.tpmproxy);
         break;
 
     case VIR_DOMAIN_DEVICE_LEASE:

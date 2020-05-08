@@ -85,6 +85,7 @@ typedef enum {
     VIR_DOMAIN_DEVICE_MEMORY,
     VIR_DOMAIN_DEVICE_IOMMU,
     VIR_DOMAIN_DEVICE_VSOCK,
+    VIR_DOMAIN_DEVICE_TPMPROXY,
 
     VIR_DOMAIN_DEVICE_LAST
 } virDomainDeviceType;
@@ -116,6 +117,7 @@ struct _virDomainDeviceDef {
         virDomainMemoryDefPtr memory;
         virDomainIOMMUDefPtr iommu;
         virDomainVsockDefPtr vsock;
+        virDomainTPMProxyDefPtr tpmproxy;
     } data;
 };
 
@@ -1328,6 +1330,19 @@ struct _virDomainTPMDef {
             bool hassecretuuid;
         } emulator;
     } data;
+};
+
+typedef enum {
+    VIR_DOMAIN_TPMPROXY_MODEL_DEFAULT,
+    VIR_DOMAIN_TPMPROXY_MODEL_SPAPR,
+
+    VIR_DOMAIN_TPMPROXY_MODEL_LAST
+} virDomainTPMProxyModel;
+
+struct _virDomainTPMProxyDef {
+    virDomainDeviceInfo info;
+    int model; /* virDomainTPMProxyModel */
+    char *path;
 };
 
 typedef enum {
@@ -2625,6 +2640,7 @@ struct _virDomainDef {
     virDomainMemballoonDefPtr memballoon;
     virDomainNVRAMDefPtr nvram;
     virDomainTPMDefPtr tpm;
+    virDomainTPMProxyDefPtr tpmproxy;
     virCPUDefPtr cpu;
     virSysinfoDefPtr sysinfo;
     virDomainRedirFilterDefPtr redirfilter;
@@ -3023,6 +3039,7 @@ virDomainDeviceInfoPtr virDomainDeviceGetInfo(virDomainDeviceDefPtr device);
 void virDomainDeviceSetData(virDomainDeviceDefPtr device,
                             void *devicedata);
 void virDomainTPMDefFree(virDomainTPMDefPtr def);
+void virDomainTPMProxyDefFree(virDomainTPMProxyDefPtr def);
 
 typedef int (*virDomainDeviceInfoCallback)(virDomainDefPtr def,
                                            virDomainDeviceDefPtr dev,
@@ -3594,6 +3611,7 @@ VIR_ENUM_DECL(virDomainRNGBackend);
 VIR_ENUM_DECL(virDomainTPMModel);
 VIR_ENUM_DECL(virDomainTPMBackend);
 VIR_ENUM_DECL(virDomainTPMVersion);
+VIR_ENUM_DECL(virDomainTPMProxyModel);
 VIR_ENUM_DECL(virDomainMemoryModel);
 VIR_ENUM_DECL(virDomainMemoryBackingModel);
 VIR_ENUM_DECL(virDomainMemorySource);

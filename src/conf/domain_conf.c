@@ -323,6 +323,7 @@ VIR_ENUM_IMPL(virDomainDevice,
               "memory",
               "iommu",
               "vsock",
+              "tpmproxy",
 );
 
 VIR_ENUM_IMPL(virDomainDiskDevice,
@@ -1178,6 +1179,12 @@ VIR_ENUM_IMPL(virDomainTPMVersion,
               "default",
               "1.2",
               "2.0",
+);
+
+VIR_ENUM_IMPL(virDomainTPMProxyModel,
+              VIR_DOMAIN_TPMPROXY_MODEL_LAST,
+              "default",
+              "spapr-tpm-proxy",
 );
 
 VIR_ENUM_IMPL(virDomainIOMMUModel,
@@ -3061,6 +3068,17 @@ void virDomainTPMDefFree(virDomainTPMDefPtr def)
     VIR_FREE(def);
 }
 
+void virDomainTPMProxyDefFree(virDomainTPMProxyDefPtr def)
+{
+    if (!def)
+        return;
+
+    VIR_FREE(def->path);
+    virDomainDeviceInfoClear(&def->info);
+    VIR_FREE(def);
+
+}
+
 void virDomainHostdevDefFree(virDomainHostdevDefPtr def)
 {
     if (!def)
@@ -3186,6 +3204,9 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
         break;
     case VIR_DOMAIN_DEVICE_TPM:
         virDomainTPMDefFree(def->data.tpm);
+        break;
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        virDomainTPMProxyDefFree(def->data.tpmproxy);
         break;
     case VIR_DOMAIN_DEVICE_PANIC:
         virDomainPanicDefFree(def->data.panic);
@@ -3480,6 +3501,7 @@ void virDomainDefFree(virDomainDefPtr def)
     VIR_FREE(def->mems);
 
     virDomainTPMDefFree(def->tpm);
+    virDomainTPMProxyDefFree(def->tpmproxy);
 
     for (i = 0; i < def->npanics; i++)
         virDomainPanicDefFree(def->panics[i]);
@@ -4038,6 +4060,8 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
         return &device->data.memory->info;
     case VIR_DOMAIN_DEVICE_VSOCK:
         return &device->data.vsock->info;
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        return &device->data.tpmproxy->info;
 
     /* The following devices do not contain virDomainDeviceInfo */
     case VIR_DOMAIN_DEVICE_LEASE:
@@ -4136,6 +4160,9 @@ virDomainDeviceSetData(virDomainDeviceDefPtr device,
         break;
     case VIR_DOMAIN_DEVICE_LEASE:
         device->data.lease = devicedata;
+        break;
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
+        device->data.tpmproxy = devicedata;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
@@ -4318,6 +4345,12 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
         if ((rc = cb(def, &device, &def->tpm->info, opaque)) != 0)
             return rc;
     }
+    if (def->tpmproxy) {
+        device.type = VIR_DOMAIN_DEVICE_TPMPROXY;
+        device.data.tpmproxy = def->tpmproxy;
+        if ((rc = cb(def, &device, &def->tpmproxy->info, opaque)) != 0)
+            return rc;
+    }
     device.type = VIR_DOMAIN_DEVICE_PANIC;
     for (i = 0; i < def->npanics; i++) {
         device.data.panic = def->panics[i];
@@ -4403,6 +4436,7 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_VSOCK:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
         break;
     }
 #endif
@@ -5395,6 +5429,7 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
         ret = 0;
         break;
 
@@ -6795,6 +6830,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -17039,6 +17075,7 @@ virDomainDeviceDefParse(const char *xmlStr,
                                                           flags)))
             return NULL;
         break;
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -23744,6 +23781,25 @@ virDomainTPMDefCheckABIStability(virDomainTPMDefPtr src,
 
 
 static bool
+virDomainTPMProxyDefCheckABIStability(virDomainTPMProxyDefPtr src,
+                                      virDomainTPMProxyDefPtr dst)
+{
+    if (src->model != dst->model) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Target TPM Proxy device model doesn't match source"));
+        return false;
+    }
+
+    if (STRNEQ_NULLABLE(src->path, dst->path)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Target TPM Proxy device path doesn't match source"));
+        return false;
+    }
+
+    return virDomainDeviceInfoCheckABIStability(&src->info, &dst->info);
+}
+
+static bool
 virDomainMemtuneCheckABIStability(const virDomainDef *src,
                                   const virDomainDef *dst,
                                   unsigned int flags)
@@ -24355,6 +24411,16 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
         goto error;
     }
 
+    if (src->tpmproxy && dst->tpmproxy) {
+        if (!virDomainTPMProxyDefCheckABIStability(src->tpmproxy, dst->tpmproxy))
+            goto error;
+    } else if (src->tpmproxy || dst->tpmproxy) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Either both target and source domains or none of "
+                         "them must have TPM Proxy device present"));
+        goto error;
+    }
+
     if (src->nmems != dst->nmems) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Target domain memory device count %zu "
@@ -24427,6 +24493,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_VSOCK:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
         break;
     }
 #endif
@@ -30977,6 +31044,7 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Copying definition of '%d' type "

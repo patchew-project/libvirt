@@ -528,6 +528,7 @@ qemuDomainDeviceSupportZPCI(virDomainDeviceDefPtr device)
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_VSOCK:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
         break;
 
     case VIR_DOMAIN_DEVICE_NONE:
@@ -1031,6 +1032,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
+    case VIR_DOMAIN_DEVICE_TPMPROXY:
         /* These devices don't even have a DeviceInfo */
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_GRAPHICS:

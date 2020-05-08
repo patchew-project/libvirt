@@ -312,6 +312,9 @@ typedef virDomainSoundDef *virDomainSoundDefPtr;
 typedef struct _virDomainTPMDef virDomainTPMDef;
 typedef virDomainTPMDef *virDomainTPMDefPtr;
 
+typedef struct _virDomainTPMProxyDef virDomainTPMProxyDef;
+typedef virDomainTPMProxyDef *virDomainTPMProxyDefPtr;
+
 typedef struct _virDomainThreadSchedParam virDomainThreadSchedParam;
 typedef virDomainThreadSchedParam *virDomainThreadSchedParamPtr;
 
