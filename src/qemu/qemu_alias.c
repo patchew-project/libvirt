@@ -413,6 +413,18 @@ qemuAssignDeviceTPMAlias(virDomainTPMDefPtr tpm,
 }
 
 
+static int
+qemuAssignDeviceTPMProxyAlias(virDomainTPMProxyDefPtr tpmproxy,
+                              int idx)
+{
+    if (tpmproxy->info.alias)
+        return 0;
+
+    tpmproxy->info.alias = g_strdup_printf("tpmproxy%d", idx);
+    return 0;
+}
+
+
 int
 qemuAssignDeviceRedirdevAlias(virDomainDefPtr def,
                               virDomainRedirdevDefPtr redirdev,
@@ -671,6 +683,10 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
     }
     if (def->tpm) {
         if (qemuAssignDeviceTPMAlias(def->tpm, 0) < 0)
+            return -1;
+    }
+    if (def->tpmproxy) {
+        if (qemuAssignDeviceTPMProxyAlias(def->tpmproxy, 0) < 0)
             return -1;
     }
     for (i = 0; i < def->nmems; i++) {
