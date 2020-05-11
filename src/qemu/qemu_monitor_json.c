@@ -8839,7 +8839,7 @@ qemuMonitorJSONBlockdevReopen(qemuMonitorPtr mon,
     g_autoptr(virJSONValue) reply = NULL;
     virJSONValuePtr pr = g_steal_pointer(props);
 
-    if (!(cmd = qemuMonitorJSONMakeCommandInternal("blockdev-reopen", pr)))
+    if (!(cmd = qemuMonitorJSONMakeCommandInternal("x-blockdev-reopen", pr)))
         return -1;
 
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)

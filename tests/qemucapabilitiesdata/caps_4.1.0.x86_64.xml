@@ -217,6 +217,7 @@
   <flag name='drive-nvme'/>
   <flag name='smp-dies'/>
   <flag name='i8042'/>
+  <flag name='blockdev-reopen'/>
   <flag name='storage.werror'/>
   <flag name='tcg'/>
   <version>4001000</version>

@@ -179,6 +179,7 @@
   <flag name='smp-dies'/>
   <flag name='i8042'/>
   <flag name='rng-builtin'/>
+  <flag name='blockdev-reopen'/>
   <flag name='storage.werror'/>
   <flag name='machine.pseries.cap-cfpc'/>
   <flag name='machine.pseries.cap-sbbc'/>

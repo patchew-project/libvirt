@@ -1455,6 +1455,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsNVDIMM[] = {
 
 /* see documentation for virQEMUQAPISchemaPathGet for the query format */
 static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
+    { "x-blockdev-reopen/arg-type", QEMU_CAPS_BLOCKDEV_REOPEN },
     { "blockdev-add/arg-type/options/+gluster/debug-level", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
     { "blockdev-add/arg-type/+gluster/debug", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
     { "blockdev-add/arg-type/+vxhs", QEMU_CAPS_VXHS},

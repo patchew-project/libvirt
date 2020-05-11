@@ -211,6 +211,7 @@
   <flag name='ramfb'/>
   <flag name='drive-nvme'/>
   <flag name='i8042'/>
+  <flag name='blockdev-reopen'/>
   <flag name='storage.werror'/>
   <flag name='tcg'/>
   <version>4000000</version>
