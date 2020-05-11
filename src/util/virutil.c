@@ -1725,6 +1725,179 @@ virHostGetDRMRenderNode(void)
     return ret;
 }
 
+
+#define VIR_IS_CMDLINE_SPACE(value) \
+    (g_ascii_isspace(value) || (unsigned char) value == 160)
+
+
+static bool virKernelArgsAreEqual(const char *arg1,
+                                  const char *arg2,
+                                  size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n; i++) {
+        if ((arg1[i] == '-' && arg2[i] == '_') ||
+            (arg1[i] == '_' && arg2[i] == '-') || (arg1[i] == arg2[i])) {
+            if (arg1[i] == '\0')
+                return true;
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
+
+/*
+ * Parse the kernel cmdline and store the value of @arg in @val
+ * which can be NULL if @arg has no value or if it's not found.
+ * In addition, store in @next the address right after
+ * @arg=@value for possible further processing.
+ *
+ * @arg: kernel command line argument
+ * @cmdline: kernel command line string to be checked for @arg
+ * @val: pointer to hold retrieved value of @arg
+ * @next: pointer to hold address right after @arg=@val, will
+ * point to the string's end (NULL) in case @arg is not found
+ *
+ * Returns 0 if @arg is present in @cmdline, 1 otherwise
+ */
+int virKernelCmdlineGetValue(const char *arg,
+                             const char *cmdline,
+                             char **val,
+                             const char **next)
+{
+    size_t i = 0, param_i;
+    size_t arg_len = strlen(arg);
+    bool is_quoted, match;
+
+    *next = cmdline;
+    *val = NULL;
+
+    while (cmdline[i] != '\0') {
+        /* remove leading spaces */
+        while (VIR_IS_CMDLINE_SPACE(cmdline[i]))
+            i++;
+        if (cmdline[i] == '"') {
+            i++;
+            is_quoted = true;
+        } else {
+            is_quoted = false;
+        }
+        for (param_i = i; cmdline[param_i]; param_i++) {
+            if ((VIR_IS_CMDLINE_SPACE(cmdline[param_i]) && !is_quoted) ||
+                cmdline[param_i] == '=')
+                break;
+            if (cmdline[param_i] == '"')
+                is_quoted = !is_quoted;
+        }
+        if (param_i-i == arg_len && virKernelArgsAreEqual(cmdline+i, arg, arg_len))
+            match = true;
+        else
+            match = false;
+        /* arg has no value */
+        if (cmdline[param_i] != '=') {
+            if (match) {
+                *next = cmdline+param_i;
+                return 0;
+            }
+            i = param_i;
+            continue;
+        }
+        param_i++;
+        if (cmdline[param_i] == '\0')
+            break;
+
+        if (cmdline[param_i] == '"') {
+            param_i++;
+            is_quoted = !is_quoted;
+        }
+        i = param_i;
+
+        for (; cmdline[param_i]; param_i++) {
+            if (VIR_IS_CMDLINE_SPACE(cmdline[param_i]) && !is_quoted)
+                break;
+            if (cmdline[param_i] == '"')
+                is_quoted = !is_quoted;
+        }
+        if (match) {
+            *next = cmdline+param_i;
+            if (cmdline[param_i-1] == '"')
+                *val = g_strndup(cmdline+i, param_i-i-1);
+            else
+                *val = g_strndup(cmdline+i, param_i-i);
+            return 0;
+        }
+        i = param_i;
+    }
+    *next = cmdline+i;
+    return 1;
+}
+
+
+#define VIR_CMDLINE_STR_CMP(kernel_val, caller_val, flags) \
+    (((flags & VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ) && \
+      STREQ(kernel_val, caller_val)) || ((flags & VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX) && \
+                                         STRPREFIX(kernel_val, caller_val)))
+
+
+/*
+ * Try to match the provided kernel cmdline string with the provided @arg
+ * and the list @values of possible values according to the matching strategy
+ * defined in @flags. Possible options include:
+ * - VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX: do a substring comparison of values
+ *   (uses size of value provided as input)
+ * - VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ: do a strict string comparison
+ * - VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY: first positive match satifies search
+ *   (in case of multiple argument occurrences)
+ * - VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST: use the result of last argument occurence
+ *   (in case of multiple argument occurrences)
+ *
+ *
+ * @cmdline: kernel command line string to be checked for @arg
+ * @arg: kernel command line argument
+ * @values: array of possible values to match @arg
+ * @len_values: size of array, it can be 0 meaning a match will be positive if the
+ * argument has no value.
+ * @flags: flag mask defining the strategy for matching and comparing
+ *
+ * Returns true if a match is found, false otherwise
+ */
+bool virKernelCmdlineMatchParam(const char *cmdline,
+                                const char *arg,
+                                const char **values,
+                                size_t len_values,
+                                virKernelCmdlineFlags flags)
+{
+    bool match = false;
+    size_t i;
+    const char *next = cmdline;
+    g_autofree char *kval = NULL;
+
+    while (next[0] != '\0') {
+        VIR_FREE(kval);
+        if (virKernelCmdlineGetValue(arg, next, &kval, &next) != 0)
+            break;
+        if (!kval) {
+            match = (len_values == 0) ? true : false;
+        } else {
+            match = false;
+            for (i = 0; i < len_values; i++) {
+                if (VIR_CMDLINE_STR_CMP(kval, values[i], flags)) {
+                    match = true;
+                    break;
+                }
+            }
+        }
+        if (match && (flags & VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY))
+            break;
+    }
+
+    return match;
+}
+
+
 /*
  * Get a password from the console input stream.
  * The caller must free the returned password.

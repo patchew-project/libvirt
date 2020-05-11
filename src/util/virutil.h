@@ -147,6 +147,24 @@ bool virHostHasIOMMU(void);
 
 char *virHostGetDRMRenderNode(void) G_GNUC_NO_INLINE;
 
+typedef enum {
+    VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX = 1,
+    VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ = 2,
+    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY = 4,
+    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST = 8,
+} virKernelCmdlineFlags;
+
+int virKernelCmdlineGetValue(const char *arg,
+                             const char *cmdline,
+                             char **val,
+                             const char **next);
+
+bool virKernelCmdlineMatchParam(const char *cmdline,
+                                const char *arg,
+                                const char **values,
+                                size_t len_values,
+                                virKernelCmdlineFlags flags);
+
 /**
  * VIR_ASSIGN_IS_OVERFLOW:
  * @rvalue: value that is checked (evaluated twice)

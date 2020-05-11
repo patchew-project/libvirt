@@ -254,6 +254,134 @@ testOverflowCheckMacro(const void *data G_GNUC_UNUSED)
 }
 
 
+struct testKernelCmdlineGetValueData
+{
+    const char *cmdline;
+    const char *arg;
+    int rc;
+    const char *val;
+    size_t next;
+};
+
+static struct testKernelCmdlineGetValueData kEntries[] = {
+    { "arg1 arg2 arg3=val1",                            "arg4",           1, NULL,                19 },
+    { "arg1=val1 arg2 arg3=val3 arg4",                  "arg2",           0, NULL,                14 },
+    { "arg1=val1 arg2 arg3=val3 arg4",                  "arg3",           0, "val3",              24 },
+    { "arg1=val1 arg2 arg-3=val3 arg4",                 "arg_3",          0, "val3",              25 },
+    { "arg1=val1 arg2 arg_3=val3 arg4",                 "arg-3",          0, "val3",              25 },
+    { "arg1=val1 arg2 arg_3=val3 arg4",                 "arg_3",          0, "val3",              25 },
+    { "arg1=val1 arg2 arg-3=val3 arg4",                 "arg-3",          0, "val3",              25 },
+    { "arg1=val1 arg2=\"value with spaces\" arg3=val3", "arg2",           0, "value with spaces", 34 },
+    { "arg1=val1 arg2=\"value with spaces\" arg3=val3", "arg3",           0, "val3",              44 },
+    { "arg1=val1 \"arg2=value with spaces\" arg3=val3", "arg2",           0, "value with spaces", 34 },
+    { "arg1=val1 \"arg2=value with spaces\" arg3=val3", "arg3",           0, "val3",              44 },
+    { "arg1=val1 arg2=\"val\"ue arg3",                  "arg2",           0, "val\"ue",           22 },
+    { "arg1=val1 arg2=\"val\"ue arg3\" escaped=val2\"", "arg3\" escaped", 0, "val2",              42 },
+    { "arg1=val1 arg2longer=someval arg2=val2 arg3",    "arg2",           0, "val2",              38 },
+};
+
+static int
+testKernelCmdlineGetValue(const void *data G_GNUC_UNUSED)
+{
+    int rc;
+    char *val = NULL;
+    const char *next;
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS(kEntries); ++i) {
+        VIR_FREE(val);
+
+        rc = virKernelCmdlineGetValue(kEntries[i].arg, kEntries[i].cmdline,
+                                      &val, &next);
+
+        if (rc != kEntries[i].rc || STRNEQ_NULLABLE(val, kEntries[i].val) ||
+            (next - kEntries[i].cmdline) != kEntries[i].next) {
+            VIR_TEST_DEBUG("\nKernel cmdline [%s]", kEntries[i].cmdline);
+            VIR_TEST_DEBUG("Kernel argument [%s]", kEntries[i].arg);
+            VIR_TEST_DEBUG("Expect rc [%d]", kEntries[i].rc);
+            VIR_TEST_DEBUG("Actual rc [%d]", rc);
+            VIR_TEST_DEBUG("Expect value [%s]", kEntries[i].val);
+            VIR_TEST_DEBUG("Actual value [%s]", val);
+            VIR_TEST_DEBUG("Expect next index [%lu]", kEntries[i].next);
+            VIR_TEST_DEBUG("Actual next index [%lu]",
+                           (size_t)(next - kEntries[i].cmdline));
+
+            VIR_FREE(val);
+
+            return -1;
+        }
+    }
+
+    VIR_FREE(val);
+
+    return 0;
+}
+
+
+struct testKernelCmdlineMatchData
+{
+    const char *cmdline;
+    const char *arg;
+    const char *values[2];
+    virKernelCmdlineFlags flags;
+    bool result;
+};
+
+static struct testKernelCmdlineMatchData kMatchEntries[] = {
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"1", "y"},    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY | VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ,     false },
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"on", "yes"}, VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY | VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ,     true },
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"1", "y"},    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY | VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX, true },
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"a", "b"},    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY | VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX, false },
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"on", "yes"}, VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST | VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ,       false},
+    {"arg1 myarg=no arg2=val2 myarg=yes arg4=val4 myarg=no arg5", "myarg", {"1", "y"},    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST | VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX,   false},
+    {"arg1 myarg=no arg2=val2 arg4=val4 myarg=yes arg5",          "myarg", {"on", "yes"}, VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST | VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ,       true },
+    {"arg1 myarg=no arg2=val2 arg4=val4 myarg=yes arg5",          "myarg", {"1", "y"},    VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST | VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX,   true },
+    {"arg1 myarg=no arg2=val2 arg4=val4 myarg arg5",              "myarg", {NULL, NULL},  VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST,                                         true },
+    {"arg1 myarg arg2=val2 arg4=val4 myarg=yes arg5",             "myarg", {NULL, NULL},  VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY,                                       true },
+    {"arg1 myarg arg2=val2 arg4=val4 myarg=yes arg5",             "myarg", {NULL, NULL},  VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST,                                         false },
+};
+
+
+static int
+testKernelCmdlineMatchParam(const void *data G_GNUC_UNUSED)
+{
+    bool result;
+    size_t i, lenValues;
+
+    for (i = 0; i < G_N_ELEMENTS(kMatchEntries); ++i) {
+        if (kMatchEntries[i].values[0] == NULL)
+            lenValues = 0;
+        else
+            lenValues = G_N_ELEMENTS(kMatchEntries[i].values);
+
+        result = virKernelCmdlineMatchParam(kMatchEntries[i].cmdline,
+                                            kMatchEntries[i].arg,
+                                            kMatchEntries[i].values,
+                                            lenValues,
+                                            kMatchEntries[i].flags);
+
+        if (result != kMatchEntries[i].result) {
+            VIR_TEST_DEBUG("\nKernel cmdline [%s]", kMatchEntries[i].cmdline);
+            VIR_TEST_DEBUG("Kernel argument [%s]", kMatchEntries[i].arg);
+            VIR_TEST_DEBUG("Kernel values [%s] [%s]", kMatchEntries[i].values[0],
+                           kMatchEntries[i].values[1]);
+            if (kMatchEntries[i].flags & VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX)
+                VIR_TEST_DEBUG("Flag [VIR_KERNEL_CMDLINE_FLAGS_CMP_PREFIX]");
+            if (kMatchEntries[i].flags & VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ)
+                VIR_TEST_DEBUG("Flag [VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ]");
+            if (kMatchEntries[i].flags & VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY)
+                VIR_TEST_DEBUG("Flag [VIR_KERNEL_CMDLINE_FLAGS_SEARCH_STICKY]");
+            if (kMatchEntries[i].flags & VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST)
+                VIR_TEST_DEBUG("Flag [VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST]");
+            VIR_TEST_DEBUG("Expect result [%d]", kMatchEntries[i].result);
+            VIR_TEST_DEBUG("Actual result [%d]", result);
+
+            return -1;
+        }
+    }
+
+    return 0;
+}
 
 
 static int
@@ -277,6 +405,8 @@ mymain(void)
     DO_TEST(ParseVersionString);
     DO_TEST(RoundValueToPowerOfTwo);
     DO_TEST(OverflowCheckMacro);
+    DO_TEST(KernelCmdlineGetValue);
+    DO_TEST(KernelCmdlineMatchParam);
 
     return result == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
