@@ -41,7 +41,8 @@ VIR_ENUM_IMPL(virHostValidateCPUFlag,
               "vmx",
               "svm",
               "sie",
-              "158");
+              "158",
+              "sev");
 
 static bool quiet;
 
@@ -447,15 +448,19 @@ int virHostValidateSecureGuests(const char *hvname,
                                 virHostValidateLevel level)
 {
     virBitmapPtr flags;
-    bool hasFac158 = false;
+    bool hasFac158 = false, hasAMDSev = false;
     virArch arch = virArchFromHost();
     g_autofree char *cmdline = NULL;
     static const char *kIBMValues[] = {"y", "Y", "1"};
+    static const char *kAMDValues[] = {"on"};
+    g_autofree char *mod_value = NULL;
 
     flags = virHostValidateGetCPUFlags();
 
     if (flags && virBitmapIsBitSet(flags, VIR_HOST_VALIDATE_CPU_FLAG_FACILITY_158))
         hasFac158 = true;
+    else if (flags && virBitmapIsBitSet(flags, VIR_HOST_VALIDATE_CPU_FLAG_SEV))
+        hasAMDSev = true;
 
     virBitmapFree(flags);
 
@@ -484,6 +489,33 @@ int virHostValidateSecureGuests(const char *hvname,
         } else {
             virHostMsgFail(level, "Hardware or firmware does not provide "
                                   "support for IBM Secure Execution");
+        }
+    } else if (hasAMDSev) {
+        if (virFileReadValueString(&mod_value, "/sys/module/kvm_amd/parameters/sev") < 0) {
+            virHostMsgFail(level, "AMD Secure Encrypted Virtualization not "
+                                  "supported by the currently used kernel");
+            return 0;
+        }
+        if (mod_value[0] != '1') {
+            virHostMsgFail(level,
+                           "AMD Secure Encrypted Virtualization appears to be "
+                           "disabled in kernel. Add mem_encrypt=on "
+                           "kvm_amd.sev=1 to kernel cmdline arguments");
+            return 0;
+        }
+        if (virFileReadValueString(&cmdline, "/proc/cmdline") < 0)
+            return -1;
+        if (virKernelCmdlineMatchParam(cmdline, "mem_encrypt", kAMDValues,
+                                       G_N_ELEMENTS(kAMDValues),
+                                       VIR_KERNEL_CMDLINE_FLAGS_SEARCH_LAST |
+                                       VIR_KERNEL_CMDLINE_FLAGS_CMP_EQ)) {
+            virHostMsgPass();
+            return 1;
+        } else {
+            virHostMsgFail(level,
+                           "AMD Secure Encrypted Virtualization appears to be "
+                           "disabled in kernel. Add mem_encrypt=on "
+                           "kvm_amd.sev=1 to kernel cmdline arguments");
         }
     } else {
         virHostMsgFail(level,
