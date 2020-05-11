@@ -109,7 +109,7 @@ following:
      </features>
    </domainCapabilities>
 
-Note that if libvirt was already installed and libvirtd running before
+Note that if libvirt (<6.4.0) was already installed and libvirtd running before
 enabling SEV in the kernel followed by the host reboot you need to force
 libvirtd to re-probe both the host and QEMU capabilities. First stop
 libvirtd:
