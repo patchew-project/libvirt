@@ -2241,8 +2241,7 @@ qemuMonitorSetPassword(qemuMonitorPtr mon,
     if (!protocol)
         return -1;
 
-    VIR_DEBUG("protocol=%s, password=%p, action_if_connected=%s",
-              protocol, password, action_if_connected);
+    VIR_DEBUG("protocol=%s, action_if_connected=%s", protocol, action_if_connected);
 
     QEMU_CHECK_MONITOR(mon);
 

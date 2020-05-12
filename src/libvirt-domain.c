@@ -11340,8 +11340,7 @@ virDomainSetUserPassword(virDomainPtr dom,
                          const char *password,
                          unsigned int flags)
 {
-    VIR_DOMAIN_DEBUG(dom, "user=%s, password=%s, flags=0x%x",
-                     NULLSTR(user), NULLSTR(password), flags);
+    VIR_DOMAIN_DEBUG(dom, "user=%s, flags=0x%x", NULLSTR(user), flags);
 
     virResetLastError();
 
