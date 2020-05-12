@@ -2140,6 +2140,7 @@ qemuMigrationSrcBeginPhase(virQEMUDriverPtr driver,
         cookieFlags |= QEMU_MIGRATION_COOKIE_CPU;
 
     cookieFlags |= QEMU_MIGRATION_COOKIE_ALLOW_REBOOT;
+    cookieFlags |= QEMU_MIGRATION_COOKIE_PRIVATE;
 
     if (!(flags & VIR_MIGRATE_OFFLINE))
         cookieFlags |= QEMU_MIGRATION_COOKIE_CAPS;
@@ -2501,7 +2502,8 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
                                        QEMU_MIGRATION_COOKIE_CPU_HOTPLUG |
                                        QEMU_MIGRATION_COOKIE_CPU |
                                        QEMU_MIGRATION_COOKIE_ALLOW_REBOOT |
-                                       QEMU_MIGRATION_COOKIE_CAPS)))
+                                       QEMU_MIGRATION_COOKIE_CAPS |
+                                       QEMU_MIGRATION_COOKIE_PRIVATE)))
         goto cleanup;
 
     if (!(vm = virDomainObjListAdd(driver->domains, *def,
@@ -2556,6 +2558,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     stopProcess = true;
 
     priv->allowReboot = mig->allowReboot;
+    priv->forceNewNuma = mig->priv && mig->priv->forceNewNuma;
 
     if (!(incoming = qemuMigrationDstPrepare(vm, tunnel, protocol,
                                              listenAddress, port,

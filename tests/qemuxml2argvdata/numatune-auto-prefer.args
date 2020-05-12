@@ -14,7 +14,9 @@ QEMU_AUDIO_DRV=none \
 -m 64 \
 -realtime mlock=off \
 -smp 1,sockets=1,cores=1,threads=1 \
--numa node,nodeid=0,cpus=0,mem=64 \
+-object memory-backend-ram,id=ram-node0,size=67108864,host-nodes=0-3,\
+policy=preferred \
+-numa node,nodeid=0,cpus=0,memdev=ram-node0 \
 -uuid 9f4b6512-e73a-4a25-93e8-5307802821ce \
 -display none \
 -no-user-config \

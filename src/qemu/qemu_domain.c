@@ -2283,6 +2283,7 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
     VIR_FREE(priv->channelTargetDir);
 
     priv->memPrealloc = false;
+    priv->forceNewNuma = VIR_TRISTATE_BOOL_ABSENT;
 
     /* remove automatic pinning data */
     virBitmapFree(priv->autoNodeset);
@@ -2803,6 +2804,15 @@ qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
 
 
 static void
+qemuDomainObjPrivateXMLFormatForceNewNuma(virBufferPtr buf,
+                                          virTristateBool forceNewNuma)
+{
+    virBufferAsprintf(buf, "<forceNewNuma value='%s'/>\n",
+                      virTristateBoolTypeToString(forceNewNuma));
+}
+
+
+static void
 qemuDomainObjPrivateXMLFormatPR(virBufferPtr buf,
                                 qemuDomainObjPrivatePtr priv)
 {
@@ -3085,6 +3095,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
 
     if (priv->memPrealloc)
         virBufferAddLit(buf, "<memPrealloc/>\n");
+
+    qemuDomainObjPrivateXMLFormatForceNewNuma(buf, priv->forceNewNuma);
 
     if (qemuDomainObjPrivateXMLFormatBlockjobs(buf, vm) < 0)
         return -1;
@@ -3552,6 +3564,26 @@ qemuDomainObjPrivateXMLParseAllowReboot(xmlXPathContextPtr ctxt,
 }
 
 
+static int
+qemuDomainObjPrivateXMLParseForceNewNuma(xmlXPathContextPtr ctxt,
+                                         virTristateBool *forceNewNuma)
+{
+    int val;
+    g_autofree char *valStr = NULL;
+
+    if ((valStr = virXPathString("string(./forceNewNuma/@value)", ctxt))) {
+        if ((val = virTristateBoolTypeFromString(valStr)) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("invalid allowReboot value '%s'"), valStr);
+            return -1;
+        }
+        *forceNewNuma = val;
+    }
+
+    return 0;
+}
+
+
 static void
 qemuDomainObjPrivateXMLParsePR(xmlXPathContextPtr ctxt,
                                bool *prDaemonRunning)
@@ -3936,7 +3968,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     priv->chardevStdioLogd = virXPathBoolean("boolean(./chardevStdioLogd)",
                                              ctxt) == 1;
 
-    qemuDomainObjPrivateXMLParseAllowReboot(ctxt, &priv->allowReboot);
+    if (qemuDomainObjPrivateXMLParseAllowReboot(ctxt, &priv->allowReboot) < 0)
+        goto error;
 
     qemuDomainObjPrivateXMLParsePR(ctxt, &priv->prDaemonRunning);
 
@@ -3955,6 +3988,9 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     }
 
     priv->memPrealloc = virXPathBoolean("boolean(./memPrealloc)", ctxt) == 1;
+
+    if (qemuDomainObjPrivateXMLParseForceNewNuma(ctxt, &priv->forceNewNuma) < 0)
+        goto error;
 
     return 0;
 

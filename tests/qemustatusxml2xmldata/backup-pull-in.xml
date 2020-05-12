@@ -234,6 +234,7 @@
   <chardevStdioLogd/>
   <allowReboot value='yes'/>
   <nodename index='0'/>
+  <forceNewNuma value='yes'/>
   <blockjobs active='yes'>
     <blockjob name='backup-vda-libvirt-3-format' type='backup' state='running' jobflags='0x0'>
       <disk dst='vda'/>

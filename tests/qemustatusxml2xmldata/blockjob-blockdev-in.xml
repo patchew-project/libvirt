@@ -233,6 +233,7 @@
   <chardevStdioLogd/>
   <allowReboot value='yes'/>
   <nodename index='0'/>
+  <forceNewNuma value='yes'/>
   <blockjobs active='yes'>
     <blockjob name='pull-vdb-libvirt-3-format' type='pull' state='running'>
       <disk dst='vdb'/>

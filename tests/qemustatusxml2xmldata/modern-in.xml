@@ -260,6 +260,7 @@
   <chardevStdioLogd/>
   <allowReboot value='yes'/>
   <nodename index='123'/>
+  <forceNewNuma value='yes'/>
   <blockjobs active='no'/>
   <agentTimeout>-2</agentTimeout>
   <domain type='kvm' id='1'>

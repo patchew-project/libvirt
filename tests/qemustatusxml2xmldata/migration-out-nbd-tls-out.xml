@@ -288,6 +288,7 @@
   <channelTargetDir path='/var/lib/libvirt/qemu/channel/target/domain-3-upstream'/>
   <chardevStdioLogd/>
   <allowReboot value='yes'/>
+  <forceNewNuma value='yes'/>
   <blockjobs active='no'/>
   <agentTimeout>-2</agentTimeout>
   <domain type='kvm' id='3'>

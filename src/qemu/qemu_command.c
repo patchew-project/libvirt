@@ -7028,8 +7028,6 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
     char *tmpmask = NULL;
     char *next = NULL;
     virBufferPtr nodeBackends = NULL;
-    bool needBackend = false;
-    int rc;
     int ret = -1;
     size_t ncells = virDomainNumaGetNodeCount(def->numa);
 
@@ -7039,23 +7037,21 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
     if (VIR_ALLOC_N(nodeBackends, ncells) < 0)
         goto cleanup;
 
-    /* using of -numa memdev= cannot be combined with -numa mem=, thus we
-     * need to check which approach to use */
+    /* Using of -numa memdev= cannot be combined with -numa mem=.
+     * However, as of QEMU 4.1.0 using the latter is deprecated
+     * and the former is preferred. */
     for (i = 0; i < ncells; i++) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE) ||
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD)) {
 
-            if ((rc = qemuBuildMemoryCellBackendStr(def, cfg, i, priv,
-                                                    &nodeBackends[i])) < 0)
+            if (qemuBuildMemoryCellBackendStr(def, cfg, i, priv,
+                                              &nodeBackends[i]) < 0)
                 goto cleanup;
-
-            if (rc == 0)
-                needBackend = true;
         }
     }
 
-    if (!needBackend &&
+    if (priv->forceNewNuma == VIR_TRISTATE_BOOL_NO &&
         qemuBuildMemPathStr(def, cmd, priv) < 0)
         goto cleanup;
 
@@ -7064,7 +7060,7 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
         if (!(cpumask = virBitmapFormat(virDomainNumaGetNodeCpumask(def->numa, i))))
             goto cleanup;
 
-        if (needBackend) {
+        if (priv->forceNewNuma == VIR_TRISTATE_BOOL_YES) {
             virCommandAddArg(cmd, "-object");
             virCommandAddArgBuffer(cmd, &nodeBackends[i]);
         }
@@ -7079,7 +7075,7 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
             virBufferAdd(&buf, tmpmask, -1);
         }
 
-        if (needBackend)
+        if (priv->forceNewNuma == VIR_TRISTATE_BOOL_YES)
             virBufferAsprintf(&buf, ",memdev=ram-node%zu", i);
         else
             virBufferAsprintf(&buf, ",mem=%llu",

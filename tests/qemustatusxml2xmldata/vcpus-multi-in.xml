@@ -308,6 +308,7 @@
   <libDir path='/tmp'/>
   <channelTargetDir path='/tmp/channel'/>
   <allowReboot value='yes'/>
+  <forceNewNuma value='yes'/>
   <blockjobs active='no'/>
   <agentTimeout>-2</agentTimeout>
   <domain type='kvm' id='1729'>

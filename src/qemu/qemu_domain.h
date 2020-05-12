@@ -418,6 +418,9 @@ struct _qemuDomainObjPrivate {
     /* true if global -mem-prealloc appears on cmd line */
     bool memPrealloc;
 
+    /* true if new -numa memdev is forced */
+    virTristateBool forceNewNuma;
+
     /* running block jobs */
     virHashTablePtr blockjobs;
 

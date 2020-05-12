@@ -33,6 +33,7 @@ typedef enum {
     QEMU_MIGRATION_COOKIE_FLAG_CPU,
     QEMU_MIGRATION_COOKIE_FLAG_ALLOW_REBOOT,
     QEMU_MIGRATION_COOKIE_FLAG_CAPS,
+    QEMU_MIGRATION_COOKIE_FLAG_PRIVATE,
 
     QEMU_MIGRATION_COOKIE_FLAG_LAST
 } qemuMigrationCookieFlags;
@@ -51,6 +52,7 @@ typedef enum {
     QEMU_MIGRATION_COOKIE_CPU = (1 << QEMU_MIGRATION_COOKIE_FLAG_CPU),
     QEMU_MIGRATION_COOKIE_ALLOW_REBOOT = (1 << QEMU_MIGRATION_COOKIE_FLAG_ALLOW_REBOOT),
     QEMU_MIGRATION_COOKIE_CAPS = (1 << QEMU_MIGRATION_COOKIE_FLAG_CAPS),
+    QEMU_MIGRATION_COOKIE_PRIVATE = (1 << QEMU_MIGRATION_COOKIE_FLAG_PRIVATE),
 } qemuMigrationCookieFeatures;
 
 typedef struct _qemuMigrationCookieGraphics qemuMigrationCookieGraphics;
@@ -105,6 +107,13 @@ struct _qemuMigrationCookieCaps {
     virBitmapPtr automatic;
 };
 
+
+typedef struct _qemuMigrationCookiePrivate qemuMigrationCookiePrivate;
+typedef qemuMigrationCookiePrivate *qemuMigrationCookiePrivatePtr;
+struct _qemuMigrationCookiePrivate {
+    virTristateBool forceNewNuma;
+};
+
 typedef struct _qemuMigrationCookie qemuMigrationCookie;
 typedef qemuMigrationCookie *qemuMigrationCookiePtr;
 struct _qemuMigrationCookie {
@@ -148,6 +157,9 @@ struct _qemuMigrationCookie {
 
     /* If flags & QEMU_MIGRATION_COOKIE_CAPS */
     qemuMigrationCookieCapsPtr caps;
+
+    /* If flags & QEMU_MIGRATION_COOKIE_PRIVATE */
+    qemuMigrationCookiePrivatePtr priv;
 };
 
 

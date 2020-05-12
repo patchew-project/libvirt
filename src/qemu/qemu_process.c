@@ -6191,6 +6191,27 @@ qemuProcessPrepareAllowReboot(virDomainObjPtr vm)
 }
 
 
+static void
+qemuProcessPrepareForceNewNuma(virDomainObjPtr vm,
+                               unsigned int flags)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUCapsPtr qemuCaps = priv->qemuCaps;
+
+    if (priv->forceNewNuma != VIR_TRISTATE_BOOL_ABSENT)
+        return;
+
+    if (flags & VIR_QEMU_PROCESS_START_NEW &&
+        (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
+         virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE) ||
+         virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD))) {
+        priv->forceNewNuma = VIR_TRISTATE_BOOL_YES;
+    } else {
+        priv->forceNewNuma = VIR_TRISTATE_BOOL_NO;
+    }
+}
+
+
 /**
  * qemuProcessPrepareDomain:
  * @driver: qemu driver
@@ -6244,6 +6265,7 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
     priv->rememberOwner = cfg->rememberOwner;
 
     qemuProcessPrepareAllowReboot(vm);
+    qemuProcessPrepareForceNewNuma(vm, flags);
 
     /*
      * Normally PCI addresses are assigned in the virDomainCreate
@@ -7972,8 +7994,9 @@ qemuProcessReconnect(void *opaque)
         goto error;
 
     /* If we are connecting to a guest started by old libvirt there is no
-     * allowReboot in status XML and we need to initialize it. */
+     * allowReboot or forceNewNuma in status XML and we need to initialize it. */
     qemuProcessPrepareAllowReboot(obj);
+    qemuProcessPrepareForceNewNuma(obj, 0);
 
     if (qemuHostdevUpdateActiveDomainDevices(driver, obj->def) < 0)
         goto error;

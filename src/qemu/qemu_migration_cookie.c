@@ -51,6 +51,7 @@ VIR_ENUM_IMPL(qemuMigrationCookieFlag,
               "cpu",
               "allowReboot",
               "capabilities",
+              "private",
 );
 
 
@@ -581,6 +582,20 @@ qemuMigrationCookieAddCaps(qemuMigrationCookiePtr mig,
 
 
 static void
+qemuMigrationCookieAddPrivate(qemuMigrationCookiePtr mig,
+                              qemuDomainObjPrivatePtr priv)
+{
+    if (!mig->priv)
+        mig->priv = g_new0(qemuMigrationCookiePrivate, 1);
+
+    mig->priv->forceNewNuma = priv->forceNewNuma;
+
+    mig->flags |= QEMU_MIGRATION_COOKIE_PRIVATE;
+}
+
+
+
+static void
 qemuMigrationCookieGraphicsXMLFormat(virBufferPtr buf,
                                      qemuMigrationCookieGraphicsPtr grap)
 {
@@ -770,6 +785,25 @@ qemuMigrationCookieCapsXMLFormat(virBufferPtr buf,
 }
 
 
+#define FORMAT_PRIV(member) \
+    virBufferAsprintf(buf, "<member name='" #member "' value='%s'/>\n", \
+                      virTristateBoolTypeToString(priv->member))
+
+static void
+qemuMigrationCookiePrivateXMLFormat(virBufferPtr buf,
+                                    qemuMigrationCookiePrivatePtr priv)
+{
+    virBufferAddLit(buf, "<privateData>\n");
+    virBufferAdjustIndent(buf, 2);
+
+    FORMAT_PRIV(forceNewNuma);
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</privateData>\n");
+}
+
+#undef FORMAT_PRIV
+
 static int
 qemuMigrationCookieXMLFormat(virQEMUDriverPtr driver,
                              virQEMUCapsPtr qemuCaps,
@@ -857,6 +891,9 @@ qemuMigrationCookieXMLFormat(virQEMUDriverPtr driver,
 
     if (mig->flags & QEMU_MIGRATION_COOKIE_CAPS)
         qemuMigrationCookieCapsXMLFormat(buf, mig->caps);
+
+    if (mig->flags & QEMU_MIGRATION_COOKIE_PRIVATE)
+        qemuMigrationCookiePrivateXMLFormat(buf, mig->priv);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</qemu-migration>\n");
@@ -1179,6 +1216,35 @@ qemuMigrationCookieCapsXMLParse(xmlXPathContextPtr ctxt)
 }
 
 
+#define PARSE_PRIV(member) \
+    do { \
+        int val; \
+        g_autofree char *valStr = virXPathString("string(./privateData/member" \
+                                                 "[@name='" #member "']/@value)", ctxt); \
+        if (valStr) { \
+            if ((val = virTristateBoolTypeFromString(valStr)) < 0) { \
+                virReportError(VIR_ERR_INTERNAL_ERROR, \
+                               _("Malformed member '%s' value %s"), \
+                               #member, valStr); \
+                return NULL; \
+            } \
+            priv->member = val; \
+        } \
+    } while (0)
+
+static qemuMigrationCookiePrivatePtr
+qemuMigrationCookiePrivateXMLParse(xmlXPathContextPtr ctxt)
+{
+    g_autofree qemuMigrationCookiePrivatePtr priv = NULL;
+
+    priv = g_new0(qemuMigrationCookiePrivate, 1);
+
+    PARSE_PRIV(forceNewNuma);
+
+    return g_steal_pointer(&priv);
+}
+
+
 static int
 qemuMigrationCookieXMLParse(qemuMigrationCookiePtr mig,
                             virQEMUDriverPtr driver,
@@ -1357,6 +1423,10 @@ qemuMigrationCookieXMLParse(qemuMigrationCookiePtr mig,
         !(mig->caps = qemuMigrationCookieCapsXMLParse(ctxt)))
         goto error;
 
+    if (flags & QEMU_MIGRATION_COOKIE_PRIVATE &&
+        !(mig->priv = qemuMigrationCookiePrivateXMLParse(ctxt)))
+        goto error;
+
     return 0;
 
  error:
@@ -1445,6 +1515,9 @@ qemuMigrationBakeCookie(qemuMigrationCookiePtr mig,
     if (flags & QEMU_MIGRATION_COOKIE_CAPS &&
         qemuMigrationCookieAddCaps(mig, dom, party) < 0)
         return -1;
+
+    if (flags & QEMU_MIGRATION_COOKIE_PRIVATE)
+        qemuMigrationCookieAddPrivate(mig, priv);
 
     if (!(*cookieout = qemuMigrationCookieXMLFormatStr(driver, priv->qemuCaps, mig)))
         return -1;
