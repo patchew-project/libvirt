@@ -2424,7 +2424,8 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         cookieFlags = 0;
     } else {
         cookieFlags = QEMU_MIGRATION_COOKIE_GRAPHICS |
-                      QEMU_MIGRATION_COOKIE_CAPS;
+                      QEMU_MIGRATION_COOKIE_CAPS |
+                      QEMU_MIGRATION_COOKIE_PRIVATE;
     }
 
     if (flags & VIR_MIGRATE_POSTCOPY &&
@@ -3549,9 +3550,17 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
                                  cookiein, cookieinlen,
                                  cookieFlags |
                                  QEMU_MIGRATION_COOKIE_GRAPHICS |
-                                 QEMU_MIGRATION_COOKIE_CAPS);
+                                 QEMU_MIGRATION_COOKIE_CAPS |
+                                 QEMU_MIGRATION_COOKIE_PRIVATE);
     if (!mig)
         goto error;
+
+    if (priv->forceNewNuma == VIR_TRISTATE_BOOL_YES &&
+        !(mig->priv && mig->priv->forceNewNuma == VIR_TRISTATE_BOOL_YES)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("Migration to older numa unsupported"));
+        goto error;
+    }
 
     if (qemuMigrationSrcGraphicsRelocate(driver, vm, mig, graphicsuri) < 0)
         VIR_WARN("unable to provide data for graphics client relocation");
