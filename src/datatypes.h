@@ -36,7 +36,6 @@ extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
 extern virClassPtr virNetworkPortClass;
 extern virClassPtr virNodeDeviceClass;
-extern virClassPtr virNWFilterClass;
 extern virClassPtr virNWFilterBindingClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
@@ -56,6 +55,9 @@ G_DECLARE_FINAL_TYPE(virDomainSnapshot,
                      VIR,
                      DOMAIN_SNAPSHOT,
                      GObject);
+
+#define VIR_TYPE_NW_FILTER vir_nw_filter_get_type()
+G_DECLARE_FINAL_TYPE(virNWFilter, vir_nw_filter, VIR, NW_FILTER, GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -311,8 +313,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNWFilterReturn(obj, retval) \
     do { \
-        virNWFilterPtr _nw = (obj); \
-        if (!virObjectIsClass(_nw, virNWFilterClass) || \
+        virNWFilterPtr _nw = VIR_NW_FILTER(obj); \
+        if (_nw == NULL || \
             !virObjectIsClass(_nw->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NWFILTER, \
                                  VIR_ERR_INVALID_NWFILTER, \
@@ -784,7 +786,7 @@ struct _virDomainSnapshot {
 * Internal structure associated to a network filter
 */
 struct _virNWFilter {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *name;                          /* the network filter external name */
     unsigned char uuid[VIR_UUID_BUFLEN]; /* the network filter unique identifier */

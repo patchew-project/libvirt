@@ -472,12 +472,7 @@ virNWFilterObjListExport(virConnectPtr conn,
     ret = nfilters;
 
  cleanup:
-    if (tmp_filters) {
-        for (i = 0; i < nfilters; i ++)
-            virObjectUnref(tmp_filters[i]);
-    }
-    VIR_FREE(tmp_filters);
-
+    virGObjectListFreeCount(tmp_filters, nfilters);
     return ret;
 }
 

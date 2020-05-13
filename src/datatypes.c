@@ -40,7 +40,6 @@ virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
 virClassPtr virNetworkPortClass;
 virClassPtr virNodeDeviceClass;
-virClassPtr virNWFilterClass;
 virClassPtr virNWFilterBindingClass;
 virClassPtr virSecretClass;
 virClassPtr virStreamClass;
@@ -54,7 +53,6 @@ static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
 static void virNetworkPortDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
-static void virNWFilterDispose(void *obj);
 static void virNWFilterBindingDispose(void *obj);
 static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
@@ -91,6 +89,22 @@ vir_domain_snapshot_class_init(virDomainSnapshotClass *klass)
     GObjectClass *obj = G_OBJECT_CLASS(klass);
 
     obj->finalize = virDomainSnapshotFinalize;
+}
+
+G_DEFINE_TYPE(virNWFilter, vir_nw_filter, G_TYPE_OBJECT);
+static void virNWFilterFinalize(GObject *obj);
+
+static void
+vir_nw_filter_init(virNWFilter *filter G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_nw_filter_class_init(virNWFilterClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virNWFilterFinalize;
 }
 
 virClassPtr virAdmConnectClass;
@@ -149,7 +163,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNetworkPort);
     DECLARE_CLASS(virNodeDevice);
-    DECLARE_CLASS(virNWFilter);
     DECLARE_CLASS(virNWFilterBinding);
     DECLARE_CLASS(virSecret);
     DECLARE_CLASS(virStream);
@@ -883,7 +896,7 @@ virStreamDispose(void *obj)
  * @uuid: pointer to the uuid
  *
  * Allocates a new network filter object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the network filter object, or NULL on error.
  */
@@ -891,17 +904,16 @@ virNWFilterPtr
 virGetNWFilter(virConnectPtr conn, const char *name,
                const unsigned char *uuid)
 {
-    virNWFilterPtr ret = NULL;
+    g_autoptr(virNWFilter) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckConnectGoto(conn, error);
-    virCheckNonNullArgGoto(name, error);
-    virCheckNonNullArgGoto(uuid, error);
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgReturn(name, NULL);
+    virCheckNonNullArgReturn(uuid, NULL);
 
-    if (!(ret = virObjectNew(virNWFilterClass)))
-        goto error;
+    ret = VIR_NW_FILTER(g_object_new(VIR_TYPE_NW_FILTER, NULL));
 
     ret->name = g_strdup(name);
 
@@ -909,16 +921,12 @@ virGetNWFilter(virConnectPtr conn, const char *name,
 
     ret->conn = virObjectRef(conn);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
 /**
- * virNWFilterDispose:
+ * virNWFilterFinalize:
  * @obj: the network filter to release
  *
  * Unconditionally release all memory associated with a nwfilter.
@@ -928,9 +936,9 @@ virGetNWFilter(virConnectPtr conn, const char *name,
  * which may also be released if its ref count hits zero.
  */
 static void
-virNWFilterDispose(void *obj)
+virNWFilterFinalize(GObject *obj)
 {
-    virNWFilterPtr nwfilter = obj;
+    virNWFilterPtr nwfilter = VIR_NW_FILTER(obj);
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virUUIDFormat(nwfilter->uuid, uuidstr);
@@ -938,6 +946,8 @@ virNWFilterDispose(void *obj)
 
     VIR_FREE(nwfilter->name);
     virObjectUnref(nwfilter->conn);
+
+    G_OBJECT_CLASS(vir_nw_filter_parent_class)->finalize(obj);
 }
 
 
