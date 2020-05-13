@@ -658,14 +658,13 @@ virSecretUndefine(virSecretPtr secret)
 int
 virSecretRef(virSecretPtr secret)
 {
-    VIR_DEBUG("secret=%p refs=%d", secret,
-              secret ? secret->parent.u.s.refs : 0);
+    VIR_DEBUG("secret=%p", secret);
 
     virResetLastError();
 
     virCheckSecretReturn(secret, -1);
 
-    virObjectRef(secret);
+    g_object_ref(secret);
     return 0;
 }
 
@@ -687,7 +686,7 @@ virSecretFree(virSecretPtr secret)
 
     virCheckSecretReturn(secret, -1);
 
-    virObjectUnref(secret);
+    g_object_unref(secret);
     return 0;
 }
 

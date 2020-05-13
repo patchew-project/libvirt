@@ -147,7 +147,7 @@ virSecretGetSecretString(virConnectPtr conn,
                          uint8_t **secret,
                          size_t *secret_size)
 {
-    virSecretPtr sec = NULL;
+    g_autoptr(virSecret) sec = NULL;
     int ret = -1;
 
     switch (seclookupdef->type) {
@@ -190,6 +190,5 @@ virSecretGetSecretString(virConnectPtr conn,
     ret = 0;
 
  cleanup:
-    virObjectUnref(sec);
     return ret;
 }

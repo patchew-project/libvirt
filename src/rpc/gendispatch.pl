@@ -204,6 +204,7 @@ my %gobject_impl = (
     virNodeDevice => 1,
     virNWFilter => 1,
     virNWFilterBinding => 1,
+    virSecret => 1,
     virStoragePool => 1,
     virStorageVol => 1,
 );

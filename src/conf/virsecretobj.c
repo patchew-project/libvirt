@@ -611,7 +611,7 @@ virSecretObjListExport(virConnectPtr conn,
     return data.nsecrets;
 
  error:
-    virObjectListFree(data.secrets);
+    virGObjectListFreeCount(data.secrets, data.nsecrets);
     return -1;
 }
 

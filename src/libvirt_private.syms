@@ -1364,6 +1364,7 @@ vir_network_port_get_type;
 vir_node_device_get_type;
 vir_nw_filter_binding_get_type;
 vir_nw_filter_get_type;
+vir_secret_get_type;
 vir_storage_pool_get_type;
 vir_storage_vol_get_type;
 virConnectClass;
@@ -1388,7 +1389,6 @@ virGetStoragePool;
 virGetStorageVol;
 virGetStream;
 virNewConnectCloseCallbackData;
-virSecretClass;
 virStreamClass;
 
 
