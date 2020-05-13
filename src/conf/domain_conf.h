@@ -3028,6 +3028,7 @@ virDomainDeviceInfoPtr virDomainDeviceGetInfo(virDomainDeviceDefPtr device);
 void virDomainDeviceSetData(virDomainDeviceDefPtr device,
                             void *devicedata);
 void virDomainTPMDefFree(virDomainTPMDefPtr def);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(virDomainTPMDef, virDomainTPMDefFree);
 
 typedef int (*virDomainDeviceInfoCallback)(virDomainDefPtr def,
                                            virDomainDeviceDefPtr dev,
