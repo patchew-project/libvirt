@@ -51,7 +51,7 @@ testQemuDataInit(testQemuDataPtr data)
 static virQEMUCapsPtr
 testQemuGetCaps(char *caps)
 {
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     xmlDocPtr xml;
     xmlXPathContextPtr ctxt = NULL;
     ssize_t i, n;
@@ -85,11 +85,10 @@ testQemuGetCaps(char *caps)
     VIR_FREE(nodes);
     xmlFreeDoc(xml);
     xmlXPathFreeContext(ctxt);
-    return qemuCaps;
+    return g_steal_pointer(&qemuCaps);
 
  error:
     VIR_FREE(nodes);
-    virObjectUnref(qemuCaps);
     xmlFreeDoc(xml);
     xmlXPathFreeContext(ctxt);
     return NULL;
@@ -98,7 +97,7 @@ testQemuGetCaps(char *caps)
 static virCapsPtr
 testGetCaps(char *capsData, const testQemuData *data)
 {
-    virQEMUCapsPtr qemuCaps = NULL;
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     g_autoptr(virCaps) caps = NULL;
     virArch arch = virArchFromString(data->archName);
     g_autofree char *binary = NULL;
@@ -107,7 +106,7 @@ testGetCaps(char *capsData, const testQemuData *data)
 
     if ((qemuCaps = testQemuGetCaps(capsData)) == NULL) {
         fprintf(stderr, "failed to parse qemu capabilities flags");
-        goto error;
+        return NULL;
     }
 
     caps = virCapabilitiesNew(arch, false, false);
@@ -117,15 +116,10 @@ testGetCaps(char *capsData, const testQemuData *data)
                                        qemuCaps,
                                        arch) < 0) {
         fprintf(stderr, "failed to create the capabilities from qemu");
-        goto error;
+        return NULL;
     }
 
-    virObjectUnref(qemuCaps);
     return g_steal_pointer(&caps);
-
- error:
-    virObjectUnref(qemuCaps);
-    return NULL;
 }
 
 static int

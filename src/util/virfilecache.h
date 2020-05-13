@@ -23,8 +23,8 @@
 
 #include "internal.h"
 
-#include "virobject.h"
 #include "virhash.h"
+#include <glib-object.h>
 
 typedef struct _virFileCache virFileCache;
 typedef virFileCache *virFileCachePtr;
@@ -40,7 +40,7 @@ typedef virFileCache *virFileCachePtr;
  * Returns *true* if it's valid or *false* if not valid.
  */
 typedef bool
-(*virFileCacheIsValidPtr)(void *data,
+(*virFileCacheIsValidPtr)(GObject *data,
                           void *priv);
 
 /**
@@ -49,11 +49,11 @@ typedef bool
  * @priv: private data created together with cache
  *
  * Creates a new data based on the @name.  The returned data must be
- * an instance of virObject.
+ * an instance of GObject.
  *
  * Returns data object or NULL on error.
  */
-typedef void *
+typedef GObject *
 (*virFileCacheNewDataPtr)(const char *name,
                           void *priv);
 
@@ -67,7 +67,7 @@ typedef void *
  *
  * Returns cached data object or NULL on error.
  */
-typedef void *
+typedef GObject *
 (*virFileCacheLoadFilePtr)(const char *filename,
                            const char *name,
                            void *priv);
@@ -83,7 +83,7 @@ typedef void *
  * Returns 0 on success, -1 on error.
  */
 typedef int
-(*virFileCacheSaveFilePtr)(void *data,
+(*virFileCacheSaveFilePtr)(GObject *data,
                            const char *filename,
                            void *priv);
 

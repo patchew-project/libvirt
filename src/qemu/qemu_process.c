@@ -5489,7 +5489,7 @@ qemuProcessPrepareQEMUCaps(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
-    virObjectUnref(priv->qemuCaps);
+    g_clear_object(&priv->qemuCaps);
     if (!(priv->qemuCaps = virQEMUCapsCacheLookupCopy(qemuCapsCache,
                                                       vm->def->virtType,
                                                       vm->def->emulator,
