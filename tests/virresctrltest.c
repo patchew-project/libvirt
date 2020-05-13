@@ -21,7 +21,7 @@ test_virResctrlGetUnused(const void *opaque)
     char *system_dir = NULL;
     char *resctrl_dir = NULL;
     int ret = -1;
-    virResctrlAllocPtr alloc = NULL;
+    g_autoptr(virResctrlAlloc) alloc = NULL;
     char *schemata_str = NULL;
     char *schemata_file;
     virCapsPtr caps = NULL;
@@ -66,7 +66,6 @@ test_virResctrlGetUnused(const void *opaque)
     ret = 0;
  cleanup:
     virObjectUnref(caps);
-    virObjectUnref(alloc);
     VIR_FREE(system_dir);
     VIR_FREE(resctrl_dir);
     VIR_FREE(schemata_str);
