@@ -5006,12 +5006,7 @@ esxConnectListAllDomains(virConnectPtr conn,
     ret = count;
 
  cleanup:
-    if (doms) {
-        for (id = 0; id < count; id++)
-            virObjectUnref(doms[id]);
-
-        VIR_FREE(doms);
-    }
+    virGObjectListFreeCount(doms, count);
 
     VIR_FREE(name);
     esxVI_AutoStartDefaults_Free(&autoStartDefaults);

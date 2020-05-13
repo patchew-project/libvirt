@@ -1625,8 +1625,8 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                   virConnectObjectEventGenericCallback cb,
                                   void *cbopaque)
 {
-    virDomainPtr dom = virGetDomain(conn, event->meta.name,
-                                    event->meta.uuid, event->meta.id);
+    g_autoptr(virDomain) dom = virGetDomain(conn, event->meta.name,
+                                            event->meta.uuid, event->meta.id);
 
     if (!dom)
         return;
@@ -1641,13 +1641,13 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                 lifecycleEvent->type,
                                                 lifecycleEvent->detail,
                                                 cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_REBOOT:
         (cb)(conn, dom,
              cbopaque);
-        goto cleanup;
+        return;
 
     case VIR_DOMAIN_EVENT_ID_RTC_CHANGE:
         {
@@ -1657,7 +1657,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventRTCChangeCallback)cb)(conn, dom,
                                                          rtcChangeEvent->offset,
                                                          cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_WATCHDOG:
@@ -1668,7 +1668,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventWatchdogCallback)cb)(conn, dom,
                                                         watchdogEvent->action,
                                                         cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_IO_ERROR:
@@ -1681,7 +1681,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                        ioErrorEvent->devAlias,
                                                        ioErrorEvent->action,
                                                        cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_IO_ERROR_REASON:
@@ -1695,7 +1695,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                              ioErrorEvent->action,
                                                              ioErrorEvent->reason,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_GRAPHICS:
@@ -1710,13 +1710,13 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                         graphicsEvent->authScheme,
                                                         graphicsEvent->subject,
                                                         cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_CONTROL_ERROR:
         (cb)(conn, dom,
              cbopaque);
-        goto cleanup;
+        return;
 
     case VIR_DOMAIN_EVENT_ID_BLOCK_JOB:
     case VIR_DOMAIN_EVENT_ID_BLOCK_JOB_2:
@@ -1729,7 +1729,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                         blockJobEvent->type,
                                                         blockJobEvent->status,
                                                         cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_DISK_CHANGE:
@@ -1743,7 +1743,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                           diskChangeEvent->devAlias,
                                                           diskChangeEvent->reason,
                                                           cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_TRAY_CHANGE:
@@ -1755,7 +1755,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                           trayChangeEvent->devAlias,
                                                           trayChangeEvent->reason,
                                                           cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_PMWAKEUP:
@@ -1765,7 +1765,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventPMWakeupCallback)cb)(conn, dom,
                                                         pmEvent->reason,
                                                         cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_PMSUSPEND:
@@ -1775,7 +1775,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventPMSuspendCallback)cb)(conn, dom,
                                                          pmEvent->reason,
                                                          cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_BALLOON_CHANGE:
@@ -1786,7 +1786,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventBalloonChangeCallback)cb)(conn, dom,
                                                              balloonChangeEvent->actual,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_PMSUSPEND_DISK:
@@ -1796,7 +1796,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventPMSuspendDiskCallback)cb)(conn, dom,
                                                              pmEvent->reason,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_DEVICE_REMOVED:
@@ -1807,7 +1807,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventDeviceRemovedCallback)cb)(conn, dom,
                                                              deviceRemovedEvent->devAlias,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_TUNABLE:
@@ -1818,7 +1818,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                        tunableEvent->params,
                                                        tunableEvent->nparams,
                                                        cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_AGENT_LIFECYCLE:
@@ -1829,7 +1829,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               agentLifecycleEvent->state,
                                                               agentLifecycleEvent->reason,
                                                               cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_DEVICE_ADDED:
@@ -1840,7 +1840,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventDeviceAddedCallback)cb)(conn, dom,
                                                            deviceAddedEvent->devAlias,
                                                            cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION:
@@ -1851,7 +1851,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventMigrationIterationCallback)cb)(conn, dom,
                                                                   ev->iteration,
                                                                   cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_JOB_COMPLETED:
@@ -1863,7 +1863,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                              ev->params,
                                                              ev->nparams,
                                                              cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED:
@@ -1874,7 +1874,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             ((virConnectDomainEventDeviceRemovalFailedCallback)cb)(conn, dom,
                                                                    deviceRemovalFailedEvent->devAlias,
                                                                    cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_METADATA_CHANGE:
@@ -1886,7 +1886,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               metadataChangeEvent->type,
                                                               metadataChangeEvent->nsuri,
                                                               cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD:
@@ -1900,16 +1900,13 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               blockThresholdEvent->threshold,
                                                               blockThresholdEvent->excess,
                                                               cbopaque);
-            goto cleanup;
+            return;
         }
     case VIR_DOMAIN_EVENT_ID_LAST:
         break;
     }
 
     VIR_WARN("Unexpected event ID %d", event->eventID);
-
- cleanup:
-    virObjectUnref(dom);
 }
 
 
@@ -1963,7 +1960,7 @@ virDomainQemuMonitorEventDispatchFunc(virConnectPtr conn,
                                       virConnectObjectEventGenericCallback cb,
                                       void *cbopaque)
 {
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virDomainQemuMonitorEventPtr qemuMonitorEvent;
     virDomainQemuMonitorEventData *data = cbopaque;
 
@@ -1978,7 +1975,6 @@ virDomainQemuMonitorEventDispatchFunc(virConnectPtr conn,
                                                    qemuMonitorEvent->micros,
                                                    qemuMonitorEvent->details,
                                                    data->opaque);
-    virObjectUnref(dom);
 }
 
 

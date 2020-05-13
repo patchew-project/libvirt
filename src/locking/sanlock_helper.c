@@ -5,7 +5,7 @@
 #include "viralloc.h"
 #include "domain_conf.h"
 #include "virgettext.h"
-
+#include "datatypes.h"
 
 static int
 getArgs(int argc,
@@ -52,7 +52,7 @@ main(int argc, char **argv)
     virDomainLockFailureAction action;
     char *xml = NULL;
     virConnectPtr conn = NULL;
-    virDomainPtr dom = NULL;
+    g_autoptr(virDomain) dom = NULL;
     int ret = EXIT_FAILURE;
 
     int authTypes[] = {
@@ -99,7 +99,6 @@ main(int argc, char **argv)
     }
 
  cleanup:
-    virObjectUnref(dom);
     if (conn)
         virConnectClose(conn);
     VIR_FREE(xml);

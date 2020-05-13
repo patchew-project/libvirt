@@ -3146,7 +3146,7 @@ vzDomainMigratePerformP2P(virDomainObjPtr dom,
                           int nparams,
                           unsigned int flags)
 {
-    virDomainPtr ddomain = NULL;
+    g_autoptr(virDomain) ddomain = NULL;
     char *uri = NULL;
     char *cookiein = NULL;
     char *cookieout = NULL;
@@ -3222,7 +3222,6 @@ vzDomainMigratePerformP2P(virDomainObjPtr dom,
     virObjectLock(dom);
     if (ddomain)
         ret = 0;
-    virObjectUnref(ddomain);
 
     /* confirm step is NOOP thus no need to call it */
 
@@ -3735,7 +3734,7 @@ vzDomainGetAllStats(virConnectPtr conn,
 
  error:
     virTypedParamsFree(stat->params, stat->nparams);
-    virObjectUnref(stat->dom);
+    g_clear_object(&stat->dom);
     VIR_FREE(stat);
     return NULL;
 }

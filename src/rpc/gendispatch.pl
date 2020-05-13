@@ -196,6 +196,7 @@ sub get_conn_method {
 my %gobject_impl = (
     virAdmClient => 1,
     virAdmServer => 1,
+    virDomain => 1,
     virDomainCheckpoint => 1,
     virDomainSnapshot => 1,
     virInterface => 1,
@@ -626,7 +627,7 @@ elsif ($mode eq "server") {
                     my $type_name = name_to_TypeName($1);
                     my $unref_impl = get_unref_method("virDomain${type_name}");
 
-                    push(@vars_list, "virDomainPtr dom = NULL");
+                    push(@vars_list, "g_autoptr(virDomain) dom = NULL");
                     push(@vars_list, "virDomain${type_name}Ptr ${1} = NULL");
                     push(@getters_list,
                          "    if (!(dom = get_nonnull_domain($conn_var, args->${2}.dom)))\n" .
@@ -637,8 +638,7 @@ elsif ($mode eq "server") {
                     push(@args_list, "$1");
                     push(@free_list,
                          "    if ($1)\n" .
-                         "        $unref_impl($1);\n" .
-                         "    virObjectUnref(dom);");
+                         "        $unref_impl($1);\n");
                 } elsif ($args_member =~ m/^(?:(?:admin|remote)_string|remote_uuid) (\S+)<\S+>;/) {
                     push(@args_list, $conn_var) if !@args_list;
                     push(@args_list, "args->$1.$1_val");

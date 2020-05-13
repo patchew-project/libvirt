@@ -4572,7 +4572,7 @@ remoteDomainBuildEventLifecycleHelper(virConnectPtr conn,
                                       int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4580,7 +4580,6 @@ remoteDomainBuildEventLifecycleHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventLifecycleNewFromDom(dom, msg->event, msg->detail);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4610,7 +4609,7 @@ remoteDomainBuildEventRebootHelper(virConnectPtr conn,
                                    int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4618,7 +4617,6 @@ remoteDomainBuildEventRebootHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventRebootNewFromDom(dom);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4647,7 +4645,7 @@ remoteDomainBuildEventRTCChangeHelper(virConnectPtr conn,
                                       int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4655,7 +4653,6 @@ remoteDomainBuildEventRTCChangeHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventRTCChangeNewFromDom(dom, msg->offset);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4684,7 +4681,7 @@ remoteDomainBuildEventWatchdogHelper(virConnectPtr conn,
                                      int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4692,7 +4689,6 @@ remoteDomainBuildEventWatchdogHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventWatchdogNewFromDom(dom, msg->action);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4721,7 +4717,7 @@ remoteDomainBuildEventIOErrorHelper(virConnectPtr conn,
                                     int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4732,7 +4728,6 @@ remoteDomainBuildEventIOErrorHelper(virConnectPtr conn,
                                             msg->srcPath,
                                             msg->devAlias,
                                             msg->action);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4761,7 +4756,7 @@ remoteDomainBuildEventIOErrorReasonHelper(virConnectPtr conn,
                                           int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4773,8 +4768,6 @@ remoteDomainBuildEventIOErrorReasonHelper(virConnectPtr conn,
                                                   msg->devAlias,
                                                   msg->action,
                                                   msg->reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4803,7 +4796,7 @@ remoteDomainBuildEventBlockJobHelper(virConnectPtr conn,
                                      int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4812,8 +4805,6 @@ remoteDomainBuildEventBlockJobHelper(virConnectPtr conn,
 
     event = virDomainEventBlockJobNewFromDom(dom, msg->path, msg->type,
                                              msg->status);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4843,7 +4834,7 @@ remoteDomainBuildEventBlockJob2(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     remote_domain_event_block_job_2_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4852,8 +4843,6 @@ remoteDomainBuildEventBlockJob2(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virDomainEventBlockJob2NewFromDom(dom, msg->dst, msg->type,
                                               msg->status);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -4864,7 +4853,7 @@ remoteDomainBuildEventGraphicsHelper(virConnectPtr conn,
                                      int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
     virDomainEventGraphicsAddressPtr localAddr = NULL;
     virDomainEventGraphicsAddressPtr remoteAddr = NULL;
@@ -4904,8 +4893,6 @@ remoteDomainBuildEventGraphicsHelper(virConnectPtr conn,
                                              msg->authScheme,
                                              subject);
 
-    virObjectUnref(dom);
-
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
     return;
 
@@ -4928,7 +4915,6 @@ remoteDomainBuildEventGraphicsHelper(virConnectPtr conn,
         VIR_FREE(subject->identities);
         VIR_FREE(subject);
     }
-    virObjectUnref(dom);
     return;
 }
 static void
@@ -4956,7 +4942,7 @@ remoteDomainBuildEventControlErrorHelper(virConnectPtr conn,
                                          int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -4964,8 +4950,6 @@ remoteDomainBuildEventControlErrorHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventControlErrorNewFromDom(dom);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -4995,7 +4979,7 @@ remoteDomainBuildEventDiskChangeHelper(virConnectPtr conn,
                                        int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5007,8 +4991,6 @@ remoteDomainBuildEventDiskChangeHelper(virConnectPtr conn,
                                                msg->newSrcPath ? *msg->newSrcPath : NULL,
                                                msg->devAlias,
                                                msg->reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5038,7 +5020,7 @@ remoteDomainBuildEventTrayChangeHelper(virConnectPtr conn,
                                        int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5048,8 +5030,6 @@ remoteDomainBuildEventTrayChangeHelper(virConnectPtr conn,
     event = virDomainEventTrayChangeNewFromDom(dom,
                                                msg->devAlias,
                                                msg->reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5079,7 +5059,7 @@ remoteDomainBuildEventPMWakeupHelper(virConnectPtr conn,
                                      int reason)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5087,8 +5067,6 @@ remoteDomainBuildEventPMWakeupHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventPMWakeupNewFromDom(dom, reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5119,7 +5097,7 @@ remoteDomainBuildEventPMSuspendHelper(virConnectPtr conn,
                                       int reason)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5127,8 +5105,6 @@ remoteDomainBuildEventPMSuspendHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventPMSuspendNewFromDom(dom, reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5159,7 +5135,7 @@ remoteDomainBuildEventBalloonChangeHelper(virConnectPtr conn,
                                           int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5167,7 +5143,6 @@ remoteDomainBuildEventBalloonChangeHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventBalloonChangeNewFromDom(dom, msg->actual);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5198,7 +5173,7 @@ remoteDomainBuildEventPMSuspendDiskHelper(virConnectPtr conn,
                                           int reason)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5206,8 +5181,6 @@ remoteDomainBuildEventPMSuspendDiskHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventPMSuspendDiskNewFromDom(dom, reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5238,7 +5211,7 @@ remoteDomainBuildEventDeviceRemovedHelper(virConnectPtr conn,
                                           int callbackID)
 {
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5246,8 +5219,6 @@ remoteDomainBuildEventDeviceRemovedHelper(virConnectPtr conn,
         return;
 
     event = virDomainEventDeviceRemovedNewFromDom(dom, msg->devAlias);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, callbackID);
 }
@@ -5278,7 +5249,7 @@ remoteDomainBuildEventCallbackDeviceAdded(virNetClientProgramPtr prog G_GNUC_UNU
     virConnectPtr conn = opaque;
     remote_domain_event_callback_device_added_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5286,8 +5257,6 @@ remoteDomainBuildEventCallbackDeviceAdded(virNetClientProgramPtr prog G_GNUC_UNU
         return;
 
     event = virDomainEventDeviceAddedNewFromDom(dom, msg->devAlias);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5301,15 +5270,13 @@ remoteDomainBuildEventCallbackDeviceRemovalFailed(virNetClientProgramPtr prog G_
     virConnectPtr conn = opaque;
     remote_domain_event_callback_device_removal_failed_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(dom = get_nonnull_domain(conn, msg->dom)))
         return;
 
     event = virDomainEventDeviceRemovalFailedNewFromDom(dom, msg->devAlias);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5322,7 +5289,7 @@ remoteDomainBuildEventCallbackTunable(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     remote_domain_event_callback_tunable_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
     virObjectEventPtr event = NULL;
@@ -5341,8 +5308,6 @@ remoteDomainBuildEventCallbackTunable(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virDomainEventTunableNewFromDom(dom, params, nparams);
 
-    virObjectUnref(dom);
-
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
 
@@ -5355,7 +5320,7 @@ remoteDomainBuildEventCallbackAgentLifecycle(virNetClientProgramPtr prog G_GNUC_
     virConnectPtr conn = opaque;
     remote_domain_event_callback_agent_lifecycle_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(dom = get_nonnull_domain(conn, msg->dom)))
@@ -5363,8 +5328,6 @@ remoteDomainBuildEventCallbackAgentLifecycle(virNetClientProgramPtr prog G_GNUC_
 
     event = virDomainEventAgentLifecycleNewFromDom(dom, msg->state,
                                                    msg->reason);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5379,15 +5342,13 @@ remoteDomainBuildEventCallbackMigrationIteration(virNetClientProgramPtr prog G_G
     virConnectPtr conn = opaque;
     remote_domain_event_callback_migration_iteration_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(dom = get_nonnull_domain(conn, msg->dom)))
         return;
 
     event = virDomainEventMigrationIterationNewFromDom(dom, msg->iteration);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5402,7 +5363,7 @@ remoteDomainBuildEventCallbackJobCompleted(virNetClientProgramPtr prog G_GNUC_UN
     virConnectPtr conn = opaque;
     remote_domain_event_callback_job_completed_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
     virTypedParameterPtr params = NULL;
     int nparams = 0;
@@ -5420,8 +5381,6 @@ remoteDomainBuildEventCallbackJobCompleted(virNetClientProgramPtr prog G_GNUC_UN
 
     event = virDomainEventJobCompletedNewFromDom(dom, params, nparams);
 
-    virObjectUnref(dom);
-
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
 
@@ -5434,15 +5393,13 @@ remoteDomainBuildEventCallbackMetadataChange(virNetClientProgramPtr prog G_GNUC_
     virConnectPtr conn = opaque;
     remote_domain_event_callback_metadata_change_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(dom = get_nonnull_domain(conn, msg->dom)))
         return;
 
     event = virDomainEventMetadataChangeNewFromDom(dom, msg->type, msg->nsuri ? *msg->nsuri : NULL);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5600,7 +5557,7 @@ remoteDomainBuildQemuMonitorEvent(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     qemu_domain_monitor_event_msg *msg = evdata;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     dom = get_nonnull_domain(conn, msg->dom);
@@ -5611,7 +5568,6 @@ remoteDomainBuildQemuMonitorEvent(virNetClientProgramPtr prog G_GNUC_UNUSED,
                                          msg->event, msg->seconds,
                                          msg->micros,
                                          msg->details ? *msg->details : NULL);
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5660,7 +5616,7 @@ remoteDomainBuildEventBlockThreshold(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     remote_domain_event_block_threshold_msg *msg = evdata;
     struct private_data *priv = conn->privateData;
-    virDomainPtr dom;
+    g_autoptr(virDomain) dom = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(dom = get_nonnull_domain(conn, msg->dom)))
@@ -5669,8 +5625,6 @@ remoteDomainBuildEventBlockThreshold(virNetClientProgramPtr prog G_GNUC_UNUSED,
     event = virDomainEventBlockThresholdNewFromDom(dom, msg->dev,
                                                    msg->path ? *msg->path : NULL,
                                                    msg->threshold, msg->excess);
-
-    virObjectUnref(dom);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -7779,7 +7733,7 @@ remoteConnectGetAllDomainStats(virConnectPtr conn,
 
  cleanup:
     if (elem) {
-        virObjectUnref(elem->dom);
+        g_clear_object(&elem->dom);
         VIR_FREE(elem);
     }
     virDomainStatsRecordListFree(tmpret);
