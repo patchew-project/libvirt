@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include "virobject.h"
+#include "internal.h"
+#include <glib-object.h>
 #include "virsocketaddr.h"
 
 typedef struct
@@ -75,7 +76,8 @@ typedef enum {
    DNSMASQ_CAPS_LAST,             /* this must always be the last item */
 } dnsmasqCapsFlags;
 
-typedef struct _dnsmasqCaps dnsmasqCaps;
+#define DNSMASQ_TYPE_CAPS dnsmasq_caps_get_type()
+G_DECLARE_FINAL_TYPE(dnsmasqCaps, dnsmasq_caps, DNSMASQ, CAPS, GObject);
 typedef dnsmasqCaps *dnsmasqCapsPtr;
 
 

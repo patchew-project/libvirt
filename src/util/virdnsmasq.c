@@ -598,7 +598,7 @@ dnsmasqReload(pid_t pid G_GNUC_UNUSED)
  *
  */
 struct _dnsmasqCaps {
-    virObject parent;
+    GObject parent;
     char *binaryPath;
     bool noRefresh;
     time_t mtime;
@@ -606,26 +606,31 @@ struct _dnsmasqCaps {
     unsigned long version;
 };
 
-static virClassPtr dnsmasqCapsClass;
+G_DEFINE_TYPE(dnsmasqCaps, dnsmasq_caps, G_TYPE_OBJECT);
 
 static void
-dnsmasqCapsDispose(void *obj)
+dnsmasqCapsFinalize(GObject *obj)
 {
-    dnsmasqCapsPtr caps = obj;
+    dnsmasqCapsPtr caps = DNSMASQ_CAPS(obj);
 
     virBitmapFree(caps->flags);
     VIR_FREE(caps->binaryPath);
+
+    G_OBJECT_CLASS(dnsmasq_caps_parent_class)->finalize(obj);
 }
 
-static int dnsmasqCapsOnceInit(void)
+static void
+dnsmasq_caps_init(dnsmasqCaps *caps G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(dnsmasqCaps, virClassForObject()))
-        return -1;
-
-    return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(dnsmasqCaps);
+static void
+dnsmasq_caps_class_init(dnsmasqCapsClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = dnsmasqCapsFinalize;
+}
 
 static void
 dnsmasqCapsSet(dnsmasqCapsPtr caps,
@@ -764,65 +769,54 @@ dnsmasqCapsRefreshInternal(dnsmasqCapsPtr caps, bool force)
 static dnsmasqCapsPtr
 dnsmasqCapsNewEmpty(const char *binaryPath)
 {
-    dnsmasqCapsPtr caps;
-
-    if (dnsmasqCapsInitialize() < 0)
-        return NULL;
-    if (!(caps = virObjectNew(dnsmasqCapsClass)))
-        return NULL;
+    g_autoptr(dnsmasqCaps) caps =
+        DNSMASQ_CAPS(g_object_new(DNSMASQ_TYPE_CAPS, NULL));
     if (!(caps->flags = virBitmapNew(DNSMASQ_CAPS_LAST)))
-        goto error;
+        return NULL;
     caps->binaryPath = g_strdup(binaryPath ? binaryPath : DNSMASQ);
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 dnsmasqCapsPtr
 dnsmasqCapsNewFromBuffer(const char *buf, const char *binaryPath)
 {
-    dnsmasqCapsPtr caps = dnsmasqCapsNewEmpty(binaryPath);
+    g_autoptr(dnsmasqCaps) caps = dnsmasqCapsNewEmpty(binaryPath);
 
     if (!caps)
         return NULL;
 
     if (dnsmasqCapsSetFromBuffer(caps, buf) < 0) {
-        virObjectUnref(caps);
         return NULL;
     }
-    return caps;
+    return g_steal_pointer(&caps);
 }
 
 dnsmasqCapsPtr
 dnsmasqCapsNewFromFile(const char *dataPath, const char *binaryPath)
 {
-    dnsmasqCapsPtr caps = dnsmasqCapsNewEmpty(binaryPath);
+    g_autoptr(dnsmasqCaps) caps = dnsmasqCapsNewEmpty(binaryPath);
 
     if (!caps)
         return NULL;
 
     if (dnsmasqCapsSetFromFile(caps, dataPath) < 0) {
-        virObjectUnref(caps);
         return NULL;
     }
-    return caps;
+    return g_steal_pointer(&caps);
 }
 
 dnsmasqCapsPtr
 dnsmasqCapsNewFromBinary(const char *binaryPath)
 {
-    dnsmasqCapsPtr caps = dnsmasqCapsNewEmpty(binaryPath);
+    g_autoptr(dnsmasqCaps) caps = dnsmasqCapsNewEmpty(binaryPath);
 
     if (!caps)
         return NULL;
 
     if (dnsmasqCapsRefreshInternal(caps, true) < 0) {
-        virObjectUnref(caps);
         return NULL;
     }
-    return caps;
+    return g_steal_pointer(&caps);
 }
 
 /** dnsmasqCapsRefresh:
