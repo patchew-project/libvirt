@@ -891,7 +891,7 @@ networkStateCleanup(void)
         return -1;
 
     virObjectUnref(network_driver->networkEventState);
-    virObjectUnref(network_driver->xmlopt);
+    g_clear_object(&network_driver->xmlopt);
 
     /* free inactive networks */
     virObjectUnref(network_driver->networks);

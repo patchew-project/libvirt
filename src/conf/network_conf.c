@@ -77,35 +77,23 @@ VIR_ENUM_IMPL(virNetworkDHCPLeaseTimeUnit,
               "hours",
 );
 
-static virClassPtr virNetworkXMLOptionClass;
+G_DEFINE_TYPE(virNetworkXMLOption, vir_network_xml_option, G_TYPE_OBJECT);
 
 static void
-virNetworkXMLOptionDispose(void *obj G_GNUC_UNUSED)
+vir_network_xml_option_init(virNetworkXMLOption *xmlopt G_GNUC_UNUSED)
 {
-    return;
 }
 
-static int
-virNetworkXMLOnceInit(void)
+static void
+vir_network_xml_option_class_init(virNetworkXMLOptionClass *klass G_GNUC_UNUSED)
 {
-    if (!VIR_CLASS_NEW(virNetworkXMLOption, virClassForObject()))
-        return -1;
-
-    return 0;
 }
-
-VIR_ONCE_GLOBAL_INIT(virNetworkXML);
 
 virNetworkXMLOptionPtr
 virNetworkXMLOptionNew(virXMLNamespacePtr xmlns)
 {
-    virNetworkXMLOptionPtr xmlopt;
-
-    if (virNetworkXMLInitialize() < 0)
-        return NULL;
-
-    if (!(xmlopt = virObjectNew(virNetworkXMLOptionClass)))
-        return NULL;
+    virNetworkXMLOptionPtr xmlopt =
+        VIR_NETWORK_XML_OPTION(g_object_new(VIR_TYPE_NETWORK_XML_OPTION, NULL));
 
     if (xmlns)
         xmlopt->ns = *xmlns;
