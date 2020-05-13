@@ -400,7 +400,7 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
     virDomainDefPtr oldDef = NULL;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
     g_autoptr(virCaps) caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE;
 
@@ -458,7 +458,6 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     virDomainDefFree(oldDef);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     return dom;
 }
 
@@ -475,7 +474,7 @@ static int lxcDomainUndefineFlags(virDomainPtr dom,
     virDomainObjPtr vm;
     virObjectEventPtr event = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(0, -1);
 
@@ -510,7 +509,6 @@ static int lxcDomainUndefineFlags(virDomainPtr dom,
  cleanup:
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -638,7 +636,7 @@ static int lxcDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
     int ret = -1;
     virLXCDomainObjPrivatePtr priv;
     virLXCDriverPtr driver = dom->conn->privateData;
-    virLXCDriverConfigPtr cfg = NULL;
+    g_autoptr(virLXCDriverConfig) cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG |
@@ -719,7 +717,6 @@ static int lxcDomainSetMemoryFlags(virDomainPtr dom, unsigned long newmem,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -743,7 +740,7 @@ lxcDomainSetMemoryParameters(virDomainPtr dom,
     virDomainDefPtr persistentDef = NULL;
     virDomainObjPtr vm = NULL;
     virLXCDomainObjPrivatePtr priv = NULL;
-    virLXCDriverConfigPtr cfg = NULL;
+    g_autoptr(virLXCDriverConfig) cfg = NULL;
     virLXCDriverPtr driver = dom->conn->privateData;
     int ret = -1;
 
@@ -804,7 +801,6 @@ lxcDomainSetMemoryParameters(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -976,7 +972,7 @@ static int lxcDomainCreateWithFiles(virDomainPtr dom,
     virDomainObjPtr vm;
     virObjectEventPtr event = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(VIR_DOMAIN_START_AUTODESTROY, -1);
 
@@ -1023,7 +1019,6 @@ static int lxcDomainCreateWithFiles(virDomainPtr dom,
  cleanup:
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     virNWFilterUnlockFilterUpdates();
     return ret;
 }
@@ -1079,7 +1074,7 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
     virDomainDefPtr def = NULL;
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
     g_autoptr(virCaps) caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE;
 
@@ -1150,7 +1145,6 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
     virDomainDefFree(def);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
-    virObjectUnref(cfg);
     virNWFilterUnlockFilterUpdates();
     return dom;
 }
@@ -1583,7 +1577,7 @@ static void lxcNotifyLoadDomain(virDomainObjPtr vm, int newVM, void *opaque)
 static int
 lxcStateReload(void)
 {
-    virLXCDriverConfigPtr cfg = NULL;
+    g_autoptr(virLXCDriverConfig) cfg = NULL;
 
     if (!lxc_driver)
         return 0;
@@ -1595,7 +1589,6 @@ lxcStateReload(void)
                                    cfg->autostartDir, false,
                                    lxc_driver->xmlopt,
                                    lxcNotifyLoadDomain, lxc_driver);
-    virObjectUnref(cfg);
     return 0;
 }
 
@@ -1619,7 +1612,7 @@ static int lxcStateCleanup(void)
     if (lxc_driver->lockFD != -1)
         virPidFileRelease(lxc_driver->config->stateDir, "driver", lxc_driver->lockFD);
 
-    virObjectUnref(lxc_driver->config);
+    g_clear_object(&lxc_driver->config);
     virMutexDestroy(&lxc_driver->lock);
     VIR_FREE(lxc_driver);
 
@@ -1800,7 +1793,7 @@ lxcDomainSetSchedulerParametersFlags(virDomainPtr dom,
     int ret = -1;
     int rc;
     virLXCDomainObjPrivatePtr priv;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -1913,7 +1906,6 @@ lxcDomainSetSchedulerParametersFlags(virDomainPtr dom,
  cleanup:
     virDomainDefFree(persistentDefCopy);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2238,7 +2230,7 @@ lxcDomainSetBlkioParameters(virDomainPtr dom,
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = NULL;
+    g_autoptr(virLXCDriverConfig) cfg = NULL;
     virLXCDomainObjPrivatePtr priv;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -2303,7 +2295,6 @@ lxcDomainSetBlkioParameters(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2462,7 +2453,7 @@ static int lxcDomainSetAutostart(virDomainPtr dom,
     virDomainObjPtr vm;
     char *configFile = NULL, *autostartLink = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     if (!(vm = lxcDomObjFromDomain(dom)))
         goto cleanup;
@@ -2528,7 +2519,6 @@ static int lxcDomainSetAutostart(virDomainPtr dom,
     VIR_FREE(configFile);
     VIR_FREE(autostartLink);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2624,7 +2614,7 @@ static int lxcDomainSuspend(virDomainPtr dom)
     virDomainObjPtr vm;
     virObjectEventPtr event = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     if (!(vm = lxcDomObjFromDomain(dom)))
         goto cleanup;
@@ -2661,7 +2651,6 @@ static int lxcDomainSuspend(virDomainPtr dom)
  cleanup:
     virObjectEventStateQueue(driver->domainEventState, event);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -2673,7 +2662,7 @@ static int lxcDomainResume(virDomainPtr dom)
     int ret = -1;
     int state;
     virLXCDomainObjPrivatePtr priv;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     if (!(vm = lxcDomObjFromDomain(dom)))
         goto cleanup;
@@ -2718,7 +2707,6 @@ static int lxcDomainResume(virDomainPtr dom)
  cleanup:
     virObjectEventStateQueue(driver->domainEventState, event);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4296,7 +4284,7 @@ static int lxcDomainAttachDeviceFlags(virDomainPtr dom,
     virDomainDefPtr vmdef = NULL;
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -4383,7 +4371,6 @@ static int lxcDomainAttachDeviceFlags(virDomainPtr dom,
         virDomainDeviceDefFree(dev_copy);
     virDomainDeviceDefFree(dev);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4405,7 +4392,7 @@ static int lxcDomainUpdateDeviceFlags(virDomainPtr dom,
     virDomainDefPtr vmdef = NULL;
     virDomainDeviceDefPtr dev = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -4455,7 +4442,6 @@ static int lxcDomainUpdateDeviceFlags(virDomainPtr dom,
     virDomainDefFree(vmdef);
     virDomainDeviceDefFree(dev);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4470,7 +4456,7 @@ static int lxcDomainDetachDeviceFlags(virDomainPtr dom,
     virDomainDefPtr vmdef = NULL;
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     int ret = -1;
-    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
+    g_autoptr(virLXCDriverConfig) cfg = virLXCDriverGetConfig(driver);
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -4551,7 +4537,6 @@ static int lxcDomainDetachDeviceFlags(virDomainPtr dom,
         virDomainDeviceDefFree(dev_copy);
     virDomainDeviceDefFree(dev);
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -4824,7 +4809,7 @@ lxcDomainSetMetadata(virDomainPtr dom,
 {
     virLXCDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
-    virLXCDriverConfigPtr cfg = NULL;
+    g_autoptr(virLXCDriverConfig) cfg = NULL;
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -4855,7 +4840,6 @@ lxcDomainSetMetadata(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     return ret;
 }
 

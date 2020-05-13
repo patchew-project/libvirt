@@ -34,6 +34,7 @@
 #include "virusb.h"
 #include "virclosecallbacks.h"
 #include "virhostdev.h"
+#include <glib-object.h>
 
 #define LXC_DRIVER_NAME "LXC"
 
@@ -45,11 +46,16 @@
 typedef struct _virLXCDriver virLXCDriver;
 typedef virLXCDriver *virLXCDriverPtr;
 
-typedef struct _virLXCDriverConfig virLXCDriverConfig;
+#define VIR_TYPE_LXC_DRIVER_CONFIG vir_lxc_driver_config_get_type()
+G_DECLARE_FINAL_TYPE(virLXCDriverConfig,
+                     vir_lxc_driver_config,
+                     VIR,
+                     LXC_DRIVER_CONFIG,
+                     GObject);
 typedef virLXCDriverConfig *virLXCDriverConfigPtr;
 
 struct _virLXCDriverConfig {
-    virObject parent;
+    GObject parent;
 
     char *configDir;
     char *autostartDir;
