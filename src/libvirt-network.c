@@ -654,7 +654,7 @@ virNetworkFree(virNetworkPtr network)
 
     virCheckNetworkReturn(network, -1);
 
-    virObjectUnref(network);
+    g_object_unref(network);
     return 0;
 }
 
@@ -679,14 +679,13 @@ virNetworkFree(virNetworkPtr network)
 int
 virNetworkRef(virNetworkPtr network)
 {
-    VIR_DEBUG("network=%p refs=%d", network,
-              network ? network->parent.u.s.refs : 0);
+    VIR_DEBUG("network=%p", network);
 
     virResetLastError();
 
     virCheckNetworkReturn(network, -1);
 
-    virObjectRef(network);
+    g_object_ref(network);
     return 0;
 }
 

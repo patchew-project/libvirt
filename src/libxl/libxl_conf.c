@@ -1236,7 +1236,7 @@ libxlMakeNic(virDomainDefPtr def,
              bool attach)
 {
     virDomainNetType actual_type = virDomainNetGetActualType(l_nic);
-    virNetworkPtr network = NULL;
+    g_autoptr(virNetwork) network = NULL;
     virConnectPtr conn = NULL;
     const virNetDevBandwidth *actual_bw;
     const virNetDevVPortProfile *port_profile;
@@ -1435,7 +1435,6 @@ libxlMakeNic(virDomainDefPtr def,
 
  cleanup:
     virBufferFreeAndReset(&buf);
-    virObjectUnref(network);
     virObjectUnref(conn);
 
     return ret;
