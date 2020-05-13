@@ -1604,7 +1604,7 @@ static int lxcStateCleanup(void)
 
     virSysinfoDefFree(lxc_driver->hostsysinfo);
 
-    virObjectUnref(lxc_driver->hostdevMgr);
+    g_clear_object(&lxc_driver->hostdevMgr);
     g_clear_object(&lxc_driver->caps);
     virObjectUnref(lxc_driver->securityManager);
     g_clear_object(&lxc_driver->xmlopt);

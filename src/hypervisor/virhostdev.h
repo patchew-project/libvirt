@@ -30,6 +30,7 @@
 #include "conf/domain_conf.h"
 #include "virmdev.h"
 #include "virnvme.h"
+#include <glib-object.h>
 
 typedef enum {
     VIR_HOSTDEV_STRICT_ACS_CHECK     = (1 << 0), /* strict acs check */
@@ -41,10 +42,8 @@ typedef enum {
 } virHostdevFlag;
 
 
-typedef struct _virHostdevManager virHostdevManager;
-typedef virHostdevManager *virHostdevManagerPtr;
 struct _virHostdevManager {
-    virObject parent;
+    GObject parent;
 
     char *stateDir;
 
@@ -59,7 +58,13 @@ struct _virHostdevManager {
     virNVMeDeviceListPtr activeNVMeHostdevs;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virHostdevManager, virObjectUnref);
+#define VIR_TYPE_HOSTDEV_MANAGER vir_hostdev_manager_get_type()
+G_DECLARE_FINAL_TYPE(virHostdevManager,
+                     vir_hostdev_manager,
+                     VIR,
+                     HOSTDEV_MANAGER,
+                     GObject);
+typedef virHostdevManager *virHostdevManagerPtr;
 
 
 virHostdevManagerPtr virHostdevManagerGetDefault(void);
