@@ -613,22 +613,17 @@ elsif ($mode eq "server") {
                     next
                 } elsif ($args_member =~ m/^remote_nonnull_(domain|network|network_port|storage_pool|storage_vol|interface|secret|nwfilter|nwfilter_binding) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
-                    my $unref_impl = get_unref_method("vir${type_name}");
 
-                    push(@vars_list, "vir${type_name}Ptr $2 = NULL");
+                    push(@vars_list, "g_autoptr(vir${type_name}) $2 = NULL");
                     push(@getters_list,
                          "    if (!($2 = get_nonnull_$1($conn_var, args->$2)))\n" .
                          "        goto cleanup;\n");
                     push(@args_list, "$2");
-                    push(@free_list,
-                         "    if ($2)\n" .
-                         "        $unref_impl($2);");
                 } elsif ($args_member =~ m/^remote_nonnull_domain_(checkpoint|snapshot) (\S+);$/) {
                     my $type_name = name_to_TypeName($1);
-                    my $unref_impl = get_unref_method("virDomain${type_name}");
 
                     push(@vars_list, "g_autoptr(virDomain) dom = NULL");
-                    push(@vars_list, "virDomain${type_name}Ptr ${1} = NULL");
+                    push(@vars_list, "g_autoptr(virDomain${type_name}) ${1} = NULL");
                     push(@getters_list,
                          "    if (!(dom = get_nonnull_domain($conn_var, args->${2}.dom)))\n" .
                          "        goto cleanup;\n" .
@@ -636,9 +631,6 @@ elsif ($mode eq "server") {
                          "    if (!($1 = get_nonnull_domain_${1}(dom, args->$2)))\n" .
                          "        goto cleanup;\n");
                     push(@args_list, "$1");
-                    push(@free_list,
-                         "    if ($1)\n" .
-                         "        $unref_impl($1);\n");
                 } elsif ($args_member =~ m/^(?:(?:admin|remote)_string|remote_uuid) (\S+)<\S+>;/) {
                     push(@args_list, $conn_var) if !@args_list;
                     push(@args_list, "args->$1.$1_val");
@@ -852,12 +844,8 @@ elsif ($mode eq "server") {
                         $single_ret_var = undef;
                         $single_ret_by_ref = 1;
                     } else {
-                        my $unref_impl = get_unref_method("vir${type_name}");
-                        push(@vars_list, "vir${type_name}Ptr $2 = NULL");
+                        push(@vars_list, "g_autoptr(vir${type_name}) $2 = NULL");
                         push(@ret_list, "make_nonnull_$1(&ret->$2, $2);\n");
-                        push(@free_list,
-                             "    if ($2)\n" .
-                             "        $unref_impl($2);");
                         $single_ret_var = $2;
                         $single_ret_by_ref = 0;
                         $single_ret_check = " == NULL";
