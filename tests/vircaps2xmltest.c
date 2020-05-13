@@ -38,7 +38,7 @@ test_virCapabilities(const void *opaque)
 {
     struct virCapabilitiesData *data = (struct virCapabilitiesData *) opaque;
     const char *archStr = virArchToString(data->arch);
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     char *capsXML = NULL;
     char *path = NULL;
     char *system = NULL;
@@ -54,9 +54,6 @@ test_virCapabilities(const void *opaque)
     virFileWrapperAddPrefix("/sys/devices/system", system);
     virFileWrapperAddPrefix("/sys/fs/resctrl", resctrl);
     caps = virCapabilitiesNew(data->arch, data->offlineMigrate, data->liveMigrate);
-
-    if (!caps)
-        goto cleanup;
 
     if (!(caps->host.numa = virCapabilitiesHostNUMANewHost()))
         goto cleanup;
@@ -82,7 +79,6 @@ test_virCapabilities(const void *opaque)
     VIR_FREE(resctrl);
     VIR_FREE(path);
     VIR_FREE(capsXML);
-    virObjectUnref(caps);
     return ret;
 }
 

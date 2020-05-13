@@ -196,11 +196,10 @@ testQemuAddGuest(virCapsPtr caps,
 
 virCapsPtr testQemuCapsInit(void)
 {
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     size_t i;
 
-    if (!(caps = virCapabilitiesNew(VIR_ARCH_X86_64, false, false)))
-        return NULL;
+    caps = virCapabilitiesNew(VIR_ARCH_X86_64, false, false);
 
     /* Add dummy 'none' security_driver. This is equal to setting
      * security_driver = "none" in qemu.conf. */
@@ -231,11 +230,10 @@ virCapsPtr testQemuCapsInit(void)
         VIR_FREE(caps_str);
     }
 
-    return caps;
+    return g_steal_pointer(&caps);
 
  cleanup:
     caps->host.cpu = NULL;
-    virObjectUnref(caps);
     return NULL;
 }
 
@@ -314,7 +312,7 @@ void qemuTestDriverFree(virQEMUDriver *driver)
     }
     virObjectUnref(driver->qemuCapsCache);
     virObjectUnref(driver->xmlopt);
-    virObjectUnref(driver->caps);
+    g_clear_object(&driver->caps);
     virObjectUnref(driver->config);
     virObjectUnref(driver->securityManager);
 }

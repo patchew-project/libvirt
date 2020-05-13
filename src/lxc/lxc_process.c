@@ -1565,7 +1565,7 @@ int virLXCProcessStart(virConnectPtr conn,
     VIR_FREE(pidfile);
     VIR_FREE(logfile);
     virObjectUnref(cfg);
-    virObjectUnref(caps);
+    g_clear_object(&caps);
 
     virErrorRestore(&err);
 

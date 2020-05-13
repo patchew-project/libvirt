@@ -99,7 +99,7 @@ static virCapsPtr
 testGetCaps(char *capsData, const testQemuData *data)
 {
     virQEMUCapsPtr qemuCaps = NULL;
-    virCapsPtr caps = NULL;
+    g_autoptr(virCaps) caps = NULL;
     virArch arch = virArchFromString(data->archName);
     g_autofree char *binary = NULL;
 
@@ -110,10 +110,7 @@ testGetCaps(char *capsData, const testQemuData *data)
         goto error;
     }
 
-    if ((caps = virCapabilitiesNew(arch, false, false)) == NULL) {
-        fprintf(stderr, "failed to create the fake capabilities");
-        goto error;
-    }
+    caps = virCapabilitiesNew(arch, false, false);
 
     if (virQEMUCapsInitGuestFromBinary(caps,
                                        binary,
@@ -124,11 +121,10 @@ testGetCaps(char *capsData, const testQemuData *data)
     }
 
     virObjectUnref(qemuCaps);
-    return caps;
+    return g_steal_pointer(&caps);
 
  error:
     virObjectUnref(qemuCaps);
-    virObjectUnref(caps);
     return NULL;
 }
 
@@ -140,7 +136,7 @@ testQemuCapsXML(const void *opaque)
     char *capsFile = NULL, *xmlFile = NULL;
     char *capsData = NULL;
     char *capsXml = NULL;
-    virCapsPtr capsProvided = NULL;
+    g_autoptr(virCaps) capsProvided = NULL;
 
     xmlFile = g_strdup_printf("%s/caps.%s.xml", data->outputDir, data->archName);
 
@@ -167,7 +163,6 @@ testQemuCapsXML(const void *opaque)
     VIR_FREE(capsFile);
     VIR_FREE(capsXml);
     VIR_FREE(capsData);
-    virObjectUnref(capsProvided);
     return ret;
 }
 

@@ -198,7 +198,7 @@ mymain(void)
     DO_TEST_BACKUP("backup-push-encrypted");
 
 
-    virObjectUnref(caps);
+    g_clear_object(&caps);
     virObjectUnref(xmlopt);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

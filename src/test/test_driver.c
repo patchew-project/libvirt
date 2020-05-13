@@ -158,7 +158,7 @@ testDriverDispose(void *obj)
     testDriverPtr driver = obj;
     size_t i;
 
-    virObjectUnref(driver->caps);
+    g_clear_object(&driver->caps);
     virObjectUnref(driver->xmlopt);
     virObjectUnref(driver->domains);
     virNodeDeviceObjListFree(driver->devs);
@@ -284,24 +284,23 @@ static virCapsPtr
 testBuildCapabilities(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    virCapsPtr caps;
+    g_autoptr(virCaps) caps = NULL;
     virCapsGuestPtr guest;
     int guest_types[] = { VIR_DOMAIN_OSTYPE_HVM,
                           VIR_DOMAIN_OSTYPE_XEN };
     size_t i, j;
 
-    if ((caps = virCapabilitiesNew(VIR_ARCH_I686, false, false)) == NULL)
-        goto error;
+    caps = virCapabilitiesNew(VIR_ARCH_I686, false, false);
 
     if (virCapabilitiesAddHostFeature(caps, "pae") < 0)
-        goto error;
+        return NULL;
     if (virCapabilitiesAddHostFeature(caps, "nonpae") < 0)
-        goto error;
+        return NULL;
 
     virCapabilitiesHostInitIOMMU(caps);
 
     if (VIR_ALLOC_N(caps->host.pagesSize, 4) < 0)
-        goto error;
+        return NULL;
 
     caps->host.pagesSize[caps->host.nPagesSize++] = 4;
     caps->host.pagesSize[caps->host.nPagesSize++] = 8;
@@ -317,7 +316,7 @@ testBuildCapabilities(virConnectPtr conn)
         if (VIR_ALLOC_N(cpu_cells, privconn->cells[i].numCpus) < 0 ||
             VIR_ALLOC_N(pages, nPages) < 0) {
                 VIR_FREE(cpu_cells);
-                goto error;
+                return NULL;
             }
 
         memcpy(cpu_cells, privconn->cells[i].cpus,
@@ -347,7 +346,7 @@ testBuildCapabilities(virConnectPtr conn)
                                              NULL,
                                              0,
                                              NULL)) == NULL)
-            goto error;
+            return NULL;
 
         if (virCapabilitiesAddGuestDomain(guest,
                                           VIR_DOMAIN_VIRT_TEST,
@@ -355,7 +354,7 @@ testBuildCapabilities(virConnectPtr conn)
                                           NULL,
                                           0,
                                           NULL) == NULL)
-            goto error;
+            return NULL;
 
         virCapabilitiesAddGuestFeature(guest, VIR_CAPS_GUEST_FEATURE_TYPE_PAE);
         virCapabilitiesAddGuestFeature(guest, VIR_CAPS_GUEST_FEATURE_TYPE_NONPAE);
@@ -363,16 +362,12 @@ testBuildCapabilities(virConnectPtr conn)
 
     caps->host.nsecModels = 1;
     if (VIR_ALLOC_N(caps->host.secModels, caps->host.nsecModels) < 0)
-        goto error;
+        return NULL;
     caps->host.secModels[0].model = g_strdup("testSecurity");
 
     caps->host.secModels[0].doi = g_strdup("");
 
-    return caps;
-
- error:
-    virObjectUnref(caps);
-    return NULL;
+    return g_steal_pointer(&caps);
 }
 
 

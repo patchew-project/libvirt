@@ -200,7 +200,7 @@ struct _virCapsStoragePool {
 
 
 struct _virCaps {
-    virObject parent;
+    GObject parent;
 
     virCapsHost host;
     size_t nguests;
@@ -212,8 +212,8 @@ struct _virCaps {
     virCapsStoragePoolPtr *pools;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virCaps, virObjectUnref);
-
+#define VIR_TYPE_CAPS vir_caps_get_type()
+G_DECLARE_FINAL_TYPE(virCaps, vir_caps, VIR, CAPS, GObject);
 
 struct _virCapsDomainData {
     int ostype;
