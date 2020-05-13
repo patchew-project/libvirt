@@ -8982,6 +8982,24 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
 }
 
 static int
+qemuBuildTPMProxyCommandLine(virCommandPtr cmd,
+                             const virDomainDef *def)
+{
+    const virDomainTPMDef *tpmproxy = def->tpmproxy;
+
+    if (!tpmproxy)
+        return 0;
+
+    virCommandAddArg(cmd, "-device");
+    virCommandAddArgFormat(cmd, "%s,id=%s,host-path=%s",
+                           virDomainTPMModelTypeToString(tpmproxy->model),
+                           tpmproxy->info.alias,
+                           tpmproxy->data.passthrough.source.data.file.path);
+
+    return 0;
+}
+
+static int
 qemuBuildSEVCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
                         virDomainSEVDefPtr sev)
 {
@@ -9660,6 +9678,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildTPMCommandLine(cmd, def, qemuCaps) < 0)
+        return NULL;
+
+    if (qemuBuildTPMProxyCommandLine(cmd, def) < 0)
         return NULL;
 
     if (qemuBuildInputCommandLine(cmd, def, qemuCaps) < 0)
