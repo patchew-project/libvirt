@@ -676,7 +676,6 @@ bool virNetClientHasPassFD(virNetClientPtr client)
 void virNetClientDispose(void *obj)
 {
     virNetClientPtr client = obj;
-    size_t i;
 
     PROBE(RPC_CLIENT_DISPOSE,
           "client=%p", client);
@@ -684,9 +683,7 @@ void virNetClientDispose(void *obj)
     if (client->closeFf)
         client->closeFf(client->closeOpaque);
 
-    for (i = 0; i < client->nprograms; i++)
-        virObjectUnref(client->programs[i]);
-    VIR_FREE(client->programs);
+    virGObjectListFreeCount(client->programs, client->nprograms);
 
     g_main_loop_unref(client->eventLoop);
     g_main_context_unref(client->eventCtx);
@@ -1010,7 +1007,7 @@ int virNetClientAddProgram(virNetClientPtr client,
     if (VIR_EXPAND_N(client->programs, client->nprograms, 1) < 0)
         goto error;
 
-    client->programs[client->nprograms-1] = virObjectRef(prog);
+    client->programs[client->nprograms-1] = g_object_ref(prog);
 
     virObjectUnlock(client);
     return 0;

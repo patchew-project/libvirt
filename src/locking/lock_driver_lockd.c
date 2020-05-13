@@ -213,12 +213,11 @@ static virNetClientPtr virLockManagerLockDaemonConnectionNew(bool privileged,
                                        daemonPath)))
         goto error;
 
-    if (!(*prog = virNetClientProgramNew(VIR_LOCK_SPACE_PROTOCOL_PROGRAM,
-                                         VIR_LOCK_SPACE_PROTOCOL_PROGRAM_VERSION,
-                                         NULL,
-                                         0,
-                                         NULL)))
-        goto error;
+    *prog = virNetClientProgramNew(VIR_LOCK_SPACE_PROTOCOL_PROGRAM,
+                                   VIR_LOCK_SPACE_PROTOCOL_PROGRAM_VERSION,
+                                   NULL,
+                                   0,
+                                   NULL);
 
     if (virNetClientAddProgram(client, *prog) < 0)
         goto error;
@@ -233,7 +232,7 @@ static virNetClientPtr virLockManagerLockDaemonConnectionNew(bool privileged,
     VIR_FREE(lockdpath);
     virNetClientClose(client);
     virObjectUnref(client);
-    virObjectUnref(*prog);
+    g_clear_object(prog);
     return NULL;
 }
 
@@ -296,7 +295,7 @@ static int virLockManagerLockDaemonSetupLockspace(const char *path)
     rv = 0;
 
  cleanup:
-    virObjectUnref(program);
+    g_clear_object(&program);
     virNetClientClose(client);
     virObjectUnref(client);
     return rv;
@@ -660,7 +659,7 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
         VIR_FORCE_CLOSE(*fd);
     virNetClientClose(client);
     virObjectUnref(client);
-    virObjectUnref(program);
+    g_clear_object(&program);
 
     return rv;
 }
@@ -713,7 +712,7 @@ static int virLockManagerLockDaemonRelease(virLockManagerPtr lock,
  cleanup:
     virNetClientClose(client);
     virObjectUnref(client);
-    virObjectUnref(program);
+    g_clear_object(&program);
 
     return rv;
 }

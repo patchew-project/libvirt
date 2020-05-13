@@ -1280,24 +1280,21 @@ doRemoteOpen(virConnectPtr conn,
                                  remoteClientCloseFunc,
                                  priv->closeCallback, virObjectFreeCallback);
 
-    if (!(priv->remoteProgram = virNetClientProgramNew(REMOTE_PROGRAM,
-                                                       REMOTE_PROTOCOL_VERSION,
-                                                       remoteEvents,
-                                                       G_N_ELEMENTS(remoteEvents),
-                                                       conn)))
-        goto failed;
-    if (!(priv->lxcProgram = virNetClientProgramNew(LXC_PROGRAM,
-                                                    LXC_PROTOCOL_VERSION,
-                                                    NULL,
-                                                    0,
-                                                    NULL)))
-        goto failed;
-    if (!(priv->qemuProgram = virNetClientProgramNew(QEMU_PROGRAM,
-                                                     QEMU_PROTOCOL_VERSION,
-                                                     qemuEvents,
-                                                     G_N_ELEMENTS(qemuEvents),
-                                                     conn)))
-        goto failed;
+    priv->remoteProgram = virNetClientProgramNew(REMOTE_PROGRAM,
+                                                 REMOTE_PROTOCOL_VERSION,
+                                                 remoteEvents,
+                                                 G_N_ELEMENTS(remoteEvents),
+                                                 conn);
+    priv->lxcProgram = virNetClientProgramNew(LXC_PROGRAM,
+                                              LXC_PROTOCOL_VERSION,
+                                              NULL,
+                                              0,
+                                              NULL);
+    priv->qemuProgram = virNetClientProgramNew(QEMU_PROGRAM,
+                                               QEMU_PROTOCOL_VERSION,
+                                               qemuEvents,
+                                               G_N_ELEMENTS(qemuEvents),
+                                               conn);
 
     if (virNetClientAddProgram(priv->client, priv->remoteProgram) < 0 ||
         virNetClientAddProgram(priv->client, priv->lxcProgram) < 0 ||
@@ -1369,9 +1366,9 @@ doRemoteOpen(virConnectPtr conn,
     return VIR_DRV_OPEN_SUCCESS;
 
  failed:
-    virObjectUnref(priv->remoteProgram);
-    virObjectUnref(priv->lxcProgram);
-    virObjectUnref(priv->qemuProgram);
+    g_clear_object(&priv->remoteProgram);
+    g_clear_object(&priv->lxcProgram);
+    g_clear_object(&priv->qemuProgram);
     virNetClientClose(priv->client);
     virObjectUnref(priv->client);
     priv->client = NULL;
@@ -1532,10 +1529,9 @@ doRemoteClose(virConnectPtr conn, struct private_data *priv)
     priv->client = NULL;
     virObjectUnref(priv->closeCallback);
     priv->closeCallback = NULL;
-    virObjectUnref(priv->remoteProgram);
-    virObjectUnref(priv->lxcProgram);
-    virObjectUnref(priv->qemuProgram);
-    priv->remoteProgram = priv->qemuProgram = priv->lxcProgram = NULL;
+    g_clear_object(&priv->remoteProgram);
+    g_clear_object(&priv->lxcProgram);
+    g_clear_object(&priv->qemuProgram);
 
     /* Free hostname copy */
     VIR_FREE(priv->hostname);
