@@ -2763,6 +2763,12 @@ virSecuritySELinuxRestoreAllLabel(virSecurityManagerPtr mgr,
             rc = -1;
     }
 
+    if (def->tpmproxy) {
+        if (virSecuritySELinuxRestoreTPMFileLabelInt(mgr, def,
+                                                     def->tpmproxy) < 0)
+            rc = -1;
+    }
+
     struct _virSecuritySELinuxChardevCallbackData chardevData = {
         .mgr = mgr,
         .chardevStdioLogd = chardevStdioLogd
@@ -3168,6 +3174,11 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
 
     if (def->tpm) {
         if (virSecuritySELinuxSetTPMFileLabel(mgr, def, def->tpm) < 0)
+            return -1;
+    }
+
+    if (def->tpmproxy) {
+        if (virSecuritySELinuxSetTPMFileLabel(mgr, def, def->tpmproxy) < 0)
             return -1;
     }
 

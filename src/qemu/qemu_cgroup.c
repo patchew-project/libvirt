@@ -333,10 +333,13 @@ qemuSetupChardevCgroupCB(virDomainDefPtr def G_GNUC_UNUSED,
 
 
 static int
-qemuSetupTPMCgroup(virDomainObjPtr vm)
+qemuSetupTPMCgroup(virDomainObjPtr vm,
+                   virDomainTPMDefPtr dev)
 {
     int ret = 0;
-    virDomainTPMDefPtr dev = vm->def->tpm;
+
+    if (!dev)
+        return 0;
 
     switch (dev->type) {
     case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
@@ -806,7 +809,10 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
                                vm) < 0)
         return -1;
 
-    if (vm->def->tpm && qemuSetupTPMCgroup(vm) < 0)
+    if (qemuSetupTPMCgroup(vm, vm->def->tpm) < 0)
+        return -1;
+
+    if (qemuSetupTPMCgroup(vm, vm->def->tpmproxy) < 0)
         return -1;
 
     for (i = 0; i < vm->def->nhostdevs; i++) {

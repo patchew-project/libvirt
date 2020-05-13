@@ -11575,11 +11575,9 @@ qemuDomainSetupAllChardevs(virQEMUDriverConfigPtr cfg G_GNUC_UNUSED,
 
 static int
 qemuDomainSetupTPM(virQEMUDriverConfigPtr cfg G_GNUC_UNUSED,
-                   virDomainObjPtr vm,
+                   virDomainTPMDefPtr dev,
                    const struct qemuDomainCreateDeviceData *data)
 {
-    virDomainTPMDefPtr dev = vm->def->tpm;
-
     if (!dev)
         return 0;
 
@@ -11824,7 +11822,10 @@ qemuDomainBuildNamespace(virQEMUDriverConfigPtr cfg,
     if (qemuDomainSetupAllChardevs(cfg, vm, &data) < 0)
         goto cleanup;
 
-    if (qemuDomainSetupTPM(cfg, vm, &data) < 0)
+    if (qemuDomainSetupTPM(cfg, vm->def->tpm, &data) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupTPM(cfg, vm->def->tpmproxy, &data) < 0)
         goto cleanup;
 
     if (qemuDomainSetupAllGraphics(cfg, vm, &data) < 0)

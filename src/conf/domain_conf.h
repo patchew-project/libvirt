@@ -1293,6 +1293,7 @@ typedef enum {
     VIR_DOMAIN_TPM_MODEL_TIS,
     VIR_DOMAIN_TPM_MODEL_CRB,
     VIR_DOMAIN_TPM_MODEL_SPAPR,
+    VIR_DOMAIN_TPM_MODEL_SPAPR_PROXY,
 
     VIR_DOMAIN_TPM_MODEL_LAST
 } virDomainTPMModel;
@@ -2628,6 +2629,7 @@ struct _virDomainDef {
     virDomainMemballoonDefPtr memballoon;
     virDomainNVRAMDefPtr nvram;
     virDomainTPMDefPtr tpm;
+    virDomainTPMDefPtr tpmproxy;
     virCPUDefPtr cpu;
     virSysinfoDefPtr sysinfo;
     virDomainRedirFilterDefPtr redirfilter;

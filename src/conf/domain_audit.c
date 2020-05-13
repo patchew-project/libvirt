@@ -824,6 +824,9 @@ virDomainAuditStart(virDomainObjPtr vm, const char *reason, bool success)
     if (vm->def->tpm)
         virDomainAuditTPM(vm, vm->def->tpm, "start", true);
 
+    if (vm->def->tpmproxy)
+        virDomainAuditTPM(vm, vm->def->tpmproxy, "start", true);
+
     for (i = 0; i < vm->def->nshmems; i++)
         virDomainAuditShmem(vm, vm->def->shmems[i], "start", true);
 
