@@ -194,6 +194,7 @@ sub get_conn_method {
 }
 
 my %gobject_impl = (
+    virAdmClient => 1,
     virAdmServer => 1,
 );
 
