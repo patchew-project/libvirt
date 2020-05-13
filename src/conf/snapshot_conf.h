@@ -84,7 +84,7 @@ struct _virDomainSnapshotDef {
     size_t ndisks; /* should not exceed dom->ndisks */
     virDomainSnapshotDiskDef *disks;
 
-    virObjectPtr cookie;
+    GObject *cookie;
 };
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virDomainSnapshotDef, virObjectUnref);
