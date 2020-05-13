@@ -13730,6 +13730,14 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
+    /* TPM Proxy devices have 'passthrough' backend */
+    if (def->model == VIR_DOMAIN_TPM_MODEL_SPAPR_PROXY &&
+        def->type != VIR_DOMAIN_TPM_TYPE_PASSTHROUGH) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("'Passthrough' backend is required for TPM Proxy devices"));
+        goto error;
+    }
+
     if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
@@ -21972,15 +21980,39 @@ virDomainDefParseXML(xmlDocPtr xml,
     if ((n = virXPathNodeSet("./devices/tpm", ctxt, &nodes)) < 0)
         goto error;
 
-    if (n > 1) {
+    if (n > 2) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("only a single TPM device is supported"));
+                       _("a maximum of two TPM devices is supported, one of "
+                         "them being a TPM Proxy device"));
         goto error;
     }
 
     if (n > 0) {
-        if (!(def->tpm = virDomainTPMDefParseXML(xmlopt, nodes[0], ctxt, flags)))
-            goto error;
+        for (i = 0; i < n; i++) {
+            g_autoptr(virDomainTPMDef) dev = NULL;
+
+            if (!(dev = virDomainTPMDefParseXML(xmlopt, nodes[i], ctxt, flags)))
+                goto error;
+
+            /* TPM Proxy devices must be held in def->tpmproxy. Error
+             * out if there's a TPM Proxy declared already */
+            if (dev->model == VIR_DOMAIN_TPM_MODEL_SPAPR_PROXY) {
+                if (def->tpmproxy) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("only a single TPM Proxy device is supported"));
+                    goto error;
+                }
+                def->tpmproxy = g_steal_pointer(&dev);
+            } else {
+                /* all other TPM devices goes to def->tpm */
+                if (def->tpm) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("only a single TPM non-proxy device is supported"));
+                    goto error;
+                }
+                def->tpm = g_steal_pointer(&dev);
+            }
+        }
     }
     VIR_FREE(nodes);
 
@@ -29804,6 +29836,11 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
 
     if (def->tpm) {
         if (virDomainTPMDefFormat(buf, def->tpm, flags) < 0)
+            goto error;
+    }
+
+    if (def->tpmproxy) {
+        if (virDomainTPMDefFormat(buf, def->tpmproxy, flags) < 0)
             goto error;
     }
 
