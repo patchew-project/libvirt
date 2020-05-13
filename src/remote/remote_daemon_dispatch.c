@@ -6136,7 +6136,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
-    virStoragePoolPtr  pool = NULL;
+    g_autoptr(virStoragePool)  pool = NULL;
     virConnectPtr conn = remoteGetStorageConn(client);
 
     virMutexLock(&priv->lock);
@@ -6194,7 +6194,6 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server G_GNUC_U
     remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
-    virObjectUnref(pool);
     return rv;
 }
 

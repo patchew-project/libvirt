@@ -203,6 +203,7 @@ my %gobject_impl = (
     virNetworkPort => 1,
     virNWFilter => 1,
     virNWFilterBinding => 1,
+    virStoragePool => 1,
 );
 
 sub use_gobject {

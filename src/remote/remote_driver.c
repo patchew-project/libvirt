@@ -5477,7 +5477,7 @@ remoteStoragePoolBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_storage_pool_event_lifecycle_msg *msg = evdata;
-    virStoragePoolPtr pool;
+    g_autoptr(virStoragePool) pool = NULL;
     virObjectEventPtr event = NULL;
 
     pool = get_nonnull_storage_pool(conn, msg->pool);
@@ -5486,7 +5486,6 @@ remoteStoragePoolBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virStoragePoolEventLifecycleNew(pool->name, pool->uuid, msg->event,
                                             msg->detail);
-    virObjectUnref(pool);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5499,7 +5498,7 @@ remoteStoragePoolBuildEventRefresh(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_storage_pool_event_refresh_msg *msg = evdata;
-    virStoragePoolPtr pool;
+    g_autoptr(virStoragePool) pool = NULL;
     virObjectEventPtr event = NULL;
 
     pool = get_nonnull_storage_pool(conn, msg->pool);
@@ -5507,7 +5506,6 @@ remoteStoragePoolBuildEventRefresh(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virStoragePoolEventRefreshNew(pool->name, pool->uuid);
-    virObjectUnref(pool);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }

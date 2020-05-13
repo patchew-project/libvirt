@@ -2095,6 +2095,6 @@ virStoragePoolObjListExport(virConnectPtr conn,
     return data.nPools;
 
  error:
-    virObjectListFree(data.pools);
+    virGObjectListFreeCount(data.pools, data.nPools);
     return -1;
 }

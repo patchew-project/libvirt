@@ -110,10 +110,10 @@ virStoragePoolEventDispatchDefaultFunc(virConnectPtr conn,
                                        virConnectObjectEventGenericCallback cb,
                                        void *cbopaque)
 {
-    virStoragePoolPtr pool = virGetStoragePool(conn,
-                                               event->meta.name,
-                                               event->meta.uuid,
-                                               NULL, NULL);
+    g_autoptr(virStoragePool) pool = virGetStoragePool(conn,
+                                                       event->meta.name,
+                                                       event->meta.uuid,
+                                                       NULL, NULL);
     if (!pool)
         return;
 
@@ -127,23 +127,20 @@ virStoragePoolEventDispatchDefaultFunc(virConnectPtr conn,
                                                               storagePoolLifecycleEvent->type,
                                                               storagePoolLifecycleEvent->detail,
                                                               cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_STORAGE_POOL_EVENT_ID_REFRESH:
         {
             ((virConnectStoragePoolEventGenericCallback)cb)(conn, pool,
                                                             cbopaque);
-            goto cleanup;
+            return;
         }
 
     case VIR_STORAGE_POOL_EVENT_ID_LAST:
         break;
     }
     VIR_WARN("Unexpected event ID %d", event->eventID);
-
- cleanup:
-    virObjectUnref(pool);
 }
 
 
