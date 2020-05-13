@@ -1129,7 +1129,7 @@ qemuStateCleanup(void)
     if (qemu_driver->lockFD != -1)
         virPidFileRelease(qemu_driver->config->stateDir, "driver", qemu_driver->lockFD);
 
-    virObjectUnref(qemu_driver->config);
+    g_clear_object(&qemu_driver->config);
     virMutexDestroy(&qemu_driver->lock);
     VIR_FREE(qemu_driver);
 

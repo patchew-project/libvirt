@@ -450,7 +450,7 @@ mymain(void)
      * file has been added, run "VIR_TEST_REGENERATE_OUTPUT=1 make check".
      */
 
-    virObjectUnref(cfg);
+    g_clear_object(&cfg);
 
     virFileWrapperClearPrefixes();
 
