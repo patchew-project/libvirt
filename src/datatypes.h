@@ -32,7 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virInterfaceClass;
 extern virClassPtr virNodeDeviceClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
@@ -52,6 +51,9 @@ G_DECLARE_FINAL_TYPE(virDomainSnapshot,
                      VIR,
                      DOMAIN_SNAPSHOT,
                      GObject);
+
+#define VIR_TYPE_INTERFACE vir_interface_get_type()
+G_DECLARE_FINAL_TYPE(virInterface, vir_interface, VIR, INTERFACE, GObject);
 
 #define VIR_TYPE_NETWORK vir_network_get_type()
 G_DECLARE_FINAL_TYPE(virNetwork, vir_network, VIR, NETWORK, GObject);
@@ -175,8 +177,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckInterfaceReturn(obj, retval) \
     do { \
-        virInterfacePtr _iface = (obj); \
-        if (!virObjectIsClass(_iface, virInterfaceClass) || \
+        virInterfacePtr _iface = VIR_INTERFACE(obj); \
+        if (_iface == NULL || \
             !virObjectIsClass(_iface->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_INTERFACE, \
                                  VIR_ERR_INVALID_INTERFACE, \
@@ -669,7 +671,7 @@ struct _virNetworkPort {
 * Internal structure associated to a physical host interface
 */
 struct _virInterface {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *name;                          /* the network external name */
     char *mac;                           /* the interface MAC address */
