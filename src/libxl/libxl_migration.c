@@ -60,7 +60,7 @@ struct _libxlMigrationCookie {
 };
 
 typedef struct _libxlMigrationDstArgs {
-    virObject parent;
+    GObject parent;
 
     int recvfd;
     virConnectPtr conn;
@@ -73,7 +73,28 @@ typedef struct _libxlMigrationDstArgs {
     size_t nsocks;
 } libxlMigrationDstArgs;
 
-static virClassPtr libxlMigrationDstArgsClass;
+G_DEFINE_TYPE(libxlMigrationDstArgs, libxl_migration_dst_args, G_TYPE_OBJECT);
+#define LIBXL_TYPE_MIGRATION_DST_ARGS libxl_migration_dst_args_get_type()
+G_DECLARE_FINAL_TYPE(libxlMigrationDstArgs,
+                     libxl_migration_dst_args,
+                     LIBXL,
+                     MIGRATION_DST_ARGS,
+                     GObject);
+
+static void libxlMigrationDstArgsFinalize(GObject *obj);
+
+static void
+libxl_migration_dst_args_init(lixlMigrationDstArgs *args G_GNUC_UNUSED)
+{
+}
+
+static void
+libxl_migration_dst_args_class_init(lixlMigrationDstArgsClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = libxlMigrationDstArgsFinalize;
+}
 
 
 static void
@@ -226,31 +247,23 @@ libxlMigrationEatCookie(const char *cookiein,
 }
 
 static void
-libxlMigrationDstArgsDispose(void *obj)
+libxlMigrationDstArgsFinalize(GObject *obj)
 {
-    libxlMigrationDstArgs *args = obj;
+    libxlMigrationDstArgs *args = LIBXL_MIGRATION_DST_ARGS(obj);
 
     libxlMigrationCookieFree(args->migcookie);
     VIR_FREE(args->socks);
     virObjectUnref(args->conn);
     virObjectUnref(args->vm);
+
+    G_OBJECT_CLASS(libxl_migration_dst_args_parent_class)->finalize(obj);
 }
 
-static int
-libxlMigrationDstArgsOnceInit(void)
-{
-    if (!VIR_CLASS_NEW(libxlMigrationDstArgs, virClassForObject()))
-        return -1;
-
-    return 0;
-}
-
-VIR_ONCE_GLOBAL_INIT(libxlMigrationDstArgs);
 
 static void
 libxlDoMigrateDstReceive(void *opaque)
 {
-    libxlMigrationDstArgs *args = opaque;
+    g_autoptr(libxlMigrationDstArgs) args = LIBXL_MIGRATION_DST_ARGS(opaque);
     virDomainObjPtr vm = args->vm;
     virNetSocketPtr *socks = args->socks;
     size_t nsocks = args->nsocks;
@@ -277,7 +290,6 @@ libxlDoMigrateDstReceive(void *opaque)
     }
     args->nsocks = 0;
     VIR_FORCE_CLOSE(recvfd);
-    virObjectUnref(args);
     virDomainObjEndAPI(&vm);
 }
 
@@ -287,7 +299,7 @@ libxlMigrateDstReceive(virNetSocketPtr sock,
                        int events G_GNUC_UNUSED,
                        void *opaque)
 {
-    libxlMigrationDstArgs *args = opaque;
+    g_autoptr(libxlMigrationDstArgs) args = LIBXL_MIGRATION_DST_ARGS(opaque);
     virNetSocketPtr *socks = args->socks;
     size_t nsocks = args->nsocks;
     libxlDomainObjPrivatePtr priv = args->vm->privateData;
@@ -321,7 +333,7 @@ libxlMigrateDstReceive(virNetSocketPtr sock,
                             libxlDoMigrateDstReceive,
                             name,
                             false,
-                            args) < 0) {
+                            g_object_ref(args)) < 0) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("Failed to create thread for receiving migration data"));
         goto fail;
@@ -339,7 +351,6 @@ libxlMigrateDstReceive(virNetSocketPtr sock,
     }
     args->nsocks = 0;
     VIR_FORCE_CLOSE(recvfd);
-    virObjectUnref(args);
 }
 
 static int
@@ -551,7 +562,7 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
     libxlMigrationCookiePtr mig = NULL;
     libxlDriverPrivatePtr driver = dconn->privateData;
     virDomainObjPtr vm = NULL;
-    libxlMigrationDstArgs *args = NULL;
+    g_autoptr(libxlMigrationDstArgs) args = NULL;
     bool taint_hook = false;
     libxlDomainObjPrivatePtr priv = NULL;
     char *xmlout = NULL;
@@ -600,8 +611,8 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
     if (libxlMigrationDstArgsInitialize() < 0)
         goto endjob;
 
-    if (!(args = virObjectNew(libxlMigrationDstArgsClass)))
-        goto endjob;
+    args = LIBXL_MIGRATION_DST_ARGS(
+            g_object_new(LIBXL_TYPE_MIGRATION_DST_ARGS, NULL));
 
     args->conn = virObjectRef(dconn);
     args->vm = virObjectRef(vm);
@@ -618,7 +629,7 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
     name = g_strdup_printf("mig-%s", args->vm->def->name);
     if (virThreadCreateFull(priv->migrationDstReceiveThr, true,
                             libxlDoMigrateDstReceive,
-                            name, false, args) < 0) {
+                            name, false, g_object_ref(args)) < 0) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("Failed to create thread for receiving migration data"));
         goto endjob;
@@ -634,7 +645,6 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
     libxlMigrationCookieFree(mig);
     VIR_FORCE_CLOSE(dataFD[1]);
     VIR_FORCE_CLOSE(dataFD[0]);
-    virObjectUnref(args);
     /* Remove virDomainObj from domain list */
     if (vm)
         virDomainObjListRemove(driver->domains, vm);
@@ -665,7 +675,7 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
     virNetSocketPtr *socks = NULL;
     size_t nsocks = 0;
     int nsocks_listen = 0;
-    libxlMigrationDstArgs *args = NULL;
+    g_autoptr(libxlMigrationDstArgs) args = NULL;
     bool taint_hook = false;
     libxlDomainObjPrivatePtr priv = NULL;
     size_t i;
@@ -765,8 +775,8 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
     if (libxlMigrationDstArgsInitialize() < 0)
         goto endjob;
 
-    if (!(args = virObjectNew(libxlMigrationDstArgsClass)))
-        goto endjob;
+    args = LIBXL_MIGRATION_DST_ARGS(
+            g_object_new(LIBXL_TYPE_MIGRATION_DST_ARGS, NULL));
 
     args->conn = virObjectRef(dconn);
     args->vm = virObjectRef(vm);
@@ -786,7 +796,7 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
         if (virNetSocketAddIOCallback(socks[i],
                                       VIR_EVENT_HANDLE_READABLE,
                                       libxlMigrateDstReceive,
-                                      virObjectRef(args),
+                                      g_object_ref(args),
                                       NULL) < 0)
             continue;
 
@@ -823,7 +833,6 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
         VIR_FREE(hostname);
     else
         virURIFree(uri);
-    virObjectUnref(args);
     virDomainObjEndAPI(&vm);
     return ret;
 }
