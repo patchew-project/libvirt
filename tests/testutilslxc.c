@@ -76,7 +76,7 @@ testLXCDriverInit(void)
 void
 testLXCDriverFree(virLXCDriverPtr driver)
 {
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
     g_clear_object(&driver->caps);
     virMutexDestroy(&driver->lock);
     g_free(driver);

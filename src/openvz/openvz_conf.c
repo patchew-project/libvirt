@@ -479,7 +479,7 @@ openvzFreeDriver(struct openvz_driver *driver)
     if (!driver)
         return;
 
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
     virObjectUnref(driver->domains);
     g_clear_object(&driver->caps);
     VIR_FREE(driver);

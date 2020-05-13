@@ -159,7 +159,7 @@ testDriverDispose(void *obj)
     size_t i;
 
     g_clear_object(&driver->caps);
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
     virObjectUnref(driver->domains);
     virNodeDeviceObjListFree(driver->devs);
     virObjectUnref(driver->networks);

@@ -70,7 +70,7 @@ esxFreePrivate(esxPrivate **priv)
     esxVI_Context_Free(&(*priv)->vCenter);
     esxUtil_FreeParsedUri(&(*priv)->parsedUri);
     g_clear_object(&(*priv)->caps);
-    virObjectUnref((*priv)->xmlopt);
+    g_clear_object(&(*priv)->xmlopt);
     VIR_FREE(*priv);
 }
 

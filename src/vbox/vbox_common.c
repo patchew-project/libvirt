@@ -123,7 +123,7 @@ vboxDriverDispose(void *obj)
     vboxDriverPtr driver = obj;
 
     g_clear_object(&driver->caps);
-    virObjectUnref(driver->xmlopt);
+    g_clear_object(&driver->xmlopt);
 }
 
 static int

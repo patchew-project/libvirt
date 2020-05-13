@@ -219,6 +219,7 @@ virSEVCapabilitiesFree;
 
 
 # conf/domain_conf.h
+vir_domain_xml_option_get_type;
 virBlkioDeviceArrayClear;
 virDiskNameParse;
 virDiskNameToBusDeviceIndex;
