@@ -36,7 +36,6 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
-virClassPtr virDomainSnapshotClass;
 virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
 virClassPtr virNetworkPortClass;
@@ -51,7 +50,6 @@ virClassPtr virStoragePoolClass;
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virDomainSnapshotDispose(void *obj);
 static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
 static void virNetworkPortDispose(void *obj);
@@ -77,6 +75,22 @@ vir_domain_checkpoint_class_init(virDomainCheckpointClass *klass)
     GObjectClass *obj = G_OBJECT_CLASS(klass);
 
     obj->finalize = virDomainCheckpointFinalize;
+}
+
+G_DEFINE_TYPE(virDomainSnapshot, vir_domain_snapshot, G_TYPE_OBJECT);
+static void virDomainSnapshotFinalize(GObject *obj);
+
+static void
+vir_domain_snapshot_init(virDomainSnapshot *ds G_GNUC_UNUSED)
+{
+}
+
+static void
+vir_domain_snapshot_class_init(virDomainSnapshotClass *klass)
+{
+    GObjectClass *obj = G_OBJECT_CLASS(klass);
+
+    obj->finalize = virDomainSnapshotFinalize;
 }
 
 virClassPtr virAdmConnectClass;
@@ -131,7 +145,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virDomainSnapshot);
     DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNetworkPort);
@@ -1051,37 +1064,32 @@ virDomainCheckpointFinalize(GObject *obj)
  * @name: pointer to the domain snapshot name
  *
  * Allocates a new domain snapshot object. When the object is no longer needed,
- * virObjectUnref() must be called in order to not leak data.
+ * g_object_unref() must be called in order to not leak data.
  *
  * Returns a pointer to the domain snapshot object, or NULL on error.
  */
 virDomainSnapshotPtr
 virGetDomainSnapshot(virDomainPtr domain, const char *name)
 {
-    virDomainSnapshotPtr ret = NULL;
+    g_autoptr(virDomainSnapshot) ret = NULL;
 
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    virCheckDomainGoto(domain, error);
-    virCheckNonNullArgGoto(name, error);
+    virCheckDomainReturn(domain, NULL);
+    virCheckNonNullArgReturn(name, NULL);
 
-    if (!(ret = virObjectNew(virDomainSnapshotClass)))
-        goto error;
+    ret = VIR_DOMAIN_SNAPSHOT(g_object_new(VIR_TYPE_DOMAIN_SNAPSHOT, NULL));
     ret->name = g_strdup(name);
 
     ret->domain = virObjectRef(domain);
 
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
+    return g_steal_pointer(&ret);
 }
 
 
 /**
- * virDomainSnapshotDispose:
+ * virDomainSnapshotFinalize:
  * @obj: the domain snapshot to release
  *
  * Unconditionally release all memory associated with a snapshot.
@@ -1091,13 +1099,15 @@ virGetDomainSnapshot(virDomainPtr domain, const char *name)
  * which may also be released if its ref count hits zero.
  */
 static void
-virDomainSnapshotDispose(void *obj)
+virDomainSnapshotFinalize(GObject *obj)
 {
-    virDomainSnapshotPtr snapshot = obj;
+    virDomainSnapshotPtr snapshot = VIR_DOMAIN_SNAPSHOT(obj);
     VIR_DEBUG("release snapshot %p %s", snapshot, snapshot->name);
 
     VIR_FREE(snapshot->name);
     virObjectUnref(snapshot->domain);
+
+    G_OBJECT_CLASS(vir_domain_snapshot_parent_class)->finalize(obj);
 }
 
 

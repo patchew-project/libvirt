@@ -1080,14 +1080,13 @@ virDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
 int
 virDomainSnapshotRef(virDomainSnapshotPtr snapshot)
 {
-    VIR_DEBUG("snapshot=%p, refs=%d", snapshot,
-              snapshot ? snapshot->parent.u.s.refs : 0);
+    VIR_DEBUG("snapshot=%p", snapshot);
 
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
 
-    virObjectRef(snapshot);
+    g_object_ref(snapshot);
     return 0;
 }
 
@@ -1110,6 +1109,6 @@ virDomainSnapshotFree(virDomainSnapshotPtr snapshot)
 
     virCheckDomainSnapshotReturn(snapshot, -1);
 
-    virObjectUnref(snapshot);
+    g_object_unref(snapshot);
     return 0;
 }
