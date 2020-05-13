@@ -36,7 +36,6 @@ extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
 extern virClassPtr virNetworkPortClass;
 extern virClassPtr virNodeDeviceClass;
-extern virClassPtr virNWFilterBindingClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 extern virClassPtr virStorageVolClass;
@@ -58,6 +57,13 @@ G_DECLARE_FINAL_TYPE(virDomainSnapshot,
 
 #define VIR_TYPE_NW_FILTER vir_nw_filter_get_type()
 G_DECLARE_FINAL_TYPE(virNWFilter, vir_nw_filter, VIR, NW_FILTER, GObject);
+
+#define VIR_TYPE_NW_FILTER_BINDING vir_nw_filter_binding_get_type()
+G_DECLARE_FINAL_TYPE(virNWFilterBinding,
+                     vir_nw_filter_binding,
+                     VIR,
+                     NW_FILTER_BINDING,
+                     GObject);
 
 extern virClassPtr virAdmConnectClass;
 
@@ -327,8 +333,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNWFilterBindingReturn(obj, retval) \
     do { \
-        virNWFilterBindingPtr _nw = (obj); \
-        if (!virObjectIsClass(_nw, virNWFilterBindingClass) || \
+        virNWFilterBindingPtr _nw = VIR_NW_FILTER_BINDING(obj); \
+        if (_nw == NULL || \
             !virObjectIsClass(_nw->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NWFILTER, \
                                  VIR_ERR_INVALID_NWFILTER_BINDING, \
@@ -799,7 +805,7 @@ struct _virNWFilter {
 * Internal structure associated to a network filter port binding
 */
 struct _virNWFilterBinding {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                  /* pointer back to the connection */
     char *portdev;                       /* the network filter port device name */
     char *filtername;                    /* the network filter name */

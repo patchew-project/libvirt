@@ -621,7 +621,7 @@ virNWFilterBindingFree(virNWFilterBindingPtr binding)
 
     virCheckNWFilterBindingReturn(binding, -1);
 
-    virObjectUnref(binding);
+    g_object_unref(binding);
     return 0;
 }
 
@@ -819,13 +819,12 @@ virNWFilterBindingGetXMLDesc(virNWFilterBindingPtr binding, unsigned int flags)
 int
 virNWFilterBindingRef(virNWFilterBindingPtr binding)
 {
-    VIR_DEBUG("binding=%p refs=%d", binding,
-              binding ? binding->parent.u.s.refs : 0);
+    VIR_DEBUG("binding=%p", binding);
 
     virResetLastError();
 
     virCheckNWFilterBindingReturn(binding, -1);
 
-    virObjectRef(binding);
+    g_object_ref(binding);
     return 0;
 }

@@ -785,8 +785,7 @@ nwfilterBindingCreateXML(virConnectPtr conn,
 
     if (virNWFilterInstantiateFilter(driver, def) < 0) {
         virNWFilterBindingObjListRemove(driver->bindings, obj);
-        virObjectUnref(ret);
-        ret = NULL;
+        g_clear_object(&ret);
         goto cleanup;
     }
     virNWFilterBindingObjSave(obj, driver->bindingDir);
