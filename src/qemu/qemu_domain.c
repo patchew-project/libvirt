@@ -1184,7 +1184,7 @@ qemuDomainDiskPrivateFinalize(GObject *obj)
 {
     qemuDomainDiskPrivatePtr priv = QEMU_DOMAIN_DISK(obj);
 
-    virObjectUnref(priv->migrSource);
+    g_clear_object(&priv->migrSource);
     VIR_FREE(priv->qomName);
     VIR_FREE(priv->nodeCopyOnRead);
     g_clear_object(&priv->blockjob);
@@ -2270,10 +2270,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     virHashRemoveAll(priv->blockjobs);
 
-    virObjectUnref(priv->pflash0);
-    priv->pflash0 = NULL;
-    virObjectUnref(priv->pflash1);
-    priv->pflash1 = NULL;
+    g_clear_object(&priv->pflash0);
+    g_clear_object(&priv->pflash1);
 
     virDomainBackupDefFree(priv->backup);
     priv->backup = NULL;
@@ -3410,7 +3408,7 @@ qemuDomainObjPrivateXMLParseBlockjobData(virDomainObjPtr vm,
 
     if (mirror) {
         if (disk)
-            job->mirrorChain = virObjectRef(disk->mirror);
+            job->mirrorChain = g_object_ref(disk->mirror);
         else
             invalidData = true;
     }

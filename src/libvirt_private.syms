@@ -3092,6 +3092,7 @@ virStorageGenerateQcowPassphrase;
 
 
 # util/virstoragefile.h
+vir_storage_source_get_type;
 virStorageAuthDefCopy;
 virStorageAuthDefFormat;
 virStorageAuthDefFree;
