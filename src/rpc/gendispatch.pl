@@ -194,6 +194,7 @@ sub get_conn_method {
 }
 
 my %gobject_impl = (
+    virAdmServer => 1,
 );
 
 sub use_gobject {
