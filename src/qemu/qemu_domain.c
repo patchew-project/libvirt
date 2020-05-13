@@ -1190,7 +1190,7 @@ qemuDomainDiskPrivateDispose(void *obj)
     virObjectUnref(priv->migrSource);
     VIR_FREE(priv->qomName);
     VIR_FREE(priv->nodeCopyOnRead);
-    virObjectUnref(priv->blockjob);
+    g_clear_object(&priv->blockjob);
 }
 
 static virClassPtr qemuDomainStorageSourcePrivateClass;
@@ -2239,7 +2239,7 @@ qemuDomainObjPrivateAlloc(void *opaque)
     if (!(priv->devs = virChrdevAlloc()))
         goto error;
 
-    if (!(priv->blockjobs = virHashCreate(5, virObjectFreeHashData)))
+    if (!(priv->blockjobs = virHashCreate(5, g_object_unref)))
         goto error;
 
     /* agent commands block by default, user can choose different behavior */

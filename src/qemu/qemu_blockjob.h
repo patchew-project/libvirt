@@ -23,6 +23,7 @@
 
 #include "internal.h"
 #include "qemu_conf.h"
+#include <glib-object.h>
 
 /**
  * This enum has to map all known block job states from enum virDomainBlockJobType
@@ -119,11 +120,8 @@ struct _qemuBlockJobBackupData {
 };
 
 
-typedef struct _qemuBlockJobData qemuBlockJobData;
-typedef qemuBlockJobData *qemuBlockJobDataPtr;
-
 struct _qemuBlockJobData {
-    virObject parent;
+    GObject parent;
 
     char *name;
 
@@ -154,7 +152,14 @@ struct _qemuBlockJobData {
     bool invalidData; /* the job data (except name) is not valid */
     bool reconnected; /* internal field for tracking whether job is live after reconnect to qemu */
 };
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuBlockJobData, virObjectUnref);
+
+#define QEMU_TYPE_BLOCK_JOB_DATA qemu_block_job_data_get_type()
+G_DECLARE_FINAL_TYPE(qemuBlockJobData,
+                     qemu_block_job_data,
+                     QEMU,
+                     BLOCK_JOB_DATA,
+                     GObject);
+typedef qemuBlockJobData *qemuBlockJobDataPtr;
 
 int
 qemuBlockJobRegister(qemuBlockJobDataPtr job,
