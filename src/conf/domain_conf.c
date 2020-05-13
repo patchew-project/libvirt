@@ -1165,6 +1165,7 @@ VIR_ENUM_IMPL(virDomainTPMModel,
               "tpm-tis",
               "tpm-crb",
               "tpm-spapr",
+              "spapr-tpm-proxy",
 );
 
 VIR_ENUM_IMPL(virDomainTPMBackend,
@@ -3480,6 +3481,7 @@ void virDomainDefFree(virDomainDefPtr def)
     VIR_FREE(def->mems);
 
     virDomainTPMDefFree(def->tpm);
+    virDomainTPMDefFree(def->tpmproxy);
 
     for (i = 0; i < def->npanics; i++)
         virDomainPanicDefFree(def->panics[i]);
@@ -4316,6 +4318,12 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
         device.type = VIR_DOMAIN_DEVICE_TPM;
         device.data.tpm = def->tpm;
         if ((rc = cb(def, &device, &def->tpm->info, opaque)) != 0)
+            return rc;
+    }
+    if (def->tpmproxy) {
+        device.type = VIR_DOMAIN_DEVICE_TPM;
+        device.data.tpm = def->tpmproxy;
+        if ((rc = cb(def, &device, &def->tpmproxy->info, opaque)) != 0)
             return rc;
     }
     device.type = VIR_DOMAIN_DEVICE_PANIC;
@@ -24341,6 +24349,16 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Either both target and source domains or none of "
                          "them must have TPM device present"));
+        goto error;
+    }
+
+    if (src->tpmproxy && dst->tpmproxy) {
+        if (!virDomainTPMDefCheckABIStability(src->tpmproxy, dst->tpmproxy))
+            goto error;
+    } else if (src->tpmproxy || dst->tpmproxy) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Either both target and source domains or none of "
+                         "them must have TPM Proxy device present"));
         goto error;
     }
 

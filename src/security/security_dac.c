@@ -1980,6 +1980,13 @@ virSecurityDACRestoreAllLabel(virSecurityManagerPtr mgr,
             rc = -1;
     }
 
+    if (def->tpmproxy) {
+        if (virSecurityDACRestoreTPMFileLabel(mgr,
+                                              def,
+                                              def->tpmproxy) < 0)
+            rc = -1;
+    }
+
     if (def->sev) {
         if (virSecurityDACRestoreSEVLabel(mgr, def) < 0)
             rc = -1;
@@ -2156,6 +2163,13 @@ virSecurityDACSetAllLabel(virSecurityManagerPtr mgr,
         if (virSecurityDACSetTPMFileLabel(mgr,
                                           def,
                                           def->tpm) < 0)
+            return -1;
+    }
+
+    if (def->tpmproxy) {
+        if (virSecurityDACSetTPMFileLabel(mgr,
+                                          def,
+                                          def->tpmproxy) < 0)
             return -1;
     }
 

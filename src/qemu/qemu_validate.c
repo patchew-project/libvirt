@@ -3602,6 +3602,7 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
     case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_TPM_PASSTHROUGH))
             goto no_support;
+
         break;
 
     case VIR_DOMAIN_TPM_TYPE_EMULATOR:
@@ -3622,6 +3623,17 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
         break;
     case VIR_DOMAIN_TPM_MODEL_SPAPR:
         flag = QEMU_CAPS_DEVICE_TPM_SPAPR;
+        break;
+    case VIR_DOMAIN_TPM_MODEL_SPAPR_PROXY:
+        if (!ARCH_IS_PPC64(def->os.arch)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("TPM Proxy model %s is only available for "
+                             "PPC64 guests"),
+                          virDomainTPMModelTypeToString(tpm->model));
+            return -1;
+        }
+
+        flag = QEMU_CAPS_DEVICE_SPAPR_TPM_PROXY;
         break;
     case VIR_DOMAIN_TPM_MODEL_LAST:
     default:
