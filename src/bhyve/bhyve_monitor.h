@@ -24,7 +24,8 @@
 #include "domain_conf.h"
 #include "bhyve_utils.h"
 
-typedef struct _bhyveMonitor bhyveMonitor;
+#define BHYVE_TYPE_MONITOR bhyve_monitor_get_type()
+G_DECLARE_FINAL_TYPE(bhyveMonitor, bhyve_monitor, BHYVE, MONITOR, GObject);
 typedef bhyveMonitor *bhyveMonitorPtr;
 
 bhyveMonitorPtr bhyveMonitorOpen(virDomainObjPtr vm, bhyveConnPtr driver);
