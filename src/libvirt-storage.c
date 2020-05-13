@@ -1884,7 +1884,7 @@ virStorageVolFree(virStorageVolPtr vol)
 
     virCheckStorageVolReturn(vol, -1);
 
-    virObjectUnref(vol);
+    g_object_unref(vol);
     return 0;
 }
 
@@ -1909,13 +1909,13 @@ virStorageVolFree(virStorageVolPtr vol)
 int
 virStorageVolRef(virStorageVolPtr vol)
 {
-    VIR_DEBUG("vol=%p refs=%d", vol, vol ? vol->parent.u.s.refs : 0);
+    VIR_DEBUG("vol=%p", vol);
 
     virResetLastError();
 
     virCheckStorageVolReturn(vol, -1);
 
-    virObjectRef(vol);
+    g_object_ref(vol);
     return 0;
 }
 
