@@ -452,7 +452,7 @@ virNodeDeviceFree(virNodeDevicePtr dev)
 
     virCheckNodeDeviceReturn(dev, -1);
 
-    virObjectUnref(dev);
+    g_object_unref(dev);
     return 0;
 }
 
@@ -477,13 +477,13 @@ virNodeDeviceFree(virNodeDevicePtr dev)
 int
 virNodeDeviceRef(virNodeDevicePtr dev)
 {
-    VIR_DEBUG("dev=%p refs=%d", dev, dev ? dev->parent.u.s.refs : 0);
+    VIR_DEBUG("dev=%p", dev);
 
     virResetLastError();
 
     virCheckNodeDeviceReturn(dev, -1);
 
-    virObjectRef(dev);
+    g_object_ref(dev);
     return 0;
 }
 

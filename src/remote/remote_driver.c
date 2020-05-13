@@ -5518,7 +5518,7 @@ remoteNodeDeviceBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_node_device_event_lifecycle_msg *msg = evdata;
-    virNodeDevicePtr dev;
+    g_autoptr(virNodeDevice) dev = NULL;
     virObjectEventPtr event = NULL;
 
     dev = get_nonnull_node_device(conn, msg->dev);
@@ -5527,7 +5527,6 @@ remoteNodeDeviceBuildEventLifecycle(virNetClientProgramPtr prog G_GNUC_UNUSED,
 
     event = virNodeDeviceEventLifecycleNew(dev->name, msg->event,
                                            msg->detail);
-    virObjectUnref(dev);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
@@ -5540,7 +5539,7 @@ remoteNodeDeviceBuildEventUpdate(virNetClientProgramPtr prog G_GNUC_UNUSED,
     virConnectPtr conn = opaque;
     struct private_data *priv = conn->privateData;
     remote_node_device_event_update_msg *msg = evdata;
-    virNodeDevicePtr dev;
+    g_autoptr(virNodeDevice) dev = NULL;
     virObjectEventPtr event = NULL;
 
     dev = get_nonnull_node_device(conn, msg->dev);
@@ -5548,7 +5547,6 @@ remoteNodeDeviceBuildEventUpdate(virNetClientProgramPtr prog G_GNUC_UNUSED,
         return;
 
     event = virNodeDeviceEventUpdateNew(dev->name);
-    virObjectUnref(dev);
 
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }

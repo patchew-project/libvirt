@@ -32,7 +32,6 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
-extern virClassPtr virNodeDeviceClass;
 extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 
@@ -58,6 +57,9 @@ G_DECLARE_FINAL_TYPE(virNetwork, vir_network, VIR, NETWORK, GObject);
 
 #define VIR_TYPE_NETWORK_PORT vir_network_port_get_type()
 G_DECLARE_FINAL_TYPE(virNetworkPort, vir_network_port, VIR, NETWORK_PORT, GObject);
+
+#define VIR_TYPE_NODE_DEVICE vir_node_device_get_type()
+G_DECLARE_FINAL_TYPE(virNodeDevice, vir_node_device, VIR, NODE_DEVICE, GObject);
 
 #define VIR_TYPE_NW_FILTER vir_nw_filter_get_type()
 G_DECLARE_FINAL_TYPE(virNWFilter, vir_nw_filter, VIR, NW_FILTER, GObject);
@@ -248,8 +250,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNodeDeviceReturn(obj, retval) \
     do { \
-        virNodeDevicePtr _node = (obj); \
-        if (!virObjectIsClass(_node, virNodeDeviceClass) || \
+        virNodeDevicePtr _node = VIR_NODE_DEVICE(obj); \
+        if (_node == NULL || \
             !virObjectIsClass(_node->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NODEDEV, \
                                  VIR_ERR_INVALID_NODE_DEVICE, \
@@ -262,8 +264,8 @@ G_DECLARE_FINAL_TYPE(virAdmClient, vir_adm_client, VIR, ADM_CLIENT, GObject);
 
 #define virCheckNodeDeviceGoto(obj, label) \
     do { \
-        virNodeDevicePtr _dev= (obj); \
-        if (!virObjectIsClass(_dev, virNodeDeviceClass) || \
+        virNodeDevicePtr _dev= VIR_NODE_DEVICE(obj); \
+        if (_dev == NULL || \
             !virObjectIsClass(_dev->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NODEDEV, \
                                  VIR_ERR_INVALID_NODE_DEVICE, \
@@ -730,7 +732,7 @@ struct _virStorageVol {
  * Internal structure associated with a node device
  */
 struct _virNodeDevice {
-    virObject parent;
+    GObject parent;
     virConnectPtr conn;                 /* pointer back to the connection */
     char *name;                         /* device name (unique on node) */
     char *parentName;                   /* parent device name */

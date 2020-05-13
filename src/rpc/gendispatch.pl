@@ -201,6 +201,7 @@ my %gobject_impl = (
     virInterface => 1,
     virNetwork => 1,
     virNetworkPort => 1,
+    virNodeDevice => 1,
     virNWFilter => 1,
     virNWFilterBinding => 1,
     virStoragePool => 1,
@@ -596,13 +597,11 @@ elsif ($mode eq "server") {
                 !($argtype =~ m/^remote_node_device_create_xml_/) and
                 !($argtype =~ m/^remote_node_device_lookup_scsi_host_by_wwn_/)) {
                 $has_node_device = 1;
-                push(@vars_list, "virNodeDevicePtr dev = NULL");
+                push(@vars_list, "g_autoptr(virNodeDevice) dev = NULL");
                 push(@getters_list,
                      "    if (!(dev = get_nonnull_node_device_name($conn_var, args->name)))\n" .
                      "        goto cleanup;\n");
                 push(@args_list, "dev");
-                push(@free_list,
-                     "    virObjectUnref(dev);");
             }
 
             foreach my $args_member (@{$call->{args_members}}) {

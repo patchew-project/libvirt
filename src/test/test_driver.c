@@ -7451,7 +7451,8 @@ testNodeDeviceCreateXML(virConnectPtr conn,
 {
     testDriverPtr driver = conn->privateData;
     virNodeDeviceDefPtr def = NULL;
-    virNodeDevicePtr dev = NULL, ret = NULL;
+    g_autoptr(virNodeDevice) dev = NULL;
+    virNodeDevicePtr ret = NULL;
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceDefPtr objdef;
     g_autofree char *wwnn = NULL;
@@ -7494,7 +7495,6 @@ testNodeDeviceCreateXML(virConnectPtr conn,
  cleanup:
     virNodeDeviceObjEndAPI(&obj);
     virNodeDeviceDefFree(def);
-    virObjectUnref(dev);
     return ret;
 }
 
