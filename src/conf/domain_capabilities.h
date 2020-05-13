@@ -129,17 +129,21 @@ struct _virDomainCapsCPUModel {
     char **blockers; /* NULL-terminated list of usability blockers */
 };
 
-typedef struct _virDomainCapsCPUModels virDomainCapsCPUModels;
+#define VIR_TYPE_DOMAIN_CAPS_CPU_MODELS vir_domain_caps_cpu_models_get_type()
+G_DECLARE_FINAL_TYPE(virDomainCapsCPUModels,
+                     vir_domain_caps_cpu_models,
+                     VIR,
+                     DOMAIN_CAPS_CPU_MODELS,
+                     GObject);
 typedef virDomainCapsCPUModels *virDomainCapsCPUModelsPtr;
 struct _virDomainCapsCPUModels {
-    virObject parent;
+    GObject parent;
 
     size_t nmodels_max;
     size_t nmodels;
     virDomainCapsCPUModelPtr models;
 };
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(virDomainCapsCPUModels, virObjectUnref);
 
 typedef struct _virDomainCapsCPU virDomainCapsCPU;
 typedef virDomainCapsCPU *virDomainCapsCPUPtr;
