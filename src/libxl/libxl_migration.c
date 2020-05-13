@@ -999,7 +999,7 @@ libxlDoMigrateSrcP2P(libxlDriverPrivatePtr driver,
     virErrorPtr orig_err = NULL;
     int ret = -1;
     /* For tunnel migration */
-    virStreamPtr st = NULL;
+    g_autoptr(virStream) st = NULL;
     struct libxlTunnelControl *tc = NULL;
 
     if (dname &&
@@ -1110,7 +1110,6 @@ libxlDoMigrateSrcP2P(libxlDriverPrivatePtr driver,
  cleanup:
     if (flags & VIR_MIGRATE_TUNNELLED) {
         libxlMigrationSrcStopTunnel(tc);
-        virObjectUnref(st);
     }
 
     if (ddomain) {
