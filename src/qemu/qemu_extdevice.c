@@ -234,6 +234,8 @@ qemuExtDevicesStop(virQEMUDriverPtr driver,
 
         if (slirp)
             qemuSlirpStop(slirp, vm, driver, net);
+        if (net->downscript)
+            virNetDevRunEthernetScript(net->ifname, net->downscript);
     }
 
     for (i = 0; i < def->nfss; i++) {
