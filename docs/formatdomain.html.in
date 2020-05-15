@@ -3448,6 +3448,11 @@
             initiator IQN needed to access the source via mandatory
             attribute <code>name</code>.
           </dd>
+          <dt><code>iser</code></dt>
+          <dd><span class="since">Since libvirt 6.4.0 and QEMU 2.9</span>,
+            For <code>iscsi</code>, the element <code>iser</code> is used to
+            enable the iSER(iSCSI Extensions for RDMA).
+          </dd>
           <dt><code>address</code></dt>
           <dd>For disk of type <code>nvme</code> this element
             specifies the PCI address of the host NVMe
