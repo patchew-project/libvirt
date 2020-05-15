@@ -25,6 +25,7 @@
       <driver name='qemu' type='raw'/>
       <source protocol='iscsi' name='iqn.1992-01.com.example/1'>
         <host name='example.org' port='6000'/>
+        <iser/>
       </source>
       <target dev='vdb' bus='virtio'/>
     </disk>
@@ -54,6 +55,14 @@
         <host name='example.org' port='3260'/>
       </source>
       <target dev='sda' bus='scsi'/>
+    </disk>
+    <disk type='network' device='lun'>
+      <driver name='qemu' type='raw'/>
+      <source protocol='iscsi' name='iqn.1992-01.com.example/1'>
+        <host name='example.org'/>
+        <iser/>
+      </source>
+      <target dev='sdb' bus='scsi'/>
     </disk>
     <controller type='usb' index='0'/>
     <controller type='pci' index='0' model='pci-root'/>
