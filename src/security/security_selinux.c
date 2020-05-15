@@ -3493,10 +3493,7 @@ virSecuritySELinuxSetTPMLabels(virSecurityManagerPtr mgr,
     if (seclabel == NULL)
         return 0;
 
-    switch (def->tpm->type) {
-    case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
-        break;
-    case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+    if (def->tpm->type == VIR_DOMAIN_TPM_TYPE_EMULATOR) {
         ret = virSecuritySELinuxSetFileLabels(
             mgr, def->tpm->data.emulator.storagepath,
             seclabel);
@@ -3504,9 +3501,6 @@ virSecuritySELinuxSetTPMLabels(virSecurityManagerPtr mgr,
             ret = virSecuritySELinuxSetFileLabels(
                 mgr, def->tpm->data.emulator.logfile,
                 seclabel);
-        break;
-    case VIR_DOMAIN_TPM_TYPE_LAST:
-        break;
     }
 
     return ret;
@@ -3519,18 +3513,12 @@ virSecuritySELinuxRestoreTPMLabels(virSecurityManagerPtr mgr,
 {
     int ret = 0;
 
-    switch (def->tpm->type) {
-    case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
-        break;
-    case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+    if (def->tpm->type == VIR_DOMAIN_TPM_TYPE_EMULATOR) {
         ret = virSecuritySELinuxRestoreFileLabels(
             mgr, def->tpm->data.emulator.storagepath);
         if (ret == 0 && def->tpm->data.emulator.logfile)
             ret = virSecuritySELinuxRestoreFileLabels(
                 mgr, def->tpm->data.emulator.logfile);
-        break;
-    case VIR_DOMAIN_TPM_TYPE_LAST:
-        break;
     }
 
     return ret;
