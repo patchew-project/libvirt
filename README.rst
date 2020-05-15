@@ -53,7 +53,7 @@ in a manner that is suitable for installing as root, use:
 ::
 
   $ mkdir build && cd build
-  $ ../configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+  $ ../autogen.sh
   $ make
   $ sudo make install
 
@@ -62,7 +62,7 @@ While to build & install as an unprivileged user
 ::
 
   $ mkdir build && cd build
-  $ ../configure --prefix=$HOME/usr
+  $ ../autogen.sh
   $ make
   $ make install
 

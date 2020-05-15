@@ -27,6 +27,10 @@ if test "x$1" = "x--system"; then
       libdir=$prefix/lib64
     fi
     EXTRA_ARGS="--prefix=$prefix --sysconfdir=$sysconfdir --localstatedir=$localstatedir --libdir=$libdir"
+    if [ "$HOME" != "/root" ]; then
+	    prefix=$HOME/usr
+	    EXTRA_ARGS="--prefix=$prefix"
+    fi
 fi
 
 cd "$olddir"
