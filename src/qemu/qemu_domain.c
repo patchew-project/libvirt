@@ -5319,6 +5319,15 @@ qemuDomainValidateStorageSource(virStorageSourcePtr src,
         return -1;
     }
 
+    if (qemuCaps) {
+        if (src->iscsiIser &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_ISCSI_ISER)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                _("iSCSI iSER is not supported with this QEMU binary"));
+                return -1;
+            }
+    }
+
     return 0;
 }
 

@@ -5087,6 +5087,9 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                 qemuDomainStorageSourcePrivatePtr srcPriv =
                     QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(iscsisrc->src);
 
+                if (qemuDomainValidateStorageSource(iscsisrc->src, qemuCaps, true) < 0)
+                    return -1;
+
                 if (qemuBuildDiskSecinfoCommandLine(cmd, srcPriv ?
                                                     srcPriv->secinfo :
                                                     NULL) < 0)

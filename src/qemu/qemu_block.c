@@ -421,7 +421,10 @@ qemuBlockStorageSourceGetURI(virStorageSourcePtr src)
     if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
         uri->port = src->hosts->port;
 
-        uri->scheme = g_strdup(virStorageNetProtocolTypeToString(src->protocol));
+        if (src->iscsiIser)
+            uri->scheme = g_strdup("iser");
+        else
+            uri->scheme = g_strdup(virStorageNetProtocolTypeToString(src->protocol));
     } else {
         uri->scheme = g_strdup_printf("%s+%s",
                                       virStorageNetProtocolTypeToString(src->protocol),
@@ -746,6 +749,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
     char *lunStr = NULL;
     char *username = NULL;
     char *objalias = NULL;
+    const char *transport = "tcp";
     g_autofree char *portal = NULL;
     unsigned int lun = 0;
     virJSONValuePtr ret = NULL;
@@ -760,6 +764,9 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
      *   initiator-name:"iqn.2017-04.com.example:client"
      * }
      */
+
+    if (src->iscsiIser)
+        transport = "iser";
 
     target = g_strdup(src->path);
 
@@ -791,7 +798,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src,
                                           "s:portal", portal,
                                           "s:target", target,
                                           "u:lun", lun,
-                                          "s:transport", "tcp",
+                                          "s:transport", transport,
                                           "S:user", username,
                                           "S:password-secret", objalias,
                                           "S:initiator-name", src->initiator.iqn,
