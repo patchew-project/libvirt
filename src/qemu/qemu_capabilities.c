@@ -582,6 +582,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "tcg",
               "virtio-blk-pci.scsi.default.disabled",
               "pvscsi",
+
+              /* 370 */
+              "iscsi.iser",
     );
 
 
@@ -1501,6 +1504,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "query-named-block-nodes/arg-type/flat", QEMU_CAPS_QMP_QUERY_NAMED_BLOCK_NODES_FLAT },
     { "blockdev-snapshot/$allow-write-only-overlay", QEMU_CAPS_BLOCKDEV_SNAPSHOT_ALLOW_WRITE_ONLY },
     { "blockdev-add/arg-type/+file/aio/^io_uring", QEMU_CAPS_AIO_IO_URING },
+    { "blockdev-add/arg-type/+iscsi/transport/^iser", QEMU_CAPS_ISCSI_ISER },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;

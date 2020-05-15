@@ -564,6 +564,9 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_VIRTIO_BLK_SCSI_DEFAULT_DISABLED, /* virtio-blk-pci.scsi disabled by default */
     QEMU_CAPS_SCSI_PVSCSI, /* -device pvscsi */
 
+    /* 370 */
+    QEMU_CAPS_ISCSI_ISER, /* -blockdev {"driver":"iscsi","transport":"iser",...} */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
