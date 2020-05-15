@@ -9488,6 +9488,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
     g_autofree char *haveTLS = NULL;
     g_autofree char *tlsCfg = NULL;
     g_autofree char *sslverifystr = NULL;
+    int iscsiIser = 0;
     xmlNodePtr tmpnode;
 
     if (!(protocol = virXMLPropString(node, "protocol"))) {
@@ -9596,6 +9597,12 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
                           _("invalid readahead size or timeout"));
             return -1;
         }
+    }
+
+    if (src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI) {
+        if ((iscsiIser = virXPathBoolean("boolean(./iser)", ctxt)) == -1)
+            return -1;
+        src->iscsiIser = (bool)iscsiIser;
     }
 
     return 0;
@@ -24943,6 +24950,9 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferEscapeString(childBuf, "<config file='%s'/>\n", src->configFile);
 
     virStorageSourceInitiatorFormatXML(&src->initiator, childBuf);
+
+    if (src->iscsiIser)
+        virBufferAddLit(childBuf, "<iser/>\n");
 
     if (src->sslverify != VIR_TRISTATE_BOOL_ABSENT) {
         virBufferAsprintf(childBuf, "<ssl verify='%s'/>\n",

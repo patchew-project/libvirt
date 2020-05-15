@@ -2805,8 +2805,15 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
     if (!(scheme = virStringSplit(uri->scheme, "+", 2)))
         return -1;
 
+    src->protocol = virStorageNetProtocolTypeFromString(scheme[0]);
+
+    if (STREQ(scheme[0], "iser")) {
+        src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
+        src->iscsiIser = true;
+    }
+
     if (!scheme[0] ||
-        (src->protocol = virStorageNetProtocolTypeFromString(scheme[0])) < 0) {
+        src->protocol < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("invalid backing protocol '%s'"),
                        NULLSTR(scheme[0]));
@@ -3509,11 +3516,15 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
 
     src->nhosts = 1;
 
-    if (STRNEQ_NULLABLE(transport, "tcp")) {
+    if (STRNEQ_NULLABLE(transport, "tcp") &&
+        STRNEQ_NULLABLE(transport, "iser")) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("only TCP transport is supported for iSCSI volumes"));
+                       _("only TCP or iSER transport is supported for iSCSI volumes"));
         return -1;
     }
+
+    if (STREQ(transport, "iser"))
+        src->iscsiIser = true;
 
     src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
