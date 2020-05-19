@@ -1027,11 +1027,14 @@ class CParser:
                     return token
 
                 strValue = None
+                rawValue = None
                 if len(lst) == 1 and lst[0][0] == '"' and lst[0][-1] == '"':
                     strValue = lst[0][1:-1]
+                else:
+                    rawValue = " ".join(lst)
                 (args, desc) = self.parseMacroComment(name, not self.is_header)
                 self.index_add(name, self.filename, not self.is_header,
-                               "macro", (args, desc, params, strValue))
+                               "macro", (args, desc, params, strValue, rawValue))
                 return token
 
         #
@@ -2178,13 +2181,16 @@ class docBuilder:
             desc = None
             params = None
             strValue = None
+            rawValue = None
         else:
-            (args, desc, params, strValue) = id.info
+            (args, desc, params, strValue, rawValue) = id.info
 
         if params is not None:
             output.write(" params='%s'" % params)
         if strValue is not None:
             output.write(" string='%s'" % strValue)
+        else:
+            output.write(" raw='%s'" % rawValue)
         output.write(">\n")
 
         if desc is not None and desc != "":
