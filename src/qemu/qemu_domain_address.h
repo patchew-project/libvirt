@@ -25,6 +25,7 @@
 #include "domain_conf.h"
 #include "qemu_conf.h"
 #include "qemu_capabilities.h"
+#include "qemu_domain.h"
 
 int qemuDomainGetSCSIControllerModel(const virDomainDef *def,
                                      const virDomainControllerDef *cont,
@@ -56,6 +57,9 @@ void qemuDomainFillDeviceIsolationGroup(virDomainDefPtr def,
 void
 qemuDomainSetDeviceSlotAggregateIdx(virDomainDefPtr def,
                                      virDomainDeviceDefPtr dev);
+
+int qemuDomainPCIHostDevicesIter(qemuDomainPCIHostdevDataPtr data,
+                                 virDomainPCIHostdevCallback cb);
 
 int
 qemuDomainDefDeviceFindSlotAggregateIdx(virDomainDefPtr def,

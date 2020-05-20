@@ -1434,7 +1434,6 @@ qemuDomainSetupIsolationGroups(virDomainDefPtr def)
  * with the return value for that callback.
  * Zero on success.
  */
-static
 int qemuDomainPCIHostDevicesIter(qemuDomainPCIHostdevDataPtr data,
                                  virDomainPCIHostdevCallback cb)
 {

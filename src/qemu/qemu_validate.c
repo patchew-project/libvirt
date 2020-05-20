@@ -762,6 +762,59 @@ qemuValidateDefGetVcpuHotplugGranularity(const virDomainDef *def)
 }
 
 
+static int
+qemuValidatePCIHostdevIsPrimaryFunction(qemuDomainPCIHostdevDataPtr data,
+                                        virDomainHostdevDefPtr hostdev)
+{
+    if (!data->device || !hostdev)
+        return 0;
+
+    if ((hostdev->source.subsys.u.pci.addr.function == 0) &&
+        (virHostdevPCIDevicesBelongToSameSlot(data->device, hostdev)))
+        return 1;
+
+    return 0;
+}
+
+
+static int qemuValidateDomainDefPCIMultifunctionHostdev(qemuDomainPCIHostdevDataPtr data,
+                                                        virDomainHostdevDefPtr hostdev)
+{
+    qemuDomainPCIHostdevdata hostdevIterData = {data->def, NULL, hostdev};
+
+    if (!virHostdevIsPCIMultifunctionDevice(hostdev) ||
+        hostdev->source.subsys.u.pci.addr.function == 0)
+        return 0;
+
+    /* If the device is non-zero function but its Primary function is not
+     * part of the domain, error out.
+     */
+    if (!qemuDomainPCIHostDevicesIter(&hostdevIterData,
+                                      qemuValidatePCIHostdevIsPrimaryFunction)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Secondary functions of a PCI multifunction card "
+                         "cannot be assigned to a domain without the "
+                         "Primary function."));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int qemuValidateDomainDefPCIHostdevs(const virDomainDef *def)
+{
+    qemuDomainPCIHostdevdata hostdevdata = {def, NULL, NULL};
+
+    if (qemuDomainPCIHostDevicesIter(&hostdevdata,
+                                     qemuValidateDomainDefPCIMultifunctionHostdev)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int
 qemuValidateDomainDef(const virDomainDef *def,
                       void *opaque)
@@ -964,6 +1017,9 @@ qemuValidateDomainDef(const virDomainDef *def,
         return -1;
 
     if (qemuValidateDomainDefConsole(def, qemuCaps) < 0)
+        return -1;
+
+    if (qemuValidateDomainDefPCIHostdevs(def) < 0)
         return -1;
 
     if (cfg->vncTLS && cfg->vncTLSx509secretUUID &&
