@@ -723,6 +723,7 @@ virDomainEventWatchdogNewFromObj;
 virDomainQemuMonitorEventNew;
 virDomainQemuMonitorEventStateRegisterID;
 virHostdevIsMdevDevice;
+virHostdevIsPCIMultifunctionDevice;
 virHostdevIsSCSIDevice;
 virHostdevIsVFIODevice;
 
@@ -2794,6 +2795,7 @@ virPCIDeviceGetUnbindFromStub;
 virPCIDeviceGetUsedBy;
 virPCIDeviceHasPCIExpressLink;
 virPCIDeviceIsAssignable;
+virPCIDeviceIsMultifunction;
 virPCIDeviceIsPCIExpress;
 virPCIDeviceListAdd;
 virPCIDeviceListAddCopy;
