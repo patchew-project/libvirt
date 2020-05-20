@@ -7824,9 +7824,9 @@ qemuDomainUndefine(virDomainPtr dom)
 }
 
 static int
-qemuDomainAttachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
-                           virQEMUDriverPtr driver)
+qemuDomainAttachDeviceLiveInternal(virDomainObjPtr vm,
+                                   virDomainDeviceDefPtr dev,
+                                   virQEMUDriverPtr driver)
 {
     int ret = -1;
     const char *alias = NULL;
@@ -7972,12 +7972,27 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
         virObjectEventStateQueue(driver->domainEventState, event);
     }
 
+    return ret;
+}
+
+static int
+qemuDomainAttachDeviceLive(virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           virQEMUDriverPtr driver)
+{
+    int ret = -1;
+
+    if (virDomainDefCompatibleDevice(vm->def, dev, NULL,
+                                     VIR_DOMAIN_DEVICE_ACTION_ATTACH,
+                                     false) < 0)
+        return -1;
+
+    ret = qemuDomainAttachDeviceLiveInternal(vm, dev, driver);
     if (ret == 0)
         ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
 
     return ret;
 }
-
 
 static int
 qemuDomainChangeDiskLive(virDomainObjPtr vm,
