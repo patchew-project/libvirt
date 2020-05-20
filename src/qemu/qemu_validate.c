@@ -802,7 +802,7 @@ static int qemuValidateDomainDefPCIMultifunctionHostdev(qemuDomainPCIHostdevData
 }
 
 
-static int qemuValidateDomainDefPCIHostdevs(const virDomainDef *def)
+int qemuValidateDomainDefPCIHostdevs(const virDomainDef *def)
 {
     qemuDomainPCIHostdevdata hostdevdata = {def, NULL, NULL};
 

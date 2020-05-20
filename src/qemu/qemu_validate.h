@@ -33,3 +33,4 @@ int qemuValidateDomainDeviceDefDisk(const virDomainDiskDef *disk,
 int qemuValidateDomainDeviceDef(const virDomainDeviceDef *dev,
                                 const virDomainDef *def,
                                 void *opaque);
+int qemuValidateDomainDefPCIHostdevs(const virDomainDef *def);
