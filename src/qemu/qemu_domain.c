@@ -13412,6 +13412,7 @@ int qemuDomainValidateMultifunctionDeviceList(virDomainDeviceDefListPtr devlist)
         virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(devlist->devs[i]);
 
        if (info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+           info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_UNASSIGNED &&
            info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
            return -1;
        }
