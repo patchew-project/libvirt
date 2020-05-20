@@ -22,18 +22,6 @@
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <driver name='vfio'/>
       <source>
-        <address domain='0x0001' bus='0x01' slot='0x00' function='0x1'/>
-      </source>
-    </hostdev>
-    <hostdev mode='subsystem' type='pci' managed='yes'>
-      <driver name='vfio'/>
-      <source>
-        <address domain='0x0001' bus='0x01' slot='0x00' function='0x0'/>
-      </source>
-    </hostdev>
-    <hostdev mode='subsystem' type='pci' managed='yes'>
-      <driver name='vfio'/>
-      <source>
         <address domain='0x0005' bus='0x90' slot='0x01' function='0x2'/>
       </source>
     </hostdev>
@@ -41,6 +29,18 @@
       <driver name='vfio'/>
       <source>
         <address domain='0x0005' bus='0x90' slot='0x01' function='0x3'/>
+      </source>
+    </hostdev>
+    <hostdev mode='subsystem' type='pci' managed='yes'>
+      <driver name='vfio'/>
+      <source>
+        <address domain='0x0001' bus='0x01' slot='0x00' function='0x1'/>
+      </source>
+    </hostdev>
+    <hostdev mode='subsystem' type='pci' managed='yes'>
+      <driver name='vfio'/>
+      <source>
+        <address domain='0x0001' bus='0x01' slot='0x00' function='0x0'/>
       </source>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='yes'>
