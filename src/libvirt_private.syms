@@ -726,6 +726,7 @@ virHostdevIsMdevDevice;
 virHostdevIsPCIMultifunctionDevice;
 virHostdevIsSCSIDevice;
 virHostdevIsVFIODevice;
+virHostdevPCIDevicesBelongToSameSlot;
 
 
 # conf/domain_nwfilter.h
