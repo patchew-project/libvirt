@@ -13391,6 +13391,80 @@ qemuProcessEventFree(struct qemuProcessEvent *event)
 }
 
 
+static bool isPCIMultifunctionDeviceXML(const char *xml)
+{
+   xmlDocPtr xmlptr;
+
+   if (!(xmlptr = virXMLParse(NULL, xml, _("(device_definition)")))) {
+       /* We report error anyway later */
+       return false;
+   }
+
+   return STREQ((const char *)(xmlDocGetRootElement(xmlptr))->name, "devices");
+}
+
+static
+int qemuDomainValidateMultifunctionDeviceList(virDomainDeviceDefListPtr devlist)
+{
+    size_t i;
+
+    for (i = 0; i < devlist->count; i++) {
+        virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(devlist->devs[i]);
+
+       if (info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+           info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+           return -1;
+       }
+
+       if (devlist->devs[i]->type == VIR_DOMAIN_DEVICE_HOSTDEV) {
+           virDomainHostdevDefPtr hostdev = devlist->devs[i]->data.hostdev;
+
+           if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI)
+               return -1;
+       }
+   }
+
+   return 0;
+}
+
+
+virDomainDeviceDefListPtr
+qemuDomainDeviceParseXMLMany(const char *xml,
+                             virDomainDeviceDefListDataPtr data,
+                             void *parseOpaque,
+                             unsigned int parse_flags)
+{
+    virDomainDeviceDefListPtr devlist = NULL;
+
+    if (isPCIMultifunctionDeviceXML(xml)) {
+        if (!(devlist = virDomainDeviceDefParseXMLMany(xml, data->def,
+                                                       data->xmlopt,
+                                                       parseOpaque,
+                                                       parse_flags)))
+            return NULL;
+
+        if (qemuDomainValidateMultifunctionDeviceList(devlist) < 0)
+            goto cleanup;
+    } else {
+        virDomainDeviceDefPtr dev = virDomainDeviceDefParse(xml, data->def,
+                                                            data->xmlopt,
+                                                            parseOpaque,
+                                                            parse_flags);
+        if (!dev || VIR_ALLOC(devlist) < 0)
+            return NULL;
+
+        if (VIR_APPEND_ELEMENT(devlist->devs, devlist->count, dev) < 0)
+            goto cleanup;
+    }
+
+    return devlist;
+
+ cleanup:
+    virDomainDeviceDefListFree(devlist);
+    return NULL;
+}
+
+
 char *
 qemuDomainGetManagedPRSocketPath(qemuDomainObjPrivatePtr priv)
 {
