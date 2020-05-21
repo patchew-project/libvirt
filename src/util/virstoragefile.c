@@ -87,7 +87,6 @@ VIR_ENUM_IMPL(virStorageNetProtocol,
               "https",
               "ftp",
               "ftps",
-              "tftp",
               "ssh",
               "vxhs",
 );
@@ -3159,7 +3158,6 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
     case VIR_STORAGE_NET_PROTOCOL_HTTPS:
     case VIR_STORAGE_NET_PROTOCOL_FTP:
     case VIR_STORAGE_NET_PROTOCOL_FTPS:
-    case VIR_STORAGE_NET_PROTOCOL_TFTP:
     case VIR_STORAGE_NET_PROTOCOL_ISCSI:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
     case VIR_STORAGE_NET_PROTOCOL_SSH:
@@ -3868,7 +3866,6 @@ static const struct virStorageSourceJSONDriverParser jsonParsers[] = {
     {"https", false, virStorageSourceParseBackingJSONUri, VIR_STORAGE_NET_PROTOCOL_HTTPS},
     {"ftp", false, virStorageSourceParseBackingJSONUri, VIR_STORAGE_NET_PROTOCOL_FTP},
     {"ftps", false, virStorageSourceParseBackingJSONUri, VIR_STORAGE_NET_PROTOCOL_FTPS},
-    {"tftp", false, virStorageSourceParseBackingJSONUri, VIR_STORAGE_NET_PROTOCOL_TFTP},
     {"gluster", false, virStorageSourceParseBackingJSONGluster, 0},
     {"iscsi", false, virStorageSourceParseBackingJSONiSCSI, 0},
     {"nbd", false, virStorageSourceParseBackingJSONNbd, 0},
@@ -4636,9 +4633,6 @@ virStorageSourceNetworkDefaultPort(virStorageNetProtocol protocol)
 
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
             return 990;
-
-        case VIR_STORAGE_NET_PROTOCOL_TFTP:
-            return 69;
 
         case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
             return 7000;

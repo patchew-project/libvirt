@@ -1137,7 +1137,6 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
         case VIR_STORAGE_NET_PROTOCOL_HTTPS:
         case VIR_STORAGE_NET_PROTOCOL_FTP:
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
-        case VIR_STORAGE_NET_PROTOCOL_TFTP:
             driver = virStorageNetProtocolTypeToString(src->protocol);
             if (!(fileprops = qemuBlockStorageSourceGetCURLProps(src, onlytarget)))
                 return NULL;
@@ -2076,7 +2075,6 @@ qemuBlockGetBackingStoreString(virStorageSourcePtr src,
             case VIR_STORAGE_NET_PROTOCOL_HTTPS:
             case VIR_STORAGE_NET_PROTOCOL_FTP:
             case VIR_STORAGE_NET_PROTOCOL_FTPS:
-            case VIR_STORAGE_NET_PROTOCOL_TFTP:
             case VIR_STORAGE_NET_PROTOCOL_ISCSI:
             case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
                 if (!(uri = qemuBlockStorageSourceGetURI(src)))
@@ -2480,7 +2478,6 @@ qemuBlockStorageSourceCreateGetStorageProps(virStorageSourcePtr src,
         case VIR_STORAGE_NET_PROTOCOL_HTTPS:
         case VIR_STORAGE_NET_PROTOCOL_FTP:
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
-        case VIR_STORAGE_NET_PROTOCOL_TFTP:
         case VIR_STORAGE_NET_PROTOCOL_NONE:
         case VIR_STORAGE_NET_PROTOCOL_LAST:
             return 0;
