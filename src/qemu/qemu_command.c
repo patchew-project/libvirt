@@ -8890,10 +8890,10 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
 
 static char *
 qemuBuildTPMDevStr(const virDomainDef *def,
+                   virDomainTPMDefPtr tpm,
                    virQEMUCapsPtr qemuCaps)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
-    virDomainTPMDef *tpm = def->tpm;
     const char *model = virDomainTPMModelTypeToString(tpm->model);
 
     virBufferAsprintf(&buf, "%s,tpmdev=tpm-%s,id=%s",
@@ -8932,13 +8932,12 @@ qemuBuildTPMOpenBackendFDs(const char *tpmdev,
 
 
 static char *
-qemuBuildTPMBackendStr(const virDomainDef *def,
-                       virCommandPtr cmd,
+qemuBuildTPMBackendStr(virCommandPtr cmd,
+                       virDomainTPMDefPtr tpm,
                        int *tpmfd,
                        int *cancelfd,
                        char **chardev)
 {
-    const virDomainTPMDef *tpm = def->tpm;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     g_autofree char *cancel_path = NULL;
     g_autofree char *devset = NULL;
@@ -8992,6 +8991,7 @@ qemuBuildTPMBackendStr(const virDomainDef *def,
 static int
 qemuBuildTPMCommandLine(virCommandPtr cmd,
                         const virDomainDef *def,
+                        virDomainTPMDefPtr tpm,
                         virQEMUCapsPtr qemuCaps)
 {
     char *optstr;
@@ -9000,10 +9000,7 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
     int cancelfd = -1;
     char *fdset;
 
-    if (!def->tpm)
-        return 0;
-
-    if (!(optstr = qemuBuildTPMBackendStr(def, cmd,
+    if (!(optstr = qemuBuildTPMBackendStr(cmd, tpm,
                                           &tpmfd, &cancelfd,
                                           &chardev)))
         return -1;
@@ -9032,7 +9029,7 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
         VIR_FREE(fdset);
     }
 
-    if (!(optstr = qemuBuildTPMDevStr(def, qemuCaps)))
+    if (!(optstr = qemuBuildTPMDevStr(def, tpm, qemuCaps)))
         return -1;
 
     virCommandAddArgList(cmd, "-device", optstr, NULL);
@@ -9040,6 +9037,23 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
 
     return 0;
 }
+
+
+static int
+qemuBuildTPMsCommandLine(virCommandPtr cmd,
+                         const virDomainDef *def,
+                         virQEMUCapsPtr qemuCaps)
+{
+    size_t i;
+
+    for (i = 0; i < def->ntpms; i++) {
+        if (qemuBuildTPMCommandLine(cmd, def, def->tpms[i], qemuCaps) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
 
 static int
 qemuBuildSEVCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
@@ -9720,7 +9734,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                                     chardevStdioLogd) < 0)
         return NULL;
 
-    if (qemuBuildTPMCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildTPMsCommandLine(cmd, def, qemuCaps) < 0)
         return NULL;
 
     if (qemuBuildInputCommandLine(cmd, def, qemuCaps) < 0)
