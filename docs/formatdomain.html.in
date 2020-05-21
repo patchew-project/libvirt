@@ -2952,14 +2952,6 @@
     &lt;target dev='hdh' bus='ide' tray='open'/&gt;
     &lt;readonly/&gt;
   &lt;/disk&gt;
-  &lt;disk type='network' device='cdrom'&gt;
-    &lt;driver name='qemu' type='raw'/&gt;
-    &lt;source protocol="tftp" name="url_path"&gt;
-      &lt;host name="hostname" port="69"/&gt;
-    &lt;/source&gt;
-    &lt;target dev='hdi' bus='ide' tray='open'/&gt;
-    &lt;readonly/&gt;
-  &lt;/disk&gt;
   &lt;disk type='block' device='lun'&gt;
     &lt;driver name='qemu' type='raw'/&gt;
     &lt;source dev='/dev/sda'&gt;
@@ -3166,7 +3158,7 @@
               The <code>protocol</code> attribute specifies the protocol to
               access to the requested image. Possible values are "nbd",
               "iscsi", "rbd", "sheepdog", "gluster", "vxhs", "http", "https",
-              "ftp", ftps", or "tftp".
+              "ftp", ftps".
 
               <p>For any <code>protocol</code> other than <code>nbd</code>
               an additional attribute <code>name</code>

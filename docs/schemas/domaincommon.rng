@@ -1942,7 +1942,6 @@
           <choice>
             <value>sheepdog</value>
             <value>ftp</value>
-            <value>tftp</value>
           </choice>
         </attribute>
         <attribute name="name"/>
