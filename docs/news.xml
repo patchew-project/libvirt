@@ -49,6 +49,17 @@
     </section>
     <section title="Bug fixes">
     </section>
+    <section title="Removed features">
+      <change>
+        <summary>
+          Removed support for tftp storage protocol
+        </summary>
+        <description>
+          The tftp protocol is not support in libxl driver. For QEMU, the tftp
+          was dropped at v2.8 and actually unusable before v2.8.
+        </description>
+      </change>
+    </section>
   </release>
   <release version="v6.3.0" date="2020-05-05">
     <section title="New features">
