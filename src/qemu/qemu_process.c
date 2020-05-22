@@ -4347,8 +4347,14 @@ qemuProcessUpdateCPU(virQEMUDriverPtr driver,
 
     /* The host CPU model comes from host caps rather than QEMU caps so
      * fallback must be allowed no matter what the user specified in the XML.
+     *
+     * Note: PSeries domains are able to run with host-model CPU by design,
+     * even on Libvirt newer than 2.3, never replacing host-model with
+     * custom in the virCPUUpdate() call prior to this function. It is not
+     * needed to change the user defined 'fallback' attribute in this case.
      */
-    vm->def->cpu->fallback = VIR_CPU_FALLBACK_ALLOW;
+    if (!qemuDomainIsPSeries(vm->def))
+        vm->def->cpu->fallback = VIR_CPU_FALLBACK_ALLOW;
 
     if (qemuProcessFetchGuestCPU(driver, vm, asyncJob, &cpu, &disabled) < 0)
         return -1;
