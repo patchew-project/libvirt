@@ -3125,13 +3125,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
 
         if (mem->nvdimmPath) {
             memPath = g_strdup(mem->nvdimmPath);
-            if (!priv->memPrealloc)
-                prealloc = true;
+            prealloc = true;
         } else if (useHugepage) {
             if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &memPath) < 0)
                 return -1;
-            if (!priv->memPrealloc)
-                prealloc = true;
+            prealloc = true;
         } else {
             /* We can have both pagesize and mem source. If that's the case,
              * prefer hugepages as those are more specific. */
@@ -3140,7 +3138,6 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         }
 
         if (virJSONValueObjectAdd(props,
-                                  "B:prealloc", prealloc,
                                   "s:mem-path", memPath,
                                   NULL) < 0)
             return -1;
@@ -3164,6 +3161,10 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     } else {
         backendType = "memory-backend-ram";
     }
+
+    if (!priv->memPrealloc &&
+        virJSONValueObjectAdd(props, "B:prealloc", prealloc, NULL) < 0)
+        return -1;
 
     if (virJSONValueObjectAdd(props, "U:size", mem->size * 1024, NULL) < 0)
         return -1;
