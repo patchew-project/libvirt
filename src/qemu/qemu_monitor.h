@@ -1096,6 +1096,7 @@ struct _qemuMonitorMachineInfo {
     bool hotplugCpus;
     char *defaultCPU;
     bool numaMemSupported;
+    char *defaultRAMid;
 };
 
 int qemuMonitorGetMachines(qemuMonitorPtr mon,

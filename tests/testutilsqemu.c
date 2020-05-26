@@ -99,6 +99,15 @@ static const char *const *kvm_machines[VIR_ARCH_LAST] = {
     [VIR_ARCH_S390X] = s390x_machines,
 };
 
+static const char *qemu_default_ram_id[VIR_ARCH_LAST] = {
+    [VIR_ARCH_I686] = "pc.ram",
+    [VIR_ARCH_X86_64] = "pc.ram",
+    [VIR_ARCH_AARCH64] = "mach-virt.ram",
+    [VIR_ARCH_ARMV7L] = "vexpress.highmem",
+    [VIR_ARCH_PPC64] = "ppc_spapr.ram",
+    [VIR_ARCH_PPC] = "ppc_spapr.ram",
+    [VIR_ARCH_S390X] = "s390.ram"
+};
 
 char *
 virFindFileInPath(const char *file)
@@ -345,7 +354,8 @@ int qemuTestCapsCacheInsert(virFileCachePtr cache,
                                       0,
                                       false,
                                       false,
-                                      true);
+                                      true,
+                                      qemu_default_ram_id[i]);
                 virQEMUCapsSet(tmpCaps, QEMU_CAPS_TCG);
             }
             for (j = 0; kvm_machines[i][j] != NULL; j++) {
@@ -357,7 +367,8 @@ int qemuTestCapsCacheInsert(virFileCachePtr cache,
                                       0,
                                       false,
                                       false,
-                                      true);
+                                      true,
+                                      qemu_default_ram_id[i]);
                 virQEMUCapsSet(tmpCaps, QEMU_CAPS_KVM);
             }
         }
