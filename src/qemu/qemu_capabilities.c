@@ -582,6 +582,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "tcg",
               "virtio-blk-pci.scsi.default.disabled",
               "pvscsi",
+
+              /* 370 */
+              "machine.memory-backend",
     );
 
 
@@ -4985,6 +4988,10 @@ virQEMUCapsInitQMPVersionCaps(virQEMUCapsPtr qemuCaps)
     /* TCG couldn't be disabled nor queried until QEMU 2.10 */
     if (qemuCaps->version < 2010000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_TCG);
+
+    /* no way to query for -machine memory-backend */
+    if (qemuCaps->version >= 5000000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_MEMORY_BACKEND);
 }
 
 
