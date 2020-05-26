@@ -7916,7 +7916,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7924,7 +7925,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7932,7 +7934,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7940,7 +7943,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7948,7 +7952,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7956,7 +7961,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7964,7 +7970,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7972,7 +7979,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7980,14 +7988,16 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": false,
       "name": "none",
       "numa-mem-supported": false,
       "cpu-max": 1,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -7995,7 +8005,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8003,7 +8014,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8011,7 +8023,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8019,7 +8032,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8027,7 +8041,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8035,7 +8050,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8043,7 +8059,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8051,7 +8068,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8059,7 +8077,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8067,7 +8086,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8075,7 +8095,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8083,7 +8104,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8091,7 +8113,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "486-x86_64-cpu",
       "cpu-max": 1,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8099,7 +8122,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8107,7 +8131,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8115,7 +8140,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8123,7 +8149,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8131,7 +8158,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8139,7 +8167,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8147,7 +8176,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8155,7 +8185,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8163,7 +8194,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8172,7 +8204,8 @@
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
       "deprecated": false,
-      "alias": "q35"
+      "alias": "q35",
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8180,7 +8213,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8188,7 +8222,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8196,7 +8231,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8204,7 +8240,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": false,
@@ -8212,7 +8249,8 @@
       "numa-mem-supported": false,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8220,7 +8258,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8228,7 +8267,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8236,7 +8276,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8246,7 +8287,8 @@
       "is-default": true,
       "cpu-max": 255,
       "deprecated": false,
-      "alias": "pc"
+      "alias": "pc",
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8254,7 +8296,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8262,7 +8305,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8270,7 +8314,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -8278,7 +8323,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     }
   ],
   "id": "libvirt-39"
@@ -17318,6 +17364,10 @@
         {
           "name": "default-cpu-type",
           "default": null,
+          "type": "str"
+        },
+        {
+          "name": "default-ram-id",
           "type": "str"
         }
       ],
@@ -28461,7 +28511,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28469,7 +28520,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28477,7 +28529,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28485,7 +28538,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28493,7 +28547,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28501,7 +28556,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28509,7 +28565,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28517,7 +28574,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28525,14 +28583,16 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": false,
       "name": "none",
       "numa-mem-supported": false,
       "cpu-max": 1,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28540,7 +28600,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28548,7 +28609,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28556,7 +28618,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28564,7 +28627,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28572,7 +28636,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28580,7 +28645,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28588,7 +28654,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28596,7 +28663,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28604,7 +28672,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28612,7 +28681,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28620,7 +28690,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28628,7 +28699,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28636,7 +28708,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "486-x86_64-cpu",
       "cpu-max": 1,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28644,7 +28717,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28652,7 +28726,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28660,7 +28735,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28668,7 +28744,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28676,7 +28753,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28684,7 +28762,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28692,7 +28771,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28700,7 +28780,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28708,7 +28789,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28717,7 +28799,8 @@
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
       "deprecated": false,
-      "alias": "q35"
+      "alias": "q35",
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28725,7 +28808,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28733,7 +28817,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28741,7 +28826,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28749,7 +28835,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": false,
@@ -28757,7 +28844,8 @@
       "numa-mem-supported": false,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28765,7 +28853,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28773,7 +28862,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": true
+      "deprecated": true,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28781,7 +28871,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28791,7 +28882,8 @@
       "is-default": true,
       "cpu-max": 255,
       "deprecated": false,
-      "alias": "pc"
+      "alias": "pc",
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28799,7 +28891,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28807,7 +28900,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28815,7 +28909,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 255,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     },
     {
       "hotpluggable-cpus": true,
@@ -28823,7 +28918,8 @@
       "numa-mem-supported": true,
       "default-cpu-type": "qemu64-x86_64-cpu",
       "cpu-max": 288,
-      "deprecated": false
+      "deprecated": false,
+      "default-ram-id": "pc.ram"
     }
   ],
   "id": "libvirt-5"
