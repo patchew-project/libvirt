@@ -1053,7 +1053,7 @@ get_files(vahControl * ctl)
 
             if (listenObj.type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET &&
                 listenObj.socket &&
-                vah_add_file(&buf, listenObj.socket, "rw"))
+                vah_add_file(&buf, listenObj.socket, "w"))
                 goto cleanup;
         }
     }
