@@ -47,10 +47,13 @@ CI_PREPARE_SCRIPT = $(CI_ROOTDIR)/prepare.sh
 # Script containing build instructions
 CI_BUILD_SCRIPT = $(CI_ROOTDIR)/build.sh
 
+# Registry where container images are stored
+CI_IMAGE_REGISTRY = registry.gitlab.com
+
 # Location of the container images we're going to pull
 # Can be useful to overridde to use a locally built
 # image instead
-CI_IMAGE_PREFIX = quay.io/libvirt/buildenv-libvirt-
+CI_IMAGE_PREFIX = libvirt/libvirt/ci-
 
 # The default tag is ':latest' but if the container
 # repo above uses different conventions this can override it
@@ -213,7 +216,12 @@ ci-prepare-tree: ci-check-engine
 	fi
 
 ci-run-command@%: ci-prepare-tree
-	$(CI_ENGINE) run $(CI_ENGINE_ARGS) $(CI_IMAGE_PREFIX)$*$(CI_IMAGE_TAG) \
+	image=; \
+	if test "$(CI_IMAGE_REGISTRY)"; then \
+		image="$${image}$(CI_IMAGE_REGISTRY)/"; \
+	fi; \
+	image="$${image}$(CI_IMAGE_PREFIX)$*$(CI_IMAGE_TAG)"; \
+	$(CI_ENGINE) run $(CI_ENGINE_ARGS) "$$image" \
 		/bin/bash -c ' \
 		$(CI_USER_HOME)/prepare || exit 1; \
 		sudo \
@@ -243,11 +251,11 @@ ci-list-images:
 	@echo
 	@echo "Available x86 container images:"
 	@echo
-	@sh list-images.sh "$(CI_ENGINE)" "$(CI_IMAGE_PREFIX)" | grep -v cross
+	@sh list-images.sh "$(CI_IMAGE_PREFIX)" | grep -v cross
 	@echo
 	@echo "Available cross-compiler container images:"
 	@echo
-	@sh list-images.sh "$(CI_ENGINE)" "$(CI_IMAGE_PREFIX)" | grep cross
+	@sh list-images.sh "$(CI_IMAGE_PREFIX)" | grep cross
 	@echo
 
 ci-help:
