@@ -55,9 +55,9 @@ CI_IMAGE_REGISTRY = registry.gitlab.com
 # image instead
 CI_IMAGE_PREFIX = libvirt/libvirt/ci-
 
-# The default tag is ':latest' but if the container
+# The default tag is 'latest' but if the container
 # repo above uses different conventions this can override it
-CI_IMAGE_TAG = :latest
+CI_IMAGE_TAG = latest
 
 # We delete the virtual root after completion, set
 # to 0 if you need to keep it around for debugging
@@ -220,7 +220,10 @@ ci-run-command@%: ci-prepare-tree
 	if test "$(CI_IMAGE_REGISTRY)"; then \
 		image="$${image}$(CI_IMAGE_REGISTRY)/"; \
 	fi; \
-	image="$${image}$(CI_IMAGE_PREFIX)$*$(CI_IMAGE_TAG)"; \
+	image="$${image}$(CI_IMAGE_PREFIX)$*"; \
+	if test "$(CI_IMAGE_TAG)"; then \
+		image="$${image}:$(CI_IMAGE_TAG)"; \
+	fi; \
 	$(CI_ENGINE) run $(CI_ENGINE_ARGS) "$$image" \
 		/bin/bash -c ' \
 		$(CI_USER_HOME)/prepare || exit 1; \
