@@ -50,4 +50,14 @@
     <entry name='serial_number'>29057112</entry>
     <entry name='part_number'>IMSH2GS13A1F1C-10F</entry>
   </memory_device>
+  <oemStrings>
+    <entry>Default string</entry>
+    <entry>Default string</entry>
+    <entry>MIAMI</entry>
+    <entry>Default string</entry>
+    <entry>FFFFFFFFFFFFF</entry>
+    <entry>FFFFFFFFFFFFF</entry>
+    <entry>FFFFFFFFFFFFF</entry>
+    <entry>Default string</entry>
+  </oemStrings>
 </sysinfo>

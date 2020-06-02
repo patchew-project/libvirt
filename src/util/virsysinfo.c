@@ -920,6 +920,61 @@ virSysinfoParseX86Chassis(const char *base,
 
 
 static int
+virSysinfoParseOEMStrings(const char *base,
+                          virSysinfoOEMStringsDefPtr *stringsRet)
+{
+    virSysinfoOEMStringsDefPtr strings = NULL;
+    int ret = -1;
+    const char *cur;
+
+    if (!(cur = strstr(base, "OEM Strings")))
+        return 0;
+
+    if (VIR_ALLOC(strings) < 0)
+        return -1;
+
+    while ((cur = strstr(cur, "String "))) {
+        char *eol;
+
+        cur += 7;
+
+        if (!(eol = strchr(cur, '\n'))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Malformed output of dmidecode"));
+            goto cleanup;
+        }
+
+        while (g_ascii_isdigit(*cur))
+            cur++;
+
+        if (*cur != ':') {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Malformed output of dmidecode"));
+            goto cleanup;
+        }
+
+        cur += 2;
+
+        virSkipSpacesBackwards(cur, &eol);
+        if (!eol)
+            continue;
+
+        if (VIR_EXPAND_N(strings->values, strings->nvalues, 1) < 0)
+            goto cleanup;
+
+        strings->values[strings->nvalues - 1] = g_strndup(cur, eol - cur);
+    }
+
+    *stringsRet = g_steal_pointer(&strings);
+    ret = 0;
+
+ cleanup:
+    virSysinfoOEMStringsDefFree(strings);
+    return ret;
+}
+
+
+static int
 virSysinfoParseX86Processor(const char *base, virSysinfoDefPtr ret)
 {
     const char *cur, *tmp_base;
@@ -1132,7 +1187,7 @@ virSysinfoReadDMI(void)
         return NULL;
     }
 
-    cmd = virCommandNewArgList(path, "-q", "-t", "0,1,2,3,4,17", NULL);
+    cmd = virCommandNewArgList(path, "-q", "-t", "0,1,2,3,4,11,17", NULL);
     VIR_FREE(path);
     virCommandSetOutputBuffer(cmd, &outbuf);
     if (virCommandRun(cmd, NULL) < 0)
@@ -1153,6 +1208,9 @@ virSysinfoReadDMI(void)
         goto error;
 
     if (virSysinfoParseX86Chassis(outbuf, &ret->chassis) < 0)
+        goto error;
+
+    if (virSysinfoParseOEMStrings(outbuf, &ret->oemStrings) < 0)
         goto error;
 
     ret->nprocessor = 0;
