@@ -2764,8 +2764,8 @@ virSecuritySELinuxRestoreAllLabel(virSecurityManagerPtr mgr,
             return -1;
     }
 
-    if (def->tpm) {
-        if (virSecuritySELinuxRestoreTPMFileLabelInt(mgr, def, def->tpm) < 0)
+    for (i = 0; i < def->ntpms; i++) {
+        if (virSecuritySELinuxRestoreTPMFileLabelInt(mgr, def, def->tpms[i]) < 0)
             rc = -1;
     }
 
@@ -3172,8 +3172,8 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
             return -1;
     }
 
-    if (def->tpm) {
-        if (virSecuritySELinuxSetTPMFileLabel(mgr, def, def->tpm) < 0)
+    for (i = 0; i < def->ntpms; i++) {
+        if (virSecuritySELinuxSetTPMFileLabel(mgr, def, def->tpms[i]) < 0)
             return -1;
     }
 
@@ -3493,19 +3493,23 @@ virSecuritySELinuxSetTPMLabels(virSecurityManagerPtr mgr,
                                virDomainDefPtr def)
 {
     int ret = 0;
+    size_t i;
     virSecurityLabelDefPtr seclabel;
 
     seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
     if (seclabel == NULL)
         return 0;
 
-    if (def->tpm->type == VIR_DOMAIN_TPM_TYPE_EMULATOR) {
+    for (i = 0; i < def->ntpms; i++) {
+        if (def->tpms[i]->type != VIR_DOMAIN_TPM_TYPE_EMULATOR)
+            continue;
+
         ret = virSecuritySELinuxSetFileLabels(
-            mgr, def->tpm->data.emulator.storagepath,
+            mgr, def->tpms[i]->data.emulator.storagepath,
             seclabel);
-        if (ret == 0 && def->tpm->data.emulator.logfile)
+        if (ret == 0 && def->tpms[i]->data.emulator.logfile)
             ret = virSecuritySELinuxSetFileLabels(
-                mgr, def->tpm->data.emulator.logfile,
+                mgr, def->tpms[i]->data.emulator.logfile,
                 seclabel);
     }
 
@@ -3518,13 +3522,17 @@ virSecuritySELinuxRestoreTPMLabels(virSecurityManagerPtr mgr,
                                    virDomainDefPtr def)
 {
     int ret = 0;
+    size_t i;
 
-    if (def->tpm->type == VIR_DOMAIN_TPM_TYPE_EMULATOR) {
+    for (i = 0; i < def->ntpms; i++) {
+        if (def->tpms[i]->type != VIR_DOMAIN_TPM_TYPE_EMULATOR)
+            continue;
+
         ret = virSecuritySELinuxRestoreFileLabels(
-            mgr, def->tpm->data.emulator.storagepath);
-        if (ret == 0 && def->tpm->data.emulator.logfile)
+            mgr, def->tpms[i]->data.emulator.storagepath);
+        if (ret == 0 && def->tpms[i]->data.emulator.logfile)
             ret = virSecuritySELinuxRestoreFileLabels(
-                mgr, def->tpm->data.emulator.logfile);
+                mgr, def->tpms[i]->data.emulator.logfile);
     }
 
     return ret;
