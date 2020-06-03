@@ -2786,6 +2786,12 @@ virSecuritySELinuxRestoreAllLabel(virSecurityManagerPtr mgr,
                                      mgr) < 0)
         rc = -1;
 
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        if (def->fw_cfgs[i].file &&
+            virSecuritySELinuxRestoreFileLabel(mgr, def->fw_cfgs[i].file, true) < 0)
+            rc = -1;
+    }
+
     if (def->os.loader && def->os.loader->nvram &&
         virSecuritySELinuxRestoreFileLabel(mgr, def->os.loader->nvram, true) < 0)
         rc = -1;
@@ -3193,6 +3199,13 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
                                      virSecuritySELinuxSetSecuritySmartcardCallback,
                                      mgr) < 0)
         return -1;
+
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        if (def->fw_cfgs[i].file &&
+            virSecuritySELinuxSetFilecon(mgr, def->fw_cfgs[i].file,
+                                         data->content_context, true) < 0)
+            return -1;
+    }
 
     /* This is different than kernel or initrd. The nvram store
      * is really a disk, qemu can read and write to it. */

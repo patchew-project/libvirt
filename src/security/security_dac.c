@@ -1991,6 +1991,12 @@ virSecurityDACRestoreAllLabel(virSecurityManagerPtr mgr,
             rc = -1;
     }
 
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        if (def->fw_cfgs[i].file &&
+            virSecurityDACRestoreFileLabel(mgr, def->fw_cfgs[i].file) < 0)
+            rc = -1;
+    }
+
     if (def->os.loader && def->os.loader->nvram &&
         virSecurityDACRestoreFileLabel(mgr, def->os.loader->nvram) < 0)
         rc = -1;
@@ -2172,6 +2178,14 @@ virSecurityDACSetAllLabel(virSecurityManagerPtr mgr,
 
     if (virSecurityDACGetImageIds(secdef, priv, &user, &group))
         return -1;
+
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        if (def->fw_cfgs[i].file &&
+            virSecurityDACSetOwnership(mgr, NULL,
+                                       def->fw_cfgs[i].file,
+                                       user, group, true) < 0)
+            return -1;
+    }
 
     if (def->os.loader && def->os.loader->nvram &&
         virSecurityDACSetOwnership(mgr, NULL,
