@@ -582,6 +582,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "tcg",
               "virtio-blk-pci.scsi.default.disabled",
               "pvscsi",
+
+              /* 370 */
+              "fw_cfg",
     );
 
 
@@ -3279,6 +3282,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "overcommit", NULL, QEMU_CAPS_OVERCOMMIT },
     { "smp-opts", "dies", QEMU_CAPS_SMP_DIES },
     { "fsdev", "multidevs", QEMU_CAPS_FSDEV_MULTIDEVS },
+    { "fw_cfg", "file", QEMU_CAPS_FW_CFG },
 };
 
 static int
