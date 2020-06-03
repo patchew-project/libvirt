@@ -762,6 +762,41 @@ qemuValidateDefGetVcpuHotplugGranularity(const virDomainDef *def)
 }
 
 
+#define QEMU_FW_CFG_MAX_FILE_PATH 55
+static int
+qemuValidateDomainDefFWCfg(const virDomainDef *def,
+                           virQEMUCapsPtr qemuCaps G_GNUC_UNUSED)
+{
+    size_t i;
+
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        const virDomainFWCfgDef *f = &def->fw_cfgs[i];
+
+        if (!STRPREFIX(f->name, "opt/")) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Invalid firmware name"));
+            return -1;
+        }
+
+        if (STRPREFIX(f->name, "opt/ovmf/") ||
+            STRPREFIX(f->name, "opt/org.qemu/")) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("That firmware name is reserved"));
+            return -1;
+        }
+
+        if (f->file &&
+            strlen(f->file) > QEMU_FW_CFG_MAX_FILE_PATH) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("firmware file too long"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 qemuValidateDomainDef(const virDomainDef *def,
                       void *opaque)
@@ -977,6 +1012,9 @@ qemuValidateDomainDef(const virDomainDef *def,
             }
         }
     }
+
+    if (qemuValidateDomainDefFWCfg(def, qemuCaps) < 0)
+        return -1;
 
     return 0;
 }
