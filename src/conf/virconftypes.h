@@ -359,3 +359,6 @@ typedef virDomainXMLPrivateDataCallbacks *virDomainXMLPrivateDataCallbacksPtr;
 
 typedef struct _virDomainXenbusControllerOpts virDomainXenbusControllerOpts;
 typedef virDomainXenbusControllerOpts *virDomainXenbusControllerOptsPtr;
+
+typedef struct _virDomainFWCfgDef virDomainFWCfgDef;
+typedef virDomainFWCfgDef *virDomainFWCfgDefPtr;

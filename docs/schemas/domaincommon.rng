@@ -49,6 +49,9 @@
         <optional>
           <ref name="sysinfo"/>
         </optional>
+        <optional>
+          <ref name='firmware'/>
+        </optional>
         <ref name="os"/>
         <ref name="clock"/>
         <ref name="resources"/>
@@ -5615,6 +5618,27 @@
 
   <define name="sysinfo-value">
     <data type="string"/>
+  </define>
+
+  <define name="firmware">
+    <element name="firmware">
+      <zeroOrMore>
+        <element name="entry">
+          <attribute name="name">
+            <data type="string"/>
+          </attribute>
+          <choice>
+            <attribute name="value">
+              <data type="string"/>
+            </attribute>
+            <attribute name="file">
+              <data type="string"/>
+            </attribute>
+          </choice>
+          <empty/>
+        </element>
+      </zeroOrMore>
+    </element>
   </define>
 
   <define name="acpiTable">

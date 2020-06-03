@@ -3385,6 +3385,18 @@ virDomainSEVDefFree(virDomainSEVDefPtr def)
 }
 
 
+static void
+virDomainFWCfgDefFree(virDomainFWCfgDefPtr def)
+{
+    if (!def)
+        return;
+
+    VIR_FREE(def->name);
+    VIR_FREE(def->value);
+    VIR_FREE(def->file);
+}
+
+
 void virDomainDefFree(virDomainDefPtr def)
 {
     size_t i;
@@ -3552,6 +3564,10 @@ void virDomainDefFree(virDomainDefPtr def)
     virDomainNumaFree(def->numa);
 
     virSysinfoDefFree(def->sysinfo);
+
+    for (i = 0; i < def->nfw_cfgs; i++)
+        virDomainFWCfgDefFree(&def->fw_cfgs[i]);
+    VIR_FREE(def->fw_cfgs);
 
     virDomainRedirFilterDefFree(def->redirfilter);
 
@@ -20921,6 +20937,89 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
 }
 
 
+static int
+virDomainFWCfgDefParse(virDomainDefPtr def,
+                       xmlXPathContextPtr ctxt)
+{
+    g_autofree xmlNodePtr *nodes = NULL;
+    int n;
+    size_t i;
+
+    if ((n = virXPathNodeSet("./firmware/entry", ctxt, &nodes)) < 0)
+        return -1;
+
+    if (n == 0)
+        return 0;
+
+    def->fw_cfgs = g_new0(virDomainFWCfgDef, n);
+
+    for (i = 0; i < n; i++) {
+        g_autofree char *name = NULL;
+        g_autofree char *value = NULL;
+        g_autofree char *file = NULL;
+
+        if (!(name = virXMLPropString(nodes[i], "name"))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Firmware entry is missing 'name' attribute"));
+            goto error;
+        }
+
+        value = virXMLPropString(nodes[i], "value");
+        file = virXMLPropString(nodes[i], "file");
+
+        if (!value && !file) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Firmware entry must have either 'value' or "
+                             "'file' attribute"));
+            goto error;
+        }
+
+        def->fw_cfgs[i].name = g_steal_pointer(&name);
+        def->fw_cfgs[i].value = g_steal_pointer(&value);
+        def->fw_cfgs[i].file = g_steal_pointer(&file);
+        def->nfw_cfgs++;
+    }
+
+    return 0;
+
+ error:
+    while (def->nfw_cfgs)
+        virDomainFWCfgDefFree(&def->fw_cfgs[--def->nfw_cfgs]);
+    VIR_FREE(def->fw_cfgs);
+    return -1;
+}
+
+
+static void
+virDomainFWCfgDefFormat(virBufferPtr buf,
+                        const virDomainDef *def)
+{
+    size_t i;
+
+    if (def->nfw_cfgs == 0)
+        return;
+
+    virBufferAddLit(buf, "<firmware>\n");
+    virBufferAdjustIndent(buf, 2);
+
+    for (i = 0; i < def->nfw_cfgs; i++) {
+        const virDomainFWCfgDef *f = &def->fw_cfgs[i];
+
+        virBufferAsprintf(buf, "<entry name='%s' ", f->name);
+
+        if (f->value)
+            virBufferEscapeString(buf, "value='%s'", f->value);
+        else
+            virBufferEscapeString(buf, "file='%s'", f->file);
+
+        virBufferAddLit(buf, "/>\n");
+    }
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</firmware>\n");
+}
+
+
 static virDomainDefPtr
 virDomainDefParseXML(xmlDocPtr xml,
                      xmlXPathContextPtr ctxt,
@@ -22201,6 +22300,9 @@ virDomainDefParseXML(xmlDocPtr xml,
         }
         def->os.smbios_mode = mode;
     }
+
+    if (virDomainFWCfgDefParse(def, ctxt) < 0)
+        goto error;
 
     if (virDomainKeyWrapDefParseXML(def, ctxt) < 0)
         goto error;
@@ -29511,6 +29613,8 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
 
     if (def->sysinfo)
         ignore_value(virSysinfoFormat(buf, def->sysinfo));
+
+    virDomainFWCfgDefFormat(buf, def);
 
     if (def->os.bootloader) {
         virBufferEscapeString(buf, "<bootloader>%s</bootloader>\n",

@@ -2481,6 +2481,14 @@ struct _virDomainVirtioOptions {
     virTristateSwitch packed;
 };
 
+
+struct _virDomainFWCfgDef {
+    char *name;
+    char *value;
+    char *file;
+};
+
+
 /*
  * Guest VM main configuration
  *
@@ -2623,6 +2631,9 @@ struct _virDomainDef {
 
     size_t npanics;
     virDomainPanicDefPtr *panics;
+
+    size_t nfw_cfgs;
+    virDomainFWCfgDefPtr fw_cfgs;
 
     /* Only 1 */
     virDomainWatchdogDefPtr watchdog;

@@ -595,6 +595,36 @@
       </dd>
     </dl>
 
+    <h3><a id="elementsFirmware">Firmware configuration</a></h3>
+
+    <p>
+      Some hypervisors provide unified way to tweak how firmware configures
+      itself, or may contain tables to be installed for the guest OS, for
+      instance boot order, ACPI, SMBIOS, etc. It even allows users to define
+      their own config blobs. In case of QEMU, these then appear under domain's
+      sysfs, under <code>/sys/firmware/qemu_fw_cfg</code>.
+      <span class="since">Since 6.5.0</span>
+    </p>
+
+<pre>
+  &lt;firmware&gt;
+    &lt;entry name="opt/com.example/name" value="example value"/&gt;
+    &lt;entry name="opt/com.coreos/config" file="/tmp/provision.ign"/&gt;
+  &lt;/firmware&gt;
+</pre>
+
+    <p>
+      The <code>firmware</code> element can have multiple <code>entry</code>
+      child element. Each element then has mandatory <code>name</code>
+      attribute, which defines the name of the blob and must begin with
+      <code>"opt/"</code> and to avoid clashing with other names is advised to
+      be in form <code>"opt/$RFQDN/$name"</code> where <code>$RFQDN</code> is a
+      reverse fully qualified domain name you control.
+      Then, the element can have either <code>value</code> attribute (to set
+      the blob value directly), or <code>file</code> attribute (to set the blob
+      value from the file).
+    </p>
+
     <h3><a id="elementsCPUAllocation">CPU Allocation</a></h3>
 
 <pre>
