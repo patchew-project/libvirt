@@ -6157,6 +6157,12 @@ qemuBuildIOMMUCommandLine(virCommandPtr cmd,
             virBufferAsprintf(&opts, ",device-iotlb=%s",
                               virTristateSwitchTypeToString(iommu->iotlb));
         }
+        if (iommu->aw_bits > 0) {
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_INTEL_IOMMU_AW_BITS))
+                virBufferAsprintf(&opts, ",aw-bits=%d", iommu->aw_bits);
+            else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_INTEL_IOMMU_X_AW_BITS))
+                virBufferAsprintf(&opts, ",x-aw-bits=%d", iommu->aw_bits);
+        }
 
         virCommandAddArg(cmd, "-device");
         virCommandAddArgBuffer(cmd, &opts);
