@@ -25,6 +25,7 @@ stages:
   before_script:
     - *script_variables
   script:
+    - rm -rf build
     - mkdir build
     - cd build
     - ../autogen.sh || (cat config.log && exit 1)
@@ -108,6 +109,16 @@ x64-ubuntu-1804:
 x64-ubuntu-2004:
   <<: *native_build_default_job_definition
   image: quay.io/libvirt/buildenv-libvirt-ubuntu-2004:latest
+
+x64-freebsd-11:
+  <<: *native_build_default_job_definition
+  tags:
+    - freebsd-11
+
+x64-freebsd-12:
+  <<: *native_build_default_job_definition
+  tags:
+    - freebsd-12
 
 
 # Cross compiled build jobs
