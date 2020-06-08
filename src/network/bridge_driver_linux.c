@@ -307,7 +307,8 @@ int networkCheckRouteCollision(virNetworkDefPtr def)
     return ret;
 }
 
-static const char networkLocalMulticast[] = "224.0.0.0/24";
+static const char networkLocalMulticastIPv4[] = "224.0.0.0/24";
+static const char networkLocalMulticastIPv6[] = "ffx2::/16";
 static const char networkLocalBroadcast[] = "255.255.255.255/32";
 
 static int
@@ -317,6 +318,7 @@ networkAddMasqueradingFirewallRules(virFirewallPtr fw,
 {
     int prefix = virNetworkIPDefPrefix(ipdef);
     const char *forwardIf = virNetworkDefForwardIf(def, 0);
+    bool isIPv4 = VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET);
 
     if (prefix < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -406,7 +408,8 @@ networkAddMasqueradingFirewallRules(virFirewallPtr fw,
         return -1;
 
     /* exempt local network broadcast address as destination */
-    if (iptablesAddDontMasquerade(fw,
+    if (isIPv4 &&
+        iptablesAddDontMasquerade(fw,
                                   &ipdef->address,
                                   prefix,
                                   forwardIf,
@@ -418,7 +421,8 @@ networkAddMasqueradingFirewallRules(virFirewallPtr fw,
                                   &ipdef->address,
                                   prefix,
                                   forwardIf,
-                                  networkLocalMulticast) < 0)
+                                  isIPv4 ? networkLocalMulticastIPv4 :
+                                  networkLocalMulticastIPv6) < 0)
         return -1;
 
     return 0;
@@ -431,6 +435,7 @@ networkRemoveMasqueradingFirewallRules(virFirewallPtr fw,
 {
     int prefix = virNetworkIPDefPrefix(ipdef);
     const char *forwardIf = virNetworkDefForwardIf(def, 0);
+    bool isIPv4 = VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET);
 
     if (prefix < 0)
         return 0;
@@ -439,10 +444,12 @@ networkRemoveMasqueradingFirewallRules(virFirewallPtr fw,
                                      &ipdef->address,
                                      prefix,
                                      forwardIf,
-                                     networkLocalMulticast) < 0)
+                                     isIPv4 ? networkLocalMulticastIPv4 :
+                                     networkLocalMulticastIPv6) < 0)
         return -1;
 
-    if (iptablesRemoveDontMasquerade(fw,
+    if (isIPv4 &&
+        iptablesRemoveDontMasquerade(fw,
                                      &ipdef->address,
                                      prefix,
                                      forwardIf,
@@ -769,7 +776,8 @@ networkAddIPSpecificFirewallRules(virFirewallPtr fw,
      */
 
     if (def->forward.type == VIR_NETWORK_FORWARD_NAT) {
-        if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET))
+        if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET) ||
+            def->forward.natIPv6 == VIR_TRISTATE_BOOL_YES)
             return networkAddMasqueradingFirewallRules(fw, def, ipdef);
         else if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6))
             return networkAddRoutingFirewallRules(fw, def, ipdef);
@@ -786,7 +794,8 @@ networkRemoveIPSpecificFirewallRules(virFirewallPtr fw,
                                      virNetworkIPDefPtr ipdef)
 {
     if (def->forward.type == VIR_NETWORK_FORWARD_NAT) {
-        if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET))
+        if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET) ||
+            def->forward.natIPv6 == VIR_TRISTATE_BOOL_YES)
             return networkRemoveMasqueradingFirewallRules(fw, def, ipdef);
         else if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6))
             return networkRemoveRoutingFirewallRules(fw, def, ipdef);
