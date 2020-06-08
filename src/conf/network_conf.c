@@ -1358,6 +1358,7 @@ virNetworkForwardNatDefParseXML(const char *networkName,
     int nNatAddrs, nNatPorts;
     char *addrStart = NULL;
     char *addrEnd = NULL;
+    char *ipv6 = NULL;
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
 
     ctxt->node = node;
@@ -1367,6 +1368,19 @@ virNetworkForwardNatDefParseXML(const char *networkName,
                        _("The <nat> element can only be used when <forward> 'mode' is 'nat' in network %s"),
                        networkName);
         goto cleanup;
+    }
+
+    ipv6 = virXMLPropString(node, "ipv6");
+    if (ipv6) {
+        if ((def->natIPv6
+             = virTristateBoolTypeFromString(ipv6)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Invalid ipv6 setting '%s' "
+                             "in network '%s' NAT"),
+                           ipv6, networkName);
+            goto cleanup;
+        }
+        VIR_FREE(ipv6);
     }
 
     /* addresses for SNAT */
@@ -2516,10 +2530,18 @@ virNetworkForwardNatDefFormat(virBufferPtr buf,
             goto cleanup;
     }
 
-    if (!addrEnd && !addrStart && !fwd->port.start && !fwd->port.end)
+    if (!addrEnd && !addrStart && !fwd->port.start && !fwd->port.end && !fwd->natIPv6)
         return 0;
 
-    virBufferAddLit(buf, "<nat>\n");
+    virBufferAddLit(buf, "<nat");
+    if (fwd->natIPv6)
+        virBufferAsprintf(buf, " ipv6='%s'", virTristateBoolTypeToString(fwd->natIPv6));
+
+    if (!addrEnd && !addrStart && !fwd->port.start && !fwd->port.end) {
+        virBufferAddLit(buf, "/>\n");
+        return 0;
+    }
+    virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
 
     if (addrStart) {

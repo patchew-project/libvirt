@@ -181,6 +181,14 @@
               </optional>
               <optional>
                 <element name='nat'>
+                  <optional>
+                    <attribute name="ipv6">
+                      <choice>
+                        <value>yes</value>
+                        <value>no</value>
+                      </choice>
+                    </attribute>
+                  </optional>
                   <interleave>
                     <optional>
                       <element name='address'>
