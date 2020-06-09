@@ -200,7 +200,7 @@ void virErrorSetErrnoFromLastError(void);
 
 bool virLastErrorIsSystemErrno(int errnum);
 
-void virErrorPreserveLast(virErrorPtr *saveerr);
+virErrorPtr virErrorPreserveLast(virErrorPtr *saveerr);
 void virErrorRestore(virErrorPtr *savederr);
 
 void virLastErrorPrefixMessage(const char *fmt, ...)
