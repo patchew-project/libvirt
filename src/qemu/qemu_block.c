@@ -2851,40 +2851,36 @@ qemuBlockGetNamedNodeData(virDomainObjPtr vm,
  * qemuBlockBitmapChainIsValid:
  *
  * Validates that the backing chain of @src contains proper consistent bitmap
- * data for a chain of bitmaps named @bitmapname.
+ * @bitmapname.
  *
- * A valid chain:
- * 1) bitmaps of same name are in a consecutive subset of images without gap
- * 2) don't have any inconsistent bitmaps
+ * A valid bitmap:
+ * 1) There's only one such bitmap in the backing chain
+ * 2) It's persistent.
+ * 3) It's active
+ * 4) isn't incosistent
  */
 bool
 qemuBlockBitmapChainIsValid(virStorageSourcePtr src,
                             const char *bitmapname,
                             virHashTablePtr blockNamedNodeData)
 {
-    qemuBlockNamedNodeDataBitmapPtr bitmap;
     virStorageSourcePtr n;
-    bool chain_started = false;
-    bool chain_ended = false;
+    bool found = false;
 
-    for (n = src; n; n = n->backingStore) {
-        if (!(bitmap = qemuBlockNamedNodeDataGetBitmapByName(blockNamedNodeData, n, bitmapname))) {
-            if (chain_started)
-                chain_ended = true;
+    for (n = src; virStorageSourceIsBacking(n); n = n->backingStore) {
+        qemuBlockNamedNodeDataBitmapPtr bitmap;
 
+        if (!(bitmap = qemuBlockNamedNodeDataGetBitmapByName(blockNamedNodeData,
+                                                             n, bitmapname)))
             continue;
-        }
 
-        if (chain_ended)
+        if (found || bitmap->inconsistent || !bitmap->persistent || !bitmap->recording)
             return false;
 
-        chain_started = true;
-
-        if (bitmap->inconsistent)
-            return false;
+        found = true;
     }
 
-    return chain_started;
+    return found;
 }
 
 
