@@ -1230,6 +1230,7 @@ qemuDomainStorageSourcePrivateDispose(void *obj)
     g_clear_pointer(&priv->secinfo, qemuDomainSecretInfoFree);
     g_clear_pointer(&priv->encinfo, qemuDomainSecretInfoFree);
     g_clear_pointer(&priv->httpcookie, qemuDomainSecretInfoFree);
+    virObjectUnref(priv->blockjob);
 }
 
 

@@ -483,6 +483,10 @@ struct _qemuDomainStorageSourcePrivate {
 
     /* secure passthrough of the http cookie */
     qemuDomainSecretInfoPtr httpcookie;
+
+    /* Optional per-source internal blockjob. Regular blockjobs are sill tracked
+     * at 'disk' level */
+    qemuBlockJobDataPtr blockjob;
 };
 
 virObjectPtr qemuDomainStorageSourcePrivateNew(void);
