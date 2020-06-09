@@ -157,19 +157,16 @@ qemuBackupDiskDataCleanup(virDomainObjPtr vm,
                           struct qemuBackupDiskData *dd,
                           size_t ndd)
 {
-    virErrorPtr orig_err;
+    VIR_ERROR_AUTOPRESERVE_LAST;
     size_t i;
 
     if (!dd)
         return;
 
-    virErrorPreserveLast(&orig_err);
-
     for (i = 0; i < ndd; i++)
         qemuBackupDiskDataCleanupOne(vm, dd + i);
 
     g_free(dd);
-    virErrorRestore(&orig_err);
 }
 
 
