@@ -1,0 +1,36 @@
+[
+  {
+    "type": "block-dirty-bitmap-add",
+    "data": {
+      "node": "mirror-format-node",
+      "name": "current",
+      "persistent": true,
+      "disabled": false,
+      "granularity": 65536
+    }
+  },
+  {
+    "type": "block-dirty-bitmap-merge",
+    "data": {
+      "node": "mirror-format-node",
+      "target": "current",
+      "bitmaps": [
+        {
+          "node": "libvirt-1-format",
+          "name": "current"
+        },
+        {
+          "node": "mirror-format-node",
+          "name": "libvirt-tmp-activewrite"
+        }
+      ]
+    }
+  },
+  {
+    "type": "block-dirty-bitmap-remove",
+    "data": {
+      "node": "mirror-format-node",
+      "name": "libvirt-tmp-activewrite"
+    }
+  }
+]
