@@ -1102,6 +1102,8 @@ qemuBlockJobProcessEventCompletedCommitBitmaps(virDomainObjPtr vm,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     g_autoptr(virHashTable) blockNamedNodeData = NULL;
     g_autoptr(virJSONValue) actions = NULL;
+    g_autoptr(GSList) allocationbitmapnodes = NULL;
+    bool active = job->type == QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT;
 
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV_REOPEN))
         return 0;
@@ -1111,15 +1113,22 @@ qemuBlockJobProcessEventCompletedCommitBitmaps(virDomainObjPtr vm,
 
     if (qemuBlockBitmapsHandleCommitFinish(job->data.commit.top,
                                            job->data.commit.base,
+                                           active,
                                            blockNamedNodeData,
                                            &actions,
-                                           job->data.commit.disabledBitmapsBase) < 0)
+                                           &allocationbitmapnodes) < 0)
         return 0;
 
     if (!actions)
         return 0;
 
-    if (qemuBlockReopenReadWrite(vm, job->data.commit.base, asyncJob) < 0)
+    if (!active) {
+        if (qemuBlockReopenReadWrite(vm, job->data.commit.base, asyncJob) < 0)
+            return -1;
+    }
+
+    if (qemuBlockBitmapTemporaryAdd(vm, blockNamedNodeData,
+                                    &allocationbitmapnodes, asyncJob) < 0)
         return -1;
 
     if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
@@ -1130,8 +1139,12 @@ qemuBlockJobProcessEventCompletedCommitBitmaps(virDomainObjPtr vm,
     if (qemuDomainObjExitMonitor(priv->driver, vm) < 0)
         return -1;
 
-    if (qemuBlockReopenReadOnly(vm, job->data.commit.base, asyncJob) < 0)
-        return -1;
+    qemuBlockBitmapTemporaryRemove(vm, allocationbitmapnodes, asyncJob);
+
+    if (!active) {
+        if (qemuBlockReopenReadOnly(vm, job->data.commit.base, asyncJob) < 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -1300,6 +1313,9 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
     baseparent->backingStore = NULL;
     job->disk->src = job->data.commit.base;
     job->disk->src->readonly = job->data.commit.top->readonly;
+
+    if (qemuBlockJobProcessEventCompletedCommitBitmaps(vm, job, asyncJob) < 0)
+        return;
 
     qemuBlockJobEventProcessConcludedRemoveChain(driver, vm, asyncJob, job->data.commit.top);
 
