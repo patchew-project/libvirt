@@ -500,6 +500,21 @@ virNodeDeviceCapStorageDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "<capability type='hotpluggable'/>\n");
 }
 
+static void
+virNodeDeviceCapMdevDefFormat(virBufferPtr buf,
+                              const virNodeDevCapData *data)
+{
+    size_t i;
+
+    virBufferEscapeString(buf, "<type id='%s'/>\n", data->mdev.type);
+    virBufferAsprintf(buf, "<iommuGroup number='%u'/>\n",
+                      data->mdev.iommuGroupNumber);
+    for (i = 0; i < data->mdev.nattributes; i++) {
+        virMediatedDeviceAttrPtr attr = data->mdev.attributes[i];
+        virBufferAsprintf(buf, "<attr name='%s' value='%s'/>\n",
+                          attr->name, attr->value);
+    }
+}
 
 char *
 virNodeDeviceDefFormat(const virNodeDeviceDef *def)
@@ -583,9 +598,7 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
             virBufferEscapeString(&buf, "<type>%s</type>\n", virNodeDevDRMTypeToString(data->drm.type));
             break;
         case VIR_NODE_DEV_CAP_MDEV:
-            virBufferEscapeString(&buf, "<type id='%s'/>\n", data->mdev.type);
-            virBufferAsprintf(&buf, "<iommuGroup number='%u'/>\n",
-                              data->mdev.iommuGroupNumber);
+            virNodeDeviceCapMdevDefFormat(&buf, data);
             break;
         case VIR_NODE_DEV_CAP_CCW_DEV:
             virBufferAsprintf(&buf, "<cssid>0x%x</cssid>\n",
@@ -1757,6 +1770,35 @@ virNodeDevCapSystemParseXML(xmlXPathContextPtr ctxt,
     return ret;
 }
 
+static int
+virNodeDevCapMdevAttributeParseXML(xmlXPathContextPtr ctxt,
+                                   xmlNodePtr node,
+                                   virNodeDevCapMdevPtr mdev)
+{
+    xmlNodePtr orig_node = node;
+    ctxt->node = node;
+    int ret = -1;
+    g_autoptr(virMediatedDeviceAttr) attr = virMediatedDeviceAttrNew();
+
+    attr->name = virXPathString("string(./@name)", ctxt);
+    attr->value = virXPathString("string(./@value)", ctxt);
+    if (!attr->name || !attr->value) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("mdev attribute missing name or value"));
+        goto cleanup;
+    }
+
+    if (VIR_APPEND_ELEMENT(mdev->attributes,
+                           mdev->nattributes,
+                           attr) < 0)
+      goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    ctxt->node = orig_node;
+    return ret;
+}
 
 static int
 virNodeDevCapMdevParseXML(xmlXPathContextPtr ctxt,
@@ -1766,6 +1808,9 @@ virNodeDevCapMdevParseXML(xmlXPathContextPtr ctxt,
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     int ret = -1;
+    int nattrs = 0;
+    xmlNodePtr *attrs;
+    size_t i;
 
     ctxt->node = node;
 
@@ -1782,6 +1827,11 @@ virNodeDevCapMdevParseXML(xmlXPathContextPtr ctxt,
                                     _("invalid iommuGroup number attribute for "
                                       "'%s'")) < 0)
         goto out;
+
+    if ((nattrs = virXPathNodeSet("./attr", ctxt, &attrs)) < 0)
+        goto out;
+    for (i = 0; i < nattrs; i++)
+        virNodeDevCapMdevAttributeParseXML(ctxt, attrs[i], mdev);
 
     ret = 0;
  out:
@@ -2172,6 +2222,9 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
         break;
     case VIR_NODE_DEV_CAP_MDEV:
         VIR_FREE(data->mdev.type);
+        for (i = 0; i < data->mdev.nattributes; i++)
+            virMediatedDeviceAttrFree(data->mdev.attributes[i]);
+        VIR_FREE(data->mdev.attributes);
         break;
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_DRM:
