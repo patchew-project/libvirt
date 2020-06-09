@@ -266,3 +266,14 @@ int
 qemuBlockUpdateRelativeBacking(virDomainObjPtr vm,
                                virStorageSourcePtr src,
                                virStorageSourcePtr topsrc);
+
+int
+qemuBlockBitmapTemporaryAdd(virDomainObjPtr vm,
+                            virHashTablePtr blockNamedNodeData,
+                            GSList **images,
+                            qemuDomainAsyncJob asyncJob);
+
+void
+qemuBlockBitmapTemporaryRemove(virDomainObjPtr vm,
+                               GSList *images,
+                               qemuDomainAsyncJob asyncJob);

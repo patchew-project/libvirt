@@ -1528,7 +1528,7 @@ qemuBlockJobProcessEventConcludedPopulate(virQEMUDriverPtr driver,
 
     if (qemuMonitorTransactionBitmapRemove(actions,
                                            job->data.populate.src->nodeformat,
-                                           "libvirt-tmp-bitmap") < 0)
+                                           "libvirt-tmp-allocation") < 0)
         return;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)

@@ -3434,3 +3434,193 @@ qemuBlockUpdateRelativeBacking(virDomainObjPtr vm,
 
     return 0;
 }
+
+
+static void
+qemuBlockBitmapTemporaryRemoveDuplicates(GSList *images)
+{
+    g_autoptr(virHashTable) duplicates = virHashNew(NULL);
+    GSList *next;
+    GSList *prev = NULL;
+
+    for (next = images; next; next = next->next) {
+        virStorageSourcePtr img = next->data;
+
+        if (virHashHasEntry(duplicates, img->nodeformat)) {
+            next = g_slist_delete_link(prev, next);
+            continue;
+        }
+
+        virHashAddEntry(duplicates, img->nodeformat, NULL);
+
+        prev = next;
+    }
+}
+
+
+/**
+ * qemuBlockBitmapTemporaryAdd:
+ * @vm: domain object
+ * @blockNamedNodeData: hash table filled with qemuBlockNamedNodeData
+ * @images: a GSList of virStorageSources to add the temporary bitmaps for
+ * @asyncJob: qemu asynchronous job type
+ *
+ * Add temporary block dirty bitmaps populated from the allocation map of
+ * images for list of virStorageSources @images. The bitmaps added are called
+ * "libvirt-tmp-allocation" and are not made persistent. After this function
+ * returns @images is updated to the actual list of bitmaps which were added and
+ * qemuBlockBitmapTemporaryRemove can be used to undo the changes.
+ */
+int
+qemuBlockBitmapTemporaryAdd(virDomainObjPtr vm,
+                            virHashTablePtr blockNamedNodeData,
+                            GSList **images,
+                            qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virJSONValue) actions = virJSONValueNewArray();
+    bool failed = false;
+    GSList *next;
+    int rc;
+
+    if (!*images)
+        return 0;
+
+    qemuBlockBitmapTemporaryRemoveDuplicates(*images);
+
+    for (next = *images; next; next = next->next) {
+        virStorageSourcePtr img = next->data;
+        qemuBlockNamedNodeDataBitmapPtr tmpbitmap;
+        qemuDomainStorageSourcePrivatePtr srcPriv;
+
+        if ((tmpbitmap = qemuBlockNamedNodeDataGetBitmapByName(blockNamedNodeData, img,
+                                                               "libvirt-tmp-allocation"))) {
+            if (!tmpbitmap->recording || tmpbitmap->persistent || tmpbitmap->inconsistent) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("internal bitmap in unexpected state"));
+                return -1;
+            }
+        } else {
+            if (qemuMonitorTransactionBitmapAdd(actions,
+                                                img->nodeformat,
+                                                "libvirt-tmp-allocation",
+                                                false, false, 0) < 0)
+                return -1;
+        }
+
+        if (!(srcPriv = qemuDomainStorageSourcePrivateFetch(img)))
+            return -1;
+
+        if (!(srcPriv->blockjob = qemuBlockJobNewPopulate(vm, img)))
+            return -1;
+
+        qemuBlockJobSyncBegin(srcPriv->blockjob);
+
+        if (qemuMonitorTransactionBitmapPopulate(actions,
+                                                 img->nodeformat,
+                                                 "libvirt-tmp-allocation",
+                                                 srcPriv->blockjob->name) < 0)
+            return -1;
+    }
+
+    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
+        return -1;
+
+    rc = qemuMonitorTransaction(priv->mon, &actions);
+
+    if (qemuDomainObjExitMonitor(priv->driver, vm) < 0 || rc < 0)
+        return -1;
+
+    while (true) {
+        bool update = false;
+        bool running = false;
+
+        for (next = *images; next; next = next->next) {
+            virStorageSourcePtr img = next->data;
+            qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(img);
+
+            if (!srcPriv->blockjob)
+                continue;
+
+            if (srcPriv->blockjob->newstate != -1)
+                update = true;
+
+            qemuBlockJobUpdate(vm, srcPriv->blockjob, asyncJob);
+
+            switch ((qemuBlockjobState) srcPriv->blockjob->state) {
+            case QEMU_BLOCKJOB_STATE_NEW:
+            case QEMU_BLOCKJOB_STATE_RUNNING:
+                running = true;
+                break;
+
+            case QEMU_BLOCKJOB_STATE_FAILED:
+            case QEMU_BLOCKJOB_STATE_CANCELLED:
+                failed = true;
+                G_GNUC_FALLTHROUGH;
+            /* completed is assumed once no job has failed and no job is running */
+            case QEMU_BLOCKJOB_STATE_COMPLETED:
+                virObjectUnref(srcPriv->blockjob);
+                srcPriv->blockjob = NULL;
+                break;
+
+            /* other states are impossible in this case */
+            case QEMU_BLOCKJOB_STATE_READY:
+            case QEMU_BLOCKJOB_STATE_CONCLUDED:
+            case QEMU_BLOCKJOB_STATE_ABORTING:
+            case QEMU_BLOCKJOB_STATE_PIVOTING:
+            case QEMU_BLOCKJOB_STATE_LAST:
+                break;
+            }
+        }
+
+        /* Updating job will cause monitor access which in turn allows other
+         * events to be processed. We must ensure to re-process the list before
+         * waiting to prevent getting stuck */
+        if (update)
+            continue;
+
+        if (!running)
+            break;
+
+        if (virDomainObjWait(vm) < 0)
+            return -1;
+    }
+
+    if (failed) {
+        qemuBlockBitmapTemporaryRemove(vm, *images, asyncJob);
+        g_slist_free(*images);
+        *images = NULL;
+        return -1;
+    }
+
+    return 0;
+}
+
+
+void
+qemuBlockBitmapTemporaryRemove(virDomainObjPtr vm,
+                               GSList *images,
+                               qemuDomainAsyncJob asyncJob)
+
+{
+    VIR_ERROR_AUTOPRESERVE_LAST;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virJSONValue) actions = virJSONValueNewArray();
+
+    if (!images)
+        return;
+
+    for (; images; images = images->next) {
+        virStorageSourcePtr img = images->data;
+
+        if (qemuMonitorTransactionBitmapRemove(actions, img->nodeformat, "libvirt-tmp-allocation") < 0)
+            return;
+    }
+
+    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
+        return;
+
+    qemuMonitorTransaction(priv->mon, &actions);
+
+    ignore_value(qemuDomainObjExitMonitor(priv->driver, vm));
+}
