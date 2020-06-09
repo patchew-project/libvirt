@@ -2848,6 +2848,157 @@ qemuBlockGetNamedNodeData(virDomainObjPtr vm,
 
 
 /**
+ * qemuBlockGetBitmapMergeActions:
+ * @topsrc: top of the chain to merge bitmaps in
+ * @basesrc: bottom of the chain to merge bitmaps in (NULL for full chain)
+ * @target: destination storage source of the merge (may be part of original chain)
+ * @bitmapname: name of bitmap to perform the merge (NULL for all bitmaps)
+ * @dstbitmapname: name of destination bitmap of the merge (see below for caveats)
+ * @writebitmapsrc: storage source corresponding to the node containing the write temporary bitmap
+ * @actions: returns actions for a 'transaction' QMP command for executing the merge
+ * @allocationbitmapnodes: list of storage sources which will require an allocation bitmap
+ * @blockNamedNodeData: hash table filled with qemuBlockNamedNodeData
+ *
+ * Calculate handling of dirty block bitmaps between @topsrc and @basesrc. If
+ * @basesrc is NULL the end of the chain is considered. @target is the destination
+ * storage source definition of the merge and may or may not be part of the
+ * merged chain.
+ *
+ * Specifically the merging algorithm ensures that each considered bitmap is
+ * merged with the appropriate allocation bitmaps so that it properly describes
+ * the state of dirty blocks when looked at from @topsrc based on the depth
+ * of the backing chain where the bitmap is placed.
+ *
+ * If @bitmapname is non-NULL only bitmaps with that name are handled, otherwise
+ * all bitmaps are considered.
+ *
+ * If @dstbitmap is non-NULL everything is merged into a bitmap with that name,
+ * otherwise each bitmap is merged into a bitmap with the same name into @target.
+ * Additionally if @dstbitmap is non-NULL the target bitmap is created as 'inactive'
+ * and 'transient' as a special case for the backup operation.
+ *
+ * If @writebitmapsrc is non-NULL, the 'libvirt-tmp-activewrite' bitmap from
+ * given node is merged along with others. This bitmap corresponds to the writes
+ * which occured between an active layer job finished and the rest of the bitmap
+ * merging.
+ *
+ * If the bitmap is not valid somehow (see qemuBlockBitmapChainIsValid) given
+ * bitmap is silently skipped, so callers must ensure that given bitmap is valid
+ * if they care about it.
+ *
+ * The resulting 'transacion' QMP command actions are filled in and returned via
+ * @actions. In cases when the merging requires use of bitmap created from the
+ * allocation map of certain parts of the chain the @allocationbitmapnodes list
+ * is filled with pointers to the virStorageSource structure of the backing
+ * chain members where the allocation bitmap must be added prior to the merge.
+ *
+ * Note that @actions and @allocationbitmapnodes may be NULL if no merging is
+ * required.
+ */
+int
+qemuBlockGetBitmapMergeActions(virStorageSourcePtr topsrc,
+                               virStorageSourcePtr basesrc,
+                               virStorageSourcePtr target,
+                               const char *bitmapname,
+                               const char *dstbitmapname,
+                               virStorageSourcePtr writebitmapsrc,
+                               virJSONValuePtr *actions,
+                               GSList **allocationbitmapnodes,
+                               virHashTablePtr blockNamedNodeData)
+{
+    g_autoptr(virJSONValue) act = virJSONValueNewArray();
+    virStorageSourcePtr n;
+    qemuBlockNamedNodeDataPtr entry;
+    g_autoptr(virJSONValue) tmpbitmaps = virJSONValueNewArray();
+    g_autoptr(GSList) tmpbitmapnodes = NULL;
+    g_autoptr(GSList) tmpbitmapnodesused = NULL;
+    size_t i;
+
+    for (n = topsrc; virStorageSourceIsBacking(n) && n != basesrc; n = n->backingStore) {
+        bool copytmpbitmapnodes = false;
+
+        if (!(entry = virHashLookup(blockNamedNodeData, n->nodeformat)))
+            continue;
+
+        for (i = 0; i < entry->nbitmaps; i++) {
+            qemuBlockNamedNodeDataBitmapPtr bitmap = entry->bitmaps[i];
+            g_autoptr(virJSONValue) merge = NULL;
+            const char *mergebitmapname = dstbitmapname;
+            bool mergebitmappersistent = false;
+            bool mergebitmapdisabled = true;
+
+            if (bitmapname &&
+                STRNEQ(bitmapname, bitmap->name))
+                continue;
+
+            if (!qemuBlockBitmapChainIsValid(topsrc, bitmap->name, blockNamedNodeData))
+                continue;
+
+            /* explicitly named destinations mean that we want a temporary
+             * disabled bitmap only, so undo the default for non-explicit cases  */
+            if (!mergebitmapname) {
+                mergebitmapname = bitmap->name;
+                mergebitmappersistent = true;
+                mergebitmapdisabled = false;
+            }
+
+            if (qemuMonitorTransactionBitmapAdd(act, target->nodeformat,
+                                                mergebitmapname,
+                                                mergebitmappersistent,
+                                                mergebitmapdisabled,
+                                                bitmap->granularity) < 0)
+                return -1;
+
+            if (!(merge = virJSONValueCopy(tmpbitmaps)))
+                return -1;
+
+            copytmpbitmapnodes = true;
+
+            if (qemuMonitorTransactionBitmapMergeSourceAddBitmap(merge,
+                                                                 n->nodeformat,
+                                                                 bitmap->name) < 0)
+                return -1;
+
+            if (writebitmapsrc &&
+                qemuMonitorTransactionBitmapMergeSourceAddBitmap(merge,
+                                                                 writebitmapsrc->nodeformat,
+                                                                 "libvirt-tmp-activewrite") < 0)
+                return -1;
+
+            if (qemuMonitorTransactionBitmapMerge(act, target->nodeformat,
+                                                  mergebitmapname, &merge) < 0)
+                return -1;
+        }
+
+        if (copytmpbitmapnodes && tmpbitmapnodes) {
+            g_slist_free(tmpbitmapnodesused);
+            tmpbitmapnodesused = g_slist_copy(tmpbitmapnodes);
+        }
+
+        tmpbitmapnodes = g_slist_prepend(tmpbitmapnodes, n);
+
+        if (qemuMonitorTransactionBitmapMergeSourceAddBitmap(tmpbitmaps,
+                                                             n->nodeformat,
+                                                             "libvirt-tmp-allocation") < 0)
+            return -1;
+    }
+
+    if (virJSONValueArraySize(act) > 0) {
+        if (writebitmapsrc &&
+            qemuMonitorTransactionBitmapRemove(act, writebitmapsrc->nodeformat,
+                                               "libvirt-tmp-activewrite") < 0)
+            return -1;
+
+        *actions = g_steal_pointer(&act);
+    }
+
+    *allocationbitmapnodes = g_steal_pointer(&tmpbitmapnodesused);
+
+    return 0;
+}
+
+
+/**
  * qemuBlockBitmapChainIsValid:
  *
  * Validates that the backing chain of @src contains proper consistent bitmap
