@@ -1431,3 +1431,10 @@ qemuMonitorTransactionBackup(virJSONValuePtr actions,
                              const char *target,
                              const char *bitmap,
                              qemuMonitorTransactionBackupSyncMode syncmode);
+
+
+int
+qemuMonitorTransactionBitmapPopulate(virJSONValuePtr actions,
+                                     const char *nodename,
+                                     const char *bitmapname,
+                                     const char *jobname);

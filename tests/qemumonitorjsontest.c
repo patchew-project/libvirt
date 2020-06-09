@@ -2992,7 +2992,8 @@ testQemuMonitorJSONTransaction(const void *opaque)
         qemuMonitorTransactionBackup(actions, "dev9", "job9", "target9", "bitmap9",
                                      QEMU_MONITOR_TRANSACTION_BACKUP_SYNC_MODE_INCREMENTAL) < 0 ||
         qemuMonitorTransactionBackup(actions, "devA", "jobA", "targetA", "bitmapA",
-                                     QEMU_MONITOR_TRANSACTION_BACKUP_SYNC_MODE_FULL) < 0)
+                                     QEMU_MONITOR_TRANSACTION_BACKUP_SYNC_MODE_FULL) < 0 ||
+        qemuMonitorJSONTransactionBitmapPopulate(actions, "nodeB", "bitmapB", "jobB") < 0)
         return -1;
 
     if (qemuMonitorTestAddItem(test, "transaction", "{\"return\":{}}") < 0)

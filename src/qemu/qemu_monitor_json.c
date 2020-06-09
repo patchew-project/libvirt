@@ -9262,6 +9262,24 @@ qemuMonitorJSONTransactionBitmapMergeSourceAddBitmap(virJSONValuePtr sources,
 
 
 int
+qemuMonitorJSONTransactionBitmapPopulate(virJSONValuePtr actions,
+                                         const char *nodename,
+                                         const char *bitmapname,
+                                         const char *jobname)
+{
+    return qemuMonitorJSONTransactionAdd(actions,
+                                         "block-dirty-bitmap-populate",
+                                         "s:node", nodename,
+                                         "s:name", bitmapname,
+                                         "s:job-id", jobname,
+                                         "s:pattern", "allocation-top",
+                                         "T:auto-finalize", VIR_TRISTATE_BOOL_YES,
+                                         "T:auto-dismiss", VIR_TRISTATE_BOOL_NO,
+                                         NULL);
+}
+
+
+int
 qemuMonitorJSONTransactionSnapshotLegacy(virJSONValuePtr actions,
                                          const char *device,
                                          const char *path,
