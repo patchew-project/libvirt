@@ -207,3 +207,13 @@ void virLastErrorPrefixMessage(const char *fmt, ...)
     G_GNUC_PRINTF(1, 2);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virError, virFreeError);
+
+/**
+ * VIR_ERROR_AUTO_PRESERVE_LAST:
+ *
+ * This macro ensures that the last error object is restored to the state it was
+ * at the point where the macro was expanded when the scope ends.
+ */
+#define VIR_ERROR_AUTOPRESERVE_LAST \
+    __attribute__((cleanup(virErrorRestore))) virErrorPtr orig_err_preserve = virErrorPreserveLast(NULL); \
+    ignore_value(&orig_err_preserve)
