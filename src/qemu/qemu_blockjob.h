@@ -64,6 +64,7 @@ typedef enum {
     /* Additional enum values local to qemu */
     QEMU_BLOCKJOB_TYPE_INTERNAL,
     QEMU_BLOCKJOB_TYPE_CREATE,
+    QEMU_BLOCKJOB_TYPE_POPULATE,
     QEMU_BLOCKJOB_TYPE_BROKEN,
     QEMU_BLOCKJOB_TYPE_LAST
 } qemuBlockJobType;
@@ -119,6 +120,13 @@ struct _qemuBlockJobBackupData {
 };
 
 
+typedef struct _qemuBlockJobBitmapPopulateData qemuBlockJobBitmapPopulateData;
+typedef qemuBlockJobBitmapPopulateData *qemuBlockJobDataBitmapPopulatePtr;
+
+struct _qemuBlockJobBitmapPopulateData {
+    virStorageSourcePtr src;
+};
+
 typedef struct _qemuBlockJobData qemuBlockJobData;
 typedef qemuBlockJobData *qemuBlockJobDataPtr;
 
@@ -140,6 +148,7 @@ struct _qemuBlockJobData {
         qemuBlockJobCreateData create;
         qemuBlockJobCopyData copy;
         qemuBlockJobBackupData backup;
+        qemuBlockJobBitmapPopulateData populate;
     } data;
 
     int type; /* qemuBlockJobType */
@@ -196,6 +205,10 @@ qemuBlockJobNewCreate(virDomainObjPtr vm,
                       virStorageSourcePtr src,
                       virStorageSourcePtr chain,
                       bool storage);
+
+qemuBlockJobDataPtr
+qemuBlockJobNewPopulate(virDomainObjPtr vm,
+                        virStorageSourcePtr src);
 
 qemuBlockJobDataPtr
 qemuBlockJobDiskNewCopy(virDomainObjPtr vm,

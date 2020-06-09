@@ -2737,6 +2737,12 @@ qemuDomainObjPrivateXMLFormatBlockjobIterator(void *payload,
             }
             break;
 
+        case QEMU_BLOCKJOB_TYPE_POPULATE:
+            if (job->data.populate.src)
+                virBufferAsprintf(&childBuf, "<src node='%s'/>\n", job->data.populate.src->nodeformat);
+
+            break;
+
         case QEMU_BLOCKJOB_TYPE_BROKEN:
         case QEMU_BLOCKJOB_TYPE_NONE:
         case QEMU_BLOCKJOB_TYPE_INTERNAL:
@@ -3362,6 +3368,13 @@ qemuDomainObjPrivateXMLParseBlockjobDataSpecific(qemuBlockJobDataPtr job,
             if (!(tmp = virXPathNode("./store", ctxt)) ||
                 !(job->data.backup.store = qemuDomainObjPrivateXMLParseBlockjobChain(tmp, ctxt, xmlopt)))
                 goto broken;
+            break;
+
+        case QEMU_BLOCKJOB_TYPE_POPULATE:
+            qemuDomainObjPrivateXMLParseBlockjobNodename(job,
+                                                         "string(./src/@node)",
+                                                         &job->data.populate.src,
+                                                         ctxt);
             break;
 
         case QEMU_BLOCKJOB_TYPE_BROKEN:

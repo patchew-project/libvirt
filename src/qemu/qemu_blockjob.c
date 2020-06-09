@@ -69,6 +69,7 @@ VIR_ENUM_IMPL(qemuBlockjob,
               "backup",
               "",
               "create",
+              "populate",
               "broken");
 
 static virClassPtr qemuBlockJobDataClass;
@@ -348,6 +349,38 @@ qemuBlockJobNewCreate(virDomainObjPtr vm,
         job->chain = virObjectRef(chain);
 
      job->data.create.src = virObjectRef(src);
+
+    if (qemuBlockJobRegister(job, vm, NULL, true) < 0)
+        return NULL;
+
+    return g_steal_pointer(&job);
+}
+
+
+/**
+ * qemuBlockJobNewPopulate:
+ * @vm: domain object
+ * @src: storage source the populate job is running on
+ *
+ * Instantiate block job data for running a 'dirty-bitmap-populate' blockjob.
+ * Note that this job is expected to run as part of a single 'modify' qemu
+ * domain job as this job is not registered with the disk itself and @src must
+ * be valid for the whole time the job is running.
+ */
+qemuBlockJobDataPtr
+qemuBlockJobNewPopulate(virDomainObjPtr vm,
+                       virStorageSourcePtr src)
+{
+    g_autoptr(qemuBlockJobData) job = NULL;
+    g_autofree char *jobname = NULL;
+    const char *nodename = src->nodeformat;
+
+    jobname = g_strdup_printf("bitmap-populate-%s", nodename);
+
+    if (!(job = qemuBlockJobDataNew(QEMU_BLOCKJOB_TYPE_POPULATE, jobname)))
+        return NULL;
+
+     job->data.populate.src = src;
 
     if (qemuBlockJobRegister(job, vm, NULL, true) < 0)
         return NULL;
@@ -1479,6 +1512,38 @@ qemuBlockJobProcessEventConcludedBackup(virQEMUDriverPtr driver,
 
 
 static void
+qemuBlockJobProcessEventConcludedPopulate(virQEMUDriverPtr driver,
+                                          virDomainObjPtr vm,
+                                          qemuBlockJobDataPtr job,
+                                          qemuDomainAsyncJob asyncJob)
+{
+    g_autoptr(virJSONValue) actions = NULL;
+
+    /* On successful completion there must be a synchronous handler waiting for
+     * this job. If there isn't one we need to clean up the associated bitmap.
+     */
+    if (job->newstate == QEMU_BLOCKJOB_STATE_COMPLETED &&
+        job->synchronous)
+        return;
+
+    if (qemuMonitorTransactionBitmapRemove(actions,
+                                           job->data.populate.src->nodeformat,
+                                           "libvirt-tmp-bitmap") < 0)
+        return;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return;
+
+    qemuMonitorTransaction(qemuDomainGetMonitor(vm), &actions);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        return;
+
+    return;
+}
+
+
+static void
 qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
                                             virQEMUDriverPtr driver,
                                             virDomainObjPtr vm,
@@ -1525,6 +1590,10 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
         qemuBlockJobProcessEventConcludedBackup(driver, vm, job, asyncJob,
                                                 job->newstate, progressCurrent,
                                                 progressTotal);
+        break;
+
+    case QEMU_BLOCKJOB_TYPE_POPULATE:
+        qemuBlockJobProcessEventConcludedPopulate(driver, vm, job, asyncJob);
         break;
 
     case QEMU_BLOCKJOB_TYPE_BROKEN:
