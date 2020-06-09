@@ -18441,7 +18441,6 @@ qemuDomainBlockCommit(virDomainPtr dom,
     const char *nodebase = NULL;
     bool persistjob = false;
     bool blockdev = false;
-    VIR_AUTOSTRINGLIST bitmapDisableList = NULL;
 
     virCheckFlags(VIR_DOMAIN_BLOCK_COMMIT_SHALLOW |
                   VIR_DOMAIN_BLOCK_COMMIT_ACTIVE |
@@ -18606,7 +18605,7 @@ qemuDomainBlockCommit(virDomainPtr dom,
     }
 
     if (!(job = qemuBlockJobDiskNewCommit(vm, disk, top_parent, topSource,
-                                          baseSource, &bitmapDisableList,
+                                          baseSource,
                                           flags & VIR_DOMAIN_BLOCK_COMMIT_DELETE,
                                           flags)))
         goto endjob;

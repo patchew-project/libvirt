@@ -85,11 +85,6 @@ qemuBlockJobDataDisposeJobdata(qemuBlockJobDataPtr job)
         virObjectUnref(job->data.backup.store);
         g_free(job->data.backup.bitmap);
     }
-
-    if (job->type == QEMU_BLOCKJOB_TYPE_COMMIT ||
-        job->type == QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT) {
-        virStringListFree(job->data.commit.disabledBitmapsBase);
-    }
 }
 
 
@@ -291,7 +286,6 @@ qemuBlockJobDiskNewCommit(virDomainObjPtr vm,
                           virStorageSourcePtr topparent,
                           virStorageSourcePtr top,
                           virStorageSourcePtr base,
-                          char ***disabledBitmapsBase,
                           bool delete_imgs,
                           unsigned int jobflags)
 {
@@ -317,7 +311,6 @@ qemuBlockJobDiskNewCommit(virDomainObjPtr vm,
     job->data.commit.top = top;
     job->data.commit.base = base;
     job->data.commit.deleteCommittedImages = delete_imgs;
-    job->data.commit.disabledBitmapsBase = g_steal_pointer(disabledBitmapsBase);
     job->jobflags = jobflags;
 
     if (qemuBlockJobRegister(job, vm, disk, true) < 0)
@@ -1406,40 +1399,6 @@ qemuBlockJobProcessEventFailedActiveCommit(virQEMUDriverPtr driver,
 
 
 static void
-qemuBlockJobProcessEventFailedCommitCommon(virDomainObjPtr vm,
-                                           qemuBlockJobDataPtr job,
-                                           qemuDomainAsyncJob asyncJob)
-{
-    qemuDomainObjPrivatePtr priv = vm->privateData;
-    g_autoptr(virJSONValue) actions = virJSONValueNewArray();
-    char **disabledBitmaps = job->data.commit.disabledBitmapsBase;
-
-    if (!disabledBitmaps || !*disabledBitmaps)
-        return;
-
-    for (; *disabledBitmaps; disabledBitmaps++) {
-        qemuMonitorTransactionBitmapEnable(actions,
-                                           job->data.commit.base->nodeformat,
-                                           *disabledBitmaps);
-    }
-
-    if (qemuBlockReopenReadWrite(vm, job->data.commit.base, asyncJob) < 0)
-        return;
-
-    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
-        return;
-
-    qemuMonitorTransaction(priv->mon, &actions);
-
-    if (qemuDomainObjExitMonitor(priv->driver, vm) < 0)
-        return;
-
-    if (qemuBlockReopenReadOnly(vm, job->data.commit.base, asyncJob) < 0)
-        return;
-}
-
-
-static void
 qemuBlockJobProcessEventConcludedCreate(virQEMUDriverPtr driver,
                                         virDomainObjPtr vm,
                                         qemuBlockJobDataPtr job,
@@ -1578,8 +1537,6 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
     case QEMU_BLOCKJOB_TYPE_COMMIT:
         if (success)
             qemuBlockJobProcessEventCompletedCommit(driver, vm, job, asyncJob);
-        else
-            qemuBlockJobProcessEventFailedCommitCommon(vm, job, asyncJob);
         break;
 
     case QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT:
@@ -1587,7 +1544,6 @@ qemuBlockJobEventProcessConcludedTransition(qemuBlockJobDataPtr job,
             qemuBlockJobProcessEventCompletedActiveCommit(driver, vm, job, asyncJob);
         } else {
             qemuBlockJobProcessEventFailedActiveCommit(driver, vm, job);
-            qemuBlockJobProcessEventFailedCommitCommon(vm, job, asyncJob);
         }
         break;
 
