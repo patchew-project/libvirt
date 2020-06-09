@@ -885,6 +885,8 @@ testQemuBlockBitmapBlockcopy(const void *opaque)
     g_autoptr(virJSONValue) nodedatajson = NULL;
     g_autoptr(virHashTable) nodedata = NULL;
     g_autoptr(virStorageSource) fakemirror = virStorageSourceNew();
+    g_autoptr(GSList) allocationbitmapnodes = NULL;
+    g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
 
     if (!fakemirror)
         return -1;
@@ -904,12 +906,18 @@ testQemuBlockBitmapBlockcopy(const void *opaque)
     }
 
     if (qemuBlockBitmapsHandleBlockcopy(data->chain, fakemirror, nodedata,
-                                        data->shallow, &actions) < 0)
+                                        data->shallow, &actions,
+                                        &allocationbitmapnodes) < 0)
         return -1;
 
+
     if (actions &&
-        !(actual = virJSONValueToString(actions, true)))
+        virJSONValueToBuffer(actions, &buf, true) < 0)
         return -1;
+
+    testQemuBitmapListPrint("allocation bitmap:", allocationbitmapnodes, &buf);
+
+    actual = virBufferContentAndReset(&buf);
 
     return virTestCompareToFile(actual, expectpath);
 }

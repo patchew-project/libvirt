@@ -1323,6 +1323,49 @@ qemuBlockJobProcessEventCompletedActiveCommit(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuBlockJobProcessEventCompletedCopyBitmaps(virDomainObjPtr vm,
+                                             qemuBlockJobDataPtr job,
+                                             qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virHashTable) blockNamedNodeData = NULL;
+    g_autoptr(virJSONValue) actions = NULL;
+    g_autoptr(GSList) allocationbitmapnodes = NULL;
+    bool shallow = job->jobflags & VIR_DOMAIN_BLOCK_COPY_SHALLOW;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV_REOPEN))
+        return 0;
+
+    if (!(blockNamedNodeData = qemuBlockGetNamedNodeData(vm, asyncJob)))
+        return -1;
+
+    if (qemuBlockBitmapsHandleBlockcopy(job->disk->src,
+                                        job->disk->mirror,
+                                        blockNamedNodeData,
+                                        shallow,
+                                        &actions,
+                                        &allocationbitmapnodes) < 0)
+        return 0;
+
+    if (!actions)
+        return 0;
+
+    if (qemuBlockBitmapTemporaryAdd(vm, blockNamedNodeData,
+                                    &allocationbitmapnodes, asyncJob) < 0)
+        return -1;
+
+    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
+        return -1;
+
+    qemuMonitorTransaction(priv->mon, &actions);
+
+    if (qemuDomainObjExitMonitor(priv->driver, vm) < 0)
+        return -1;
+
+    return 0;
+}
+
 static void
 qemuBlockJobProcessEventConcludedCopyPivot(virQEMUDriverPtr driver,
                                            virDomainObjPtr vm,
@@ -1336,6 +1379,8 @@ qemuBlockJobProcessEventConcludedCopyPivot(virQEMUDriverPtr driver,
     if (!job->disk ||
         !job->disk->mirror)
         return;
+
+    qemuBlockJobProcessEventCompletedCopyBitmaps(vm, job, asyncJob);
 
     /* for shallow copy without reusing external image the user can either not
      * specify the backing chain in which case libvirt will open and use the

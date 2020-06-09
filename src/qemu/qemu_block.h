@@ -242,7 +242,8 @@ qemuBlockBitmapsHandleBlockcopy(virStorageSourcePtr src,
                                 virStorageSourcePtr mirror,
                                 virHashTablePtr blockNamedNodeData,
                                 bool shallow,
-                                virJSONValuePtr *actions);
+                                virJSONValuePtr *actions,
+                                GSList **allocationbitmapnodes);
 
 int
 qemuBlockBitmapsHandleCommitFinish(virStorageSourcePtr topsrc,
