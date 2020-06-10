@@ -889,6 +889,57 @@ virNetworkDNSTxtDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 
 
 static int
+virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                                   virNetworkDNSForwarderPtr def,
+                                   const char *instname G_GNUC_UNUSED,
+                                   void *opaque G_GNUC_UNUSED,
+                                   const char *addr,
+                                   const char *domain G_GNUC_UNUSED)
+{
+    if (!(addr || def->domain)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Invalid forwarder element, must contain "
+                         "at least one of addr or domain"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
+virNetworkDNSForwarderParseXML(xmlNodePtr node,
+                               virNetworkDNSForwarderPtr def,
+                               const char *networkName,
+                               void *opaque)
+{
+    char *addr = virXMLPropString(node, "addr");
+
+    if (addr && virSocketAddrParse(&def->addr,
+                                   addr, AF_UNSPEC) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid forwarder IP address '%s' "
+                         "in network '%s'"),
+                       addr, networkName);
+        VIR_FREE(addr);
+        goto cleanup;
+    }
+    def->domain = virXMLPropString(node, "domain");
+
+    if (virNetworkDNSForwarderParseXMLHook(node, def, networkName, opaque,
+                                           addr, def->domain) < 0)
+        goto cleanup;
+
+    VIR_FREE(addr);
+
+    return 0;
+
+ cleanup:
+    return -1;
+}
+
+
+static int
 virNetworkDNSDefParseXML(const char *networkName,
                          xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -943,25 +994,12 @@ virNetworkDNSDefParseXML(const char *networkName,
             goto cleanup;
 
         for (i = 0; i < nfwds; i++) {
-            char *addr = virXMLPropString(fwdNodes[i], "addr");
+            if (virNetworkDNSForwarderParseXML(fwdNodes[i],
+                                               &def->forwarders[i],
+                                               networkName,
+                                               NULL) < 0)
+                goto cleanup;
 
-            if (addr && virSocketAddrParse(&def->forwarders[i].addr,
-                                           addr, AF_UNSPEC) < 0) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("Invalid forwarder IP address '%s' "
-                                 "in network '%s'"),
-                               addr, networkName);
-                VIR_FREE(addr);
-                goto cleanup;
-            }
-            def->forwarders[i].domain = virXMLPropString(fwdNodes[i], "domain");
-            if (!(addr || def->forwarders[i].domain)) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("Invalid forwarder element, must contain "
-                                 "at least one of addr or domain"));
-                goto cleanup;
-            }
-            VIR_FREE(addr);
             def->nfwds++;
         }
     }
