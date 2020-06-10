@@ -1,0 +1,14 @@
+# This is a command-line tool
+
+libclang_line=`ldconfig -p | grep libclang`
+export libclang_path=`expr "$libclang_line" : '.* => \(.*\)$'`
+if test -z "$libclang_path"; then
+    echo "libclang is required by libvirt\n"
+    exit -1
+fi
+
+WORK_DIR=$(cd $(dirname $0); pwd)
+export PYTHONDONTWRITEBYTECODE=1
+export topdir="${WORK_DIR}/../.."
+export builddir="${WORK_DIR}/../../build"
+${WORK_DIR}/main.py $@
