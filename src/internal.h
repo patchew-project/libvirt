@@ -502,3 +502,5 @@ enum {
 # define fprintf(fh, ...) g_fprintf(fh, __VA_ARGS__)
 
 #endif /* VIR_NO_GLIB_STDIO */
+
+#define VIR_USED(var) do { break; } while(var)
