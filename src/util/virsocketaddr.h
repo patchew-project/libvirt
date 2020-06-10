@@ -18,11 +18,14 @@
 
 #pragma once
 
+#include "virbuffer.h"
 #include "virsocket.h"
 
 #define VIR_LOOPBACK_IPV4_ADDR "127.0.0.1"
 
-typedef struct {
+typedef struct _virSocketAddr virSocketAddr;
+typedef virSocketAddr *virSocketAddrPtr;
+struct _virSocketAddr {
     union {
         struct sockaddr sa;
         struct sockaddr_storage stor;
@@ -33,7 +36,7 @@ typedef struct {
 #endif
     } data;
     socklen_t len;
-} virSocketAddr;
+};
 
 #define VIR_SOCKET_ADDR_VALID(s) \
     ((s)->data.sa.sa_family != AF_UNSPEC)
@@ -49,8 +52,6 @@ typedef struct {
 
 #define VIR_SOCKET_ADDR_IPV4_ARPA "in-addr.arpa"
 #define VIR_SOCKET_ADDR_IPV6_ARPA "ip6.arpa"
-
-typedef virSocketAddr *virSocketAddrPtr;
 
 typedef struct _virSocketAddrRange virSocketAddrRange;
 typedef virSocketAddrRange *virSocketAddrRangePtr;
@@ -69,6 +70,11 @@ struct _virPortRange {
 int virSocketAddrParse(virSocketAddrPtr addr,
                        const char *val,
                        int family);
+
+int virSocketAddrParseXML(const char *val,
+                          virSocketAddrPtr addr,
+                          const char *instname,
+                          void *opaque);
 
 int virSocketAddrParseAny(virSocketAddrPtr addr,
                           const char *val,
@@ -92,6 +98,11 @@ char *virSocketAddrFormat(const virSocketAddr *addr);
 char *virSocketAddrFormatFull(const virSocketAddr *addr,
                               bool withService,
                               const char *separator);
+
+int virSocketAddrFormatBuf(virBufferPtr buf,
+                           const char *fmt,
+                           const virSocketAddr *addr,
+                           void *opaque);
 
 char *virSocketAddrGetPath(virSocketAddrPtr addr);
 
@@ -145,5 +156,8 @@ int virSocketAddrPTRDomain(const virSocketAddr *addr,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
 
 void virSocketAddrFree(virSocketAddrPtr addr);
+void virSocketAddrClear(virSocketAddrPtr addr);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virSocketAddr, virSocketAddrFree);
+
+bool virSocketAddrCheck(const virSocketAddr *addr, void *opaque);
