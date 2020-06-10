@@ -904,26 +904,25 @@ virNetworkDNSSrvDefParseXML(const char *networkName,
 
 
 static int
-virNetworkDNSTxtDefParseXML(const char *networkName,
-                            xmlNodePtr node,
-                            virNetworkDNSTxtDefPtr def,
-                            bool partialOkay)
+virNetworkDNSTxtDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                                virNetworkDNSTxtDefPtr def,
+                                const char *networkName,
+                                void *opaque)
 {
     const char *bad = " ,";
+    bool partialOkay = false;
 
-    if (!(def->name = virXMLPropString(node, "name"))) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("missing required name attribute in DNS TXT record "
-                         "of network %s"), networkName);
-        goto error;
-    }
+    if (opaque)
+        partialOkay = *((bool *) opaque);
+
     if (strcspn(def->name, bad) != strlen(def->name)) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("prohibited character in DNS TXT record "
                          "name '%s' of network %s"), def->name, networkName);
         goto error;
     }
-    if (!(def->value = virXMLPropString(node, "value")) && !partialOkay) {
+
+    if (!def->value && !partialOkay) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("missing required value attribute in DNS TXT record "
                          "named '%s' of network %s"), def->name, networkName);
@@ -936,6 +935,33 @@ virNetworkDNSTxtDefParseXML(const char *networkName,
                          "in DNS TXT record of network %s"), networkName);
         goto error;
     }
+
+    return 0;
+
+ error:
+    return -1;
+}
+
+
+static int
+virNetworkDNSTxtDefParseXML(const char *networkName,
+                            xmlNodePtr node,
+                            virNetworkDNSTxtDefPtr def,
+                            bool partialOkay)
+{
+    if (!(def->name = virXMLPropString(node, "name"))) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("missing required name attribute in DNS TXT record "
+                         "of network %s"), networkName);
+        goto error;
+    }
+
+    def->value = virXMLPropString(node, "value");
+
+    if (virNetworkDNSTxtDefParseXMLHook(node, def, networkName,
+                                        &partialOkay) < 0)
+        goto error;
+
     return 0;
 
  error:
