@@ -408,7 +408,10 @@ qemuAssignDeviceTPMAlias(virDomainTPMDefPtr tpm,
     if (tpm->info.alias)
         return 0;
 
-    tpm->info.alias = g_strdup_printf("tpm%d", idx);
+    if (tpm->model == VIR_DOMAIN_TPM_MODEL_SPAPR_PROXY)
+        tpm->info.alias = g_strdup_printf("tpmproxy%d", idx);
+    else
+        tpm->info.alias = g_strdup_printf("tpm%d", idx);
     return 0;
 }
 
