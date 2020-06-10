@@ -707,6 +707,18 @@ if test -z "$FLAKE8"; then
     AC_MSG_WARN(['flake8' binary is required to check python code style])
 fi
 
+dnl Need libclang and its python3 binding to generate some functions
+LIBCLANG_LINE=`ldconfig -p | grep libclang`
+LIBCLANG_PATH=`expr "$LIBCLANG_LINE" : '.* => \(.*\)$'`
+if test -z "$LIBCLANG_PATH"; then
+    AC_MSG_ERROR([libclang is required by libvirt])
+fi
+HAVE_PY3_CLANG=`python3 -c 'import clang.cindex;print("ok")' 2>/dev/null`
+if test -z "$HAVE_PY3_CLANG"; then
+    AC_MSG_ERROR(['python3-clang' is required. Execute 'pip3 install clang'.])
+fi
+AC_SUBST(LIBCLANG_PATH)
+
 dnl Python3 < 3.7 treats the C locale as 7-bit only.
 dnl We must force env vars so it treats it as UTF-8
 dnl regardless of the user's locale.
