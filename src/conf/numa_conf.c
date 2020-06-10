@@ -1372,3 +1372,49 @@ virDomainNumaGetMemorySize(virDomainNumaPtr numa)
 
     return ret;
 }
+
+
+static int
+virDomainNumaRemoveCPUsFromMap(virBitmapPtr result, virBitmapPtr exclude)
+{
+    size_t i;
+
+    for (i = 0; i < virBitmapSize(exclude); i++) {
+        if (!virBitmapIsBitSet(exclude, i))
+            continue;
+
+        if (virBitmapClearBitExpand(result, i) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+int
+virDomainNumaFillCPUsInNode(virDomainNumaPtr numa, size_t node,
+                            unsigned int maxCpus)
+{
+    g_autoptr(virBitmap) maxCPUsBitmap = virBitmapNew(maxCpus);
+    size_t i;
+
+    if (node >= virDomainNumaGetNodeCount(numa))
+        return -1;
+
+    virBitmapSetAll(maxCPUsBitmap);
+
+    for (i = 0; i < numa->nmem_nodes; i++) {
+        virBitmapPtr nodeCpus = virDomainNumaGetNodeCpumask(numa, i);
+
+        if (i == node)
+            continue;
+
+        if (virDomainNumaRemoveCPUsFromMap(maxCPUsBitmap, nodeCpus) < 0)
+            return -1;
+    }
+
+    virBitmapFree(numa->mem_nodes[node].cpumask);
+    numa->mem_nodes[node].cpumask = g_steal_pointer(&maxCPUsBitmap);
+
+    return 0;
+}
