@@ -165,17 +165,17 @@ struct _virNetworkDNSForwarder {    /* genparse:withhook, genformat */
 
 typedef struct _virNetworkDNSDef virNetworkDNSDef;
 typedef virNetworkDNSDef *virNetworkDNSDefPtr;
-struct _virNetworkDNSDef {
-    int enable;            /* enum virTristateBool */
-    int forwardPlainNames; /* enum virTristateBool */
+struct _virNetworkDNSDef {          /* genparse:withhook */
+    virTristateBool enable;             /* xmlattr */
+    virTristateBool forwardPlainNames;  /* xmlattr */
     size_t ntxts;
-    virNetworkDNSTxtDefPtr txts;
+    virNetworkDNSTxtDefPtr txts;        /* xmlelem, array */
     size_t nhosts;
-    virNetworkDNSHostDefPtr hosts;
+    virNetworkDNSHostDefPtr hosts;      /* xmlelem, array */
     size_t nsrvs;
-    virNetworkDNSSrvDefPtr srvs;
-    size_t nfwds;
-    virNetworkDNSForwarderPtr forwarders;
+    virNetworkDNSSrvDefPtr srvs;        /* xmlelem, array */
+    size_t nforwarders;
+    virNetworkDNSForwarderPtr forwarders;   /* xmlelem, array */
 };
 
 typedef struct _virNetworkIPDef virNetworkIPDef;
