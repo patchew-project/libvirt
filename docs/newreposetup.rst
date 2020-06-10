@@ -83,6 +83,17 @@ required under the **Settings** page:
 
     * *Shared runners*: Enable shared runners
 
+  * **Variables**
+
+    * *Key*: ``CIRRUS_GITHUB_REPO``
+
+      * *Value*: ``libvirt/$repo``
+
+      * *Protect variable*: enabled
+
+      * *Mask variable*: disabled
+
+
 GitHub configuration
 ====================
 
