@@ -186,6 +186,7 @@
   <flag name='tcg'/>
   <flag name='pvscsi'/>
   <flag name='fw_cfg'/>
+  <flag name='spapr-tpm-proxy'/>
   <version>4001050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>42900242</microcodeVersion>

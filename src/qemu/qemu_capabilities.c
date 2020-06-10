@@ -587,6 +587,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "cpu.migratable",
               "query-cpu-model-expansion.migratable",
               "fw_cfg",
+              "spapr-tpm-proxy",
     );
 
 
@@ -1311,6 +1312,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vhost-user-fs-device", QEMU_CAPS_DEVICE_VHOST_USER_FS },
     { "tcg-accel", QEMU_CAPS_TCG },
     { "pvscsi", QEMU_CAPS_SCSI_PVSCSI },
+    { "spapr-tpm-proxy", QEMU_CAPS_DEVICE_SPAPR_TPM_PROXY },
 };
 
 
