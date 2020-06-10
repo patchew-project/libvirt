@@ -149,10 +149,10 @@ struct _virNetworkDNSSrvDef {   /* genparse:withhook, genformat */
 
 typedef struct _virNetworkDNSHostDef virNetworkDNSHostDef;
 typedef virNetworkDNSHostDef *virNetworkDNSHostDefPtr;
-struct _virNetworkDNSHostDef {
-    virSocketAddr ip;
+struct _virNetworkDNSHostDef {  /* genparse:withhook */
+    virSocketAddr ip;           /* xmlattr */
     size_t nnames;
-    char **names;
+    char **names;               /* xmlelem:hostname, array */
 };
 
 
