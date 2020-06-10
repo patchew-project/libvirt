@@ -4999,6 +4999,7 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
                       unsigned int nvcpus)
 {
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    g_autoptr(virQEMUCaps) qemuCaps = NULL;
     unsigned int topologycpus;
 
     if (def) {
@@ -5027,6 +5028,14 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
     virDomainDefVcpuOrderClear(persistentDef);
 
     if (virDomainDefSetVcpusMax(persistentDef, nvcpus, driver->xmlopt) < 0)
+        return -1;
+
+    /* re-adjust NUMA nodes if needed */
+    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
+                                            persistentDef->emulator)))
+        return -1;
+
+    if (qemuDomainDefNumaCPUsRectify(persistentDef, qemuCaps) < 0)
         return -1;
 
     if (virDomainDefSave(persistentDef, driver->xmlopt, cfg->configDir) < 0)
