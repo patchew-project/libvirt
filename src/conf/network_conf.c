@@ -886,8 +886,8 @@ virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                    virNetworkDNSForwarderPtr def,
                                    const char *instname G_GNUC_UNUSED,
                                    void *opaque G_GNUC_UNUSED,
-                                   const char *addr,
-                                   const char *domain G_GNUC_UNUSED)
+                                   const char *domain G_GNUC_UNUSED,
+                                   const char *addr)
 {
     if (!(addr || def->domain)) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -2213,22 +2213,9 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < def->nfwds; i++) {
-
-        virBufferAddLit(buf, "<forwarder");
-        if (def->forwarders[i].domain) {
-            virBufferEscapeString(buf, " domain='%s'",
-                                  def->forwarders[i].domain);
-        }
-        if (VIR_SOCKET_ADDR_VALID(&def->forwarders[i].addr)) {
-        char *addr = virSocketAddrFormat(&def->forwarders[i].addr);
-
-        if (!addr)
+        if (virNetworkDNSForwarderFormatBuf(buf, "forwarder",
+                                            &def->forwarders[i], NULL) < 0)
             return -1;
-
-        virBufferAsprintf(buf, " addr='%s'", addr);
-        VIR_FREE(addr);
-        }
-        virBufferAddLit(buf, "/>\n");
     }
 
     for (i = 0; i < def->ntxts; i++) {
