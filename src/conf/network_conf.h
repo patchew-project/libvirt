@@ -130,9 +130,9 @@ struct _virNetworkDHCPHostDef {
 
 typedef struct _virNetworkDNSTxtDef virNetworkDNSTxtDef;
 typedef virNetworkDNSTxtDef *virNetworkDNSTxtDefPtr;
-struct _virNetworkDNSTxtDef {
-    char *name;
-    char *value;
+struct _virNetworkDNSTxtDef {   /* genparse:concisehook */
+    char *name;                 /* xmlattr, required */
+    char *value;                /* xmlattr */
 };
 
 typedef struct _virNetworkDNSSrvDef virNetworkDNSSrvDef;
@@ -440,3 +440,5 @@ virNetworkDefUpdateSection(virNetworkDefPtr def,
                            unsigned int flags);  /* virNetworkUpdateFlags */
 
 VIR_ENUM_DECL(virNetworkTaint);
+
+#include "network_conf.generated.h"

@@ -175,14 +175,6 @@ virNetworkIPDefClear(virNetworkIPDefPtr def)
 
 
 static void
-virNetworkDNSTxtDefClear(virNetworkDNSTxtDefPtr def)
-{
-    VIR_FREE(def->name);
-    VIR_FREE(def->value);
-}
-
-
-static void
 virNetworkDNSHostDefClear(virNetworkDNSHostDefPtr def)
 {
     while (def->nnames)
@@ -903,7 +895,7 @@ virNetworkDNSSrvDefParseXML(const char *networkName,
 }
 
 
-static int
+int
 virNetworkDNSTxtDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                 virNetworkDNSTxtDefPtr def,
                                 const char *networkName,
@@ -939,33 +931,6 @@ virNetworkDNSTxtDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
     return 0;
 
  error:
-    return -1;
-}
-
-
-static int
-virNetworkDNSTxtDefParseXML(const char *networkName,
-                            xmlNodePtr node,
-                            virNetworkDNSTxtDefPtr def,
-                            bool partialOkay)
-{
-    if (!(def->name = virXMLPropString(node, "name"))) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("missing required name attribute in DNS TXT record "
-                         "of network %s"), networkName);
-        goto error;
-    }
-
-    def->value = virXMLPropString(node, "value");
-
-    if (virNetworkDNSTxtDefParseXMLHook(node, def, networkName,
-                                        &partialOkay) < 0)
-        goto error;
-
-    return 0;
-
- error:
-    virNetworkDNSTxtDefClear(def);
     return -1;
 }
 
@@ -1100,10 +1065,10 @@ virNetworkDNSDefParseXML(const char *networkName,
             goto cleanup;
 
         for (i = 0; i < ntxts; i++) {
-            if (virNetworkDNSTxtDefParseXML(networkName, txtNodes[i],
-                                            &def->txts[def->ntxts], false) < 0) {
+            if (virNetworkDNSTxtDefParseXML(txtNodes[i], &def->txts[def->ntxts],
+                                            networkName, NULL) < 0)
                 goto cleanup;
-            }
+
             def->ntxts++;
         }
     }
@@ -3714,6 +3679,7 @@ virNetworkDefUpdateDNSTxt(virNetworkDefPtr def,
     virNetworkDNSTxtDef txt;
     bool isAdd = (command == VIR_NETWORK_UPDATE_COMMAND_ADD_FIRST ||
                   command == VIR_NETWORK_UPDATE_COMMAND_ADD_LAST);
+    bool notAdd;
 
     memset(&txt, 0, sizeof(txt));
 
@@ -3727,7 +3693,8 @@ virNetworkDefUpdateDNSTxt(virNetworkDefPtr def,
     if (virNetworkDefUpdateCheckElementName(def, ctxt->node, "txt") < 0)
         goto cleanup;
 
-    if (virNetworkDNSTxtDefParseXML(def->name, ctxt->node, &txt, !isAdd) < 0)
+    notAdd = !isAdd;
+    if (virNetworkDNSTxtDefParseXML(ctxt->node, &txt, def->name, &notAdd) < 0)
         goto cleanup;
 
     for (foundIdx = 0; foundIdx < dns->ntxts; foundIdx++) {
