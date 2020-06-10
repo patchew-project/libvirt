@@ -881,10 +881,10 @@ virNetworkDNSDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                              void *opaque G_GNUC_UNUSED,
                              const char *enable G_GNUC_UNUSED,
                              const char *forwardPlainNames G_GNUC_UNUSED,
+                             int nfwds,
                              int ntxts,
-                             int nhosts,
                              int nsrvs,
-                             int nfwds)
+                             int nhosts)
 {
     if (def->enable == VIR_TRISTATE_BOOL_NO &&
         (nfwds || nhosts || nsrvs || ntxts)) {
@@ -2025,77 +2025,6 @@ virNetworkDefParseNode(xmlDocPtr xml,
 
 
 static int
-virNetworkDNSDefFormat(virBufferPtr buf,
-                       const virNetworkDNSDef *def)
-{
-    size_t i;
-
-    if (!(def->enable || def->forwardPlainNames || def->nforwarders || def->nhosts ||
-          def->nsrvs || def->ntxts))
-        return 0;
-
-    virBufferAddLit(buf, "<dns");
-    if (def->enable) {
-        const char *fwd = virTristateBoolTypeToString(def->enable);
-
-        if (!fwd) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unknown enable type %d in network"),
-                           def->enable);
-            return -1;
-        }
-        virBufferAsprintf(buf, " enable='%s'", fwd);
-    }
-    if (def->forwardPlainNames) {
-        const char *fwd = virTristateBoolTypeToString(def->forwardPlainNames);
-
-        if (!fwd) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unknown forwardPlainNames type %d in network"),
-                           def->forwardPlainNames);
-            return -1;
-        }
-        virBufferAsprintf(buf, " forwardPlainNames='%s'", fwd);
-    }
-    if (!(def->nforwarders || def->nhosts || def->nsrvs || def->ntxts)) {
-        virBufferAddLit(buf, "/>\n");
-        return 0;
-    }
-
-    virBufferAddLit(buf, ">\n");
-    virBufferAdjustIndent(buf, 2);
-
-    for (i = 0; i < def->nforwarders; i++) {
-        if (virNetworkDNSForwarderFormatBuf(buf, "forwarder",
-                                            &def->forwarders[i], NULL) < 0)
-            return -1;
-    }
-
-    for (i = 0; i < def->ntxts; i++) {
-        if (virNetworkDNSTxtDefFormatBuf(buf, "txt", &def->txts[i], NULL) < 0)
-            return -1;
-    }
-
-    for (i = 0; i < def->nsrvs; i++) {
-        if (def->srvs[i].service && def->srvs[i].protocol) {
-            if (virNetworkDNSSrvDefFormatBuf(buf, "srv", &def->srvs[i], NULL) < 0)
-                return -1;
-        }
-    }
-
-    if (def->nhosts) {
-        for (i = 0; i < def->nhosts; i++) {
-            if (virNetworkDNSHostDefFormatBuf(buf, "host", &def->hosts[i], NULL) < 0)
-                return -1;
-        }
-    }
-    virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</dns>\n");
-    return 0;
-}
-
-
-static int
 virNetworkIPDefFormat(virBufferPtr buf,
                       const virNetworkIPDef *def)
 {
@@ -2502,7 +2431,7 @@ virNetworkDefFormatBuf(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 
-    if (virNetworkDNSDefFormat(buf, &def->dns) < 0)
+    if (virNetworkDNSDefFormatBuf(buf, "dns", &def->dns, NULL) < 0)
         return -1;
 
     if (virNetDevVlanFormat(&def->vlan, buf) < 0)
