@@ -1,5 +1,8 @@
 # vim: filetype=automake
 
+UTIL_GENERATED_SOURCES = \
+	$(NULL)
+
 # These files are not related to driver APIs. Simply generic
 # helper APIs for various purposes
 UTIL_SOURCES = \
@@ -236,8 +239,8 @@ UTIL_SOURCES = \
 	util/virmdev.h \
 	util/virfilecache.c \
 	util/virfilecache.h \
+	$(UTIL_GENERATED_SOURCES) \
 	$(NULL)
-
 
 EXTRA_DIST += \
 	$(srcdir)/keycodemapdb/data/keymaps.csv \
@@ -253,8 +256,9 @@ KEYTABLES = \
 	$(KEYNAMES:%=util/virkeynametable_%.h) \
 	$(NULL)
 
-BUILT_SOURCES += $(KEYTABLES)
-CLEANFILES += $(KEYTABLES)
+BUILT_SOURCES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
+CLEANFILES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
+MAINTAINERCLEANFILES += $(KEYTABLES) $(UTIL_GENERATED_SOURCES)
 
 UTIL_IO_HELPER_SOURCES = util/iohelper.c
 
@@ -299,6 +303,8 @@ libvirt_util_la_LIBADD = \
 	$(GNUTLS_LIBS) \
 	$(NULL)
 
+
+$(UTIL_GENERATED_SOURCES): $(GENERATED_FILES_STAMP)
 
 util/virkeycodetable_%.h: $(srcdir)/keycodemapdb/data/keymaps.csv \
 			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am

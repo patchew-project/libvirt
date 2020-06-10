@@ -47,7 +47,7 @@ REMOTE_DAEMON_CFLAGS = \
 	$(COVERAGE_CFLAGS) \
 	-I$(srcdir)/access \
 	-I$(builddir)/access \
-	-I$(srcdir)/conf \
+	-I$(srcdir)/conf -I./conf \
 	-I$(srcdir)/rpc \
 	-I$(builddir)/rpc \
 	-I$(builddir)/remote \

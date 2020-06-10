@@ -95,6 +95,7 @@ libvirt_driver_lxc_impl_la_CFLAGS = \
 	-I$(srcdir)/access \
 	-I$(builddir)/access \
 	-I$(srcdir)/conf \
+	-I./conf \
 	-I$(builddir)/lxc \
 	-I$(builddir)/rpc \
 	-I$(srcdir)/hypervisor \

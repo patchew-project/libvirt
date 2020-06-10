@@ -24,6 +24,7 @@ AM_CPPFLAGS =	-I$(top_srcdir) \
 		-I$(top_srcdir)/include \
 		-I$(srcdir)/util \
 		-I./util \
+		-I./conf \
 		-DIN_LIBVIRT \
 		-Dabs_top_builddir="\"$(abs_top_builddir)\"" \
 		-Dabs_top_srcdir="\"$(abs_top_srcdir)\"" \
@@ -86,6 +87,20 @@ SYSCONF_FILES =
 sbin_PROGRAMS =
 bin_PROGRAMS =
 DRIVER_SOURCES =
+
+GENERATED_FILES_STAMP = .generated_files.stamp
+UTIL_HEADS = $(wildcard $(top_srcdir)/src/util/*.h)
+CONF_HEADS = $(wildcard $(top_srcdir)/src/conf/*.h)
+GENERATOR_SRC = $(wildcard $(top_srcdir)/build-aux/generator/*.py)
+
+$(GENERATED_FILES_STAMP): $(UTIL_HEADS) $(CONF_HEADS) $(GENERATOR_SRC)
+	$(AM_V_GEN)topdir=$(top_srcdir) builddir=$(top_builddir) \
+		libclang_path=$(LIBCLANG_PATH) \
+		$(PYTHON) -B $(top_srcdir)/build-aux/generator/main.py \
+		generate -k cpf && touch $@
+
+MAINTAINERCLEANFILES += $(GENERATED_FILES_STAMP)
+CLEANFILES += $(GENERATED_FILES_STAMP)
 
 COMMON_UNIT_VARS = \
 	-e 's|[@]runstatedir[@]|$(runstatedir)|g' \
