@@ -130,7 +130,7 @@ struct _virNetworkDHCPHostDef {
 
 typedef struct _virNetworkDNSTxtDef virNetworkDNSTxtDef;
 typedef virNetworkDNSTxtDef *virNetworkDNSTxtDefPtr;
-struct _virNetworkDNSTxtDef {   /* genparse:concisehook */
+struct _virNetworkDNSTxtDef {   /* genparse:concisehook, genformat */
     char *name;                 /* xmlattr, required */
     char *value;                /* xmlattr */
 };
