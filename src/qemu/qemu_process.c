@@ -7483,9 +7483,11 @@ void qemuProcessStop(virQEMUDriverPtr driver,
             if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_MIDONET) {
                 ignore_value(virNetDevMidonetUnbindPort(vport));
             } else if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH) {
-                ignore_value(virNetDevOpenvswitchRemovePort(
-                                 virDomainNetGetActualBridgeName(net),
-                                 net->ifname));
+                virMacAddr mac;
+                if (virNetDevGetMAC(net->ifname, &mac) < 0 ||  !virMacAddrCmp(&mac, &net->mac))
+                    ignore_value(virNetDevOpenvswitchRemovePort(
+                                     virDomainNetGetActualBridgeName(net),
+                                     net->ifname));
             }
         }
 
