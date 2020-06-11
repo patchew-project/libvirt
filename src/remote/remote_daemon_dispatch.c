@@ -3030,7 +3030,7 @@ remoteDispatchDomainMigratePrepare(virNetServerPtr server G_GNUC_UNUSED,
     char *cookie = NULL;
     int cookielen = 0;
     char *uri_in;
-    char **uri_out;
+    char **uri_out = NULL;
     char *dname;
     int rv = -1;
     virConnectPtr conn = remoteGetHypervisorConn(client);
