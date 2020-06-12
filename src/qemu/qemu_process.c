@@ -7482,7 +7482,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         if (vport) {
             if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_MIDONET) {
                 ignore_value(virNetDevMidonetUnbindPort(vport));
-            } else if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH) {
+            } else if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH &&
+                       reason != VIR_DOMAIN_SHUTOFF_FAILED) {
                 ignore_value(virNetDevOpenvswitchRemovePort(
                                  virDomainNetGetActualBridgeName(net),
                                  net->ifname));
