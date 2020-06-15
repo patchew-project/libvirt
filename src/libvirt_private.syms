@@ -3433,6 +3433,8 @@ virHostGetDRMRenderNode;
 virHostHasIOMMU;
 virIndexToDiskName;
 virIsDevMapperDevice;
+virKernelCmdlineMatchParam;
+virKernelCmdlineNextParam;
 virMemoryLimitIsSet;
 virMemoryLimitTruncate;
 virMemoryMaxValue;
