@@ -172,6 +172,8 @@ main(int argc, char **argv)
     case VIR_LEASE_ACTION_ADD:
     case VIR_LEASE_ACTION_OLD:
         /* Create new lease */
+        sleep(60);
+
         if (virLeaseNew(&lease_new, mac, clientid, ip, hostname, iaid, server_duid) < 0)
             goto cleanup;
         /* Custom ipv6 leases *will not* be created if the env-var DNSMASQ_MAC
