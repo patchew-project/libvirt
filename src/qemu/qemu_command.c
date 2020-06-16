@@ -1849,6 +1849,9 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
         if (disk->blockio.physical_block_size > 0)
             virBufferAsprintf(&opt, ",physical_block_size=%u",
                               disk->blockio.physical_block_size);
+        if (disk->blockio.discard_granularity > 0)
+            virBufferAsprintf(&opt, ",discard_granularity=%u",
+                              disk->blockio.discard_granularity);
     }
 
     if (disk->wwn) {
