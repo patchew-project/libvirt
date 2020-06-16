@@ -8743,6 +8743,8 @@ qemuDomainDiskChangeSupported(virDomainDiskDefPtr disk,
              "blockio logical_block_size", false);
     CHECK_EQ(blockio.physical_block_size,
              "blockio physical_block_size", false);
+    CHECK_EQ(blockio.discard_granularity,
+             "blockio discard_granularity", false);
 
     CHECK_EQ(blkdeviotune.total_bytes_sec,
              "blkdeviotune total_bytes_sec",

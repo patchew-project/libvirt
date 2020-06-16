@@ -10425,6 +10425,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *vendor = NULL;
     g_autofree char *product = NULL;
     g_autofree char *domain_name = NULL;
+    g_autofree char *discard_granularity = NULL;
 
     if (!(def = virDomainDiskDefNew(xmlopt)))
         return NULL;
@@ -10520,6 +10521,16 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("invalid physical block size '%s'"),
                                physical_block_size);
+                goto error;
+            }
+            discard_granularity =
+                virXMLPropString(cur, "discard_granularity");
+            if (discard_granularity &&
+                virStrToLong_ui(discard_granularity, NULL, 0,
+                                &def->blockio.discard_granularity) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("invalid granularity size '%s'"),
+                               discard_granularity);
                 goto error;
             }
         } else if (!virDomainDiskGetDriver(def) &&
@@ -24958,7 +24969,8 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
                               virDomainDiskDefPtr def)
 {
     if (def->blockio.logical_block_size > 0 ||
-        def->blockio.physical_block_size > 0) {
+        def->blockio.physical_block_size > 0 ||
+        def->blockio.discard_granularity > 0) {
         virBufferAddLit(buf, "<blockio");
         if (def->blockio.logical_block_size > 0) {
             virBufferAsprintf(buf,
@@ -24969,6 +24981,11 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf,
                               " physical_block_size='%u'",
                               def->blockio.physical_block_size);
+        }
+        if (def->blockio.discard_granularity > 0) {
+            virBufferAsprintf(buf,
+                              " discard_granularity='%u'",
+                              def->blockio.discard_granularity);
         }
         virBufferAddLit(buf, "/>\n");
     }
