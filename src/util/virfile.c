@@ -2614,12 +2614,15 @@ virDirCreateNoFork(const char *path,
 
     if (!((flags & VIR_DIR_CREATE_ALLOW_EXIST) && virFileExists(path))) {
         if (mkdir(path, mode) < 0) {
-            ret = -errno;
-            virReportSystemError(errno, _("failed to create directory '%s'"),
-                                 path);
-            goto error;
+            if (!((flags & VIR_DIR_CREATE_ALLOW_EXIST) && errno == EEXIST)) {
+                ret = -errno;
+                virReportSystemError(errno, _("failed to create directory '%s'"),
+                                     path);
+                goto error;
+            }
+        } else {
+            created = true;
         }
-        created = true;
     }
 
     if (stat(path, &st) == -1) {
