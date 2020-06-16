@@ -116,6 +116,7 @@
   <flag name='storage.werror'/>
   <flag name='tcg'/>
   <flag name='fw_cfg'/>
+  <flag name='scsi-disk.max_unmap_size'/>
   <version>2011000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>39100288</microcodeVersion>

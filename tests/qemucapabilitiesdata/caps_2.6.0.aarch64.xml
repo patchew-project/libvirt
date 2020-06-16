@@ -126,6 +126,7 @@
   <flag name='tcg'/>
   <flag name='pvscsi'/>
   <flag name='fw_cfg'/>
+  <flag name='scsi-disk.max_unmap_size'/>
   <version>2006000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>61700244</microcodeVersion>

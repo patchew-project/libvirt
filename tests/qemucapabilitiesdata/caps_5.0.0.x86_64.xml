@@ -237,6 +237,7 @@
   <flag name='cpu.migratable'/>
   <flag name='query-cpu-model-expansion.migratable'/>
   <flag name='fw_cfg'/>
+  <flag name='scsi-disk.max_unmap_size'/>
   <version>5000000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100241</microcodeVersion>

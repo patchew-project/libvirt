@@ -587,6 +587,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "cpu.migratable",
               "query-cpu-model-expansion.migratable",
               "fw_cfg",
+              "scsi-disk.max_unmap_size",
     );
 
 
@@ -1401,6 +1402,7 @@ static struct virQEMUCapsDevicePropsFlags virQEMUCapsDevicePropsSCSIDisk[] = {
     { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE, NULL },
     { "device_id", QEMU_CAPS_SCSI_DISK_DEVICE_ID, NULL },
     { "werror", QEMU_CAPS_STORAGE_WERROR, NULL },
+    { "max_unmap_size", QEMU_CAPS_SCSI_DISK_MAX_UNMAP_SIZE, NULL },
 };
 
 static struct virQEMUCapsDevicePropsFlags virQEMUCapsDevicePropsIDEDrive[] = {
