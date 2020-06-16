@@ -188,6 +188,15 @@ virNetServerGetProgramLocked(virNetServerPtr srv,
     return NULL;
 }
 
+static void virNetServerHandleFree(void *jobOpaque)
+{
+    virNetServerJobPtr job = jobOpaque;
+
+    virObjectUnref(job->prog);
+    virNetMessageFree(job->msg);
+    VIR_FREE(job);
+}
+
 static void
 virNetServerDispatchNewMessage(virNetServerClientPtr client,
                                virNetMessagePtr msg,
@@ -375,6 +384,9 @@ virNetServerPtr virNetServerNew(const char *name,
                                               "rpc-worker",
                                               srv)))
         goto error;
+
+    if (srv->workers)
+        virThreadPoolSetFreeFunc(srv->workers, virNetServerHandleFree);
 
     srv->name = g_strdup(name);
 

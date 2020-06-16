@@ -27,6 +27,7 @@ typedef struct _virThreadPool virThreadPool;
 typedef virThreadPool *virThreadPoolPtr;
 
 typedef void (*virThreadPoolJobFunc)(void *jobdata, void *opaque);
+typedef void (*virThreadPoolFreeFunc)(void *jobdata);
 
 #define virThreadPoolNew(min, max, prio, func, opaque) \
     virThreadPoolNewFull(min, max, prio, func, #func, opaque)
@@ -46,6 +47,7 @@ size_t virThreadPoolGetFreeWorkers(virThreadPoolPtr pool);
 size_t virThreadPoolGetJobQueueDepth(virThreadPoolPtr pool);
 
 void virThreadPoolFree(virThreadPoolPtr pool);
+void virThreadPoolSetFreeFunc(virThreadPoolPtr pool, virThreadPoolFreeFunc func);
 
 int virThreadPoolSendJob(virThreadPoolPtr pool,
                          unsigned int priority,

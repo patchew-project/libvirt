@@ -54,6 +54,7 @@ struct _virThreadPool {
     bool quit;
 
     virThreadPoolJobFunc jobFunc;
+    virThreadPoolFreeFunc freeFunc;
     const char *jobName;
     void *jobOpaque;
     virThreadPoolJobList jobList;
@@ -271,6 +272,12 @@ virThreadPoolNewFull(size_t minWorkers,
 
 }
 
+void virThreadPoolSetFreeFunc(virThreadPoolPtr pool,
+                              virThreadPoolFreeFunc func)
+{
+    pool->freeFunc = func;
+}
+
 void virThreadPoolFree(virThreadPoolPtr pool)
 {
     virThreadPoolJobPtr job;
@@ -293,6 +300,8 @@ void virThreadPoolFree(virThreadPoolPtr pool)
 
     while ((job = pool->jobList.head)) {
         pool->jobList.head = pool->jobList.head->next;
+        if (pool->freeFunc)
+            pool->freeFunc(job->data);
         VIR_FREE(job);
     }
 

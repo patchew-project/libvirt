@@ -3317,6 +3317,7 @@ virThreadPoolGetMaxWorkers;
 virThreadPoolGetMinWorkers;
 virThreadPoolGetPriorityWorkers;
 virThreadPoolNewFull;
+virThreadPoolSetFreeFunc;
 virThreadPoolSendJob;
 virThreadPoolSetParameters;
 
