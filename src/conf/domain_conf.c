@@ -6145,6 +6145,13 @@ virDomainDiskDefValidate(const virDomainDef *def,
         return -1;
     }
 
+    if (disk->blockio.max_unmap_size && disk->bus != VIR_DOMAIN_DISK_BUS_SCSI) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("max_unmap_size attribute is only supported by "
+                         "scsi-hd or scsi-block"));
+        return -1;
+    }
+
     if (disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO &&
         (disk->model == VIR_DOMAIN_DISK_MODEL_VIRTIO ||
          disk->model == VIR_DOMAIN_DISK_MODEL_VIRTIO_TRANSITIONAL ||
@@ -10426,6 +10433,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *product = NULL;
     g_autofree char *domain_name = NULL;
     g_autofree char *discard_granularity = NULL;
+    g_autofree char *max_unmap_size = NULL;
 
     if (!(def = virDomainDiskDefNew(xmlopt)))
         return NULL;
@@ -10531,6 +10539,16 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("invalid granularity size '%s'"),
                                discard_granularity);
+                goto error;
+            }
+            max_unmap_size =
+                virXMLPropString(cur, "max_unmap_size");
+            if (max_unmap_size &&
+                virStrToLong_ui(max_unmap_size, NULL, 0,
+                                &def->blockio.max_unmap_size) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("invalid unmap limits size '%s'"),
+                               max_unmap_size);
                 goto error;
             }
         } else if (!virDomainDiskGetDriver(def) &&
@@ -24970,7 +24988,8 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
 {
     if (def->blockio.logical_block_size > 0 ||
         def->blockio.physical_block_size > 0 ||
-        def->blockio.discard_granularity > 0) {
+        def->blockio.discard_granularity > 0 ||
+        def->blockio.max_unmap_size > 0) {
         virBufferAddLit(buf, "<blockio");
         if (def->blockio.logical_block_size > 0) {
             virBufferAsprintf(buf,
@@ -24986,6 +25005,11 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf,
                               " discard_granularity='%u'",
                               def->blockio.discard_granularity);
+        }
+        if (def->blockio.max_unmap_size > 0) {
+            virBufferAsprintf(buf,
+                              " max_unmap_size='%u'",
+                              def->blockio.max_unmap_size);
         }
         virBufferAddLit(buf, "/>\n");
     }

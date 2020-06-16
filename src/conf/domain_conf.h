@@ -550,6 +550,7 @@ struct _virDomainDiskDef {
         unsigned int logical_block_size;
         unsigned int physical_block_size;
         unsigned int discard_granularity;
+        unsigned int max_unmap_size;
     } blockio;
 
     virDomainBlockIoTuneInfo blkdeviotune;

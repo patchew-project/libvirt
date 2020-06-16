@@ -3015,6 +3015,13 @@
     &lt;target dev='sda' bus='scsi'/&gt;
     &lt;address type='drive' controller='0' bus='0' target='3' unit='0'/&gt;
   &lt;/disk&gt;
+  &lt;disk type='file' device='disk'&gt;
+    &lt;driver name='qemu' type='qcow2'/&gt;
+    &lt;source file='/var/lib/libvirt/images/domain.qcow2'/&gt;
+    &lt;blockio max_unmap_size='1073741824'/&gt;
+    &lt;target dev='sdb' bus='scsi'/&gt;
+    &lt;address type='drive' controller='0' bus='0' target='0' unit='0'/&gt;
+  &lt;/disk&gt;
   &lt;disk type='block' device='disk'&gt;
     &lt;driver name='qemu' type='raw'/&gt;
     &lt;source dev='/dev/sda'/&gt;
@@ -4070,6 +4077,11 @@
           <dt><code>discard_granularity</code></dt>
           <dd>Its value impacts the Optimal Unmap Granularity field in
             the block limits VPD page. <span class="since">Since 6.5.0</span>
+          </dd>
+          <dt><code>max_unmap_size</code></dt>
+          <dd>Available for scsi disks only. It impacts the Maximum
+            Unmap LBA count field in the block limits VPD page.
+            <span class="since">Since 6.5.0 (QEMU 2.0)</span>
           </dd>
         </dl>
       </dd>

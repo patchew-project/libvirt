@@ -2182,6 +2182,11 @@
           <data type="integer"/>
         </attribute>
       </optional>
+      <optional>
+        <attribute name="max_unmap_size">
+          <data type="integer"/>
+        </attribute>
+      </optional>
     </element>
   </define>
   <!--
