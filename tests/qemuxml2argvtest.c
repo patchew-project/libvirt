@@ -1262,6 +1262,10 @@ mymain(void)
             QEMU_CAPS_SCSI_LSI, QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("disk-serial",
             QEMU_CAPS_KVM);
+    DO_TEST("disk-scsi-disk-max_unmap_size",
+            QEMU_CAPS_BLOCKIO,
+            QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_SCSI_DISK_MAX_UNMAP_SIZE);
     DO_TEST_PARSE_ERROR("disk-fdc-incompatible-address",
                         NONE);
     DO_TEST_PARSE_ERROR("disk-ide-incompatible-address",

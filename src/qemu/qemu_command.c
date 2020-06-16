@@ -1852,6 +1852,16 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
         if (disk->blockio.discard_granularity > 0)
             virBufferAsprintf(&opt, ",discard_granularity=%u",
                               disk->blockio.discard_granularity);
+        if (disk->blockio.max_unmap_size > 0) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_DISK_MAX_UNMAP_SIZE)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("max_unmap_size property isn't supported by "
+                                 "this QEMU binary"));
+                return NULL;
+            }
+            virBufferAsprintf(&opt, ",max_unmap_size=%u",
+                              disk->blockio.max_unmap_size);
+        }
     }
 
     if (disk->wwn) {
