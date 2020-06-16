@@ -45,7 +45,11 @@
 static int
 runIO(const char *path, int fd, int oflags)
 {
+#if HAVE_POSIX_MEMALIGN
+    void *base = NULL; /* Location to be freed */
+#else
     g_autofree void *base = NULL; /* Location to be freed */
+#endif
     char *buf = NULL; /* Aligned location within base */
     size_t buflen = 1024*1024;
     intptr_t alignMask = 64*1024 - 1;
@@ -168,6 +172,9 @@ runIO(const char *path, int fd, int oflags)
     ret = 0;
 
  cleanup:
+#if HAVE_POSIX_MEMALIGN
+    VIR_FREE(base);
+#endif
     if (VIR_CLOSE(fd) < 0 &&
         ret == 0) {
         virReportSystemError(errno, _("Unable to close %s"), path);
