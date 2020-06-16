@@ -122,3 +122,5 @@ virCommandPtr
 nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
                                  bool persist,
                                  char **uuid_out);
+virCommandPtr
+nodeDeviceGetMdevctlStopCommand(const char *uuid);
