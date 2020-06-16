@@ -388,6 +388,10 @@ test_programs += storagevolxml2xmltest
 
 test_programs += nodedevxml2xmltest
 
+if WITH_NODE_DEVICES
+test_programs += nodedevmdevctltest
+endif WITH_NODE_DEVICES
+
 test_programs += interfacexml2xmltest
 
 test_programs += cputest
@@ -969,6 +973,16 @@ nodedevxml2xmltest_SOURCES = \
 	nodedevxml2xmltest.c \
 	testutils.c testutils.h
 nodedevxml2xmltest_LDADD = $(LDADDS)
+
+if WITH_NODE_DEVICES
+nodedevmdevctltest_SOURCES = \
+	nodedevmdevctltest.c \
+	testutils.c testutils.h
+
+nodedevmdevctltest_LDADD = \
+	../src/libvirt_driver_nodedev_impl.la \
+	$(LDADDS)
+endif WITH_NODE_DEVICES
 
 interfacexml2xmltest_SOURCES = \
 	interfacexml2xmltest.c \
