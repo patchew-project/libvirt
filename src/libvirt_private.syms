@@ -1178,6 +1178,7 @@ virNodeDeviceObjListAssignDef;
 virNodeDeviceObjListExport;
 virNodeDeviceObjListFindByName;
 virNodeDeviceObjListFindBySysfsPath;
+virNodeDeviceObjListFindMediatedDeviceByUUID;
 virNodeDeviceObjListFindSCSIHostByWWNs;
 virNodeDeviceObjListFree;
 virNodeDeviceObjListGetNames;
