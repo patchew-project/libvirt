@@ -239,6 +239,9 @@ ci-build@%:
 ci-check@%:
 	$(MAKE) -C $(CI_ROOTDIR) ci-build@$* CI_MAKE_ARGS="check"
 
+ci-distcheck@%:
+	$(MAKE) -C $(CI_ROOTDIR) ci-build@$* CI_MAKE_ARGS="distcheck"
+
 ci-list-images:
 	@echo
 	@echo "Available x86 container images:"
