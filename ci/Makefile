@@ -266,4 +266,6 @@ ci-help:
 	@echo "    CI_CLEAN=0     - do not delete '$(CI_SCRATCHDIR)' after completion"
 	@echo "    CI_REUSE=1     - re-use existing '$(CI_SCRATCHDIR)' content"
 	@echo "    CI_ENGINE=auto - container engine to use (podman, docker)"
+	@echo "    CI_CONFIGURE_ARGS=  - extra arguments passed to configure"
+	@echo "    CI_MAKE_ARGS=  - extra arguments passed to make, e.g. space delimited list of make targets"
 	@echo
