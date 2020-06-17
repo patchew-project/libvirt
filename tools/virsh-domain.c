@@ -2457,7 +2457,7 @@ cmdBlockcopy(vshControl *ctl, const vshCmd *cmd)
             break;
 
         case VIR_DOMAIN_BLOCK_JOB_FAILED:
-            vshError(ctl, "\n%s", _("Copy failed"));
+            vshPrintExtra(ctl, "\n%s", _("Copy failed"));
             goto cleanup;
             break;
 
