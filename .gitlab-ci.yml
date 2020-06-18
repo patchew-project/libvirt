@@ -496,7 +496,7 @@ website:
 
 codestyle:
   stage: builds
-  image: $CI_REGISTRY_IMAGE/ci-centos-8:latest
+  image: $CI_REGISTRY_IMAGE/ci-fedora-32:latest
   before_script:
     - *script_variables
   script:
