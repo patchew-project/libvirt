@@ -58,7 +58,7 @@ static int
 virDomainZPCIAddressReserveUid(virHashTablePtr set,
                                virZPCIDeviceAddressPtr addr)
 {
-    return virDomainZPCIAddressReserveId(set, addr->uid, "uid");
+    return virDomainZPCIAddressReserveId(set, addr->uid.value, "uid");
 }
 
 
@@ -66,7 +66,7 @@ static int
 virDomainZPCIAddressReserveFid(virHashTablePtr set,
                                virZPCIDeviceAddressPtr addr)
 {
-    return virDomainZPCIAddressReserveId(set, addr->fid, "fid");
+    return virDomainZPCIAddressReserveId(set, addr->fid.value, "fid");
 }
 
 
@@ -96,7 +96,7 @@ static int
 virDomainZPCIAddressAssignUid(virHashTablePtr set,
                               virZPCIDeviceAddressPtr addr)
 {
-    return virDomainZPCIAddressAssignId(set, &addr->uid, 1,
+    return virDomainZPCIAddressAssignId(set, &addr->uid.value, 1,
                                         VIR_DOMAIN_DEVICE_ZPCI_MAX_UID, "uid");
 }
 
@@ -105,7 +105,7 @@ static int
 virDomainZPCIAddressAssignFid(virHashTablePtr set,
                               virZPCIDeviceAddressPtr addr)
 {
-    return virDomainZPCIAddressAssignId(set, &addr->fid, 0,
+    return virDomainZPCIAddressAssignId(set, &addr->fid.value, 0,
                                         VIR_DOMAIN_DEVICE_ZPCI_MAX_FID, "fid");
 }
 
@@ -129,7 +129,8 @@ static void
 virDomainZPCIAddressReleaseUid(virHashTablePtr set,
                                virZPCIDeviceAddressPtr addr)
 {
-    virDomainZPCIAddressReleaseId(set, &addr->uid, "uid");
+    if (addr->uid.isSet)
+        virDomainZPCIAddressReleaseId(set, &addr->uid.value, "uid");
 }
 
 
@@ -137,7 +138,8 @@ static void
 virDomainZPCIAddressReleaseFid(virHashTablePtr set,
                                virZPCIDeviceAddressPtr addr)
 {
-    virDomainZPCIAddressReleaseId(set, &addr->fid, "fid");
+    if (addr->fid.isSet)
+        virDomainZPCIAddressReleaseId(set, &addr->fid.value, "fid");
 }
 
 
@@ -145,40 +147,11 @@ static void
 virDomainZPCIAddressReleaseIds(virDomainZPCIAddressIdsPtr zpciIds,
                                virZPCIDeviceAddressPtr addr)
 {
-    if (!zpciIds || virZPCIDeviceAddressIsEmpty(addr))
+    if (!zpciIds)
         return;
 
     virDomainZPCIAddressReleaseUid(zpciIds->uids, addr);
-
     virDomainZPCIAddressReleaseFid(zpciIds->fids, addr);
-}
-
-
-static int
-virDomainZPCIAddressReserveNextUid(virHashTablePtr uids,
-                                   virZPCIDeviceAddressPtr zpci)
-{
-    if (virDomainZPCIAddressAssignUid(uids, zpci) < 0)
-        return -1;
-
-    if (virDomainZPCIAddressReserveUid(uids, zpci) < 0)
-        return -1;
-
-    return 0;
-}
-
-
-static int
-virDomainZPCIAddressReserveNextFid(virHashTablePtr fids,
-                                   virZPCIDeviceAddressPtr zpci)
-{
-    if (virDomainZPCIAddressAssignFid(fids, zpci) < 0)
-        return -1;
-
-    if (virDomainZPCIAddressReserveFid(fids, zpci) < 0)
-        return -1;
-
-    return 0;
 }
 
 
@@ -186,6 +159,14 @@ static int
 virDomainZPCIAddressReserveAddr(virDomainZPCIAddressIdsPtr zpciIds,
                                 virZPCIDeviceAddressPtr addr)
 {
+    if (!addr->uid.isSet &&
+        virDomainZPCIAddressAssignUid(zpciIds->uids, addr) < 0)
+        return -1;
+
+    if (!addr->fid.isSet &&
+        virDomainZPCIAddressAssignFid(zpciIds->fids, addr) < 0)
+        return -1;
+
     if (virDomainZPCIAddressReserveUid(zpciIds->uids, addr) < 0)
         return -1;
 
@@ -194,21 +175,8 @@ virDomainZPCIAddressReserveAddr(virDomainZPCIAddressIdsPtr zpciIds,
         return -1;
     }
 
-    return 0;
-}
-
-
-static int
-virDomainZPCIAddressReserveNextAddr(virDomainZPCIAddressIdsPtr zpciIds,
-                                    virZPCIDeviceAddressPtr addr)
-{
-    if (virDomainZPCIAddressReserveNextUid(zpciIds->uids, addr) < 0)
-        return -1;
-
-    if (virDomainZPCIAddressReserveNextFid(zpciIds->fids, addr) < 0) {
-        virDomainZPCIAddressReleaseUid(zpciIds->uids, addr);
-        return -1;
-    }
+    addr->uid.isSet = true;
+    addr->fid.isSet = true;
 
     return 0;
 }
@@ -234,9 +202,9 @@ virDomainPCIAddressExtensionReserveNextAddr(virDomainPCIAddressSetPtr addrs,
                                             virPCIDeviceAddressPtr addr)
 {
     if (addr->extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) {
-        virZPCIDeviceAddress zpci = { 0 };
+        virZPCIDeviceAddress zpci = addr->zpci;
 
-        if (virDomainZPCIAddressReserveNextAddr(addrs->zpciIds, &zpci) < 0)
+        if (virDomainZPCIAddressReserveAddr(addrs->zpciIds, &zpci) < 0)
             return -1;
 
         if (!addrs->dryRun)
@@ -246,6 +214,7 @@ virDomainPCIAddressExtensionReserveNextAddr(virDomainPCIAddressSetPtr addrs,
     return 0;
 }
 
+
 static int
 virDomainPCIAddressExtensionEnsureAddr(virDomainPCIAddressSetPtr addrs,
                                        virPCIDeviceAddressPtr addr)
@@ -253,10 +222,8 @@ virDomainPCIAddressExtensionEnsureAddr(virDomainPCIAddressSetPtr addrs,
     if (addr->extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) {
         virZPCIDeviceAddressPtr zpci = &addr->zpci;
 
-        if (virZPCIDeviceAddressIsEmpty(zpci))
-            return virDomainZPCIAddressReserveNextAddr(addrs->zpciIds, zpci);
-        else
-            return virDomainZPCIAddressReserveAddr(addrs->zpciIds, zpci);
+        if (virDomainZPCIAddressReserveAddr(addrs->zpciIds, zpci) < 0)
+            return -1;
     }
 
     return 0;
