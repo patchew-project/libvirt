@@ -7483,9 +7483,12 @@ void qemuProcessStop(virQEMUDriverPtr driver,
             if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_MIDONET) {
                 ignore_value(virNetDevMidonetUnbindPort(vport));
             } else if (vport->virtPortType == VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH) {
-                ignore_value(virNetDevOpenvswitchRemovePort(
-                                 virDomainNetGetActualBridgeName(net),
-                                 net->ifname));
+                virMutexLock(&virNetDevTapMutex);
+                if (!virNetDevExists(net->ifname))
+                    ignore_value(virNetDevOpenvswitchRemovePort(
+                                     virDomainNetGetActualBridgeName(net),
+                                     net->ifname));
+                virMutexUnlock(&virNetDevTapMutex);
             }
         }
 

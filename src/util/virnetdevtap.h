@@ -29,6 +29,8 @@
 # define VIR_NETDEV_TAP_REQUIRE_MANUAL_CLEANUP 1
 #endif
 
+extern virMutex virNetDevTapMutex;
+
 int virNetDevTapCreate(char **ifname,
                        const char *tunpath,
                        int *tapfd,

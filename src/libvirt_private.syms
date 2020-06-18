@@ -2655,6 +2655,7 @@ virNetDevTapDelete;
 virNetDevTapGetName;
 virNetDevTapGetRealDeviceName;
 virNetDevTapInterfaceStats;
+virNetDevTapMutex;
 virNetDevTapReattachBridge;
 
 

@@ -54,6 +54,8 @@
 
 VIR_LOG_INIT("util.netdevtap");
 
+virMutex virNetDevTapMutex = VIR_MUTEX_INITIALIZER;
+
 /**
  * virNetDevTapGetName:
  * @tapfd: a tun/tap file descriptor
@@ -238,6 +240,7 @@ int virNetDevTapCreate(char **ifname,
     if (!tunpath)
         tunpath = "/dev/net/tun";
 
+    virMutexLock(&virNetDevTapMutex);
     memset(&ifr, 0, sizeof(ifr));
     for (i = 0; i < tapfdSize; i++) {
         if ((fd = open(tunpath, O_RDWR)) < 0) {
@@ -302,6 +305,7 @@ int virNetDevTapCreate(char **ifname,
     ret = 0;
 
  cleanup:
+    virMutexUnlock(&virNetDevTapMutex);
     if (ret < 0) {
         VIR_FORCE_CLOSE(fd);
         while (i--)
@@ -369,6 +373,7 @@ int virNetDevTapCreate(char **ifname,
     int ret = -1;
     char *newifname = NULL;
 
+    virMutexLock(&virNetDevTapMutex);
     if (tapfdSize > 1) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Multiqueue devices are not supported on this system"));
@@ -379,8 +384,10 @@ int virNetDevTapCreate(char **ifname,
      * we have to create 'tap' interface first and
      * then rename it to 'vnet'
      */
-    if ((s = virNetDevSetupControl("tap", &ifr)) < 0)
+    if ((s = virNetDevSetupControl("tap", &ifr)) < 0) {
+        virMutexUnlock(&virNetDevTapMutex);
         return -1;
+    }
 
     if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
         virReportSystemError(errno, "%s",
@@ -434,6 +441,7 @@ int virNetDevTapCreate(char **ifname,
 
     ret = 0;
  cleanup:
+    virMutexUnlock(&virNetDevTapMutex);
     VIR_FORCE_CLOSE(s);
 
     return ret;
@@ -710,7 +718,7 @@ int virNetDevTapCreateInBridgePort(const char *brname,
     if (virNetDevSetMAC(*ifname, &tapmac) < 0)
         goto error;
 
-    if (virNetDevTapAttachBridge(*ifname, brname, macaddr, vmuuid,
+    if (virNetDevTapReattachBridge(*ifname, brname, macaddr, vmuuid,
                                  virtPortProfile, virtVlan,
                                  isolatedPort, mtu, actualMTU) < 0) {
         goto error;
