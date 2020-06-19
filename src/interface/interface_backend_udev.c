@@ -527,8 +527,16 @@ udevInterfaceLookupByMACString(virConnectPtr conn, const char *macstr)
     return ret;
 }
 
+/*
+ * Name prefix for sysfs symlinks that indicate which
+ * NICs are part of the bonded device
+ */
+#define BOND_NIC_PREFIX "slave_"
+
 /**
- * Helper function for finding bond slaves using scandir()
+ * Helper function for finding NICs that are members of a
+ * bond device by using scandir() over the sysfs net interface
+ * dir
  *
  * @param entry - directory entry passed by scandir()
  *
@@ -542,7 +550,7 @@ udevBondScanDirFilter(const struct dirent *entry)
      * interface sysfs entry and references the slaves as slave_eth0 for
      * example.
      */
-    if (STRPREFIX(entry->d_name, "slave_"))
+    if (STRPREFIX(entry->d_name, BOND_NIC_PREFIX))
         return 1;
 
     return 0;
@@ -763,21 +771,15 @@ udevGetIfaceDefBond(struct udev *udev,
     ifacedef->data.bond.nbItf = slave_count;
 
     for (i = 0; i < slave_count; i++) {
-        /* Names are slave_interface. e.g. slave_eth0
-         * so we use the part after the _
-         */
-        tmp_str = strchr(slave_list[i]->d_name, '_');
-        if (!tmp_str || strlen(tmp_str) < 2) {
+        if (!STRPREFIX(nic_list[i]->d_name, BOND_NIC_PREFIX)) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid enslaved interface name '%s' seen for "
                              "bond '%s'"), slave_list[i]->d_name, name);
             goto error;
         }
-        /* go past the _ */
-        tmp_str++;
 
         ifacedef->data.bond.itf[i] =
-            udevGetIfaceDef(udev, tmp_str);
+            udevGetIfaceDef(udev, nic_list[i]->d_name + strlen(BOND_NIC_PREFIX));
         if (!ifacedef->data.bond.itf[i]) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                 _("Could not get interface information for '%s', which is "
