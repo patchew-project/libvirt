@@ -63,6 +63,7 @@ stages:
     - cd build
     - ../autogen.sh || (cat config.log && exit 1)
     - $MAKE distcheck
+    - if test -x /usr/bin/rpmbuild && test "$RPM" != "skip" ; then rpmbuild --nodeps -ta libvirt*.tar.xz ; fi
 
 # Extra native build jobs that are only run post-merge, or
 # when code is pushed to a branch with "ci-full-" name prefix
@@ -111,6 +112,8 @@ stages:
     - cd build
     - ../autogen.sh $CONFIGURE_OPTS || (cat config.log && exit 1)
     - $MAKE
+    - if test -x /usr/bin/rpmbuild && "$RPM" != "skip"; then $MAKE dist ; fi
+    - if test -x /usr/bin/rpmbuild && "$RPM" != "skip"; then rpmbuild --nodeps -ta --define "_sourcedir `pwd`" mingw-libvirt.spec ; fi
 
 # Extra cross build jobs that are only run post-merge, or
 # when code is pushed to a branch with "ci-full-" name prefix
@@ -378,6 +381,7 @@ x64-opensuse-151:
   <<: *native_build_default_job_definition
   variables:
     NAME: opensuse-151
+    RPM: skip
 
 x64-ubuntu-1804:
   <<: *native_build_extra_job_definition
@@ -461,6 +465,7 @@ mingw32-fedora-rawhide:
   variables:
     NAME: fedora-rawhide
     CROSS: mingw32
+    RPM: skip
 
 mingw64-fedora-rawhide:
   <<: *cross_build_default_job_definition
