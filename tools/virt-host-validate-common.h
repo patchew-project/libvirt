@@ -87,5 +87,3 @@ int virHostValidateIOMMU(const char *hvname,
 
 int virHostValidateSecureGuests(const char *hvname,
                                 virHostValidateLevel level);
-
-bool virHostKernelModuleIsLoaded(const char *module);

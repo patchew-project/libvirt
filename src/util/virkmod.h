@@ -24,6 +24,7 @@
 #include "internal.h"
 
 char *virKModConfig(void);
+bool virKModIsLoaded(const char *);
 char *virKModLoad(const char *, bool)
     ATTRIBUTE_NONNULL(1);
 char *virKModUnload(const char *)

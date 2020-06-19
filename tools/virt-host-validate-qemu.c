@@ -27,6 +27,7 @@
 #include "virarch.h"
 #include "virbitmap.h"
 #include "vircgroup.h"
+#include "virkmod.h"
 
 int virHostValidateQEMU(void)
 {
@@ -92,7 +93,7 @@ int virHostValidateQEMU(void)
     if (arch == VIR_ARCH_PPC64 || arch == VIR_ARCH_PPC64LE) {
         virHostMsgCheck("QEMU", "%s", _("for PowerPC KVM module loaded"));
 
-        if (!virHostKernelModuleIsLoaded("kvm_hv"))
+        if (!virKModIsLoaded("kvm_hv"))
             virHostMsgFail(VIR_HOST_VALIDATE_WARN,
                           _("Load kvm_hv for better performance"));
         else

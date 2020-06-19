@@ -24,6 +24,7 @@
 #include "virkmod.h"
 #include "vircommand.h"
 #include "virstring.h"
+#include "virfile.h"
 
 static int
 doModprobe(const char *opts, const char *module, char **outbuf, char **errbuf)
@@ -59,6 +60,39 @@ doRmmod(const char *module, char **errbuf)
 
     return 0;
 }
+
+
+/**
+ * virKModModuleIsLoaded:
+ *
+ * Returns true if the module is loaded, false otherwise.
+ */
+bool virKModIsLoaded(const char *module)
+{
+    FILE *fp;
+    bool ret = false;
+
+    if (!(fp = fopen("/proc/modules", "r")))
+        return false;
+
+    do {
+        char line[1024];
+
+        if (!fgets(line, sizeof(line), fp))
+            break;
+
+        if (STRPREFIX(line, module)) {
+            ret = true;
+            break;
+        }
+
+    } while (1);
+
+    VIR_FORCE_FCLOSE(fp);
+
+    return ret;
+}
+
 
 /**
  * virKModConfig:

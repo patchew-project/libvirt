@@ -2404,6 +2404,7 @@ virKeycodeValueTranslate;
 # util/virkmod.h
 virKModConfig;
 virKModIsBlacklisted;
+virKModIsLoaded;
 virKModLoad;
 virKModUnload;
 
