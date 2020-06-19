@@ -49,6 +49,7 @@
 #include "qemu_process.h"
 #include "qemu_firmware.h"
 #include "virutil.h"
+#include "virkmod.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -3242,6 +3243,31 @@ virQEMUCapsProbeQMPTPM(virQEMUCapsPtr qemuCaps,
 }
 
 
+static void
+virQEMUCapsSetPPC64KVMState(virQEMUCapsPtr qemuCaps, virArch hostArch)
+{
+    g_autoptr(virCPUDef) hostCPU = virCPUProbeHost(hostArch);
+
+    /* At this moment, PPC64 has two KVM modules: kvm_hv and kvm_pr.
+     * QEMU will return KVM present and enabled = true if any of these
+     * is loaded in the host. Thing is, kvm_pr was never officially
+     * supported by IBM or any other distro, but people still ended
+     * up using it in Power8 hosts regardless. It is also currently
+     * unmaintained and broken on Power9, and will be sunset in the
+     * future. kvm_hv is the only KVM module that is and will be
+     * supported.
+     *
+     * Until then, do not claim QEMU_CAPS_KVM if there is only kvm_pr
+     * loaded in the host. There is a good chance that there are
+     * unsupported kvm_pr Power8 guests running in the wild, so let's
+     * cut some slack for this case, for now. */
+    if (STRNEQLEN(hostCPU->model, "POWER8", 6) && !virKModIsLoaded("kvm_hv"))
+        return;
+
+    virQEMUCapsSet(qemuCaps, QEMU_CAPS_KVM);
+}
+
+
 static int
 virQEMUCapsProbeQMPKVMState(virQEMUCapsPtr qemuCaps,
                             qemuMonitorPtr mon)
@@ -3252,8 +3278,16 @@ virQEMUCapsProbeQMPKVMState(virQEMUCapsPtr qemuCaps,
     if (qemuMonitorGetKVMState(mon, &enabled, &present) < 0)
         return -1;
 
-    if (present && enabled)
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_KVM);
+    if (present && enabled) {
+        virArch hostArch = virArchFromHost();
+
+        if (ARCH_IS_PPC64(hostArch)) {
+            virQEMUCapsSetPPC64KVMState(qemuCaps, hostArch);
+            return 0;
+        }
+
+       virQEMUCapsSet(qemuCaps, QEMU_CAPS_KVM);
+    }
 
     return 0;
 }
