@@ -123,7 +123,7 @@ AC_DEFUN([LIBVIRT_COMPILE_WARNINGS],[
     # Get all possible GCC warnings
     gl_MANYWARN_ALL_GCC([maybewarn])
 
-    # Remove the ones we don't want, blacklisted earlier
+    # Remove the ones we don't want
     gl_MANYWARN_COMPLEMENT([wantwarn], [$maybewarn], [$dontwarn])
 
     # -Wunused-functin is implied by -Wall we must turn it

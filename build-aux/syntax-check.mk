@@ -1155,7 +1155,7 @@ sc_prohibit_class:
 # exists some filesystems will only ever return DT_UNKNOWN.
 # This field should only be used by code which is exclusively
 # run platforms supporting "d_type" and must expect DT_UNKNOWN.
-# We blacklist it to discourage accidental usage which has
+# We prohibit it to discourage accidental usage which has
 # happened many times. Add an exclude rule if it is genuinely
 # needed and the above restrictions are acceptable.
 sc_prohibit_dirent_d_type:
