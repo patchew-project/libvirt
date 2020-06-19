@@ -1365,7 +1365,7 @@ virStorageFileGetSCSIKey(const char *path,
 
     cmd = virCommandNewArgList("/lib/udev/scsi_id",
                                "--replace-whitespace",
-                               "--whitelisted",
+                               "-g",
                                "--device", path,
                                NULL
                                );
@@ -1433,7 +1433,7 @@ virStorageFileGetNPIVKey(const char *path,
 
     cmd = virCommandNewArgList("/lib/udev/scsi_id",
                                "--replace-whitespace",
-                               "--whitelisted",
+                               "-g",
                                "--export",
                                "--device", path,
                                NULL
