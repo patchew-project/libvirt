@@ -1922,6 +1922,16 @@ sc_prohibit_path_max_allocation:
 	halt='Avoid stack allocations of size PATH_MAX'			\
 	  $(_sc_search_regexp)
 
+sc_prohibit_whitelist_blacklist:
+	@prohibit='(white-?list|black-?list)' \
+	halt='Avoid the terms "whitelist" and "blacklist"' \
+	  $(_sc_search_regexp)
+
+sc_prohibit_slave:
+	@prohibit='slave' \
+	halt='Avoid the term "slave"' \
+	  $(_sc_search_regexp)
+
 ifneq ($(_gl-Makefile),)
 syntax-check: spacing-check test-wrap-argv \
 	prohibit-duplicate-header mock-noinline group-qemu-caps \
@@ -2128,3 +2138,9 @@ exclude_file_name_regexp--sc_prohibit_backslash_alignment = \
 
 exclude_file_name_regexp--sc_prohibit_select = \
   ^build-aux/syntax-check\.mk|src/util/vireventglibwatch\.c$$
+
+exclude_file_name_regexp--sc_prohibit_whitelist_blacklist = \
+  ^(build-aux/syntax-check\.mk|po/.*\.pot?|src/util/virkmod\.c|src/qemu/qemu_domain\.c)$$
+
+exclude_file_name_regexp--sc_prohibit_slave = \
+  ^build-aux/syntax-check\.mk|po/.*\.pot?|tests/qemucapabilitiesdata/.*\.replies|docs/apps.html.in|tests/bhyve.*|docs/drvbhyve.html.in|docs/formatdomain.html.in|docs/schemas/domaincommon.rng|src/conf/domain_conf\.c|src/interface/interface_backend_udev\.c|src/security/apparmor/usr\.sbin\.libvirtd\.in$$
