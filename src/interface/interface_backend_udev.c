@@ -546,9 +546,7 @@ static int
 udevBondScanDirFilter(const struct dirent *entry)
 {
     /* This is ugly so if anyone has a better suggestion, please improve
-     * this. Unfortunately the kernel stores everything in the top level
-     * interface sysfs entry and references the slaves as slave_eth0 for
-     * example.
+     * this.
      */
     if (STRPREFIX(entry->d_name, BOND_NIC_PREFIX))
         return 1;
@@ -591,8 +589,8 @@ udevGetIfaceDefBond(struct udev *udev,
                     const char *name,
                     virInterfaceDef *ifacedef)
 {
-    struct dirent **slave_list = NULL;
-    int slave_count = 0;
+    struct dirent **nic_list = NULL;
+    int nic_count = 0;
     size_t i;
     const char *tmp_str;
     int tmp_int;
@@ -754,27 +752,26 @@ udevGetIfaceDefBond(struct udev *udev,
     }
     ifacedef->data.bond.target = g_strdup(tmp_str);
 
-    /* Slaves of the bond */
-    /* Get each slave in the bond */
-    slave_count = scandir(udev_device_get_syspath(dev), &slave_list,
+    /* Get each NIC that is a member of the bond */
+    nic_count = scandir(udev_device_get_syspath(dev), &nic_list,
             udevBondScanDirFilter, alphasort);
 
-    if (slave_count < 0) {
+    if (nic_count < 0) {
         virReportSystemError(errno,
-                _("Could not get slaves of bond '%s'"), name);
+                _("Could not get interfaces for bond '%s'"), name);
         goto error;
     }
 
-    /* Allocate our list of slave devices */
-    if (VIR_ALLOC_N(ifacedef->data.bond.itf, slave_count) < 0)
+    /* Allocate our list of bonded devices */
+    if (VIR_ALLOC_N(ifacedef->data.bond.itf, nic_count) < 0)
         goto error;
-    ifacedef->data.bond.nbItf = slave_count;
+    ifacedef->data.bond.nbItf = nic_count;
 
-    for (i = 0; i < slave_count; i++) {
+    for (i = 0; i < nic_count; i++) {
         if (!STRPREFIX(nic_list[i]->d_name, BOND_NIC_PREFIX)) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Invalid enslaved interface name '%s' seen for "
-                             "bond '%s'"), slave_list[i]->d_name, name);
+                           _("Invalid bonded interface name '%s' seen for "
+                             "bond '%s'"), nic_list[i]->d_name, name);
             goto error;
         }
 
@@ -782,21 +779,21 @@ udevGetIfaceDefBond(struct udev *udev,
             udevGetIfaceDef(udev, nic_list[i]->d_name + strlen(BOND_NIC_PREFIX));
         if (!ifacedef->data.bond.itf[i]) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not get interface information for '%s', which is "
-                  "a enslaved in bond '%s'"), slave_list[i]->d_name, name);
+                _("Could not get interface information for '%s', which "
+                  "is part of bond '%s'"), nic_list[i]->d_name, name);
             goto error;
         }
-        VIR_FREE(slave_list[i]);
+        VIR_FREE(nic_list[i]);
     }
 
-    VIR_FREE(slave_list);
+    VIR_FREE(nic_list);
 
     return 0;
 
  error:
-    for (i = 0; slave_count != -1 && i < slave_count; i++)
-        VIR_FREE(slave_list[i]);
-    VIR_FREE(slave_list);
+    for (i = 0; nic_count != -1 && i < nic_count; i++)
+        VIR_FREE(nic_list[i]);
+    VIR_FREE(nic_list);
 
     return -1;
 }

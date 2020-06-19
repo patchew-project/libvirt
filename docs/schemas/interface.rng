@@ -237,7 +237,7 @@
         </optional>
 
         <oneOrMore>
-          <!-- The slave interfaces -->
+          <!-- The attached interfaces -->
           <ref name="bare-ethernet-interface"/>
         </oneOrMore>
       </interleave>
