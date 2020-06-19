@@ -2596,8 +2596,8 @@ virDomainChrSourceDefClear(virDomainChrSourceDefPtr def)
         break;
 
     case VIR_DOMAIN_CHR_TYPE_NMDM:
-        VIR_FREE(def->data.nmdm.master);
-        VIR_FREE(def->data.nmdm.slave);
+        VIR_FREE(def->data.nmdm.primary);
+        VIR_FREE(def->data.nmdm.secondary);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UDP:
@@ -2671,8 +2671,8 @@ virDomainChrSourceDefCopy(virDomainChrSourceDefPtr dest,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_NMDM:
-        dest->data.nmdm.master = g_strdup(src->data.nmdm.master);
-        dest->data.nmdm.slave = g_strdup(src->data.nmdm.slave);
+        dest->data.nmdm.primary = g_strdup(src->data.nmdm.primary);
+        dest->data.nmdm.secondary = g_strdup(src->data.nmdm.secondary);
 
         break;
     }
@@ -2724,8 +2724,8 @@ virDomainChrSourceDefIsEqual(const virDomainChrSourceDef *src,
         return STREQ_NULLABLE(src->data.file.path, tgt->data.file.path);
         break;
     case VIR_DOMAIN_CHR_TYPE_NMDM:
-        return STREQ_NULLABLE(src->data.nmdm.master, tgt->data.nmdm.master) &&
-            STREQ_NULLABLE(src->data.nmdm.slave, tgt->data.nmdm.slave);
+        return STREQ_NULLABLE(src->data.nmdm.primary, tgt->data.nmdm.primary) &&
+            STREQ_NULLABLE(src->data.nmdm.secondary, tgt->data.nmdm.secondary);
         break;
     case VIR_DOMAIN_CHR_TYPE_UDP:
         return STREQ_NULLABLE(src->data.udp.bindHost, tgt->data.udp.bindHost) &&
@@ -6220,13 +6220,13 @@ virDomainChrSourceDefValidate(const virDomainChrSourceDef *src_def,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_NMDM:
-        if (!src_def->data.nmdm.master) {
+        if (!src_def->data.nmdm.primary) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing master path attribute for nmdm device"));
             return -1;
         }
 
-        if (!src_def->data.nmdm.slave) {
+        if (!src_def->data.nmdm.secondary) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing slave path attribute for nmdm device"));
             return -1;
@@ -13253,8 +13253,8 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
                 break;
 
             case VIR_DOMAIN_CHR_TYPE_NMDM:
-                def->data.nmdm.master = virXMLPropString(cur, "master");
-                def->data.nmdm.slave = virXMLPropString(cur, "slave");
+                def->data.nmdm.primary = virXMLPropString(cur, "master");
+                def->data.nmdm.secondary = virXMLPropString(cur, "slave");
                 break;
 
             case VIR_DOMAIN_CHR_TYPE_LAST:
@@ -26853,8 +26853,8 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
 
     case VIR_DOMAIN_CHR_TYPE_NMDM:
         virBufferEscapeString(buf, "<source master='%s' ",
-                              def->data.nmdm.master);
-        virBufferEscapeString(buf, "slave='%s'/>\n", def->data.nmdm.slave);
+                              def->data.nmdm.primary);
+        virBufferEscapeString(buf, "slave='%s'/>\n", def->data.nmdm.secondary);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UDP:

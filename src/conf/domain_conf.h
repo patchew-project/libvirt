@@ -1201,8 +1201,8 @@ struct _virDomainChrSourceDef {
             int append; /* enum virTristateSwitch */
         } file; /* pty, file, pipe, or device */
         struct {
-            char *master;
-            char *slave;
+            char *primary;
+            char *secondary;
         } nmdm;
         struct {
             char *host;

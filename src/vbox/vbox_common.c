@@ -3344,8 +3344,8 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         switch ((enum StorageBus) storageBus) {
         case StorageBus_IDE:
             disk->bus = VIR_DOMAIN_DISK_BUS_IDE;
-            disk->info.addr.drive.bus = devicePort; /* primary, secondary */
-            disk->info.addr.drive.unit = deviceSlot; /* master, slave */
+            disk->info.addr.drive.bus = devicePort;
+            disk->info.addr.drive.unit = deviceSlot;
 
             break;
         case StorageBus_SATA:

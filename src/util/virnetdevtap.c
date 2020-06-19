@@ -687,7 +687,7 @@ int virNetDevTapCreateInBridgePort(const char *brname,
 
     /* We need to set the interface MAC before adding it
      * to the bridge, because the bridge assumes the lowest
-     * MAC of all enslaved interfaces & we don't want it
+     * MAC of all member interfaces & we don't want it
      * seeing the kernel allocate random MAC for the TAP
      * device before we set our static MAC.
      */

@@ -290,8 +290,8 @@ bhyveParseBhyveLPCArg(virDomainDefPtr def,
             goto error;
 
         chr->source->type = VIR_DOMAIN_CHR_TYPE_NMDM;
-        chr->source->data.nmdm.master = NULL;
-        chr->source->data.nmdm.slave = NULL;
+        chr->source->data.nmdm.primary = NULL;
+        chr->source->data.nmdm.secondary = NULL;
         chr->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
 
         if (!STRPREFIX(param, "/dev/nmdm")) {
@@ -301,24 +301,24 @@ bhyveParseBhyveLPCArg(virDomainDefPtr def,
                 goto error;
         }
 
-        chr->source->data.nmdm.master = g_strdup(param);
-        chr->source->data.nmdm.slave = g_strdup(chr->source->data.file.path);
+        chr->source->data.nmdm.primary = g_strdup(param);
+        chr->source->data.nmdm.secondary = g_strdup(chr->source->data.file.path);
 
-        /* If the last character of the master is 'A', the slave will be 'B'
+        /* If the last character of the primary is 'A', the secondary will be 'B'
          * and vice versa */
-        last = strlen(chr->source->data.nmdm.master) - 1;
+        last = strlen(chr->source->data.nmdm.primary) - 1;
         switch (chr->source->data.file.path[last]) {
             case 'A':
-                chr->source->data.nmdm.slave[last] = 'B';
+                chr->source->data.nmdm.secondary[last] = 'B';
                 break;
             case 'B':
-                chr->source->data.nmdm.slave[last] = 'A';
+                chr->source->data.nmdm.secondary[last] = 'A';
                 break;
             default:
                 virReportError(VIR_ERR_OPERATION_FAILED,
-                               _("Failed to set slave for %s: last letter not "
+                               _("Failed to set secondary for %s: last letter not "
                                  "'A' or 'B'"),
-                               NULLSTR(chr->source->data.nmdm.master));
+                               NULLSTR(chr->source->data.nmdm.primary));
                 goto error;
         }
 
