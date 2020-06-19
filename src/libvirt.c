@@ -1025,7 +1025,7 @@ virConnectOpenInternal(const char *name,
             bool matchScheme = false;
             size_t s;
             if (!ret->uri) {
-                VIR_DEBUG("No URI, skipping driver with URI whitelist");
+                VIR_DEBUG("No URI, skipping driver with URI scheme filtering");
                 continue;
             }
             if (embed && !virConnectDriverTab[i]->embeddable) {

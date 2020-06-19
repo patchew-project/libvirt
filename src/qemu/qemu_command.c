@@ -9526,7 +9526,7 @@ qemuBuildSeccompSandboxCommandLine(virCommandPtr cmd,
         return 0;
     }
 
-    /* Seccomp whitelist is opt-in */
+    /* Seccomp sandbox is opt-in */
     if (cfg->seccompSandbox > 0)
         virCommandAddArgList(cmd, "-sandbox", "on", NULL);
 

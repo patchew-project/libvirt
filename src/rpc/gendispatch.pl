@@ -171,7 +171,7 @@ sub get_conn_method {
     if ($proc =~ /Connect.*Network/) {
         return "remoteGetNetworkConn";
     }
-    # Carefully whitelist a few APIs with NodeDevice name
+    # Special case a few APIs with NodeDevice name
     # prefix which actually get handled by the virt drivers
     if ($proc =~ /Node.*Device/ &&
         !($proc =~ /NodeDeviceReset/ ||
