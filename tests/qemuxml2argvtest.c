@@ -921,7 +921,7 @@ mymain(void)
 
     DO_TEST("minimal", NONE);
     DO_TEST("minimal-sandbox",
-            QEMU_CAPS_SECCOMP_BLACKLIST);
+            QEMU_CAPS_SECCOMP_FILTER_GROUPS);
     DO_TEST_PARSE_ERROR("minimal-no-memory", NONE);
     DO_TEST("minimal-msg-timestamp", QEMU_CAPS_MSG_TIMESTAMP);
 

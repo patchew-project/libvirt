@@ -468,7 +468,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               /* 285 */
               "qcow2-luks",
               "pcie-pci-bridge",
-              "seccomp-blacklist",
+              "seccomp-filter-groups",
               "query-cpus-fast",
               "disk-write-cache",
 
@@ -3292,7 +3292,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "vnc", "vnc", QEMU_CAPS_VNC_MULTI_SERVERS },
     { "chardev", "reconnect", QEMU_CAPS_CHARDEV_RECONNECT },
     { "sandbox", "enable", QEMU_CAPS_SECCOMP_SANDBOX },
-    { "sandbox", "elevateprivileges", QEMU_CAPS_SECCOMP_BLACKLIST },
+    { "sandbox", "elevateprivileges", QEMU_CAPS_SECCOMP_FILTER_GROUPS },
     { "chardev", "fd", QEMU_CAPS_CHARDEV_FD_PASS },
     { "overcommit", NULL, QEMU_CAPS_OVERCOMMIT },
     { "smp-opts", "dies", QEMU_CAPS_SMP_DIES },

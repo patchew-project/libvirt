@@ -3851,9 +3851,13 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
             if (str) {
                 int flag = virQEMUCapsTypeFromString(str);
                 if (flag < 0) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   _("Unknown qemu capabilities flag %s"), str);
-                    goto error;
+                    if (g_str_equal(str, "seccomp-blacklist")) {
+                        flag = QEMU_CAPS_SECCOMP_FILTER_GROUPS;
+                    } else {
+                        virReportError(VIR_ERR_INTERNAL_ERROR,
+                                       _("Unknown qemu capabilities flag %s"), str);
+                        goto error;
+                    }
                 }
                 virQEMUCapsSet(qemuCaps, flag);
             }

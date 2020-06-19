@@ -131,7 +131,7 @@
   <flag name='machine.pseries.max-cpu-compat'/>
   <flag name='dump-completed'/>
   <flag name='qcow2-luks'/>
-  <flag name='seccomp-blacklist'/>
+  <flag name='seccomp-filter-groups'/>
   <flag name='query-cpus-fast'/>
   <flag name='disk-write-cache'/>
   <flag name='nbd-tls'/>

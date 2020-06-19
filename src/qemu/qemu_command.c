@@ -9517,8 +9517,8 @@ qemuBuildSeccompSandboxCommandLine(virCommandPtr cmd,
         return 0;
     }
 
-    /* Use blacklist by default if supported */
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_BLACKLIST)) {
+    /* Block undesirable syscall groups by default if supported */
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_FILTER_GROUPS)) {
         virCommandAddArgList(cmd, "-sandbox",
                              "on,obsolete=deny,elevateprivileges=deny,"
                              "spawn=deny,resourcecontrol=deny",
