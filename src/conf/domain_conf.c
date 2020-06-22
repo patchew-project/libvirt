@@ -28312,6 +28312,9 @@ virDomainHostdevDefFormat(virBufferPtr buf,
             if (mdevsrc->display != VIR_TRISTATE_SWITCH_ABSENT)
                 virBufferAsprintf(buf, " display='%s'",
                                   virTristateSwitchTypeToString(mdevsrc->display));
+            if (mdevsrc->ramfb != VIR_TRISTATE_SWITCH_ABSENT)
+                virBufferAsprintf(buf, " ramfb='%s'",
+                                  virTristateSwitchTypeToString(mdevsrc->display));
         }
 
     }
