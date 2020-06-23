@@ -28,6 +28,12 @@ v6.5.0 (unreleased)
     schema for node devices was expanded to support attributes for mediated
     devices.
 
+  * virhook: Support hooks placed in several files
+
+    Running all scripts from directory /etc/libvirt/hooks/<driver>.d in
+    alphabetical order. Hook script in old place will be executed
+    as first for backward compatibility.
+
 * **Improvements**
 
 * **Bug fixes**
