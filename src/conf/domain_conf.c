@@ -6608,6 +6608,13 @@ virDomainVideoDefValidate(const virDomainVideoDef *video,
         return -1;
     }
 
+    if (video->type == VIR_DOMAIN_VIDEO_TYPE_RAMFB &&
+        video->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("'address' is not supported for 'ramfb' video devices"));
+        return -1;
+    }
+
     /* it doesn't make sense to pair video device type 'none' with any other
      * types, there can be only a single video device in such case
      */
