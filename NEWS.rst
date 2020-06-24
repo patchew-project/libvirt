@@ -47,6 +47,11 @@ v6.5.0 (unreleased)
     alphabetical order. Hook script in old place will be executed
     as first for backward compatibility.
 
+  * Allow configuring of NUMA HMAT
+
+    Libvirt allows configuring Heterogeneous Memory Attribute Table to hint
+    software running inside the guest on optimization.
+
 * **Improvements**
 
 * **Bug fixes**
