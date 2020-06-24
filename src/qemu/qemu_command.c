@@ -7123,8 +7123,6 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
     size_t i, j;
     virQEMUCapsPtr qemuCaps = priv->qemuCaps;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
-    char *cpumask = NULL;
-    char *tmpmask = NULL;
     char *next = NULL;
     virBufferPtr nodeBackends = NULL;
     bool needBackend = false;
@@ -7169,9 +7167,7 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
         goto cleanup;
 
     for (i = 0; i < ncells; i++) {
-        VIR_FREE(cpumask);
-        if (!(cpumask = virBitmapFormat(virDomainNumaGetNodeCpumask(def->numa, i))))
-            goto cleanup;
+        virBitmapPtr cpumask = virDomainNumaGetNodeCpumask(def->numa, i);
 
         if (needBackend) {
             virCommandAddArg(cmd, "-object");
@@ -7181,11 +7177,19 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
         virCommandAddArg(cmd, "-numa");
         virBufferAsprintf(&buf, "node,nodeid=%zu", i);
 
-        for (tmpmask = cpumask; tmpmask; tmpmask = next) {
-            if ((next = strchr(tmpmask, ',')))
-                *(next++) = '\0';
-            virBufferAddLit(&buf, ",cpus=");
-            virBufferAdd(&buf, tmpmask, -1);
+        if (cpumask) {
+            g_autofree char *cpumaskStr = NULL;
+            char *tmpmask;
+
+            if (!(cpumaskStr = virBitmapFormat(cpumask)))
+                goto cleanup;
+
+            for (tmpmask = cpumaskStr; tmpmask; tmpmask = next) {
+                if ((next = strchr(tmpmask, ',')))
+                    *(next++) = '\0';
+                virBufferAddLit(&buf, ",cpus=");
+                virBufferAdd(&buf, tmpmask, -1);
+            }
         }
 
         if (needBackend)
@@ -7216,8 +7220,6 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
     ret = 0;
 
  cleanup:
-    VIR_FREE(cpumask);
-
     if (nodeBackends) {
         for (i = 0; i < ncells; i++)
             virBufferFreeAndReset(&nodeBackends[i]);
