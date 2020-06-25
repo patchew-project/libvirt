@@ -160,6 +160,7 @@ networkDnsmasqDefNamespaceFree(void *nsdata)
 
     g_free(def);
 }
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(networkDnsmasqXmlNsDefPtr, networkDnsmasqDefNamespaceFree);
 
 
 static int
@@ -177,8 +178,7 @@ networkDnsmasqDefNamespaceParseOptions(networkDnsmasqXmlNsDefPtr nsdef,
     if (nnodes == 0)
         return 0;
 
-    if (VIR_ALLOC_N(nsdef->options, nnodes) < 0)
-        return -1;
+    nsdef->options = g_new0(char *, nnodes);
 
     for (i = 0; i < nnodes; i++) {
         if (!(nsdef->options[nsdef->noptions++] = virXMLPropString(nodes[i], "value"))) {
@@ -196,23 +196,15 @@ static int
 networkDnsmasqDefNamespaceParse(xmlXPathContextPtr ctxt,
                                 void **data)
 {
-    networkDnsmasqXmlNsDefPtr nsdata = NULL;
-    int ret = -1;
-
-    if (VIR_ALLOC(nsdata) < 0)
-        return -1;
+    networkDnsmasqXmlNsDefPtr nsdata = g_new0(networkDnsmasqXmlNsDef, 1);
 
     if (networkDnsmasqDefNamespaceParseOptions(nsdata, ctxt))
-        goto cleanup;
+        return -1;
 
     if (nsdata->noptions > 0)
         *data = g_steal_pointer(&nsdata);
 
-    ret = 0;
-
- cleanup:
-    networkDnsmasqDefNamespaceFree(nsdata);
-    return ret;
+    return 0;
 }
 
 
@@ -711,8 +703,7 @@ networkStateInitialize(bool privileged,
         return -1;
     }
 
-    if (VIR_ALLOC(network_driver) < 0)
-        goto error;
+    network_driver = g_new0(virNetworkDriverState, 1);
 
     network_driver->lockFD = -1;
     if (virMutexInit(&network_driver->lock) < 0) {
@@ -2658,8 +2649,7 @@ networkCreateInterfacePool(virNetworkDefPtr netdef)
         goto cleanup;
     }
 
-    if (VIR_ALLOC_N(netdef->forward.ifs, numVirtFns) < 0)
-        goto cleanup;
+    netdef->forward.ifs = g_new0(virNetworkForwardIfDef, numVirtFns);
 
     for (i = 0; i < numVirtFns; i++) {
         virPCIDeviceAddressPtr thisVirtFn = virtFns[i];
@@ -4129,7 +4119,6 @@ networkGetDHCPLeases(virNetworkPtr net,
     virJSONValuePtr lease_tmp = NULL;
     g_autoptr(virJSONValue) leases_array = NULL;
     virNetworkIPDefPtr ipdef_tmp = NULL;
-    virNetworkDHCPLeasePtr lease = NULL;
     virNetworkDHCPLeasePtr *leases_ret = NULL;
     virNetworkObjPtr obj;
     virNetworkDefPtr def;
@@ -4218,8 +4207,7 @@ networkGetDHCPLeases(virNetworkPtr net,
             continue;
 
         if (need_results) {
-            if (VIR_ALLOC(lease) < 0)
-                goto error;
+            g_autoptr(virNetworkDHCPLease) lease = g_new0(virNetworkDHCPLease, 1);
 
             lease->expirytime = expirytime_tmp;
 
@@ -4267,22 +4255,17 @@ networkGetDHCPLeases(virNetworkPtr net,
         } else {
             nleases++;
         }
-
-        g_free(lease);
-        lease = NULL;
     }
 
     if (leases_ret) {
         /* NULL terminated array */
-        ignore_value(VIR_REALLOC_N(leases_ret, nleases + 1));
-        *leases = leases_ret;
-        leases_ret = NULL;
+        leases_ret = g_renew(virNetworkDHCPLeasePtr, leases_ret,  nleases + 1);
+        *leases = g_steal_pointer(&leases_ret);
     }
 
     rv = nleases;
 
  cleanup:
-    g_free(lease);
     virNetworkObjEndAPI(&obj);
 
     return rv;
@@ -5504,10 +5487,9 @@ networkPortSetParameters(virNetworkPortPtr port,
     if (!(dir = virNetworkObjGetPortStatusDir(obj, driver->stateDir)))
         goto cleanup;
 
-    if ((VIR_ALLOC(bandwidth) < 0) ||
-        (VIR_ALLOC(bandwidth->in) < 0) ||
-        (VIR_ALLOC(bandwidth->out) < 0))
-        goto cleanup;
+    bandwidth = g_new0(virNetDevBandwidth, 1);
+    bandwidth->in = g_new0(virNetDevBandwidthRate, 1);
+    bandwidth->out = g_new0(virNetDevBandwidthRate, 1);
 
     for (i = 0; i < nparams; i++) {
         virTypedParameterPtr param = &params[i];
