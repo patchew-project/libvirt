@@ -2427,7 +2427,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
         goto error;
 
     /* Bring up the bridge interface */
-    if (virNetDevSetOnline(def->bridge, 1) < 0)
+    if (virNetDevSetOnline(def->bridge, true) < 0)
         goto error;
 
     devOnline = true;
@@ -2505,7 +2505,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
     }
 
     if (devOnline)
-        ignore_value(virNetDevSetOnline(def->bridge, 0));
+        ignore_value(virNetDevSetOnline(def->bridge, false));
 
     if (firewalRulesAdded &&
         def->forward.type != VIR_NETWORK_FORWARD_OPEN)
@@ -2558,7 +2558,7 @@ networkShutdownNetworkVirtual(virNetworkDriverStatePtr driver,
             ignore_value(virNetDevTapDelete(macTapIfName, NULL));
     }
 
-    ignore_value(virNetDevSetOnline(def->bridge, 0));
+    ignore_value(virNetDevSetOnline(def->bridge, false));
 
     if (def->forward.type != VIR_NETWORK_FORWARD_OPEN)
         networkRemoveFirewallRules(def);
