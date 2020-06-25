@@ -5804,9 +5804,20 @@ qemuMonitorJSONMakeCPUModel(virCPUDefPtr cpu,
 {
     virJSONValuePtr model = virJSONValueNewObject();
     virJSONValuePtr props = NULL;
+    const char *model_name = cpu->model;
     size_t i;
 
-    if (virJSONValueObjectAppendString(model, "name", cpu->model) < 0)
+    if (!model_name) {
+        if (cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH) {
+            model_name = "host";
+        } else {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("cpu parameter is missing a model name"));
+            goto error;
+        }
+    }
+
+    if (virJSONValueObjectAppendString(model, "name", model_name) < 0)
         goto error;
 
     if (cpu->nfeatures || !migratable) {
