@@ -40,6 +40,7 @@ virFirewallPtr virFirewallNew(void);
 
 void virFirewallFree(virFirewallPtr firewall);
 
+
 /**
  * virFirewallAddRule:
  * @firewall: firewall ruleset to add to
