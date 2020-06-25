@@ -1628,73 +1628,64 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
                              virBlkioDevicePtr dev)
 {
     xmlNodePtr node;
-    g_autofree char *c = NULL;
+    g_autofree char *path = NULL;
 
     node = root->children;
     while (node) {
-        if (node->type == XML_ELEMENT_NODE) {
-            if (virXMLNodeNameEqual(node, "path") && !dev->path) {
-                dev->path = (char *)xmlNodeGetContent(node);
+        g_autofree char *c = NULL;
+
+        if (node->type == XML_ELEMENT_NODE &&
+            (c = (char *)xmlNodeGetContent(node))) {
+            if (virXMLNodeNameEqual(node, "path") && !path) {
+                path = g_steal_pointer(&c);
             } else if (virXMLNodeNameEqual(node, "weight")) {
-                c = (char *)xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->weight) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse weight %s"),
                                    c);
-                        goto error;
+                    return -1;
                 }
-                VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "read_bytes_sec")) {
-                c = (char *)xmlNodeGetContent(node);
                 if (virStrToLong_ull(c, NULL, 10, &dev->rbps) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse read bytes sec %s"),
                                    c);
-                    goto error;
+                    return -1;
                 }
-                VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "write_bytes_sec")) {
-                c = (char *)xmlNodeGetContent(node);
                 if (virStrToLong_ull(c, NULL, 10, &dev->wbps) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse write bytes sec %s"),
                                    c);
-                    goto error;
+                    return -1;
                 }
-                VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "read_iops_sec")) {
-                c = (char *)xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->riops) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse read iops sec %s"),
                                    c);
-                    goto error;
+                    return -1;
                 }
-                VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "write_iops_sec")) {
-                c = (char *)xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->wiops) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse write iops sec %s"),
                                    c);
-                    goto error;
+                    return -1;
                 }
-                VIR_FREE(c);
             }
         }
         node = node->next;
     }
-    if (!dev->path) {
+
+    if (!path) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("missing per-device path"));
         return -1;
     }
 
+    dev->path = g_steal_pointer(&path);
     return 0;
-
- error:
-    VIR_FREE(dev->path);
-    return -1;
 }
 
 
