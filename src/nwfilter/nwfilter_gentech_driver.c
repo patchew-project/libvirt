@@ -414,7 +414,6 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
     virNWFilterDefPtr next_filter;
     virNWFilterDefPtr newNext_filter;
     virNWFilterVarValuePtr val;
-    virHashTablePtr tmpvars;
 
     for (i = 0; i < filter->nentries; i++) {
         virNWFilterRuleDefPtr    rule = filter->filterEntries[i]->rule;
@@ -424,20 +423,16 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
             for (j = 0; j < rule->nVarAccess; j++) {
                 if (!virNWFilterVarAccessIsAvailable(rule->varAccess[j],
                                                      vars)) {
-                    char *varAccess;
-                    virBuffer buf = VIR_BUFFER_INITIALIZER;
+                    g_autofree char *varAccess = NULL;
+                    g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
 
                     virNWFilterVarAccessPrint(rule->varAccess[j], &buf);
 
-                    val = virNWFilterVarValueCreateSimpleCopyValue("1");
-                    if (!val) {
-                        virBufferFreeAndReset(&buf);
+                    if (!(val = virNWFilterVarValueCreateSimpleCopyValue("1")))
                         return -1;
-                    }
 
                     varAccess = virBufferContentAndReset(&buf);
                     rc = virHashUpdateEntry(missing_vars, varAccess, val);
-                    VIR_FREE(varAccess);
                     if (rc < 0) {
                         virNWFilterVarValueFree(val);
                         return -1;
@@ -445,6 +440,8 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                 }
             }
         } else if (inc) {
+            g_autoptr(virHashTable) tmpvars = NULL;
+
             VIR_DEBUG("Following filter %s", inc->filterref);
             if (!(obj = virNWFilterObjListFindInstantiateFilter(driver->nwfilters,
                                                                 inc->filterref)))
@@ -473,9 +470,6 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                                                     missing_vars,
                                                     useNewFilter,
                                                     driver);
-
-            virHashFree(tmpvars);
-
             virNWFilterObjUnlock(obj);
             if (rc < 0)
                 return -1;
@@ -516,7 +510,7 @@ virNWFilterDoInstantiate(virNWFilterTechDriverPtr techdriver,
     int rc;
     virNWFilterInst inst;
     bool instantiate = true;
-    char *buf;
+    g_autofree char *buf = NULL;
     virNWFilterVarValuePtr lv;
     const char *learning;
     bool reportIP = false;
@@ -636,7 +630,6 @@ virNWFilterDoInstantiate(virNWFilterTechDriverPtr techdriver,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot instantiate filter due to unresolvable "
                          "variables or unavailable list elements: %s"), buf);
-        VIR_FREE(buf);
     }
 
     rc = -1;
