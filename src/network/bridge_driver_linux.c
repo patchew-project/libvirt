@@ -834,7 +834,7 @@ int networkAddFirewallRules(virNetworkDefPtr def)
 {
     size_t i;
     virNetworkIPDefPtr ipdef;
-    g_autoptr(virFirewall) fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     if (virOnce(&createdOnce, networkSetupPrivateChains) < 0)
         return -1;
@@ -920,8 +920,6 @@ int networkAddFirewallRules(virNetworkDefPtr def)
         }
     }
 
-    fw = virFirewallNew();
-
     virFirewallStartTransaction(fw, 0);
 
     networkAddGeneralFirewallRules(fw, def);
@@ -946,10 +944,7 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
     networkAddChecksumFirewallRules(fw, def);
 
-    if (virFirewallApply(fw) < 0)
-        return -1;
-
-    return 0;
+    return virFirewallApply(fw);
 }
 
 /* Remove all rules for all ip addresses (and general rules) on a network */
