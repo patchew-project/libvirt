@@ -10556,22 +10556,22 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                    virXMLNodeNameEqual(cur, "wwn")) {
             wwn = (char *)xmlNodeGetContent(cur);
 
-            if (!virValidateWWN(wwn))
+            if (wwn && !virValidateWWN(wwn))
                 goto error;
         } else if (!vendor &&
                    virXMLNodeNameEqual(cur, "vendor")) {
-            vendor = (char *)xmlNodeGetContent(cur);
+            if ((vendor = (char *)xmlNodeGetContent(cur))) {
+                if (strlen(vendor) > VENDOR_LEN) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("disk vendor is more than 8 characters"));
+                    goto error;
+                }
 
-            if (strlen(vendor) > VENDOR_LEN) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("disk vendor is more than 8 characters"));
-                goto error;
-            }
-
-            if (!virStringIsPrintable(vendor)) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("disk vendor is not printable string"));
-                goto error;
+                if (!virStringIsPrintable(vendor)) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("disk vendor is not printable string"));
+                    goto error;
+                }
             }
         } else if (!product &&
                    virXMLNodeNameEqual(cur, "product")) {
@@ -20374,8 +20374,8 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
 
             if (STREQ_NULLABLE(tmp, "slic")) {
                 VIR_FREE(tmp);
-                tmp = virXMLNodeContentString(nodes[0]);
-                def->os.slic_table = virFileSanitizePath(tmp);
+                if ((tmp = virXMLNodeContentString(nodes[0])))
+                    def->os.slic_table = virFileSanitizePath(tmp);
             } else {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Unknown acpi table type: %s"),
