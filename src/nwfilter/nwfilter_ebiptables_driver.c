@@ -3518,7 +3518,7 @@ ebiptablesApplyNewRules(const char *ifname,
 
  cleanup:
     for (i = 0; i < nsubchains; i++)
-        VIR_FREE(subchains[i]);
+        g_free(subchains[i]);
 
     return ret;
 }
