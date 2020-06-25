@@ -3334,12 +3334,6 @@ ebtablesGetSubChainInsts(virHashTablePtr chains,
 
  cleanup:
     VIR_FREE(filter_names);
-    if (ret < 0) {
-        for (i = 0; i < *ninsts; i++)
-            VIR_FREE(*insts[i]);
-        VIR_FREE(*insts);
-        *ninsts = 0;
-    }
     return ret;
 
 }
