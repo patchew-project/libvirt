@@ -2881,11 +2881,11 @@ ebtablesApplyBasicRules(const char *ifname,
     ebtablesRenameTmpRootChainFW(fw, true, ifname);
 
     if (virFirewallApply(fw) < 0)
-        goto tear_down_tmpebchains;
+        goto error;
 
     return 0;
 
- tear_down_tmpebchains:
+ error:
     ebtablesCleanAll(ifname);
     return -1;
 }
@@ -2997,11 +2997,11 @@ ebtablesApplyDHCPOnlyRules(const char *ifname,
     }
 
     if (virFirewallApply(fw) < 0)
-        goto tear_down_tmpebchains;
+        goto error;
 
     return 0;
 
- tear_down_tmpebchains:
+ error:
     ebtablesCleanAll(ifname);
     return -1;
 }
@@ -3048,11 +3048,11 @@ ebtablesApplyDropAllRules(const char *ifname)
     ebtablesRenameTmpRootChainFW(fw, false, ifname);
 
     if (virFirewallApply(fw) < 0)
-        goto tear_down_tmpebchains;
+        goto error;
 
     return 0;
 
- tear_down_tmpebchains:
+ error:
     ebtablesCleanAll(ifname);
     return -1;
 }

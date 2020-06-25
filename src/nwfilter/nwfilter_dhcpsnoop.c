@@ -454,11 +454,11 @@ virNWFilterSnoopIPLeaseInstallRule(virNWFilterSnoopIPLeasePtr ipl,
     virNWFilterSnoopReqLock(req);
 
     if (virNWFilterIPAddrMapAddIPAddr(req->binding->portdevname, ipaddr) < 0)
-        goto exit_snooprequnlock;
+        goto cleanup;
 
     if (!instantiate) {
         rc = 0;
-        goto exit_snooprequnlock;
+        goto cleanup;
     }
 
     /* instantiate the filters */
@@ -469,7 +469,7 @@ virNWFilterSnoopIPLeaseInstallRule(virNWFilterSnoopIPLeasePtr ipl,
                                               req->ifindex);
     }
 
- exit_snooprequnlock:
+ cleanup:
     virNWFilterSnoopReqUnlock(req);
     return rc;
 }
@@ -718,7 +718,7 @@ virNWFilterSnoopReqLeaseAdd(virNWFilterSnoopReqPtr req,
 
         virNWFilterSnoopReqUnlock(req);
 
-        goto exit;
+        goto cleanup;
     }
 
     virNWFilterSnoopReqUnlock(req);
@@ -742,7 +742,7 @@ virNWFilterSnoopReqLeaseAdd(virNWFilterSnoopReqPtr req,
 
     g_atomic_int_add(&virNWFilterSnoopState.nLeases, 1);
 
- exit:
+ cleanup:
     if (update_leasefile)
         virNWFilterSnoopLeaseFileSave(pl);
 
@@ -885,7 +885,7 @@ virNWFilterSnoopDHCPGetOpt(virNWFilterSnoopDHCPHdrPtr pd, int len,
         switch (pd->d_opts[oind]) {
         case DHCPO_LEASE:
             if (olen - oind < 6)
-                goto malformed;
+                goto error;
             if (*pleasetime)
                 return -1;  /* duplicate lease time */
             memcpy(&nwint, (char *)pd->d_opts + oind + 2, sizeof(nwint));
@@ -893,7 +893,7 @@ virNWFilterSnoopDHCPGetOpt(virNWFilterSnoopDHCPHdrPtr pd, int len,
             break;
         case DHCPO_MTYPE:
             if (olen - oind < 3)
-                goto malformed;
+                goto error;
             if (*pmtype)
                 return -1;  /* duplicate message type */
             *pmtype = pd->d_opts[oind + 2];
@@ -905,12 +905,12 @@ virNWFilterSnoopDHCPGetOpt(virNWFilterSnoopDHCPHdrPtr pd, int len,
             return 0;
         default:
             if (olen - oind < 2)
-                goto malformed;
+                goto error;
         }
         oind += pd->d_opts[oind + 1] + 2;
     }
     return 0;
- malformed:
+ error:
     VIR_WARN("got lost in the options!");
     return -1;
 }
@@ -1362,7 +1362,7 @@ virNWFilterDHCPSnoopThread(void *req0)
     virNWFilterSnoopReqUnlock(req);
 
     if (req->threadStatus != THREAD_STATUS_OK)
-        goto exit;
+        goto cleanup;
 
     while (!error) {
         if (virNWFilterSnoopAdjustPoll(pcapConf,
@@ -1390,7 +1390,7 @@ virNWFilterDHCPSnoopThread(void *req0)
          */
         if (!virNWFilterSnoopIsActive(threadkey) ||
             req->jobCompletionStatus != 0)
-            goto exit;
+            goto cleanup;
 
         for (i = 0; n > 0 && i < G_N_ELEMENTS(fds); i++) {
             if (!fds[i].revents)
@@ -1507,7 +1507,7 @@ virNWFilterDHCPSnoopThread(void *req0)
     virNWFilterSnoopReqUnlock(req);
     virNWFilterSnoopUnlock();
 
- exit:
+ cleanup:
     virThreadPoolFree(worker);
 
     virNWFilterSnoopReqPut(req);
@@ -1736,14 +1736,14 @@ virNWFilterSnoopLeaseFileSave(virNWFilterSnoopIPLeasePtr ipl)
         virNWFilterSnoopLeaseFileOpen();
     if (virNWFilterSnoopLeaseFileWrite(virNWFilterSnoopState.leaseFD,
                                        req->ifkey, ipl) < 0)
-        goto err_exit;
+        goto error;
 
     /* keep dead leases at < ~95% of file size */
     if (g_atomic_int_add(&virNWFilterSnoopState.wLeases, 1) >=
         g_atomic_int_get(&virNWFilterSnoopState.nLeases) * 20)
         virNWFilterSnoopLeaseFileLoad();   /* load & refresh lease file */
 
- err_exit:
+ error:
     virNWFilterSnoopUnlock();
 }
 
@@ -1838,7 +1838,7 @@ virNWFilterSnoopLeaseFileRefresh(void)
     if (VIR_CLOSE(tfd) < 0) {
         virReportSystemError(errno, _("unable to close %s"), TMPLEASEFILE);
         /* assuming the old lease file is still better, skip the renaming */
-        goto skip_rename;
+        goto cleanup;
     }
 
     if (rename(TMPLEASEFILE, LEASEFILE) < 0) {
@@ -1848,7 +1848,7 @@ virNWFilterSnoopLeaseFileRefresh(void)
     }
     g_atomic_int_set(&virNWFilterSnoopState.wLeases, 0);
 
- skip_rename:
+ cleanup:
     virNWFilterSnoopLeaseFileOpen();
 }
 
@@ -2013,14 +2013,14 @@ virNWFilterDHCPSnoopInit(void)
     if (!virNWFilterSnoopState.ifnameToKey ||
         !virNWFilterSnoopState.snoopReqs ||
         !virNWFilterSnoopState.active)
-        goto err_exit;
+        goto error;
 
     virNWFilterSnoopLeaseFileLoad();
     virNWFilterSnoopLeaseFileOpen();
 
     return 0;
 
- err_exit:
+ error:
     virHashFree(virNWFilterSnoopState.ifnameToKey);
     virNWFilterSnoopState.ifnameToKey = NULL;
 
