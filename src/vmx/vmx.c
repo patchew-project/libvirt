@@ -708,8 +708,11 @@ virVMXConvertToUTF8(const char *encoding, const char *string)
         return NULL;
     }
 
-    input = xmlBufferCreateStatic((char *)string, strlen(string));
-    utf8 = xmlBufferCreate();
+    if (!(input = xmlBufferCreateStatic((char *)string, strlen(string))) ||
+        !(utf8 = xmlBufferCreate())) {
+        virReportOOMError();
+        goto cleanup;
+    }
 
     if (xmlCharEncInFunc(handler, utf8, input) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
