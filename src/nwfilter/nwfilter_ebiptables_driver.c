@@ -2863,7 +2863,7 @@ static int
 ebtablesApplyBasicRules(const char *ifname,
                         const virMacAddr *macaddr)
 {
-    virFirewallPtr fw = virFirewallNew();
+    g_autoptr(virFirewall) fw = virFirewallNew();
     char chain[MAX_CHAINNAME_LENGTH];
     char chainPrefix = CHAINPREFIX_HOST_IN_TEMP;
     char macaddr_str[VIR_MAC_STRING_BUFLEN];
@@ -2871,7 +2871,7 @@ ebtablesApplyBasicRules(const char *ifname,
     virMacAddrFormat(macaddr, macaddr_str);
 
     if (ebiptablesAllTeardown(ifname) < 0)
-        goto error;
+        return -1;
 
     virFirewallStartTransaction(fw, 0);
 
@@ -2900,13 +2900,10 @@ ebtablesApplyBasicRules(const char *ifname,
     if (virFirewallApply(fw) < 0)
         goto tear_down_tmpebchains;
 
-    virFirewallFree(fw);
     return 0;
 
  tear_down_tmpebchains:
     ebtablesCleanAll(ifname);
- error:
-    virFirewallFree(fw);
     return -1;
 }
 
@@ -2939,12 +2936,12 @@ ebtablesApplyDHCPOnlyRules(const char *ifname,
     char macaddr_str[VIR_MAC_STRING_BUFLEN];
     unsigned int idx = 0;
     unsigned int num_dhcpsrvrs;
-    virFirewallPtr fw = virFirewallNew();
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virMacAddrFormat(macaddr, macaddr_str);
 
     if (ebiptablesAllTeardown(ifname) < 0)
-        goto error;
+        return -1;
 
     virFirewallStartTransaction(fw, 0);
 
@@ -3019,14 +3016,10 @@ ebtablesApplyDHCPOnlyRules(const char *ifname,
     if (virFirewallApply(fw) < 0)
         goto tear_down_tmpebchains;
 
-    virFirewallFree(fw);
-
     return 0;
 
  tear_down_tmpebchains:
     ebtablesCleanAll(ifname);
- error:
-    virFirewallFree(fw);
     return -1;
 }
 
@@ -3045,10 +3038,10 @@ ebtablesApplyDropAllRules(const char *ifname)
 {
     char chain_in [MAX_CHAINNAME_LENGTH],
          chain_out[MAX_CHAINNAME_LENGTH];
-    virFirewallPtr fw = virFirewallNew();
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     if (ebiptablesAllTeardown(ifname) < 0)
-        goto error;
+        return -1;
 
     virFirewallStartTransaction(fw, 0);
 
@@ -3074,13 +3067,10 @@ ebtablesApplyDropAllRules(const char *ifname)
     if (virFirewallApply(fw) < 0)
         goto tear_down_tmpebchains;
 
-    virFirewallFree(fw);
     return 0;
 
  tear_down_tmpebchains:
     ebtablesCleanAll(ifname);
- error:
-    virFirewallFree(fw);
     return -1;
 }
 
@@ -3095,8 +3085,7 @@ ebtablesRemoveBasicRules(const char *ifname)
 static int
 ebtablesCleanAll(const char *ifname)
 {
-    virFirewallPtr fw = virFirewallNew();
-    int ret = -1;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -3112,9 +3101,7 @@ ebtablesCleanAll(const char *ifname)
     ebtablesRemoveTmpRootChainFW(fw, true, ifname);
     ebtablesRemoveTmpRootChainFW(fw, false, ifname);
 
-    ret = virFirewallApply(fw);
-    virFirewallFree(fw);
-    return ret;
+    return virFirewallApply(fw);
 }
 
 
@@ -3362,7 +3349,7 @@ ebiptablesApplyNewRules(const char *ifname,
                         size_t nrules)
 {
     size_t i, j;
-    virFirewallPtr fw = virFirewallNew();
+    g_autoptr(virFirewall) fw = virFirewallNew();
     virHashTablePtr chains_in_set  = virHashCreate(10, NULL);
     virHashTablePtr chains_out_set = virHashCreate(10, NULL);
     bool haveEbtables = false;
@@ -3563,7 +3550,6 @@ ebiptablesApplyNewRules(const char *ifname,
     for (i = 0; i < nsubchains; i++)
         VIR_FREE(subchains[i]);
     VIR_FREE(subchains);
-    virFirewallFree(fw);
     virHashFree(chains_in_set);
     virHashFree(chains_out_set);
 
@@ -3591,23 +3577,19 @@ ebiptablesTearNewRulesFW(virFirewallPtr fw, const char *ifname)
 static int
 ebiptablesTearNewRules(const char *ifname)
 {
-    virFirewallPtr fw = virFirewallNew();
-    int ret = -1;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
     ebiptablesTearNewRulesFW(fw, ifname);
 
-    ret = virFirewallApply(fw);
-    virFirewallFree(fw);
-    return ret;
+    return virFirewallApply(fw);
 }
 
 static int
 ebiptablesTearOldRules(const char *ifname)
 {
-    virFirewallPtr fw = virFirewallNew();
-    int ret = -1;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -3626,9 +3608,7 @@ ebiptablesTearOldRules(const char *ifname)
     ebtablesRemoveRootChainFW(fw, false, ifname);
     ebtablesRenameTmpSubAndRootChainsFW(fw, ifname);
 
-    ret = virFirewallApply(fw);
-    virFirewallFree(fw);
-    return ret;
+    return virFirewallApply(fw);
 }
 
 
@@ -3644,8 +3624,7 @@ ebiptablesTearOldRules(const char *ifname)
 static int
 ebiptablesAllTeardown(const char *ifname)
 {
-    virFirewallPtr fw = virFirewallNew();
-    int ret = -1;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -3667,9 +3646,7 @@ ebiptablesAllTeardown(const char *ifname)
     ebtablesRemoveRootChainFW(fw, true, ifname);
     ebtablesRemoveRootChainFW(fw, false, ifname);
 
-    ret = virFirewallApply(fw);
-    virFirewallFree(fw);
-    return ret;
+    return virFirewallApply(fw);
 }
 
 
@@ -3754,8 +3731,7 @@ static int
 ebiptablesDriverProbeStateMatch(void)
 {
     unsigned long version;
-    virFirewallPtr fw = virFirewallNew();
-    int ret = -1;
+    g_autoptr(virFirewall) fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
     virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_IPV4,
@@ -3763,7 +3739,7 @@ ebiptablesDriverProbeStateMatch(void)
                            "--version", NULL);
 
     if (virFirewallApply(fw) < 0)
-        goto cleanup;
+        return -1;
 
     /*
      * since version 1.4.16 '-m state --state ...' will be converted to
@@ -3772,10 +3748,7 @@ ebiptablesDriverProbeStateMatch(void)
     if (version >= 1 * 1000000 + 4 * 1000 + 16)
         newMatchState = true;
 
-    ret = 0;
- cleanup:
-    virFirewallFree(fw);
-    return ret;
+    return 0;
 }
 
 static int

@@ -200,7 +200,7 @@ static int
 testFirewallSingleGroup(const void *opaque)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -216,8 +216,6 @@ testFirewallSingleGroup(const void *opaque)
         virCommandSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -247,7 +245,6 @@ testFirewallSingleGroup(const void *opaque)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -256,7 +253,7 @@ static int
 testFirewallRemoveRule(const void *opaque)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -273,8 +270,6 @@ testFirewallRemoveRule(const void *opaque)
         virCommandSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -310,7 +305,6 @@ testFirewallRemoveRule(const void *opaque)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -319,7 +313,7 @@ static int
 testFirewallManyGroups(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -337,8 +331,6 @@ testFirewallManyGroups(const void *opaque G_GNUC_UNUSED)
         virCommandSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -380,7 +372,6 @@ testFirewallManyGroups(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -410,7 +401,7 @@ static int
 testFirewallIgnoreFailGroup(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -430,8 +421,6 @@ testFirewallIgnoreFailGroup(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
         fwError = true;
     }
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -473,7 +462,6 @@ testFirewallIgnoreFailGroup(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -482,7 +470,7 @@ static int
 testFirewallIgnoreFailRule(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -502,8 +490,6 @@ testFirewallIgnoreFailRule(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
         fwError = true;
     }
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -544,7 +530,6 @@ testFirewallIgnoreFailRule(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -553,7 +538,7 @@ static int
 testFirewallNoRollback(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -571,8 +556,6 @@ testFirewallNoRollback(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
         fwError = true;
     }
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -609,7 +592,6 @@ testFirewallNoRollback(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -617,7 +599,7 @@ static int
 testFirewallSingleRollback(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -639,8 +621,6 @@ testFirewallSingleRollback(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
     }
 
-    fw = virFirewallNew();
-
     virFirewallStartTransaction(fw, 0);
 
     virFirewallAddRule(fw, VIR_FIREWALL_LAYER_IPV4,
@@ -693,7 +673,6 @@ testFirewallSingleRollback(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -701,7 +680,7 @@ static int
 testFirewallManyRollback(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -722,8 +701,6 @@ testFirewallManyRollback(const void *opaque G_GNUC_UNUSED)
         fwError = true;
     }
 
-    fw = virFirewallNew();
-
     virFirewallStartTransaction(fw, 0);
 
     virFirewallAddRule(fw, VIR_FIREWALL_LAYER_IPV4,
@@ -780,7 +757,6 @@ testFirewallManyRollback(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -788,7 +764,7 @@ static int
 testFirewallChainedRollback(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -812,8 +788,6 @@ testFirewallChainedRollback(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
         fwError = true;
     }
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -897,7 +871,6 @@ testFirewallChainedRollback(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
@@ -982,7 +955,7 @@ static int
 testFirewallQuery(const void *opaque G_GNUC_UNUSED)
 {
     virBuffer cmdbuf = VIR_BUFFER_INITIALIZER;
-    virFirewallPtr fw = NULL;
+    g_autoptr(virFirewall) fw = virFirewallNew();
     int ret = -1;
     const char *actual = NULL;
     const char *expected =
@@ -1009,8 +982,6 @@ testFirewallQuery(const void *opaque G_GNUC_UNUSED)
         fwBuf = &cmdbuf;
         fwError = true;
     }
-
-    fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
 
@@ -1076,7 +1047,6 @@ testFirewallQuery(const void *opaque G_GNUC_UNUSED)
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
     virCommandSetDryRun(NULL, NULL, NULL);
-    virFirewallFree(fw);
     return ret;
 }
 
