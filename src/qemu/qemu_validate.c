@@ -1028,6 +1028,12 @@ qemuValidateDomainDeviceDefZPCIAddress(virDomainDeviceInfoPtr info,
         return -1;
     }
 
+    if (virDeviceInfoPCIAddressExtensionIsWanted(info)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Missing uid or fid attribute of zPCI address"));
+        return -1;
+    }
+
     /* We don't need to check fid because fid covers
      * all range of uint32 type.
      */
