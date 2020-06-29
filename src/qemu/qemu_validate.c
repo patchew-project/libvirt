@@ -1063,7 +1063,8 @@ qemuValidateDomainDeviceDefAddress(const virDomainDeviceDef *dev,
 
     switch ((virDomainDeviceAddressType) info->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
-        return qemuValidateDomainDeviceDefZPCIAddress(info, qemuCaps);
+        if (qemuValidateDomainDeviceDefZPCIAddress(info, qemuCaps) < 0)
+            return -1;
 
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
         /* Address validation might happen before we have had a chance to
