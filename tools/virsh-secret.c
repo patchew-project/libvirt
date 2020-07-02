@@ -259,7 +259,7 @@ cmdSecretSetValue(vshControl *ctl, const vshCmd *cmd)
     }
 
     if (plain) {
-        value = g_steal_pointer(&file_buf);
+        value = (unsigned char *) g_steal_pointer(&file_buf);
         value_size = file_len;
         file_len = 0;
     } else {
