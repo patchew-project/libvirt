@@ -484,6 +484,7 @@ TESTS_ENVIRONMENT = \
   abs_builddir="$(abs_builddir)" \
   abs_srcdir="$(abs_srcdir)" \
   LIBVIRT_AUTOSTART=0 \
+  LIBVIRT_DIR_OVERRIDE=1 \
   LC_ALL=C \
   VIR_TEST_EXPENSIVE=$(VIR_TEST_EXPENSIVE) \
   $(VG)

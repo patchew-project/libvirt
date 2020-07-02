@@ -167,7 +167,7 @@ int main(int argc, char **argv)
         }
     }
 
-    virFileActivateDirOverrideForProg(argv[0]);
+    virFileActivateDirOverride();
 
     if (verbose)
         g_printerr("%s: %lld: preparing event loop thread\n",

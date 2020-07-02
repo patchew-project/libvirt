@@ -190,9 +190,7 @@ char *virFileFindResourceFull(const char *filename,
                               const char *installdir,
                               const char *envname)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
-void virFileActivateDirOverrideForProg(const char *argv0)
-    ATTRIBUTE_NONNULL(1);
-void virFileActivateDirOverrideForLib(void);
+void virFileActivateDirOverride(void);
 
 off_t virFileLength(const char *path, int fd) ATTRIBUTE_NONNULL(1);
 bool virFileIsDir (const char *file) ATTRIBUTE_NONNULL(1);

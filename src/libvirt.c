@@ -221,7 +221,7 @@ virGlobalInit(void)
     if (virErrorInitialize() < 0)
         goto error;
 
-    virFileActivateDirOverrideForLib();
+    virFileActivateDirOverride();
 
     if (getuid() != geteuid() ||
         getgid() != getegid()) {

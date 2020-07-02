@@ -1458,7 +1458,7 @@ main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    virFileActivateDirOverrideForProg(argv[0]);
+    virFileActivateDirOverride();
 
     /* Initialize the log system */
     virLogSetFromEnv();
