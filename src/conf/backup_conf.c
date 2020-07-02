@@ -56,6 +56,13 @@ VIR_ENUM_IMPL(virDomainBackupDiskState,
               "cancelling",
               "cancelled");
 
+VIR_ENUM_DECL(virDomainBackupDiskBackupMode);
+VIR_ENUM_IMPL(virDomainBackupDiskBackupMode,
+              VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_LAST,
+              "",
+              "full",
+              "incremental");
+
 void
 virDomainBackupDefFree(virDomainBackupDefPtr def)
 {
@@ -96,6 +103,7 @@ virDomainBackupDiskDefParseXML(xmlNodePtr node,
     g_autofree char *driver = NULL;
     g_autofree char *backup = NULL;
     g_autofree char *state = NULL;
+    g_autofree char *backupmode = NULL;
     int tmp;
     xmlNodePtr srcNode;
     unsigned int storageSourceParseFlags = 0;
@@ -132,6 +140,19 @@ virDomainBackupDiskDefParseXML(xmlNodePtr node,
         def->exportname = virXMLPropString(node, "exportname");
         def->exportbitmap = virXMLPropString(node, "exportbitmap");
     }
+
+    if ((backupmode = virXMLPropString(node, "backupmode"))) {
+        if ((tmp = virDomainBackupDiskBackupModeTypeFromString(backupmode)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid backupmode '%s' of disk '%s'"),
+                           backupmode, def->name);
+            return -1;
+        }
+
+        def->backupmode = tmp;
+    }
+
+    def->incremental = virXMLPropString(node, "incremental");
 
     if (internal) {
         if (!(state = virXMLPropString(node, "state")) ||
@@ -342,6 +363,13 @@ virDomainBackupDiskDefFormat(virBufferPtr buf,
     if (disk->backup == VIR_TRISTATE_BOOL_YES) {
         virBufferAsprintf(&attrBuf, " type='%s'", virStorageTypeToString(disk->store->type));
 
+        if (disk->backupmode != VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_DEFAULT) {
+            virBufferAsprintf(&attrBuf, " backupmode='%s'",
+                              virDomainBackupDiskBackupModeTypeToString(disk->backupmode));
+        }
+
+        virBufferEscapeString(&attrBuf, " incremental='%s'", disk->incremental);
+
         virBufferEscapeString(&attrBuf, " exportname='%s'", disk->exportname);
         virBufferEscapeString(&attrBuf, " exportbitmap='%s'", disk->exportbitmap);
 
@@ -465,6 +493,24 @@ virDomainBackupAlignDisks(virDomainBackupDefPtr def,
             return -1;
         }
 
+        if (backupdisk->backupmode == VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_FULL &&
+            backupdisk->incremental) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("'full' backup mode incompatible with 'incremental' for disk '%s'"),
+                           backupdisk->name);
+            return -1;
+        }
+
+        if (backupdisk->backupmode == VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_INCREMENTAL &&
+            !backupdisk->incremental &&
+            !def->incremental) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("'incremental' backup mode of disk '%s' requires setting 'incremental' field for disk or backup"),
+                           backupdisk->name);
+            return -1;
+        }
+
+
         if (backupdisk->backup == VIR_TRISTATE_BOOL_YES &&
             virDomainBackupDefAssignStore(backupdisk, domdisk->src, suffix) < 0)
             return -1;
@@ -502,7 +548,16 @@ virDomainBackupAlignDisks(virDomainBackupDefPtr def,
     for (i = 0; i < def->ndisks; i++) {
         virDomainBackupDiskDefPtr backupdisk = &def->disks[i];
 
-        if (def->incremental && !backupdisk->incremental)
+        if (backupdisk->backupmode == VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_DEFAULT) {
+            if (def->incremental || backupdisk->incremental) {
+                backupdisk->backupmode = VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_INCREMENTAL;
+            } else {
+                backupdisk->backupmode = VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_FULL;
+            }
+        }
+
+        if (!backupdisk->incremental &&
+            backupdisk->backupmode == VIR_DOMAIN_BACKUP_DISK_BACKUP_MODE_INCREMENTAL)
             backupdisk->incremental = g_strdup(def->incremental);
     }
 

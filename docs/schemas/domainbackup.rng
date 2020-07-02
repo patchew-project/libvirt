@@ -89,6 +89,20 @@
     </element>
   </define>
 
+  <define name='backupDiskMode'>
+    <optional>
+      <attribute name='backupmode'>
+        <choice>
+          <value>full</value>
+          <value>incremental</value>
+        </choice>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name='incremental'/>
+    </optional>
+  </define>
+
   <define name='backupPushDriver'>
     <optional>
       <element name='driver'>
@@ -127,6 +141,7 @@
             <attribute name='name'>
               <ref name='diskTarget'/>
             </attribute>
+            <ref name='backupDiskMode'/>
             <choice>
               <group>
                 <attribute name='backup'>
@@ -196,6 +211,7 @@
             <attribute name='name'>
               <ref name='diskTarget'/>
             </attribute>
+            <ref name='backupDiskMode'/>
             <optional>
               <attribute name='exportname'>
                 <text/>
