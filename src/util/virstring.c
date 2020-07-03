@@ -1404,3 +1404,43 @@ int virStringParseYesNo(const char *str, bool *result)
 
     return 0;
 }
+
+
+/**
+ * virStringIsNull:
+ * @buf: buffer to check
+ * @len: the length of the buffer
+ *
+ * For given buffer @buf and its size @len determine whether
+ * it contains only zero bytes or not.
+ *
+ * Returns: true if buffer is full of zero bytes,
+ *          false otherwise.
+ */
+bool virStringIsNull(const char *buf, size_t len)
+{
+    const char *p = buf;
+
+    if (!len)
+        return true;
+
+    /* Check up to 16 first bytes. memcmp() below uses block of sizeof(long)
+     * size (in most cases on 64bits is 8 bytes), doing twice the size just to
+     * be safe. */
+    for (;;) {
+        if (*p)
+            return false;
+
+        p++;
+        len--;
+
+        if (!len)
+            return true;
+
+        if ((len & (2 * sizeof(long))) == 0)
+            break;
+    }
+
+    /* Now we know first 16 bytes are NUL, memcmp with self.  */
+    return memcmp(buf, p, len) == 0;
+}

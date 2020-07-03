@@ -3197,6 +3197,7 @@ virStringHasChars;
 virStringHasControlChars;
 virStringHasSuffix;
 virStringIsEmpty;
+virStringIsNull;
 virStringIsPrintable;
 virStringListAdd;
 virStringListAutoFree;
