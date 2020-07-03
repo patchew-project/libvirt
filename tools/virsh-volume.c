@@ -679,6 +679,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
     virshControlPtr priv = ctl->privData;
     unsigned int flags = 0;
     virshStreamCallbackData cbData;
+    struct stat sb;
 
     if (vshCommandOptULongLong(ctl, cmd, "offset", &offset) < 0)
         return false;
@@ -697,8 +698,14 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
+    if (fstat(fd, &sb) < 0) {
+        vshError(ctl, _("unable to stat %s"), file);
+        goto cleanup;
+    }
+
     cbData.ctl = ctl;
     cbData.fd = fd;
+    cbData.isBlock = !!S_ISBLK(sb.st_mode);
 
     if (vshCommandOptBool(cmd, "sparse"))
         flags |= VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM;
@@ -795,6 +802,7 @@ cmdVolDownload(vshControl *ctl, const vshCmd *cmd)
     virshControlPtr priv = ctl->privData;
     virshStreamCallbackData cbData;
     unsigned int flags = 0;
+    struct stat sb;
 
     if (vshCommandOptULongLong(ctl, cmd, "offset", &offset) < 0)
         return false;
@@ -821,8 +829,14 @@ cmdVolDownload(vshControl *ctl, const vshCmd *cmd)
         created = true;
     }
 
+    if (fstat(fd, &sb) < 0) {
+        vshError(ctl, _("unable to stat %s"), file);
+        goto cleanup;
+    }
+
     cbData.ctl = ctl;
     cbData.fd = fd;
+    cbData.isBlock = !!S_ISBLK(sb.st_mode);
 
     if (!(st = virStreamNew(priv->conn, 0))) {
         vshError(ctl, _("cannot create a new stream"));
