@@ -2070,6 +2070,7 @@ virFileGetMountSubtree;
 virFileGetXAttr;
 virFileGetXAttrQuiet;
 virFileInData;
+virFileInDataDetectZeroes;
 virFileIsCDROM;
 virFileIsDir;
 virFileIsExecutable;

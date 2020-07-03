@@ -4064,6 +4064,73 @@ virFileInData(int fd G_GNUC_UNUSED,
 #endif /* !HAVE_DECL_SEEK_HOLE */
 
 
+#define DETECT_ZEORES_BLOCK_SIZE (1 * 1024 * 1024)
+
+/*
+ * virFileInDataDetectZeroes:
+ * @fd: file to check
+ * @inData: true if current position in the @fd is in data section
+ * @length: amount of bytes until the end of the current section
+ *
+ * This behaves exactly like virFileInData() except it doesn't use SEEK_DATA
+ * and SEEK_HOLE rather than a buffer into which it reads data from @fd and
+ * detects if the buffer is full of zeroes. Therefore, it is safe to use on
+ * special files (e.g. block devices). On the other hand it sees only
+ * DETECT_ZEORES_BLOCK_SIZE ahead.
+ *
+ * Returns: 0 on success,
+ *         -1 otherwise.
+ */
+int
+virFileInDataDetectZeroes(int fd,
+                          int *inData,
+                          long long *length)
+{
+    const size_t buflen = DETECT_ZEORES_BLOCK_SIZE;
+    g_autofree char *buf = NULL;
+    off_t cur;
+    ssize_t r;
+    int ret = -1;
+
+    /* Get current position */
+    cur = lseek(fd, 0, SEEK_CUR);
+    if (cur == (off_t) -1) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to get current position in file"));
+        goto cleanup;
+    }
+
+    buf = g_new0(char, buflen);
+
+    if ((r = saferead(fd, buf, buflen)) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to read from file"));
+        goto cleanup;
+    }
+
+    *inData = !virStringIsNull(buf, r);
+    *length = MIN(r, buflen);
+    ret = 0;
+
+ cleanup:
+    /* At any rate, reposition back to where we started. */
+    if (cur != (off_t) -1) {
+        int theerrno = errno;
+
+        if (lseek(fd, cur, SEEK_SET) == (off_t) -1) {
+            virReportSystemError(errno, "%s",
+                                 _("unable to restore position in file"));
+            ret = -1;
+            if (theerrno == 0)
+                theerrno = errno;
+        }
+
+        errno = theerrno;
+    }
+    return ret;
+}
+
+
 /**
  * virFileReadValueInt:
  * @value: pointer to int to be filled in with the value
