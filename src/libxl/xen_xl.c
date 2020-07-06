@@ -1412,11 +1412,10 @@ static int
 xenFormatXLVnode(virConfValuePtr list,
                  virBufferPtr buf)
 {
-    int ret = -1;
     virConfValuePtr numaPnode, tmp;
 
     if (VIR_ALLOC(numaPnode) < 0)
-        goto cleanup;
+        return -1;
 
     /* Place VNODE directive */
     numaPnode->type = VIR_CONF_STRING;
@@ -1429,10 +1428,8 @@ xenFormatXLVnode(virConfValuePtr list,
         tmp->next = numaPnode;
     else
         list->list = numaPnode;
-    ret = 0;
 
- cleanup:
-    return ret;
+    return 0;
 }
 
 static int
@@ -1561,7 +1558,6 @@ xenFormatXLXenbusLimits(virConfPtr conf, virDomainDefPtr def)
 static char *
 xenFormatXLDiskSrcNet(virStorageSourcePtr src)
 {
-    char *ret = NULL;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     size_t i;
 
@@ -1582,14 +1578,14 @@ xenFormatXLDiskSrcNet(virStorageSourcePtr src)
         virReportError(VIR_ERR_NO_SUPPORT,
                        _("Unsupported network block protocol '%s'"),
                        virStorageNetProtocolTypeToString(src->protocol));
-        goto cleanup;
+        return NULL;
 
     case VIR_STORAGE_NET_PROTOCOL_RBD:
         if (strchr(src->path, ':')) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("':' not allowed in RBD source volume name '%s'"),
                            src->path);
-            goto cleanup;
+            return NULL;
         }
 
         virBufferStrcat(&buf, "rbd:", src->volume, "/", src->path, NULL);
@@ -1614,12 +1610,10 @@ xenFormatXLDiskSrcNet(virStorageSourcePtr src)
             }
         }
 
-        ret = virBufferContentAndReset(&buf);
-        break;
+        return virBufferContentAndReset(&buf);
     }
 
- cleanup:
-    return ret;
+    return NULL;
 }
 
 
@@ -2111,14 +2105,14 @@ xenFormatXLChannel(virConfValuePtr list, virDomainChrDefPtr channel)
                                   channel->source->data.nix.path);
             break;
         default:
-            goto cleanup;
+            return -1;
     }
 
     /* name */
     virBufferAsprintf(&buf, "name=%s", channel->target.name);
 
     if (VIR_ALLOC(val) < 0)
-        goto cleanup;
+        return -1;
 
     val->type = VIR_CONF_STRING;
     val->str = virBufferContentAndReset(&buf);
@@ -2130,9 +2124,6 @@ xenFormatXLChannel(virConfValuePtr list, virDomainChrDefPtr channel)
     else
         list->list = val;
     return 0;
-
- cleanup:
-    return -1;
 }
 
 static int
