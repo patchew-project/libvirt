@@ -649,6 +649,27 @@ static int testFilterChars(const void *args)
     return ret;
 }
 
+struct testIsNulData {
+    const char *buf;
+    size_t len;
+    bool nul;
+};
+
+static int
+testIsNul(const void *args)
+{
+    const struct testIsNulData *data = args;
+    int rc;
+
+    rc = virStringIsNull(data->buf, data->len);
+    if (rc != data->nul) {
+        fprintf(stderr, "Returned %d, expected %d\n", rc, data->nul);
+        return -1;
+    }
+
+    return 0;
+}
+
 static int
 mymain(void)
 {
@@ -976,6 +997,32 @@ mymain(void)
 
     TEST_FILTER_CHARS(NULL, NULL, NULL);
     TEST_FILTER_CHARS("hello 123 hello", "helo", "hellohello");
+
+#define TEST_IS_NUL(expect, ...) \
+    do { \
+        const char buf[] = {__VA_ARGS__ }; \
+        struct testIsNulData isNulData = { \
+            .buf = buf, \
+            .len = G_N_ELEMENTS(buf), \
+            .nul = expect \
+        }; \
+        if (virTestRun("isNul check", \
+                       testIsNul, &isNulData) < 0) \
+            ret = -1; \
+    } while (0)
+
+    TEST_IS_NUL(true);
+    TEST_IS_NUL(true,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+    TEST_IS_NUL(false, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01);
+    TEST_IS_NUL(false,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01);
+    TEST_IS_NUL(false,
+                0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+                0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+                0x00);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
