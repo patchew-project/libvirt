@@ -350,6 +350,10 @@ int virFileInData(int fd,
                   int *inData,
                   long long *length);
 
+int virFileInDataDetectZeroes(int fd,
+                              int *inData,
+                              long long *length);
+
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virFileWrapperFd, virFileWrapperFdFree);
 
 int virFileGetXAttr(const char *path,
