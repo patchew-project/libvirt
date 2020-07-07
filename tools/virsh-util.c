@@ -230,12 +230,20 @@ virshStreamInData(virStreamPtr st G_GNUC_UNUSED,
     virshStreamCallbackDataPtr cbData = opaque;
     vshControl *ctl = cbData->ctl;
     int fd = cbData->fd;
-    int ret;
 
-    if ((ret = virFileInData(fd, inData, offset)) < 0)
-        vshError(ctl, "%s", _("Unable to get current position in stream"));
+    if (cbData->isBlock) {
+        if (virFileInDataDetectZeroes(fd, inData, offset) < 0) {
+            vshError(ctl, "%s", _("Unable to get current position in stream"));
+            return -1;
+        }
+    } else {
+        if (virFileInData(fd, inData, offset) < 0) {
+            vshError(ctl, "%s", _("Unable to get current position in stream"));
+            return -1;
+        }
+    }
 
-    return ret;
+    return 0;
 }
 
 
