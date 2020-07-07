@@ -352,7 +352,8 @@ int virFileInData(int fd,
 
 int virFileInDataDetectZeroes(int fd,
                               int *inData,
-                              long long *length);
+                              long long *length,
+                              char **buf);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virFileWrapperFd, virFileWrapperFdFree);
 

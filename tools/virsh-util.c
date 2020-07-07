@@ -160,8 +160,25 @@ virshStreamSource(virStreamPtr st G_GNUC_UNUSED,
 {
     virshStreamCallbackDataPtr cbData = opaque;
     int fd = cbData->fd;
+    int r;
 
-    return saferead(fd, bytes, nbytes);
+    if (cbData->isBlock) {
+        size_t bufavail = cbData->buflen - cbData->bufoff;
+
+        r = MIN(nbytes, bufavail);
+        memcpy(bytes, cbData->buf + cbData->bufoff, r);
+        cbData->bufoff += r;
+
+        if (cbData->bufoff == cbData->buflen) {
+            VIR_FREE(cbData->buf);
+            cbData->buflen = 0;
+            cbData->bufoff = 0;
+        }
+    } else {
+        r = saferead(fd, bytes, nbytes);
+    }
+
+    return r;
 }
 
 
@@ -172,9 +189,11 @@ virshStreamSourceSkip(virStreamPtr st G_GNUC_UNUSED,
 {
     virshStreamCallbackDataPtr cbData = opaque;
     int fd = cbData->fd;
-    off_t cur;
 
-    if ((cur = lseek(fd, offset, SEEK_CUR)) == (off_t) -1)
+    /* Don't seek if the @fd is a block device. It was left at
+     * the desired position by virshStreamInData(). */
+    if (!cbData->isBlock &&
+        (lseek(fd, offset, SEEK_CUR)) == (off_t) -1)
         return -1;
 
     return 0;
@@ -232,10 +251,23 @@ virshStreamInData(virStreamPtr st G_GNUC_UNUSED,
     int fd = cbData->fd;
 
     if (cbData->isBlock) {
-        if (virFileInDataDetectZeroes(fd, inData, offset) < 0) {
+        g_autofree char *buf = NULL;
+
+        if (virFileInDataDetectZeroes(fd, inData, offset, &buf) < 0) {
             vshError(ctl, "%s", _("Unable to get current position in stream"));
             return -1;
         }
+
+        if (*inData) {
+            cbData->buf = g_steal_pointer(&buf);
+            cbData->buflen = *offset;
+            cbData->bufoff = 0;
+        }
+
+        /* Intentionally leaving @fd in a different position than on entering
+         * because either we've found a hole and virshStreamSourceSkip() would
+         * want to seek forward, or we've read some data and would need to
+         * imitate seek in virshStreamSource(). Skip seeking back and forth. */
     } else {
         if (virFileInData(fd, inData, offset) < 0) {
             vshError(ctl, "%s", _("Unable to get current position in stream"));

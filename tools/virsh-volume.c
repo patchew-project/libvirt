@@ -675,7 +675,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
     unsigned long long offset = 0, length = 0;
     virshControlPtr priv = ctl->privData;
     unsigned int flags = 0;
-    virshStreamCallbackData cbData;
+    virshStreamCallbackData cbData = { 0 };
     struct stat sb;
 
     if (vshCommandOptULongLong(ctl, cmd, "offset", &offset) < 0)
@@ -749,6 +749,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
         virStorageVolFree(vol);
     if (st)
         virStreamFree(st);
+    VIR_FREE(cbData.buf);
     VIR_FORCE_CLOSE(fd);
     return ret;
 }

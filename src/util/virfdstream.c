@@ -440,7 +440,7 @@ virFDStreamThreadDoRead(virFDStreamDataPtr fdst,
 
     if (sparse && *dataLen == 0) {
         if (isBlock) {
-            if (virFileInDataDetectZeroes(fdin, &inData, &sectionLen) < 0)
+            if (virFileInDataDetectZeroes(fdin, &inData, &sectionLen, &buf) < 0)
                 return -1;
         } else {
             if (virFileInData(fdin, &inData, &sectionLen) < 0)
@@ -468,7 +468,7 @@ virFDStreamThreadDoRead(virFDStreamDataPtr fdst,
 
         /* HACK: The message queue is one directional. So caller
          * cannot make us skip the hole. Do that for them instead. */
-        if (sectionLen &&
+        if (sectionLen && !isBlock &&
             lseek(fdin, sectionLen, SEEK_CUR) == (off_t) -1) {
             virReportSystemError(errno,
                                  _("unable to seek in %s"),
@@ -476,17 +476,22 @@ virFDStreamThreadDoRead(virFDStreamDataPtr fdst,
             return -1;
         }
     } else {
-        if (sparse &&
-            buflen > *dataLen)
-            buflen = *dataLen;
+        if (sparse && isBlock) {
+            /* Data already read by virFileInDataDetectZeroes() */
+            got = sectionLen;
+        } else {
+            if (sparse &&
+                buflen > *dataLen)
+                buflen = *dataLen;
 
-        buf = g_new0(char, buflen);
+            buf = g_new0(char, buflen);
 
-        if ((got = saferead(fdin, buf, buflen)) < 0) {
-            virReportSystemError(errno,
-                                 _("Unable to read %s"),
-                                 fdinname);
-            return -1;
+            if ((got = saferead(fdin, buf, buflen)) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to read %s"),
+                                     fdinname);
+                return -1;
+            }
         }
 
         msg->type = VIR_FDSTREAM_MSG_TYPE_DATA;

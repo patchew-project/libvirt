@@ -4044,12 +4044,18 @@ virFileInData(int fd G_GNUC_UNUSED,
  * @fd: file to check
  * @inData: true if current position in the @fd is in data section
  * @length: amount of bytes until the end of the current section
+ * @buf: data read if in data section
  *
- * This behaves exactly like virFileInData() except it doesn't use SEEK_DATA
- * and SEEK_HOLE rather than a buffer into which it reads data from @fd and
- * detects if the buffer is full of zeroes. Therefore, it is safe to use on
- * special files (e.g. block devices). On the other hand it sees only
- * DETECT_ZEORES_BLOCK_SIZE ahead.
+ * For given @fd it reads up to DETECT_ZEORES_BLOCK_SIZE bytes from it.
+ * If all bytes read are zero then @inData is set to 0, otherwise @inData
+ * is set to 1 and @buf is set to the read data. In either case, the
+ * number of bytes read is stored in @length.
+ *
+ * If @fd is at EOF, then this function sets @inData = 0 and @length = 0.
+ *
+ * Note, in contrast to virFileInData(), this function is safe to use on
+ * special files (e.g. block devices), does not rewind @fd back to its
+ * starting position, and sees only DETECT_ZEORES_BLOCK_SIZE bytes ahead.
  *
  * Returns: 0 on success,
  *         -1 otherwise.
@@ -4057,50 +4063,27 @@ virFileInData(int fd G_GNUC_UNUSED,
 int
 virFileInDataDetectZeroes(int fd,
                           int *inData,
-                          long long *length)
+                          long long *length,
+                          char **buf)
 {
     const size_t buflen = DETECT_ZEORES_BLOCK_SIZE;
     g_autofree char *bytes = NULL;
-    off_t cur;
     ssize_t r;
-    int ret = -1;
-
-    /* Get current position */
-    cur = lseek(fd, 0, SEEK_CUR);
-    if (cur == (off_t) -1) {
-        virReportSystemError(errno, "%s",
-                             _("Unable to get current position in file"));
-        goto cleanup;
-    }
 
     bytes = g_new0(char, buflen);
 
     if ((r = saferead(fd, bytes, buflen)) < 0) {
         virReportSystemError(errno, "%s",
                              _("Unable to read from file"));
-        goto cleanup;
+        return -1;
     }
 
     *inData = !virStringIsNull(bytes, r);
     *length = r;
-    ret = 0;
+    if (*inData)
+        *buf = g_steal_pointer(&bytes);
 
- cleanup:
-    /* At any rate, reposition back to where we started. */
-    if (cur != (off_t) -1) {
-        int theerrno = errno;
-
-        if (lseek(fd, cur, SEEK_SET) == (off_t) -1) {
-            virReportSystemError(errno, "%s",
-                                 _("unable to restore position in file"));
-            ret = -1;
-            if (theerrno == 0)
-                theerrno = errno;
-        }
-
-        errno = theerrno;
-    }
-    return ret;
+    return 0;
 }
 
 

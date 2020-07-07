@@ -73,6 +73,9 @@ struct _virshStreamCallbackData {
     vshControl *ctl;
     int fd;
     bool isBlock;
+    char *buf;
+    size_t buflen;
+    long long bufoff;
 };
 
 int
