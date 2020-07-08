@@ -3645,8 +3645,12 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
     virQEMUCapsFlags flag;
 
     /* TPM 1.2 and 2 are not compatible, so we choose a specific version here */
-    if (tpm->version == VIR_DOMAIN_TPM_VERSION_DEFAULT)
-        tpm->version = VIR_DOMAIN_TPM_VERSION_1_2;
+    if (tpm->version == VIR_DOMAIN_TPM_VERSION_DEFAULT) {
+        if (tpm->model == VIR_DOMAIN_TPM_MODEL_SPAPR)
+            tpm->version = VIR_DOMAIN_TPM_VERSION_2_0;
+        else
+            tpm->version = VIR_DOMAIN_TPM_VERSION_1_2;
+    }
 
     switch (tpm->version) {
     case VIR_DOMAIN_TPM_VERSION_1_2:
@@ -3656,6 +3660,12 @@ qemuValidateDomainDeviceDefTPM(virDomainTPMDef *tpm,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported interface %s for TPM 1.2"),
                            virDomainTPMModelTypeToString(tpm->model));
+            return -1;
+        }
+        /* TPM 1.2 + SPAPR do not work with any 'type' (backend) */
+        if (tpm->model == VIR_DOMAIN_TPM_MODEL_SPAPR) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("TPM 1.2 is not supported with the SPAPR device model"));
             return -1;
         }
         break;
