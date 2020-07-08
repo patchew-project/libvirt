@@ -13633,12 +13633,21 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     version = virXMLPropString(backends[0], "version");
     if (!version) {
-        def->version = VIR_DOMAIN_TPM_VERSION_DEFAULT;
+        if (def->model == VIR_DOMAIN_TPM_MODEL_SPAPR)
+            def->version = VIR_DOMAIN_TPM_VERSION_2_0;
+        else
+            def->version = VIR_DOMAIN_TPM_VERSION_DEFAULT;
     } else {
         if ((def->version = virDomainTPMVersionTypeFromString(version)) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported TPM version '%s'"),
                            version);
+            goto error;
+        }
+        if (def->version == VIR_DOMAIN_TPM_VERSION_1_2 &&
+            def->model == VIR_DOMAIN_TPM_MODEL_SPAPR) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("TPM 1.2 is not supported with the SPAPR device model"));
             goto error;
         }
     }
