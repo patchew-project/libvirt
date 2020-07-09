@@ -119,7 +119,7 @@ libvirt_progress(xentoollog_logger *logger_in G_GNUC_UNUSED,
                  unsigned long done G_GNUC_UNUSED,
                  unsigned long total G_GNUC_UNUSED)
 {
-    /* This function purposedly does nothing: it's no logging info */
+    /* This function purposely does nothing: it's no logging info */
 }
 
 static void
