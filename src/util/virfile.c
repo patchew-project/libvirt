@@ -465,23 +465,33 @@ int virFileUnlock(int fd, off_t start, off_t len)
 /**
  * virFileFlock:
  * @fd: file descriptor to call flock on
- * @lock: true for lock, false for unlock
- * @shared: true if shared, false for exclusive, ignored if `@lock == false`
+ * @op: operation to perform
  *
  * This is just a simple wrapper around flock(2) that errors out on unsupported
  * platforms.
  *
  * The lock will be released when @fd is closed or this function is called with
- * `@lock == false`.
+ * `@op == VIR_FILE_FLOCK_UNLOCK`.
  *
  * Returns 0 on success, -1 otherwise (with errno set)
  */
-int virFileFlock(int fd, bool lock, bool shared)
+int virFileFlock(int fd, virFileFlockOperation op)
 {
-    if (lock)
-        return flock(fd, shared ? LOCK_SH : LOCK_EX);
+    int flock_op = -1;
 
-    return flock(fd, LOCK_UN);
+    switch (op) {
+    case VIR_FILE_FLOCK_SHARED:
+        flock_op = LOCK_SH;
+        break;
+    case VIR_FILE_FLOCK_EXCLUSIVE:
+        flock_op = LOCK_EX;
+        break;
+    case VIR_FILE_FLOCK_UNLOCK:
+        flock_op = LOCK_UN;
+        break;
+    }
+
+    return flock(fd, flock_op);
 }
 
 #else /* WIN32 */
@@ -505,8 +515,7 @@ int virFileUnlock(int fd G_GNUC_UNUSED,
 
 
 int virFileFlock(int fd G_GNUC_UNUSED,
-                 bool lock G_GNUC_UNUSED,
-                 bool shared G_GNUC_UNUSED)
+                 virFileFlockOperation op G_GNUC_UNUSED)
 {
     errno = ENOSYS;
     return -1;

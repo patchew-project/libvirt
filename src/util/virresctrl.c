@@ -463,7 +463,7 @@ virResctrlLockWrite(void)
         return -1;
     }
 
-    if (virFileFlock(fd, true, true) < 0) {
+    if (virFileFlock(fd, VIR_FILE_FLOCK_EXCLUSIVE) < 0) {
         virReportSystemError(errno, "%s", _("Cannot lock resctrl"));
         VIR_FORCE_CLOSE(fd);
         return -1;
@@ -485,7 +485,7 @@ virResctrlUnlock(int fd)
         virReportSystemError(errno, "%s", _("Cannot close resctrl"));
 
         /* Trying to save the already broken */
-        if (virFileFlock(fd, false, false) < 0)
+        if (virFileFlock(fd, VIR_FILE_FLOCK_UNLOCK) < 0)
             virReportSystemError(errno, "%s", _("Cannot unlock resctrl"));
 
         return -1;
