@@ -107,16 +107,21 @@ struct _qemuDomainMirrorStats {
     unsigned long long total;
 };
 
-typedef struct _qemuDomainBackupStats qemuDomainBackupStats;
-struct _qemuDomainBackupStats {
-    unsigned long long transferred;
-    unsigned long long total;
-    unsigned long long tmp_used;
-    unsigned long long tmp_total;
-};
-
 typedef struct _qemuDomainJobInfo qemuDomainJobInfo;
 typedef qemuDomainJobInfo *qemuDomainJobInfoPtr;
+
+typedef void *(*qemuDomainObjJobInfoPrivateAlloc)(void);
+typedef void (*qemuDomainObjJobInfoPrivateFree)(void *);
+typedef void (*qemuDomainObjJobInfoPrivateCopy)(qemuDomainJobInfoPtr,
+                                                qemuDomainJobInfoPtr);
+
+typedef struct _qemuDomainObjPrivateJobInfoCallbacks qemuDomainObjPrivateJobInfoCallbacks;
+struct _qemuDomainObjPrivateJobInfoCallbacks {
+   qemuDomainObjJobInfoPrivateAlloc allocJobInfoPrivate;
+   qemuDomainObjJobInfoPrivateFree freeJobInfoPrivate;
+   qemuDomainObjJobInfoPrivateCopy copyJobInfoPrivate;
+};
+
 struct _qemuDomainJobInfo {
     qemuDomainJobStatus status;
     virDomainJobOperation operation;
@@ -136,14 +141,11 @@ struct _qemuDomainJobInfo {
     bool timeDeltaSet;
     /* Raw values from QEMU */
     qemuDomainJobStatsType statsType;
-    union {
-        qemuMonitorMigrationStats mig;
-        qemuMonitorDumpStats dump;
-        qemuDomainBackupStats backup;
-    } stats;
     qemuDomainMirrorStats mirrorStats;
-
     char *errmsg; /* optional error message for failed completed jobs */
+
+    void *privateData;  /* job specific collection of info */
+    qemuDomainObjPrivateJobInfoCallbacks cb;
 };
 
 void

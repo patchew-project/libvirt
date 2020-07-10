@@ -1641,6 +1641,7 @@ qemuProcessHandleMigrationStatus(qemuMonitorPtr mon G_GNUC_UNUSED,
     virQEMUDriverPtr driver = opaque;
     virObjectEventPtr event = NULL;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainJobInfoPrivatePtr jobInfoPriv;
     int reason;
 
     virObjectLock(vm);
@@ -1650,12 +1651,14 @@ qemuProcessHandleMigrationStatus(qemuMonitorPtr mon G_GNUC_UNUSED,
               qemuMonitorMigrationStatusTypeToString(status));
 
     priv = vm->privateData;
+    jobInfoPriv = priv->job.current->privateData;
+
     if (priv->job.asyncJob == QEMU_ASYNC_JOB_NONE) {
         VIR_DEBUG("got MIGRATION event without a migration job");
         goto cleanup;
     }
 
-    priv->job.current->stats.mig.status = status;
+    jobInfoPriv->stats.mig.status = status;
     virDomainObjBroadcast(vm);
 
     if (status == QEMU_MONITOR_MIGRATION_STATUS_POSTCOPY &&
@@ -1723,6 +1726,7 @@ qemuProcessHandleDumpCompleted(qemuMonitorPtr mon G_GNUC_UNUSED,
 {
     qemuDomainObjPrivatePtr priv;
     qemuDomainJobPrivatePtr jobPriv;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv;
 
     virObjectLock(vm);
 
@@ -1731,18 +1735,19 @@ qemuProcessHandleDumpCompleted(qemuMonitorPtr mon G_GNUC_UNUSED,
 
     priv = vm->privateData;
     jobPriv = priv->job.privateData;
+    jobInfoPriv = priv->job.current->privateData;
     if (priv->job.asyncJob == QEMU_ASYNC_JOB_NONE) {
         VIR_DEBUG("got DUMP_COMPLETED event without a dump_completed job");
         goto cleanup;
     }
     jobPriv->dumpCompleted = true;
-    priv->job.current->stats.dump = *stats;
+    jobInfoPriv->stats.dump = *stats;
     priv->job.error = g_strdup(error);
 
     /* Force error if extracting the DUMP_COMPLETED status failed */
     if (!error && status < 0) {
         priv->job.error = g_strdup(virGetLastErrorMessage());
-        priv->job.current->stats.dump.status = QEMU_MONITOR_DUMP_STATUS_FAILED;
+        jobInfoPriv->stats.dump.status = QEMU_MONITOR_DUMP_STATUS_FAILED;
     }
 
     virDomainObjBroadcast(vm);

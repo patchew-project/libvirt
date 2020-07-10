@@ -1439,7 +1439,8 @@ qemuMigrationSrcWaitForSpice(virDomainObjPtr vm)
 static void
 qemuMigrationUpdateJobType(qemuDomainJobInfoPtr jobInfo)
 {
-    switch ((qemuMonitorMigrationStatus) jobInfo->stats.mig.status) {
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
+    switch ((qemuMonitorMigrationStatus) jobInfoPriv->stats.mig.status) {
     case QEMU_MONITOR_MIGRATION_STATUS_POSTCOPY:
         jobInfo->status = QEMU_DOMAIN_JOB_STATUS_POSTCOPY;
         break;
@@ -1486,6 +1487,7 @@ qemuMigrationAnyFetchStats(virQEMUDriverPtr driver,
                            char **error)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
     qemuMonitorMigrationStats stats;
     int rv;
 
@@ -1497,7 +1499,7 @@ qemuMigrationAnyFetchStats(virQEMUDriverPtr driver,
     if (qemuDomainObjExitMonitor(driver, vm) < 0 || rv < 0)
         return -1;
 
-    jobInfo->stats.mig = stats;
+    jobInfoPriv->stats.mig = stats;
 
     return 0;
 }
@@ -1539,12 +1541,13 @@ qemuMigrationJobCheckStatus(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuDomainJobInfoPtr jobInfo = priv->job.current;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
     char *error = NULL;
     bool events = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_MIGRATION_EVENT);
     int ret = -1;
 
     if (!events ||
-        jobInfo->stats.mig.status == QEMU_MONITOR_MIGRATION_STATUS_ERROR) {
+        jobInfoPriv->stats.mig.status == QEMU_MONITOR_MIGRATION_STATUS_ERROR) {
         if (qemuMigrationAnyFetchStats(driver, vm, asyncJob, jobInfo, &error) < 0)
             return -1;
     }
@@ -3033,6 +3036,7 @@ qemuMigrationSrcConfirmPhase(virQEMUDriverPtr driver,
     /* Update times with the values sent by the destination daemon */
     if (mig->jobInfo && jobInfo) {
         int reason;
+        qemuDomainJobInfoPrivatePtr jobInfoPriv = mig->jobInfo->privateData;
 
         /* We need to refresh migration statistics after a completed post-copy
          * migration since priv->job.completed contains obsolete data from the
@@ -3047,8 +3051,8 @@ qemuMigrationSrcConfirmPhase(virQEMUDriverPtr driver,
         qemuDomainJobInfoUpdateTime(jobInfo);
         jobInfo->timeDeltaSet = mig->jobInfo->timeDeltaSet;
         jobInfo->timeDelta = mig->jobInfo->timeDelta;
-        jobInfo->stats.mig.downtime_set = mig->jobInfo->stats.mig.downtime_set;
-        jobInfo->stats.mig.downtime = mig->jobInfo->stats.mig.downtime;
+        jobInfoPriv->stats.mig.downtime_set = jobInfoPriv->stats.mig.downtime_set;
+        jobInfoPriv->stats.mig.downtime = jobInfoPriv->stats.mig.downtime;
     }
 
     if (flags & VIR_MIGRATE_OFFLINE)

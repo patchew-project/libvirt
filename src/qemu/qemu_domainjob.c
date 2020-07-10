@@ -115,22 +115,68 @@ qemuDomainAsyncJobPhaseFromString(qemuDomainAsyncJob job,
         return -1;
 }
 
+static void
+qemuJobInfoFreePrivateData(qemuDomainJobInfoPrivatePtr priv)
+{
+    g_free(&priv->stats);
+}
+
+static void
+qemuJobInfoFreePrivate(void *opaque)
+{
+    qemuDomainJobInfoPtr jobInfo = (qemuDomainJobInfoPtr) opaque;
+    qemuJobInfoFreePrivateData(jobInfo->privateData);
+}
 
 void
 qemuDomainJobInfoFree(qemuDomainJobInfoPtr info)
 {
+    info->cb.freeJobInfoPrivate(info);
     g_free(info->errmsg);
     g_free(info);
 }
 
+static void *
+qemuDomainJobInfoPrivateAlloc(void)
+{
+    qemuDomainJobInfoPrivatePtr retPriv = g_new0(qemuDomainJobInfoPrivate, 1);
+    return (void *)retPriv;
+}
+
+static void
+qemuDomainJobInfoPrivateCopy(qemuDomainJobInfoPtr src,
+                             qemuDomainJobInfoPtr dest)
+{
+    memcpy(dest->privateData, src->privateData,
+           sizeof(qemuDomainJobInfoPrivate));
+}
+
+static qemuDomainJobInfoPtr
+qemuDomainJobInfoAlloc(void)
+{
+    qemuDomainJobInfoPtr ret = g_new0(qemuDomainJobInfo, 1);
+    ret->cb.allocJobInfoPrivate = &qemuDomainJobInfoPrivateAlloc;
+    ret->cb.freeJobInfoPrivate = &qemuJobInfoFreePrivate;
+    ret->cb.copyJobInfoPrivate = &qemuDomainJobInfoPrivateCopy;
+    ret->privateData = ret->cb.allocJobInfoPrivate();
+    return ret;
+}
+
+static void
+qemuDomainCurrentJobInfoInit(qemuDomainJobObjPtr job)
+{
+    job->current = qemuDomainJobInfoAlloc();
+    job->current->status = QEMU_DOMAIN_JOB_STATUS_ACTIVE;
+}
 
 qemuDomainJobInfoPtr
 qemuDomainJobInfoCopy(qemuDomainJobInfoPtr info)
 {
-    qemuDomainJobInfoPtr ret = g_new0(qemuDomainJobInfo, 1);
+    qemuDomainJobInfoPtr ret = qemuDomainJobInfoAlloc();
 
     memcpy(ret, info, sizeof(*info));
 
+    ret->cb.copyJobInfoPrivate(info, ret);
     ret->errmsg = g_strdup(info->errmsg);
 
     return ret;
@@ -284,6 +330,7 @@ int
 qemuDomainJobInfoUpdateDowntime(qemuDomainJobInfoPtr jobInfo)
 {
     unsigned long long now;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
 
     if (!jobInfo->stopped)
         return 0;
@@ -297,8 +344,8 @@ qemuDomainJobInfoUpdateDowntime(qemuDomainJobInfoPtr jobInfo)
         return 0;
     }
 
-    jobInfo->stats.mig.downtime = now - jobInfo->stopped;
-    jobInfo->stats.mig.downtime_set = true;
+    jobInfoPriv->stats.mig.downtime = now - jobInfo->stopped;
+    jobInfoPriv->stats.mig.downtime_set = true;
     return 0;
 }
 
@@ -333,38 +380,39 @@ int
 qemuDomainJobInfoToInfo(qemuDomainJobInfoPtr jobInfo,
                         virDomainJobInfoPtr info)
 {
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
     info->type = qemuDomainJobStatusToType(jobInfo->status);
     info->timeElapsed = jobInfo->timeElapsed;
 
     switch (jobInfo->statsType) {
     case QEMU_DOMAIN_JOB_STATS_TYPE_MIGRATION:
-        info->memTotal = jobInfo->stats.mig.ram_total;
-        info->memRemaining = jobInfo->stats.mig.ram_remaining;
-        info->memProcessed = jobInfo->stats.mig.ram_transferred;
-        info->fileTotal = jobInfo->stats.mig.disk_total +
+        info->memTotal = jobInfoPriv->stats.mig.ram_total;
+        info->memRemaining = jobInfoPriv->stats.mig.ram_remaining;
+        info->memProcessed = jobInfoPriv->stats.mig.ram_transferred;
+        info->fileTotal = jobInfoPriv->stats.mig.disk_total +
                           jobInfo->mirrorStats.total;
-        info->fileRemaining = jobInfo->stats.mig.disk_remaining +
+        info->fileRemaining = jobInfoPriv->stats.mig.disk_remaining +
                               (jobInfo->mirrorStats.total -
                                jobInfo->mirrorStats.transferred);
-        info->fileProcessed = jobInfo->stats.mig.disk_transferred +
+        info->fileProcessed = jobInfoPriv->stats.mig.disk_transferred +
                               jobInfo->mirrorStats.transferred;
         break;
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_SAVEDUMP:
-        info->memTotal = jobInfo->stats.mig.ram_total;
-        info->memRemaining = jobInfo->stats.mig.ram_remaining;
-        info->memProcessed = jobInfo->stats.mig.ram_transferred;
+        info->memTotal = jobInfoPriv->stats.mig.ram_total;
+        info->memRemaining = jobInfoPriv->stats.mig.ram_remaining;
+        info->memProcessed = jobInfoPriv->stats.mig.ram_transferred;
         break;
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_MEMDUMP:
-        info->memTotal = jobInfo->stats.dump.total;
-        info->memProcessed = jobInfo->stats.dump.completed;
+        info->memTotal = jobInfoPriv->stats.dump.total;
+        info->memProcessed = jobInfoPriv->stats.dump.completed;
         info->memRemaining = info->memTotal - info->memProcessed;
         break;
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_BACKUP:
-        info->fileTotal = jobInfo->stats.backup.total;
-        info->fileProcessed = jobInfo->stats.backup.transferred;
+        info->fileTotal = jobInfoPriv->stats.backup.total;
+        info->fileProcessed = jobInfoPriv->stats.backup.transferred;
         info->fileRemaining = info->fileTotal - info->fileProcessed;
         break;
 
@@ -386,7 +434,8 @@ qemuDomainMigrationJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
                                    virTypedParameterPtr *params,
                                    int *nparams)
 {
-    qemuMonitorMigrationStats *stats = &jobInfo->stats.mig;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
+    qemuMonitorMigrationStats *stats = &jobInfoPriv->stats.mig;
     qemuDomainMirrorStatsPtr mirrorStats = &jobInfo->mirrorStats;
     virTypedParameterPtr par = NULL;
     int maxpar = 0;
@@ -563,7 +612,8 @@ qemuDomainDumpJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
                               virTypedParameterPtr *params,
                               int *nparams)
 {
-    qemuMonitorDumpStats *stats = &jobInfo->stats.dump;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
+    qemuMonitorDumpStats *stats = &jobInfoPriv->stats.dump;
     virTypedParameterPtr par = NULL;
     int maxpar = 0;
     int npar = 0;
@@ -606,7 +656,8 @@ qemuDomainBackupJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
                                 virTypedParameterPtr *params,
                                 int *nparams)
 {
-    qemuDomainBackupStats *stats = &jobInfo->stats.backup;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
+    qemuDomainBackupStats *stats = &jobInfoPriv->stats.backup;
     g_autoptr(virTypedParamList) par = g_new0(virTypedParamList, 1);
 
     if (virTypedParamListAddInt(par, jobInfo->operation,
@@ -889,8 +940,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
                       qemuDomainAsyncJobTypeToString(asyncJob),
                       obj, obj->def->name);
             qemuDomainObjResetAsyncJob(&priv->job);
-            priv->job.current = g_new0(qemuDomainJobInfo, 1);
-            priv->job.current->status = QEMU_DOMAIN_JOB_STATUS_ACTIVE;
+            qemuDomainCurrentJobInfoInit(&priv->job);
             priv->job.asyncJob = asyncJob;
             priv->job.asyncOwner = virThreadSelfID();
             priv->job.asyncOwnerAPI = virThreadJobGet();

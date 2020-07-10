@@ -641,7 +641,8 @@ static void
 qemuMigrationCookieStatisticsXMLFormat(virBufferPtr buf,
                                        qemuDomainJobInfoPtr jobInfo)
 {
-    qemuMonitorMigrationStats *stats = &jobInfo->stats.mig;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv = jobInfo->privateData;
+    qemuMonitorMigrationStats *stats = &jobInfoPriv->stats.mig;
 
     virBufferAddLit(buf, "<statistics>\n");
     virBufferAdjustIndent(buf, 2);
@@ -1043,14 +1044,16 @@ qemuMigrationCookieStatisticsXMLParse(xmlXPathContextPtr ctxt)
 {
     qemuDomainJobInfoPtr jobInfo = NULL;
     qemuMonitorMigrationStats *stats;
+    qemuDomainJobInfoPrivatePtr jobInfoPriv;
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
 
     if (!(ctxt->node = virXPathNode("./statistics", ctxt)))
         return NULL;
 
     jobInfo = g_new0(qemuDomainJobInfo, 1);
+    jobInfoPriv = jobInfo->privateData;
 
-    stats = &jobInfo->stats.mig;
+    stats = &jobInfoPriv->stats.mig;
     jobInfo->status = QEMU_DOMAIN_JOB_STATUS_COMPLETED;
 
     virXPathULongLong("string(./started[1])", ctxt, &jobInfo->started);
