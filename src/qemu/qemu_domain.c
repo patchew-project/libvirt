@@ -2303,7 +2303,7 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     if (priv->lockState)
         virBufferAsprintf(buf, "<lockstate>%s</lockstate>\n", priv->lockState);
 
-    if (qemuDomainObjPrivateXMLFormatJob(buf, vm) < 0)
+    if (priv->job.cb.formatJob(buf, vm) < 0)
         return -1;
 
     if (priv->fakeReboot)
@@ -2962,7 +2962,7 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     priv->lockState = virXPathString("string(./lockstate)", ctxt);
 
-    if (qemuDomainObjPrivateXMLParseJob(vm, ctxt) < 0)
+    if (priv->job.cb.parseJob(vm, ctxt) < 0)
         goto error;
 
     priv->fakeReboot = virXPathBoolean("boolean(./fakereboot)", ctxt) == 1;

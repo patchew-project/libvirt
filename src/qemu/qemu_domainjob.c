@@ -159,23 +159,32 @@ qemuDomainEventEmitJobCompleted(virQEMUDriverPtr driver,
     virObjectEventStateQueue(driver->domainEventState, event);
 }
 
-
-int
-qemuDomainObjInitJob(qemuDomainJobObjPtr job)
+static void *
+qemuJobAllocPrivate(void)
 {
-    memset(job, 0, sizeof(*job));
-
-    if (virCondInit(&job->cond) < 0)
-        return -1;
-
-    if (virCondInit(&job->asyncCond) < 0) {
-        virCondDestroy(&job->cond);
-        return -1;
-    }
-
-    return 0;
+    qemuDomainJobPrivatePtr priv;
+    if (VIR_ALLOC(priv) < 0)
+        return NULL;
+    return (void *)priv;
 }
 
+
+static void
+qemuJobFreePrivateData(qemuDomainJobPrivatePtr priv)
+{
+    priv->spiceMigration = false;
+    priv->spiceMigrated = false;
+    priv->dumpCompleted = false;
+    qemuMigrationParamsFree(priv->migParams);
+    priv->migParams = NULL;
+}
+
+static void
+qemuJobFreePrivate(void *opaque)
+{
+    qemuDomainJobObjPtr job = (qemuDomainJobObjPtr) opaque;
+    qemuJobFreePrivateData(job->privateData);
+}
 
 static void
 qemuDomainObjResetJob(qemuDomainJobObjPtr job)
@@ -207,13 +216,9 @@ qemuDomainObjResetAsyncJob(qemuDomainJobObjPtr job)
     job->phase = 0;
     job->mask = QEMU_JOB_DEFAULT_MASK;
     job->abortJob = false;
-    job->spiceMigration = false;
-    job->spiceMigrated = false;
-    job->dumpCompleted = false;
     VIR_FREE(job->error);
     g_clear_pointer(&job->current, qemuDomainJobInfoFree);
-    qemuMigrationParamsFree(job->migParams);
-    job->migParams = NULL;
+    job->cb.freeJobPrivate(job);
     job->apiFlags = 0;
 }
 
@@ -229,7 +234,7 @@ qemuDomainObjRestoreJob(virDomainObjPtr obj,
     job->asyncJob = priv->job.asyncJob;
     job->asyncOwner = priv->job.asyncOwner;
     job->phase = priv->job.phase;
-    job->migParams = g_steal_pointer(&priv->job.migParams);
+    job->privateData = g_steal_pointer(&priv->job.privateData);
     job->apiFlags = priv->job.apiFlags;
 
     qemuDomainObjResetJob(&priv->job);
@@ -1240,12 +1245,13 @@ qemuDomainObjPrivateXMLFormatNBDMigration(virBufferPtr buf,
 }
 
 
-int
+static int
 qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
                                  virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuDomainJobObjPtr jobObj = &priv->job;
+    qemuDomainJobPrivatePtr jobPriv = jobObj->privateData;
     g_auto(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
     g_auto(virBuffer) childBuf = VIR_BUFFER_INIT_CHILD(buf);
     qemuDomainJob job = jobObj->active;
@@ -1274,8 +1280,8 @@ qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
         qemuDomainObjPrivateXMLFormatNBDMigration(&childBuf, vm) < 0)
         return -1;
 
-    if (jobObj->migParams)
-        qemuMigrationParamsFormat(&childBuf, jobObj->migParams);
+    if (jobPriv->migParams)
+        qemuMigrationParamsFormat(&childBuf, jobPriv->migParams);
 
     virXMLFormatElement(buf, "job", &attrBuf, &childBuf);
 
@@ -1369,12 +1375,13 @@ qemuDomainObjPrivateXMLParseJobNBD(virDomainObjPtr vm,
     return 0;
 }
 
-int
+static int
 qemuDomainObjPrivateXMLParseJob(virDomainObjPtr vm,
                                 xmlXPathContextPtr ctxt)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuDomainJobObjPtr job = &priv->job;
+    qemuDomainJobPrivatePtr jobPriv = job->privateData;
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     g_autofree char *tmp = NULL;
 
@@ -1423,8 +1430,29 @@ qemuDomainObjPrivateXMLParseJob(virDomainObjPtr vm,
     if (qemuDomainObjPrivateXMLParseJobNBD(vm, ctxt) < 0)
         return -1;
 
-    if (qemuMigrationParamsParse(ctxt, &job->migParams) < 0)
+    if (qemuMigrationParamsParse(ctxt, &jobPriv->migParams) < 0)
         return -1;
+
+    return 0;
+}
+
+int
+qemuDomainObjInitJob(qemuDomainJobObjPtr job)
+{
+    memset(job, 0, sizeof(*job));
+    job->cb.allocJobPrivate = &qemuJobAllocPrivate;
+    job->cb.freeJobPrivate = &qemuJobFreePrivate;
+    job->cb.formatJob = &qemuDomainObjPrivateXMLFormatJob;
+    job->cb.parseJob = &qemuDomainObjPrivateXMLParseJob;
+    job->privateData = job->cb.allocJobPrivate();
+
+    if (virCondInit(&job->cond) < 0)
+        return -1;
+
+    if (virCondInit(&job->asyncCond) < 0) {
+        virCondDestroy(&job->cond);
+        return -1;
+    }
 
     return 0;
 }

@@ -154,6 +154,21 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuDomainJobInfo, qemuDomainJobInfoFree);
 qemuDomainJobInfoPtr
 qemuDomainJobInfoCopy(qemuDomainJobInfoPtr info);
 
+typedef void *(*qemuDomainObjPrivateJobAlloc)(void);
+typedef void (*qemuDomainObjPrivateJobFree)(void *);
+typedef int (*qemuDomainObjPrivateJobFormat)(virBufferPtr,
+                                             virDomainObjPtr);
+typedef int (*qemuDomainObjPrivateJobParse)(virDomainObjPtr,
+                                            xmlXPathContextPtr);
+
+typedef struct _qemuDomainObjPrivateJobCallbacks qemuDomainObjPrivateJobCallbacks;
+struct _qemuDomainObjPrivateJobCallbacks {
+   qemuDomainObjPrivateJobAlloc allocJobPrivate;
+   qemuDomainObjPrivateJobFree freeJobPrivate;
+   qemuDomainObjPrivateJobFormat formatJob;
+   qemuDomainObjPrivateJobParse parseJob;
+};
+
 typedef struct _qemuDomainJobObj qemuDomainJobObj;
 typedef qemuDomainJobObj *qemuDomainJobObjPtr;
 struct _qemuDomainJobObj {
@@ -182,14 +197,11 @@ struct _qemuDomainJobObj {
     qemuDomainJobInfoPtr current;       /* async job progress data */
     qemuDomainJobInfoPtr completed;     /* statistics data of a recently completed job */
     bool abortJob;                      /* abort of the job requested */
-    bool spiceMigration;                /* we asked for spice migration and we
-                                         * should wait for it to finish */
-    bool spiceMigrated;                 /* spice migration completed */
     char *error;                        /* job event completion error */
-    bool dumpCompleted;                 /* dump completed */
-
-    qemuMigrationParamsPtr migParams;
     unsigned long apiFlags; /* flags passed to the API which started the async job */
+
+    void *privateData;                  /* job specific collection of data */
+    qemuDomainObjPrivateJobCallbacks cb;
 };
 
 const char *qemuDomainAsyncJobPhaseToString(qemuDomainAsyncJob job,
@@ -267,11 +279,3 @@ void qemuDomainObjFreeJob(qemuDomainJobObjPtr job);
 int qemuDomainObjInitJob(qemuDomainJobObjPtr job);
 
 bool qemuDomainJobAllowed(qemuDomainJobObjPtr jobs, qemuDomainJob newJob);
-
-int
-qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
-                                 virDomainObjPtr vm);
-
-int
-qemuDomainObjPrivateXMLParseJob(virDomainObjPtr vm,
-                                xmlXPathContextPtr ctxt);
