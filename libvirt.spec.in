@@ -406,8 +406,12 @@ BuildRequires: wireshark-devel >= 2.4.0
 BuildRequires: libssh-devel >= 0.7.0
 %endif
 
+# On RHEL-7 rpcgen is still part of glibc-common package
 %if 0%{?fedora} || 0%{?rhel} > 7
 BuildRequires: rpcgen
+%endif
+
+%if 0%{?fedora} || 0%{?rhel}
 BuildRequires: libtirpc-devel
 %endif
 
