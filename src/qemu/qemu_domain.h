@@ -502,6 +502,24 @@ struct _qemuDomainJobPrivate {
     qemuMigrationParamsPtr migParams;
 };
 
+typedef struct _qemuDomainBackupStats qemuDomainBackupStats;
+struct _qemuDomainBackupStats {
+    unsigned long long transferred;
+    unsigned long long total;
+    unsigned long long tmp_used;
+    unsigned long long tmp_total;
+};
+
+typedef struct _qemuDomainJobInfoPrivate qemuDomainJobInfoPrivate;
+typedef qemuDomainJobInfoPrivate *qemuDomainJobInfoPrivatePtr;
+struct _qemuDomainJobInfoPrivate {
+    union {
+            qemuMonitorMigrationStats mig;
+            qemuMonitorDumpStats dump;
+            qemuDomainBackupStats backup;
+        } stats;
+};
+
 int qemuDomainObjStartWorker(virDomainObjPtr dom);
 void qemuDomainObjStopWorker(virDomainObjPtr dom);
 
