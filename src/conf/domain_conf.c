@@ -11904,6 +11904,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     virDomainChrSourceReconnectDef reconnect = {0};
     int rv, val;
     g_autofree char *macaddr = NULL;
+    g_autofree char *macaddr_check = NULL;
     g_autofree char *type = NULL;
     g_autofree char *network = NULL;
     g_autofree char *portgroup = NULL;
@@ -11984,6 +11985,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
             if (!macaddr && virXMLNodeNameEqual(cur, "mac")) {
                 macaddr = virXMLPropString(cur, "address");
+                macaddr_check = virXMLPropString(cur, "check");
             } else if (!network &&
                        def->type == VIR_DOMAIN_NET_TYPE_NETWORK &&
                        virXMLNodeNameEqual(cur, "source")) {
@@ -12171,6 +12173,17 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     } else {
         virDomainNetGenerateMAC(xmlopt, &def->mac);
         def->mac_generated = true;
+    }
+
+    if (macaddr_check) {
+        int tmpCheck;
+        if ((tmpCheck = virTristateBoolTypeFromString(macaddr_check)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid mac address check value: '%s'"),
+                           macaddr_check);
+            goto error;
+        }
+        def->mac_check = tmpCheck;
     }
 
     if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
@@ -26468,8 +26481,11 @@ virDomainNetDefFormat(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
 
     virBufferAdjustIndent(buf, 2);
-    virBufferAsprintf(buf, "<mac address='%s'/>\n",
+    virBufferAsprintf(buf, "<mac address='%s'",
                       virMacAddrFormat(&def->mac, macstr));
+    if (def->mac_check != VIR_TRISTATE_BOOL_ABSENT)
+        virBufferAsprintf(buf, " check='%s'", virTristateBoolTypeToString(def->mac_check));
+    virBufferAddLit(buf, "/>\n");
 
     if (publicActual) {
         /* when there is a virDomainActualNetDef, and we haven't been

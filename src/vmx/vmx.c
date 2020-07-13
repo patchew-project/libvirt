@@ -3829,7 +3829,14 @@ virVMXFormatEthernet(virDomainNetDefPtr def, int controller,
     prefix = (def->mac.addr[0] << 16) | (def->mac.addr[1] << 8) | def->mac.addr[2];
     suffix = (def->mac.addr[3] << 16) | (def->mac.addr[4] << 8) | def->mac.addr[5];
 
-    if (prefix == 0x000c29) {
+    if (def->mac_check == VIR_TRISTATE_BOOL_NO) {
+        virBufferAsprintf(buffer, "ethernet%d.addressType = \"static\"\n",
+                          controller);
+        virBufferAsprintf(buffer, "ethernet%d.address = \"%s\"\n",
+                          controller, mac_string);
+        virBufferAsprintf(buffer, "ethernet%d.checkMACAddress = \"false\"\n",
+                          controller);
+    } else if (prefix == 0x000c29) {
         virBufferAsprintf(buffer, "ethernet%d.addressType = \"generated\"\n",
                           controller);
         virBufferAsprintf(buffer, "ethernet%d.generatedAddress = \"%s\"\n",
