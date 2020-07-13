@@ -88,6 +88,13 @@ VIR_ENUM_IMPL(qemuDomainNamespace,
               "mount",
 );
 
+static qemuDomainObjPrivateJobCallbacks qemuPrivateJobCallbacks = {
+    .allocJobPrivate = &qemuJobAllocPrivate,
+    .freeJobPrivate = &qemuJobFreePrivate,
+    .formatJob = &qemuDomainFormatJobPrivate,
+    .parseJob = &qemuDomainParseJobPrivate,
+};
+
 /**
  * qemuDomainObjFromDomain:
  * @domain: Domain pointer that has to be looked up
@@ -1585,7 +1592,7 @@ qemuDomainObjPrivateAlloc(void *opaque)
     if (VIR_ALLOC(priv) < 0)
         return NULL;
 
-    if (qemuDomainObjInitJob(&priv->job) < 0) {
+    if (qemuDomainObjInitJob(&priv->job, &qemuPrivateJobCallbacks) < 0) {
         virReportSystemError(errno, "%s",
                              _("Unable to init qemu driver mutexes"));
         goto error;
