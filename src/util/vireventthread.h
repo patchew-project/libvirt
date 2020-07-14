@@ -27,5 +27,6 @@
 G_DECLARE_FINAL_TYPE(virEventThread, vir_event_thread, VIR, EVENT_THREAD, GObject);
 
 virEventThread *virEventThreadNew(const char *name);
+void virEventThreadClose(virEventThread *evt);
 
 GMainContext *virEventThreadGetContext(virEventThread *evt);

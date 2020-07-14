@@ -183,6 +183,15 @@ virEventThreadNew(const char *name)
 }
 
 
+void
+virEventThreadClose(virEventThread *evt)
+{
+    g_main_loop_quit(evt->loop);
+    g_thread_join(evt->thread);
+    evt->thread = NULL;
+}
+
+
 GMainContext *
 virEventThreadGetContext(virEventThread *evt)
 {

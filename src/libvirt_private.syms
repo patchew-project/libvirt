@@ -2023,6 +2023,7 @@ virEventGLibRunOnce;
 
 
 # util/vireventthread.h
+virEventThreadClose;
 virEventThreadGetContext;
 virEventThreadNew;
 
