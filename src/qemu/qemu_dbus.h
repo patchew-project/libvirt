@@ -21,7 +21,7 @@
 #include "qemu_conf.h"
 #include "qemu_domain.h"
 
-int qemuDBusPrepareHost(virQEMUDriverPtr driver);
+int qemuDBusPreparePath(virQEMUDriverConfigPtr cfg);
 
 char *qemuDBusGetAddress(virQEMUDriverPtr driver,
                          virDomainObjPtr vm);

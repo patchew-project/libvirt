@@ -50,6 +50,7 @@
 #include "qemu_security.h"
 #include "qemu_checkpoint.h"
 #include "qemu_backup.h"
+#include "qemu_dbus.h"
 
 #include "virerror.h"
 #include "virlog.h"
@@ -788,6 +789,9 @@ qemuStateInitialize(bool privileged,
          virPortAllocatorRangeNew(_("migration"),
                                   cfg->migrationPortMin,
                                   cfg->migrationPortMax)) == NULL)
+        goto error;
+
+    if (qemuDBusPreparePath(cfg) < 0)
         goto error;
 
     if (qemuSecurityInit(qemu_driver) < 0)
