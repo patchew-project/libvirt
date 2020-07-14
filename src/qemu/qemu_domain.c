@@ -1639,6 +1639,7 @@ qemuDomainObjStopWorker(virDomainObjPtr dom)
     qemuDomainObjPrivatePtr priv = dom->privateData;
 
     if (priv->eventThread) {
+        virEventThreadClose(priv->eventThread);
         g_object_unref(priv->eventThread);
         priv->eventThread = NULL;
     }
