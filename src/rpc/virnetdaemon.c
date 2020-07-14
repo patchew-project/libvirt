@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "libvirt_internal.h"
 #include "virnetdaemon.h"
 #include "virlog.h"
 #include "viralloc.h"
@@ -69,7 +70,10 @@ struct _virNetDaemon {
     virHashTablePtr servers;
     virJSONValuePtr srvObject;
 
+    int finishTimer;
     bool quit;
+    bool finished;
+    bool graceful;
 
     unsigned int autoShutdownTimeout;
     size_t autoShutdownInhibitions;
@@ -79,6 +83,11 @@ struct _virNetDaemon {
 
 
 static virClassPtr virNetDaemonClass;
+
+static int
+daemonServerClose(void *payload,
+                  const void *key G_GNUC_UNUSED,
+                  void *opaque G_GNUC_UNUSED);
 
 static void
 virNetDaemonDispose(void *obj)
@@ -796,11 +805,53 @@ daemonServerProcessClients(void *payload,
     return 0;
 }
 
+static int
+daemonServerShutdownWait(void *payload,
+                         const void *key G_GNUC_UNUSED,
+                         void *opaque G_GNUC_UNUSED)
+{
+    virNetServerPtr srv = payload;
+
+    virNetServerShutdownWait(srv);
+    return 0;
+}
+
+static void
+daemonShutdownWait(void *opaque)
+{
+    virNetDaemonPtr dmn = opaque;
+    bool graceful = false;
+
+    virHashForEach(dmn->servers, daemonServerShutdownWait, NULL);
+    if (virStateShutdownWait() < 0)
+        goto finish;
+
+    graceful = true;
+
+ finish:
+    virObjectLock(dmn);
+    dmn->graceful = graceful;
+    virEventUpdateTimeout(dmn->finishTimer, 0);
+    virObjectUnlock(dmn);
+}
+
+static void
+virNetDaemonFinishTimer(int timerid G_GNUC_UNUSED,
+                        void *opaque)
+{
+    virNetDaemonPtr dmn = opaque;
+
+    virObjectLock(dmn);
+    dmn->finished = true;
+    virObjectUnlock(dmn);
+}
+
 void
 virNetDaemonRun(virNetDaemonPtr dmn)
 {
     int timerid = -1;
     bool timerActive = false;
+    virThread shutdownThread;
 
     virObjectLock(dmn);
 
@@ -811,6 +862,9 @@ virNetDaemonRun(virNetDaemonPtr dmn)
     }
 
     dmn->quit = false;
+    dmn->finishTimer = -1;
+    dmn->finished = false;
+    dmn->graceful = false;
 
     if (dmn->autoShutdownTimeout &&
         (timerid = virEventAddTimeout(-1,
@@ -826,7 +880,7 @@ virNetDaemonRun(virNetDaemonPtr dmn)
     virSystemdNotifyStartup();
 
     VIR_DEBUG("dmn=%p quit=%d", dmn, dmn->quit);
-    while (!dmn->quit) {
+    while (!dmn->finished) {
         /* A shutdown timeout is specified, so check
          * if any drivers have active state, if not
          * shutdown after timeout seconds
@@ -857,6 +911,32 @@ virNetDaemonRun(virNetDaemonPtr dmn)
         virObjectLock(dmn);
 
         virHashForEach(dmn->servers, daemonServerProcessClients, NULL);
+
+        if (dmn->quit && dmn->finishTimer == -1) {
+            virHashForEach(dmn->servers, daemonServerClose, NULL);
+            if (virStateShutdown() < 0)
+                break;
+
+            if ((dmn->finishTimer = virEventAddTimeout(15 * 1000,
+                                                       virNetDaemonFinishTimer,
+                                                       dmn, NULL)) < 0) {
+                VIR_WARN("Failed to register finish timer.");
+                break;
+            }
+
+            if (virThreadCreateFull(&shutdownThread, true, daemonShutdownWait,
+                                   "daemon-shutdown", false, dmn) < 0) {
+                VIR_WARN("Failed to register join thread.");
+                break;
+            }
+        }
+    }
+
+    if (dmn->graceful) {
+        virThreadJoin(&shutdownThread);
+    } else {
+        VIR_WARN("Make forcefull daemon shutdown");
+        exit(EXIT_FAILURE);
     }
 
  cleanup:
