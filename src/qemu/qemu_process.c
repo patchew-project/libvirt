@@ -8450,21 +8450,24 @@ static int
 qemuProcessQMPInit(qemuProcessQMPPtr proc)
 {
     g_autofree char *template = NULL;
+    virErrorPtr orig_err;
 
     VIR_DEBUG("proc=%p, emulator=%s", proc, proc->binary);
 
-    template = g_strdup_printf("%s/qmp-XXXXXX", proc->libDir);
+    template = g_strdup_printf("%s/qmp-capabilities", proc->libDir);
 
-    if (!(proc->uniqDir = g_mkdtemp(template))) {
+    if (g_mkdir_with_parents(template, 0700) < 0) {
         virReportSystemError(errno,
                              _("Failed to create unique directory with "
                                "template '%s' for probing QEMU"),
                              template);
         return -1;
     }
-    /* if g_mkdtemp succeeds, proc->uniqDir is now the owner of
-     * the string. Set template to NULL to avoid freeing
-     * the memory in this case */
+    /*
+     * if g_mkdir_with_parents succeeds, assign the template to proc->uniqDir.
+     * Then set template to NULL to avoid freeing the memory in this case.
+     */
+    proc->uniqDir = template;
     template = NULL;
 
     if (qemuProcessQEMULabelUniqPath(proc) < 0)
@@ -8481,6 +8484,10 @@ qemuProcessQMPInit(qemuProcessQMPPtr proc)
      */
     proc->pidfile = g_strdup_printf("%s/%s", proc->uniqDir, "qmp.pid");
 
+    virErrorPreserveLast(&orig_err);
+    if (virPidFileForceCleanupPath(proc->pidfile) < 0)
+        VIR_WARN("Unable to kill qemu QMP process");
+    virErrorRestore(&orig_err);
     return 0;
 }
 
