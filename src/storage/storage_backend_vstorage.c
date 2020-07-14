@@ -44,8 +44,15 @@ virStorageBackendVzPoolStart(virStoragePoolObjPtr pool)
     g_autofree char *grp_name = NULL;
     g_autofree char *usr_name = NULL;
     g_autofree char *mode = NULL;
+    g_autofree char *mount_bin = NULL;
     g_autoptr(virCommand) cmd = NULL;
     int ret;
+
+    if (!(mount_bin = virFindFileInPath("vstorage-mount"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s", _("unable to find vstorage-mount"));
+        return -1;
+    }
 
     /* Check the permissions */
     if (def->target.perms.mode == (mode_t)-1)
@@ -65,7 +72,7 @@ virStorageBackendVzPoolStart(virStoragePoolObjPtr pool)
 
     mode = g_strdup_printf("%o", def->target.perms.mode);
 
-    cmd = virCommandNewArgList(VSTORAGE_MOUNT,
+    cmd = virCommandNewArgList(mount_bin,
                                "-c", def->source.name,
                                def->target.path,
                                "-m", mode,
