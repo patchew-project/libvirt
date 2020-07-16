@@ -278,3 +278,7 @@ if init_script == 'systemd'
     install_dir: prefix / 'lib' / 'systemd' / 'system',
   )
 endif
+
+if bash_completion_dep.found()
+  subdir('bash-completion')
+endif
