@@ -250,6 +250,12 @@ docs_html_in_gen += {
   'file': hvsupport_html_in,
 }
 
+news_html_in = docs_rst2html_gen.process(meson.source_root() / 'NEWS.rst')
+docs_html_in_gen += {
+  'name': 'news',
+  'file': news_html_in,
+}
+
 foreach data : docs_html_in_gen
   html_file = '@0@.html'.format(data['name'])
 
