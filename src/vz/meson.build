@@ -43,4 +43,13 @@ if conf.has('WITH_VZ')
     'name': 'virtvzd',
     'name_uc': 'Virtvzd',
   }
+
+  virt_daemon_units += {
+    'service': 'virtvzd',
+    'service_in': files('virtvzd.service.in'),
+    'name': 'Libvirt vz',
+    'sockprefix': 'virtvzd',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif

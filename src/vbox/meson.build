@@ -51,4 +51,13 @@ if conf.has('WITH_VBOX')
     'name': 'virtvboxd',
     'name_uc': 'Virtvboxd',
   }
+
+  virt_daemon_units += {
+    'service': 'virtvboxd',
+    'service_in': files('virtvboxd.service.in'),
+    'name': 'Libvirt vbox',
+    'sockprefix': 'virtvboxd',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif

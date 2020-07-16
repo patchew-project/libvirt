@@ -138,4 +138,13 @@ if conf.has('WITH_QEMU')
     'name': 'virtqemud',
     'name_uc': 'Virtqemud',
   }
+
+  virt_daemon_units += {
+    'service': 'virtqemud',
+    'service_in': files('virtqemud.service.in'),
+    'name': 'Libvirt qemu',
+    'sockprefix': 'virtqemud',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif

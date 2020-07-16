@@ -28,4 +28,13 @@ if conf.has('WITH_SECRETS')
     'name': 'virtsecretd',
     'name_uc': 'Virtsecretd',
   }
+
+  virt_daemon_units += {
+    'service': 'virtsecretd',
+    'service_in': files('virtsecretd.service.in'),
+    'name': 'Libvirt secret',
+    'sockprefix': 'virtsecretd',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif

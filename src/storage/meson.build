@@ -126,6 +126,15 @@ if conf.has('WITH_STORAGE')
     'name': 'virtstoraged',
     'name_uc': 'Virtstoraged',
   }
+
+  virt_daemon_units += {
+    'service': 'virtstoraged',
+    'service_in': files('virtstoraged.service.in'),
+    'name': 'Libvirt storage',
+    'sockprefix': 'virtstoraged',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif
 
 if conf.has('WITH_STORAGE_DISK')

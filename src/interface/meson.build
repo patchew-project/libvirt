@@ -39,4 +39,13 @@ if conf.has('WITH_INTERFACE')
     'name': 'virtinterfaced',
     'name_uc': 'Virtinterfaced',
   }
+
+  virt_daemon_units += {
+    'service': 'virtinterfaced',
+    'service_in': files('virtinterfaced.service.in'),
+    'name': 'Libvirt interface',
+    'sockprefix': 'virtinterfaced',
+    'sockets': [ 'main', 'ro', 'admin' ],
+    'conflicts': true,
+  }
 endif
