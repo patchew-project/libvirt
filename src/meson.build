@@ -145,6 +145,7 @@ subdir('locking')
 subdir('logging')
 subdir('security')
 
+subdir('bhyve')
 subdir('esx')
 subdir('hyperv')
 subdir('openvz')
