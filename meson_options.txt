@@ -5,3 +5,4 @@ option('system', type: 'boolean', value: false, description: 'Set install paths 
 option('runstatedir', type: 'string', value: '', description: 'State directory for temporary sockets, pid files, etc')
 option('test_suite', type: 'boolean', value: true, description: 'Whether to enable and build test suite by default')
 option('expensive_tests', type: 'feature', value: 'auto', description: 'set the default for enabling expensive tests (long timeouts), use VIR_TEST_EXPENSIVE to override')
+option('test_coverage', type: 'boolean', value: false, description: 'turn on code coverage instrumentation')
