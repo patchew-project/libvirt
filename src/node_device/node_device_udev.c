@@ -1213,6 +1213,8 @@ udevRemoveOneDeviceSysPath(const char *path)
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceDefPtr def;
     virObjectEventPtr event = NULL;
+    virNodeDevCapsDefPtr cap;
+    int event_type = VIR_NODE_DEVICE_EVENT_DELETED;
 
     if (!(obj = virNodeDeviceObjListFindBySysfsPath(driver->devs, path))) {
         VIR_DEBUG("Failed to find device to remove that has udev path '%s'",
@@ -1221,13 +1223,32 @@ udevRemoveOneDeviceSysPath(const char *path)
     }
     def = virNodeDeviceObjGetDef(obj);
 
+    /* If the device is a mediated device that has been 'stopped', it may still
+     * be defined by mdevctl and can therefore be started again. Don't drop it
+     * from the list of node devices */
+    cap = def->caps;
+    while (cap != NULL) {
+        if (cap->data.type == VIR_NODE_DEV_CAP_MDEV) {
+            if (cap->data.mdev.persistent) {
+                VIR_FREE(def->sysfs_path);
+                event_type = VIR_NODE_DEVICE_EVENT_STOPPED;
+                break;
+            }
+        }
+        cap = cap->next;
+    }
+
     event = virNodeDeviceEventLifecycleNew(def->name,
-                                           VIR_NODE_DEVICE_EVENT_DELETED,
+                                           event_type,
                                            0);
 
     VIR_DEBUG("Removing device '%s' with sysfs path '%s'",
               def->name, path);
-    virNodeDeviceObjListRemove(driver->devs, obj);
+
+    if (event_type == VIR_NODE_DEVICE_EVENT_DELETED)
+        virNodeDeviceObjListRemove(driver->devs, obj);
+    else
+        virNodeDeviceObjSetActive(obj, false);
     virNodeDeviceObjEndAPI(&obj);
 
     virObjectEventStateQueue(driver->nodeDeviceEventState, event);
