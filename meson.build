@@ -1870,6 +1870,13 @@ if conf.has('WITH_LIBVIRTD')
     use_storage = true
     conf.set('WITH_STORAGE_DIR', 1)
   endif
+
+  if not get_option('storage_disk').disabled() and devmapper_dep.found() and libparted_dep.found()
+    use_storage = true
+    conf.set('WITH_STORAGE_DISK', 1)
+  elif get_option('storage_disk').enabled()
+    error('You must install libparted and libdevmapper to compile libvirt with disk storage driver')
+  endif
 endif
 
 if use_storage
@@ -1916,6 +1923,7 @@ summary(driver_summary, section: 'Drivers', bool_yn: true)
 
 storagedriver_summary = {
   'Dir': conf.has('WITH_STORAGE_DIR'),
+  'Disk': conf.has('WITH_STORAGE_DISK'),
 }
 summary(storagedriver_summary, section: 'Storage Drivers', bool_yn: true)
 
