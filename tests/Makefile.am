@@ -16,13 +16,6 @@
 ## License along with this library.  If not, see
 ## <http://www.gnu.org/licenses/>.
 
-DRIVERLIB_LDFLAGS = \
-	-avoid-version \
-	-rpath /evil/libtool/hack/to/force/shared/lib/creation \
-	$(MINGW_EXTRA_LDFLAGS) \
-	$(FLAT_NAMESPACE_FLAGS) \
-	$(NULL)
-
 PROBES_O =
 if WITH_DTRACE_PROBES
 PROBES_O += ../src/libvirt_probes.lo
@@ -115,7 +108,6 @@ endif WITH_SECDRIVER_SELINUX
 if WITH_LIBXL
 test_programs += xlconfigtest \
 	xmconfigtest libxlxml2domconfigtest
-test_libraries += libxltestdriver.la
 endif WITH_LIBXL
 
 if WITH_QEMU
@@ -132,9 +124,6 @@ test_programs += qemuxml2argvtest qemuxml2xmltest \
 	qemuvhostusertest \
 	$(NULL)
 test_helpers += qemucapsprobe
-test_libraries += \
-		libqemutestdriver.la \
-		$(NULL)
 endif WITH_QEMU
 
 if WITH_LXC
@@ -291,10 +280,8 @@ endif WITH_LINUX
 
 if WITH_TESTS
 noinst_PROGRAMS = $(test_programs) $(test_helpers)
-noinst_LTLIBRARIES = $(test_libraries)
 else ! WITH_TESTS
 check_PROGRAMS = $(test_programs) $(test_helpers)
-check_LTLIBRARIES = $(test_libraries)
 endif ! WITH_TESTS
 
 TESTS = $(test_programs) \
@@ -316,10 +303,6 @@ libxl_LDADDS = \
 	../src/libvirt_driver_libxl_impl.la \
 	$(LDADDS) \
 	$(NULL)
-
-libxltestdriver_la_SOURCES =
-libxltestdriver_la_LDFLAGS = $(DRIVERLIB_LDFLAGS)
-libxltestdriver_la_LIBADD = $(libxl_LDADDS)
 
 xlconfigtest_SOURCES = \
 	xlconfigtest.c testutilsxen.c testutilsxen.h \
@@ -347,10 +330,6 @@ if WITH_DTRACE_PROBES
 qemu_LDADDS += ../src/libvirt_qemu_probes.lo
 endif WITH_DTRACE_PROBES
 qemu_LDADDS += $(LDADDS)
-
-libqemutestdriver_la_SOURCES =
-libqemutestdriver_la_LDFLAGS = $(DRIVERLIB_LDFLAGS)
-libqemutestdriver_la_LIBADD = $(qemu_LDADDS)
 
 qemuxml2argvtest_SOURCES = \
 	qemuxml2argvtest.c testutilsqemu.c testutilsqemu.h \
