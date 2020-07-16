@@ -86,6 +86,8 @@ subdir('cpu')
 subdir('hypervisor')
 subdir('vmx')
 
+subdir('remote')
+
 subdir('admin')
 subdir('locking')
 subdir('logging')
