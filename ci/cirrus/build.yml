@@ -13,14 +13,12 @@ env:
 build_task:
   install_script:
     - @INSTALL_COMMAND@ @PKGS@
+    - @PIP@ install @PYPI_PKGS@
   clone_script:
     - git clone --depth 1000 "$CI_REPOSITORY_URL" .
     - git fetch origin "$CI_COMMIT_REF_NAME"
     - git reset --hard "$CI_COMMIT_SHA"
   build_script:
-    - mkdir build
-    - cd build
-    - ../autogen.sh --prefix=$(pwd)/install-root
-    - $MAKE -j3
-    - $MAKE -j3 install
-    - $MAKE -j3 dist
+    - meson build --prefix=$(pwd)/install-root
+    - ninja -C build
+    - ninja -C build install

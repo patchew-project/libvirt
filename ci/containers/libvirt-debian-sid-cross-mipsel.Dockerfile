@@ -33,7 +33,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             lsof \
             lvm2 \
             make \
-            meson \
             net-tools \
             nfs-common \
             ninja-build \
@@ -97,6 +96,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             libparted-dev:mipsel \
             libpcap0.8-dev:mipsel \
             libpciaccess-dev:mipsel \
+            librbd-dev:mipsel \
             libreadline-dev:mipsel \
             libsanlock-dev:mipsel \
             libsasl2-dev:mipsel \
@@ -111,6 +111,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get autoremove -y && \
     apt-get autoclean -y
 
+RUN pip3 install \
+         meson==0.54.0
+
 ENV LANG "en_US.UTF-8"
 
 ENV MAKE "/usr/bin/make"
@@ -121,3 +124,4 @@ ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 
 ENV ABI "mipsel-linux-gnu"
 ENV CONFIGURE_OPTS "--host=mipsel-linux-gnu"
+ENV MESON_OPTS "--cross-file=ci/mipsel-linux-gnu.meson"

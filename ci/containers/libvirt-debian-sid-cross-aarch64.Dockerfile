@@ -33,7 +33,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             lsof \
             lvm2 \
             make \
-            meson \
             net-tools \
             nfs-common \
             ninja-build \
@@ -113,6 +112,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get autoremove -y && \
     apt-get autoclean -y
 
+RUN pip3 install \
+         meson==0.54.0
+
 ENV LANG "en_US.UTF-8"
 
 ENV MAKE "/usr/bin/make"
@@ -123,3 +125,4 @@ ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 
 ENV ABI "aarch64-linux-gnu"
 ENV CONFIGURE_OPTS "--host=aarch64-linux-gnu"
+ENV MESON_OPTS "--cross-file=ci/aarch64-linux-gnu.meson"

@@ -33,7 +33,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             lsof \
             lvm2 \
             make \
-            meson \
             net-tools \
             nfs-common \
             ninja-build \
@@ -93,6 +92,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             libncurses-dev:armel \
             libnl-3-dev:armel \
             libnl-route-3-dev:armel \
+            libnuma-dev:armel \
             libparted-dev:armel \
             libpcap0.8-dev:armel \
             libpciaccess-dev:armel \
@@ -111,6 +111,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get autoremove -y && \
     apt-get autoclean -y
 
+RUN pip3 install \
+         meson==0.54.0
+
 ENV LANG "en_US.UTF-8"
 
 ENV MAKE "/usr/bin/make"
@@ -121,3 +124,4 @@ ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 
 ENV ABI "arm-linux-gnueabi"
 ENV CONFIGURE_OPTS "--host=arm-linux-gnueabi"
+ENV MESON_OPTS "--cross-file=ci/arm-linux-gnueabi.meson"

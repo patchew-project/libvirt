@@ -31,7 +31,6 @@ RUN dnf update -y --nogpgcheck fedora-gpg-keys && \
         lsof \
         lvm2 \
         make \
-        meson \
         net-tools \
         nfs-utils \
         ninja-build \
@@ -80,6 +79,9 @@ RUN dnf install -y \
         mingw64-portablexdr \
         mingw64-readline && \
     dnf clean all -y
+
+RUN pip3 install \
+         meson==0.54.0
 
 ENV LANG "en_US.UTF-8"
 
