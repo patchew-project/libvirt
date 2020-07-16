@@ -2063,6 +2063,8 @@ if get_option('debug_logs')
   conf.set('ENABLE_DEBUG', 1)
 endif
 
+conf.set_quoted('DEFAULT_EDITOR', get_option('default_editor'))
+
 
 # define top include directory
 
@@ -2183,6 +2185,7 @@ misc_summary = {
   'Use -Werror': cc_flags.contains('-Werror'),
   'Warning Flags': supported_cc_flags,
   'Char device locks': chrdev_lock_files,
+  'Default Editor': conf.get_unquoted('DEFAULT_EDITOR'),
 }
 summary(misc_summary, section: 'Miscellaneous', bool_yn: true, list_sep: ' ')
 
