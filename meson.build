@@ -2292,6 +2292,17 @@ endif
 configure_file(output: 'meson-config.h', configuration: conf)
 
 
+# generate run helper
+run_conf = configuration_data()
+run_conf.set('abs_builddir', meson.build_root())
+configure_file(
+  input: 'run.in',
+  output: 'run',
+  configuration: run_conf,
+)
+run_command('scripts/meson-change-perms.sh', 'a+x', 'run')
+
+
 # print configuration summary
 
 driver_summary = {
