@@ -136,7 +136,6 @@ dnl
 dnl Storage driver checks
 dnl
 
-LIBVIRT_STORAGE_ARG_LVM
 LIBVIRT_STORAGE_ARG_SCSI
 LIBVIRT_STORAGE_ARG_MPATH
 LIBVIRT_STORAGE_ARG_RBD
@@ -145,7 +144,6 @@ LIBVIRT_STORAGE_ARG_ZFS
 LIBVIRT_STORAGE_ARG_VSTORAGE
 
 if test "$with_libvirtd" = "no"; then
-  with_storage_lvm=no
   with_storage_scsi=no
   with_storage_mpath=no
   with_storage_rbd=no
@@ -154,7 +152,6 @@ if test "$with_libvirtd" = "no"; then
   with_storage_vstorage=no
 fi
 
-LIBVIRT_STORAGE_CHECK_LVM
 LIBVIRT_STORAGE_CHECK_SCSI
 LIBVIRT_STORAGE_CHECK_MPATH
 LIBVIRT_STORAGE_CHECK_RBD
@@ -218,7 +215,6 @@ AC_MSG_NOTICE([=====================])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([Storage Drivers])
 AC_MSG_NOTICE([])
-LIBVIRT_STORAGE_RESULT_LVM
 LIBVIRT_STORAGE_RESULT_SCSI
 LIBVIRT_STORAGE_RESULT_MPATH
 LIBVIRT_STORAGE_RESULT_RBD
