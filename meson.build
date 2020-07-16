@@ -1332,6 +1332,20 @@ else
   sasl_dep = dependency('', required: false)
 endif
 
+selinux_dep = cc.find_library('selinux', required: get_option('selinux'))
+if selinux_dep.found()
+  selinux_mount = get_option('selinux_mount')
+  if selinux_mount == ''
+    if run_command('test', '-d', '/sys/fs/selinux').returncode() == 0
+      selinux_mount = '/sys/fs/selinux'
+    else
+      selinux_mount = '/selinux'
+    endif
+  endif
+  conf.set_quoted('SELINUX_MOUNT', selinux_mount)
+  conf.set('WITH_SELINUX', 1)
+endif
+
 
 # generic build dependencies checks
 
@@ -1436,6 +1450,7 @@ libs_summary = {
   'readline': readline_dep.found(),
   'sanlock': conf.has('WITH_SANLOCK'),
   'sasl': sasl_dep.found(),
+  'selinux': selinux_dep.found(),
 }
 summary(libs_summary, section: 'Libraries', bool_yn: true)
 
