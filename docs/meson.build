@@ -290,6 +290,7 @@ subdir('internals')
 subdir('js')
 subdir('kbase')
 subdir('logos')
+subdir('manpages')
 
 
 # This hack enables us to view the web pages
