@@ -51,6 +51,10 @@ admin_client_generated = custom_target(
   capture: true,
 )
 
+libvirt_admin_public_syms = files(
+  'libvirt_admin_public.syms',
+)
+
 libvirt_admin_private_syms = files(
   'libvirt_admin_private.syms',
 )
@@ -58,7 +62,7 @@ libvirt_admin_private_syms = files(
 libvirt_admin_syms = custom_target(
   'libvirt_admin.syms',
   input: [
-    'libvirt_admin_public.syms',
+    libvirt_admin_public_syms,
     libvirt_admin_private_syms,
   ],
   output: 'libvirt_admin.syms',
