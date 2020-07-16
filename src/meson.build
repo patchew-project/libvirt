@@ -77,3 +77,5 @@ src_dep = declare_dependency(
   dependencies: [ src_dep ],
   include_directories: [ util_inc_dir ],
 )
+
+subdir('conf')
