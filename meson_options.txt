@@ -1,0 +1,3 @@
+option('no-git', type: 'boolean', value: false, description: 'Disable git submodule update')
+option('system', type: 'boolean', value: false, description: 'Set install paths to system ones')
+option('runstatedir', type: 'string', value: '', description: 'State directory for temporary sockets, pid files, etc')
