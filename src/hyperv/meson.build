@@ -38,4 +38,6 @@ if conf.has('WITH_HYPERV')
       conf_inc_dir,
     ]
   )
+
+  libvirt_libs += hyperv_lib
 endif

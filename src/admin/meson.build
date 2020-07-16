@@ -48,3 +48,5 @@ admin_driver_lib = static_library(
     xdr_dep,
   ],
 )
+
+libvirt_libs += admin_driver_lib

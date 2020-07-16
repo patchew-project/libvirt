@@ -114,6 +114,11 @@ else
 endif
 
 
+# variables filled by subdirectories
+
+libvirt_libs = []
+
+
 # list subdirectories
 
 subdir('util')
@@ -179,6 +184,8 @@ driver_lib = static_library(
   ],
 )
 
+libvirt_libs += driver_lib
+
 
 # symbol files for libvirt.so
 
@@ -206,6 +213,7 @@ libvirt_syms = custom_target(
   command: [ gen_sym_files_prog, 'LIBVIRT_PRIVATE_' + meson.project_version(), '@INPUT@' ],
   capture: true,
 )
+libvirt_syms_file = libvirt_syms
 if host_machine.system() == 'windows'
   libvirt_def = custom_target(
     'libvirt.def',
@@ -214,4 +222,36 @@ if host_machine.system() == 'windows'
     command: [ gen_def_files_prog, '@INPUT@' ],
     capture: true,
   )
+  libvirt_syms_file = libvirt_def
 endif
+
+
+# libvirt.so library
+
+libvirt_syms_flags = '@0@@1@'.format(
+  version_script_flags,
+  libvirt_syms_file.full_path(),
+)
+
+libvirt_lib = shared_library(
+  'virt',
+  dtrace_gen_objects,
+  dependencies: [
+    src_dep,
+  ],
+  link_args: [
+    libvirt_flat_namespace,
+    libvirt_no_undefined,
+    libvirt_nodelete,
+    libvirt_syms_flags,
+  ],
+  link_whole: [
+    libvirt_libs,
+  ],
+  link_depends: [
+    libvirt_syms_file,
+  ],
+  install: true,
+  version: libvirt_lib_version,
+  soversion: libvirt_so_version,
+)
