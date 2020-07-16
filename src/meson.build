@@ -86,3 +86,5 @@ subdir('cpu')
 subdir('vmx')
 
 subdir('admin')
+
+subdir('vmware')
