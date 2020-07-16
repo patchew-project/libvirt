@@ -11,6 +11,7 @@ scripts = [
   'check-symsorting.py',
   'dtrace2systemtap.py',
   'esx_vi_generator.py',
+  'gen-def-files.sh',
   'genaclperms.py',
   'genpolkit.py',
   'gensystemtap.py',
