@@ -41,6 +41,11 @@ aclperms_gen = custom_target(
 
 docs_timestamp = run_command(meson_timestamp_prog).stdout()
 
+site_xsl = files('site.xsl')
+subsite_xsl = files('subsite.xsl')
+page_xsl = files('page.xsl')
+newapi_xsl = files('newapi.xsl')
+
 docs_api_generated = custom_target(
   'generate-api',
   output: [
