@@ -379,6 +379,18 @@ static const vshCmdOptDef opts_node_list_devices[] = {
      .completer = virshNodeDeviceCapabilityNameCompleter,
      .help = N_("capability names, separated by comma")
     },
+    {.name = "active",
+     .type = VSH_OT_BOOL,
+     .help = N_("list active devices")
+    },
+    {.name = "inactive",
+     .type = VSH_OT_BOOL,
+     .help = N_("list inactive devices")
+    },
+    {.name = "all",
+     .type = VSH_OT_BOOL,
+     .help = N_("list inactive & active devices")
+    },
     {.name = NULL}
 };
 
@@ -394,16 +406,26 @@ cmdNodeListDevices(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
     int ncaps = 0;
     virshNodeDeviceListPtr list = NULL;
     int cap_type = -1;
+    bool active, inactive, all;
 
+    active = vshCommandOptBool(cmd, "active");
+    inactive = vshCommandOptBool(cmd, "inactive");
+    all = vshCommandOptBool(cmd, "all");
     ignore_value(vshCommandOptStringQuiet(ctl, cmd, "cap", &cap_str));
 
     if (cap_str) {
-        if (tree) {
-            vshError(ctl, "%s", _("Options --tree and --cap are incompatible"));
-            return false;
-        }
         if ((ncaps = vshStringToArray(cap_str, &caps)) < 0)
             return false;
+    }
+
+    if (all && (inactive || active)) {
+        vshError(ctl, "%s", _("Option --all is incompatible with --active and --inactive"));
+        return false;
+    }
+
+    if (tree && (cap_str || active || inactive)) {
+        vshError(ctl, "%s", _("Option --tree is incompatible with other options"));
+        return false;
     }
 
     for (i = 0; i < ncaps; i++) {
@@ -466,6 +488,11 @@ cmdNodeListDevices(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
             break;
         }
     }
+
+    if (inactive || all)
+        flags |= VIR_CONNECT_LIST_NODE_DEVICES_INACTIVE;
+    if (active || all)
+        flags |= VIR_CONNECT_LIST_NODE_DEVICES_ACTIVE;
 
     if (!(list = virshNodeDeviceListCollect(ctl, caps, ncaps, flags))) {
         ret = false;
