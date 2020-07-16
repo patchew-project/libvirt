@@ -1443,6 +1443,17 @@ if wireshark_dep.found()
   wireshark_plugindir = wireshark_plugindir / 'epan'
 endif
 
+# On MinGW portablexdr provides XDR functions, on linux they are
+# provided by libtirpc and on FreeBSD/macOS there is no need to
+# use extra library as it's provided by libc directly.
+if host_machine.system() == 'windows'
+  xdr_dep = cc.find_library('portablexdr', required: false)
+elif host_machine.system() == 'linux'
+  xdr_dep = dependency('libtirpc', required: false)
+else
+  xdr_dep = declare_dependency()
+endif
+
 
 # generic build dependencies checks
 
@@ -1558,6 +1569,7 @@ libs_summary = {
   'selinux': selinux_dep.found(),
   'udev': udev_dep.found(),
   'virtualport': conf.has('WITH_VIRTUALPORT'),
+  'xdr': xdr_dep.found(),
 }
 summary(libs_summary, section: 'Libraries', bool_yn: true)
 
