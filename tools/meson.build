@@ -222,6 +222,7 @@ tools_conf = configuration_data()
 tools_conf.set('PACKAGE', meson.project_name())
 tools_conf.set('VERSION', meson.project_version())
 tools_conf.set('bindir', bindir)
+tools_conf.set('libexecdir', libexecdir)
 tools_conf.set('localedir', localedir)
 tools_conf.set('localstatedir', localstatedir)
 tools_conf.set('sbindir', sbindir)
@@ -267,5 +268,13 @@ if init_script == 'systemd'
     'libvirt-guests.sysconf',
     install_dir: sysconfdir / 'sysconfig',
     rename: 'libvirt-guests',
+  )
+
+  configure_file(
+    input: 'libvirt-guests.service.in',
+    output: 'libvirt-guests.service',
+    configuration: tools_conf,
+    install: true,
+    install_dir: prefix / 'lib' / 'systemd' / 'system',
   )
 endif
