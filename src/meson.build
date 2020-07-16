@@ -646,6 +646,8 @@ foreach data : virt_test_aug_files
   )
 endforeach
 
+augeas_test_data = []
+
 foreach data : virt_daemon_confs
   daemon_conf = configuration_data()
   daemon_conf.set('runstatedir', runstatedir)
@@ -694,7 +696,7 @@ foreach data : virt_daemon_confs
   )
 
   test_aug_out = 'test_@0@.aug'.format(data['name'])
-  custom_target(
+  augeas_test_file = custom_target(
     test_aug_out,
     input: [ conf_out, test_aug_tmp ],
     output: test_aug_out,
@@ -703,6 +705,7 @@ foreach data : virt_daemon_confs
     install: true,
     install_dir: virt_test_aug_dir,
   )
+  augeas_test_data += augeas_test_file
 endforeach
 
 
@@ -857,3 +860,16 @@ test(
   args: [ check_aclrules_prog.path(), files('remote/remote_protocol.x'), stateful_driver_source_files ],
   env: runutf8,
 )
+
+if augparse_prog.found()
+  test(
+    'check-augeas',
+    check_augeas_prog,
+    args: [
+      augparse_prog.path(),
+      meson.current_source_dir(),
+      meson.current_build_dir(),
+      augeas_test_data,
+    ],
+  )
+endif

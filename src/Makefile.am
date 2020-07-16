@@ -20,8 +20,6 @@
 # here. List them against the individual XXX_la_CFLAGS targets
 # that actually use them.
 
-augeas_DATA =
-augeastest_DATA =
 if WITH_DTRACE_PROBES
 tapset_DATA =
 endif WITH_DTRACE_PROBES
@@ -90,21 +88,6 @@ check-local: check-protocol \
 	check-admin
 .PHONY: check-protocol $(PROTOCOL_STRUCTS:structs=struct)
 
-
-check-local: check-augeas
-
-check-augeas: $(augeas_DATA) $(augeastest_DATA)
-	$(AM_V_GEN) \
-	if test -x "$(AUGPARSE)"; then \
-	    for f in $(augeastest_DATA); do \
-		DIR=$$(dirname "$$f"); \
-		FILE=$$(basename "$$f"); \
-		"$(AUGPARSE)" \
-		    -I "$(srcdir)/$$DIR" -I "$(builddir)/$$DIR" \
-		    "$$DIR/$$FILE" || exit 1; \
-	    done; \
-	fi
-.PHONY: check-augeas
 
 if WITH_DTRACE_PROBES
 

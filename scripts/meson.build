@@ -3,6 +3,7 @@ scripts = [
   'augeas-gentest.py',
   'check-aclperms.py',
   'check-aclrules.py',
+  'check-augeas.sh',
   'check-driverimpls.py',
   'check-drivername.py',
   'check-file-access.py',
