@@ -20,7 +20,6 @@
 # here. List them against the individual XXX_la_CFLAGS targets
 # that actually use them.
 
-DRIVER_SOURCE_FILES =
 STATEFUL_DRIVER_SOURCE_FILES =
 augeas_DATA =
 augeastest_DATA =
@@ -31,7 +30,6 @@ RPC_PROBE_FILES =
 
 include locking/Makefile.inc.am
 include admin/Makefile.inc.am
-include vbox/Makefile.inc.am
 include qemu/Makefile.inc.am
 include bhyve/Makefile.inc.am
 include libxl/Makefile.inc.am
@@ -99,10 +97,6 @@ else !WITH_REMOTE
 check-protocol:
 endif !WITH_REMOTE
 
-check-driverimpls:
-	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(top_srcdir)/scripts/check-driverimpls.py \
-		$(DRIVER_SOURCE_FILES)
-
 check-aclrules:
 	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(top_srcdir)/scripts/check-aclrules.py \
 		$(REMOTE_PROTOCOL) \
@@ -114,7 +108,7 @@ check-aclperms:
 		$(srcdir)/access/viraccessperm.c
 
 check-local: check-protocol \
-	check-driverimpls check-aclrules \
+	check-aclrules \
 	check-aclperms check-admin
 .PHONY: check-protocol $(PROTOCOL_STRUCTS:structs=struct)
 
