@@ -48,7 +48,6 @@ include nwfilter/Makefile.inc.am
 include node_device/Makefile.inc.am
 include secret/Makefile.inc.am
 include storage/Makefile.inc.am
-include remote/Makefile.inc.am
 
 
 # .libs/libvirt.so is built by libtool as a side-effect of the Makefile
