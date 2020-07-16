@@ -1350,6 +1350,7 @@ udevAddOneDevice(struct udev_device *device)
     else
         event = virNodeDeviceEventUpdateNew(objdef->name);
 
+    virNodeDeviceObjSetActive(obj, true);
     virNodeDeviceObjEndAPI(&obj);
 
     ret = 0;
@@ -1740,6 +1741,8 @@ udevSetupSystemDev(void)
 
     if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, def)))
         goto cleanup;
+
+    virNodeDeviceObjSetActive(obj, true);
 
     virNodeDeviceObjEndAPI(&obj);
 
