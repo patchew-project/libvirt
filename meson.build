@@ -2059,6 +2059,10 @@ if chrdev_lock_files != ''
   conf.set_quoted('VIR_CHRDEV_LOCK_FILE_PATH', chrdev_lock_files)
 endif
 
+if get_option('debug_logs')
+  conf.set('ENABLE_DEBUG', 1)
+endif
+
 
 # define top include directory
 
@@ -2175,6 +2179,7 @@ test_summary = {
 summary(test_summary, section: 'Test suite', bool_yn: true)
 
 misc_summary = {
+  'Debug': conf.has('ENABLE_DEBUG'),
   'Use -Werror': cc_flags.contains('-Werror'),
   'Warning Flags': supported_cc_flags,
   'Char device locks': chrdev_lock_files,
