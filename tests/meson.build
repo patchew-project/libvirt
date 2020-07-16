@@ -356,6 +356,12 @@ if conf.has('WITH_DBUS')
   endif
 endif
 
+if conf.has('WITH_ESX')
+  tests += [
+    { 'name': 'esxutilstest', 'include': [ esx_inc_dir ], 'deps': [ dbus_dep ] },
+  ]
+endif
+
 foreach data : tests
   test_sources = '@0@.c'.format(data['name'])
   test_bin = executable(
