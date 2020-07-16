@@ -160,6 +160,7 @@ subdir('logging')
 subdir('network')
 subdir('node_device')
 subdir('nwfilter')
+subdir('secret')
 subdir('security')
 subdir('storage')
 
