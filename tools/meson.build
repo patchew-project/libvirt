@@ -218,6 +218,7 @@ executable(
 
 tools_conf = configuration_data()
 tools_conf.set('VERSION', meson.project_version())
+tools_conf.set('localstatedir', localstatedir)
 tools_conf.set('schemadir', pkgdatadir / 'schemas')
 tools_conf.set('sysconfdir', sysconfdir)
 
@@ -236,3 +237,13 @@ configure_file(
   install: true,
   install_dir: bindir,
 )
+
+if conf.has('WITH_SANLOCK')
+  configure_file(
+    input: 'virt-sanlock-cleanup.in',
+    output: 'virt-sanlock-cleanup',
+    configuration: tools_conf,
+    install: true,
+    install_dir: sbindir,
+  )
+endif
