@@ -24,6 +24,7 @@ scripts = [
   'install-dirs.sh',
   'install-symlink.sh',
   'meson-python.sh',
+  'meson-timestamp.sh',
   'mock-noinline.py',
   'prohibit-duplicate-header.py',
   'test-wrap-argv.py',
