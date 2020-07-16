@@ -958,6 +958,8 @@ if apparmor_dep.found()
   conf.set_quoted('APPARMOR_PROFILES_PATH', '/sys/kernel/security/apparmor/profiles')
 endif
 
+attr_dep = cc.find_library('attr', required: get_option('attr'))
+
 
 # define top include directory
 
@@ -980,6 +982,7 @@ configure_file(output: 'meson-config.h', configuration: conf)
 libs_summary = {
   'acl': acl_dep.found(),
   'apparmor': apparmor_dep.found(),
+  'attr': attr_dep.found(),
 }
 summary(libs_summary, section: 'Libraries', bool_yn: true)
 

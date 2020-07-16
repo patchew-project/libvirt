@@ -10,3 +10,4 @@ option('test_coverage', type: 'boolean', value: false, description: 'turn on cod
 
 # build dependencies options
 option('apparmor', type: 'feature', value: 'auto', description: 'apparmor support')
+option('attr', type: 'feature', value: 'auto', description: 'attr support')
