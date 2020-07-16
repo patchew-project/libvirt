@@ -1983,6 +1983,11 @@ if conf.has('WITH_LIBVIRTD')
   elif get_option('storage_rbd').enabled()
     error('You must install the librbd library & headers to compile libvirt')
   endif
+
+  if not get_option('storage_scsi').disabled() and host_machine.system() == 'linux'
+    use_storage = true
+    conf.set('WITH_STORAGE_SCSI', 1)
+  endif
 endif
 
 if use_storage
@@ -2034,6 +2039,7 @@ storagedriver_summary = {
   'LVM': conf.has('WITH_STORAGE_LVM'),
   'iSCSI': conf.has('WITH_STORAGE_ISCSI'),
   'iscsi-direct': conf.has('WITH_STORAGE_ISCSI_DIRECT'),
+  'SCSI': conf.has('WITH_STORAGE_SCSI'),
   'mpath': conf.has('WITH_STORAGE_MPATH'),
   'Disk': conf.has('WITH_STORAGE_DISK'),
   'RBD': conf.has('WITH_STORAGE_RBD'),
