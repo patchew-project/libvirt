@@ -46,4 +46,9 @@ if conf.has('WITH_VBOX')
       '-DMODULE_NAME="vbox"',
     ],
   }
+
+  virt_daemon_confs += {
+    'name': 'virtvboxd',
+    'name_uc': 'Virtvboxd',
+  }
 endif

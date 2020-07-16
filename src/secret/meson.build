@@ -23,4 +23,9 @@ if conf.has('WITH_SECRETS')
       '-DMODULE_NAME="secret"',
     ],
   }
+
+  virt_daemon_confs += {
+    'name': 'virtsecretd',
+    'name_uc': 'Virtsecretd',
+  }
 endif

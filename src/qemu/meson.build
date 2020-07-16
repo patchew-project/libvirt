@@ -133,4 +133,9 @@ if conf.has('WITH_QEMU')
     ],
     'install_dir': bindir,
   }
+
+  virt_daemon_confs += {
+    'name': 'virtqemud',
+    'name_uc': 'Virtqemud',
+  }
 endif

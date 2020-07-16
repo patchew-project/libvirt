@@ -46,6 +46,11 @@ if conf.has('WITH_NETWORK')
     ],
   }
 
+  virt_daemon_confs += {
+    'name': 'virtnetworkd',
+    'name_uc': 'Virtnetworkd',
+  }
+
   virt_helpers += {
     'name': 'libvirt_leaseshelper',
     'sources': [

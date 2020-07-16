@@ -51,4 +51,9 @@ if conf.has('WITH_BHYVE')
     'aug': files('test_libvirtd_bhyve.aug.in'),
     'conf': files('bhyve.conf'),
   }
+
+  virt_daemon_confs += {
+    'name': 'virtbhyved',
+    'name_uc': 'Virtbhyved',
+  }
 endif

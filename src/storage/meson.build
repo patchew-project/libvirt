@@ -121,6 +121,11 @@ if conf.has('WITH_STORAGE')
       '-DMODULE_NAME="storage"',
     ],
   }
+
+  virt_daemon_confs += {
+    'name': 'virtstoraged',
+    'name_uc': 'Virtstoraged',
+  }
 endif
 
 if conf.has('WITH_STORAGE_DISK')
