@@ -80,3 +80,4 @@ src_dep = declare_dependency(
 
 subdir('conf')
 subdir('rpc')
+subdir('access')
