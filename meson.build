@@ -2243,6 +2243,51 @@ foreach file : pkgconfig_files
   )
 endforeach
 
+
+# generate dist files
+
+if git
+  spec_files = [
+    'libvirt.spec.in',
+    'mingw-libvirt.spec.in',
+  ]
+
+  spec_conf = configuration_data()
+  spec_conf.set('VERSION', meson.project_version())
+
+  foreach file : spec_files
+    configure_file(
+      input: file,
+      output: '@BASENAME@',
+      configuration: spec_conf,
+    )
+  endforeach
+
+  authors = run_command(meson_gen_authors_prog)
+  authors_file = 'AUTHORS.in'
+
+  authors_conf = configuration_data()
+  authors_conf.set('contributorslist', authors.stdout())
+
+  configure_file(
+    input: authors_file,
+    output: '@BASENAME@',
+    configuration: authors_conf,
+  )
+
+  # Using return values from configure_file in add_dist_script is possible since 0.55.0
+  dist_files = [
+    'libvirt.spec',
+    'mingw-libvirt.spec',
+    'AUTHORS',
+  ]
+
+  foreach file : dist_files
+    meson.add_dist_script(meson_dist_prog.path(), meson.build_root(), file)
+  endforeach
+endif
+
+
 # generate meson-config.h file
 configure_file(output: 'meson-config.h', configuration: conf)
 
