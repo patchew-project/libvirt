@@ -844,6 +844,17 @@ nodeDeviceGetMdevctlUndefineCommand(const char *uuid)
 
 }
 
+virCommandPtr
+nodeDeviceGetMdevctlCreateCommand(const char *uuid)
+{
+    return virCommandNewArgList(MDEVCTL,
+                                "start",
+                                "-u",
+                                uuid,
+                                NULL);
+
+}
+
 static int
 virMdevctlStop(virNodeDeviceDefPtr def)
 {
@@ -866,6 +877,21 @@ virMdevctlUndefine(virNodeDeviceDefPtr def)
     g_autoptr(virCommand) cmd = NULL;
 
     cmd = nodeDeviceGetMdevctlUndefineCommand(def->caps->data.mdev.uuid);
+
+    if (virCommandRun(cmd, &status) < 0 || status != 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
+virMdevctlCreate(virNodeDeviceDefPtr def)
+{
+    int status;
+    g_autoptr(virCommand) cmd = NULL;
+
+    cmd = nodeDeviceGetMdevctlCreateCommand(def->caps->data.mdev.uuid);
 
     if (virCommandRun(cmd, &status) < 0 || status != 0)
         return -1;
@@ -1146,6 +1172,44 @@ nodeDeviceUndefine(virNodeDevicePtr device)
         if (virMdevctlUndefine(def) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Unable to undefine mediated device"));
+            goto cleanup;
+        }
+        ret = 0;
+    } else {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Unsupported device type"));
+    }
+
+ cleanup:
+    virNodeDeviceObjEndAPI(&obj);
+    return ret;
+}
+
+
+int nodeDeviceCreate(virNodeDevicePtr device)
+{
+    int ret = -1;
+    virNodeDeviceObjPtr obj = NULL;
+    virNodeDeviceDefPtr def;
+    g_autofree char *parent = NULL;
+
+    if (!(obj = nodeDeviceObjFindByName(device->name)))
+        return -1;
+
+    if (virNodeDeviceObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("Device is already active"));
+        goto cleanup;
+    }
+    def = virNodeDeviceObjGetDef(obj);
+
+    if (virNodeDeviceCreateEnsureACL(device->conn, def) < 0)
+        goto cleanup;
+
+    if (nodeDeviceHasCapability(def, VIR_NODE_DEV_CAP_MDEV)) {
+        if (virMdevctlCreate(def) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Unable to create mediated device"));
             goto cleanup;
         }
         ret = 0;

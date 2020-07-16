@@ -155,3 +155,9 @@ nodeDeviceGenerateName(virNodeDeviceDefPtr def,
                        const char *subsystem,
                        const char *sysname,
                        const char *s);
+
+virCommandPtr
+nodeDeviceGetMdevctlCreateCommand(const char *uuid);
+
+int
+nodeDeviceCreate(virNodeDevicePtr dev);
