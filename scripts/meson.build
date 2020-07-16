@@ -20,6 +20,7 @@ scripts = [
   'header-ifdef.py',
   'hvsupport.py',
   'hyperv_wmi_generator.py',
+  'install-dirs.sh',
   'meson-python.sh',
   'mock-noinline.py',
   'prohibit-duplicate-header.py',
