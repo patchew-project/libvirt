@@ -128,6 +128,12 @@ endif
 
 use_test_suite = get_option('test_suite')
 
+if get_option('expensive_tests').auto()
+  use_expensive_tests = not git
+else
+  use_expensive_tests = get_option('expensive_tests').enabled()
+endif
+
 
 # figure out libvirt version strings
 
