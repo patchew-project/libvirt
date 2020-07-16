@@ -154,6 +154,7 @@ subdir('vmx')
 subdir('remote')
 
 subdir('admin')
+subdir('interface')
 subdir('locking')
 subdir('logging')
 subdir('network')
