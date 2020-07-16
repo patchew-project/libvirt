@@ -209,7 +209,7 @@ $ journalctl MESSAGE_ID=8ae2f3fb-2dbe-498e-8fbd-012d40afa361 --output=json
   "LIBVIRT_QEMU_BINARY" : "/bin/qemu-system-xtensa",
   "MESSAGE" : "Failed to probe capabilities for /bin/qemu-system-xtensa:" \
               "internal error: Child process (LC_ALL=C LD_LIBRARY_PATH=/home/berrange" \
-              "/src/virt/libvirt/src/.libs PATH=/usr/lib64/ccache:/usr/local/sbin:" \
+              "/src/virt/libvirt/src PATH=/usr/lib64/ccache:/usr/local/sbin:" \
               "/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin HOME=/root " \
               "USER=root LOGNAME=root /bin/qemu-system-xtensa -help) unexpected " \
               "exit status 127: /bin/qemu-system-xtensa: error while loading shared " \
