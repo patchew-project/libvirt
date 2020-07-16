@@ -23,6 +23,7 @@ scripts = [
   'hyperv_wmi_generator.py',
   'install-dirs.sh',
   'install-symlink.sh',
+  'meson-html-gen.py',
   'meson-python.sh',
   'meson-timestamp.sh',
   'mock-noinline.py',
