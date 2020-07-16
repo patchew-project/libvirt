@@ -75,6 +75,8 @@ if conf.has('WITH_DTRACE_PROBES')
   )
 endif
 
+rpc_probe_files = []
+
 
 # symbol files
 
@@ -801,6 +803,18 @@ foreach sysconf : sysconf_files
     rename: [ sysconf['name'] ],
   )
 endforeach
+
+if conf.has('WITH_DTRACE_PROBES')
+  custom_target(
+    'libvirt_functions.stp',
+    input: rpc_probe_files,
+    output: 'libvirt_functions.stp',
+    command: [ meson_python_prog, gensystemtap_prog, '@INPUT@' ],
+    capture: true,
+    install: true,
+    install_dir: systemtap_dir,
+  )
+endif
 
 
 # Install empty directories
