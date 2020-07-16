@@ -88,6 +88,7 @@ subdir('vmx')
 
 subdir('admin')
 subdir('locking')
+subdir('logging')
 
 subdir('esx')
 subdir('hyperv')
