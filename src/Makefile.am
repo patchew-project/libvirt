@@ -69,8 +69,6 @@ include storage/Makefile.inc.am
 include remote/Makefile.inc.am
 
 
-conf_DATA += libvirt.conf
-
 # .libs/libvirt.so is built by libtool as a side-effect of the Makefile
 # rule for libvirt.la.  However, checking symbols relies on Linux ELF layout
 if WITH_LINUX

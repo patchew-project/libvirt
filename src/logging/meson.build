@@ -69,4 +69,7 @@ if conf.has('WITH_LIBVIRTD')
       include_directories('.'),
     ],
   }
+
+  virt_conf_files += files('virtlogd.conf')
+  virt_aug_files += files('virtlogd.aug')
 endif
