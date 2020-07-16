@@ -143,6 +143,19 @@ if get_option('test_coverage')
 endif
 
 
+# Detect when running under the
+
+rc = run_command(
+  'sh', '-c',
+  'test -n "${CCC_ANALYZER_HTML}"' +
+    ' -o -n "${CCC_ANALYZER_ANALYSIS+set}"' +
+    ' -o -n "$COVERITY_BUILD_COMMAND$COVERITY_LD_PRELOAD"',
+)
+if rc.returncode() == 0
+  conf.set('STATIC_ANALYSIS', 1)
+endif
+
+
 # figure out libvirt version strings
 
 arr_version = meson.project_version().split('.')
