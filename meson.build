@@ -2065,6 +2065,14 @@ endif
 
 conf.set_quoted('DEFAULT_EDITOR', get_option('default_editor'))
 
+driver_modules_flags = []
+if conf.has('WITH_LIBVIRTD')
+  if not conf.has('HAVE_DLFCN_H') or not dlopen_dep.found()
+    error('You must have dlfcn.h / dlopen() support to build driver modules')
+  endif
+  driver_modules_flags = libvirt_export_dynamic
+endif
+
 
 # define top include directory
 
@@ -2126,6 +2134,11 @@ secdriver_summary = {
   'AppArmor': conf.has('WITH_SECDRIVER_APPARMOR'),
 }
 summary(secdriver_summary, section: 'Security Drivers', bool_yn: true)
+
+drivermod_summary = {
+  'driver_modules': driver_modules_flags.length() > 0,
+}
+summary(drivermod_summary, section: 'Driver Loadable Modules', bool_yn: true)
 
 libs_summary = {
   'acl': acl_dep.found(),
