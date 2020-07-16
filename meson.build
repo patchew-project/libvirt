@@ -915,6 +915,7 @@ optional_programs = [
   'ip',
   'ip6tables',
   'iptables',
+  'iscsiadm',
   'mdevctl',
   'mm-ctl',
   'modprobe',
