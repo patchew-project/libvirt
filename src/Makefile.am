@@ -75,7 +75,6 @@ include access/Makefile.inc.am
 include logging/Makefile.inc.am
 include locking/Makefile.inc.am
 include admin/Makefile.inc.am
-include test/Makefile.inc.am
 include esx/Makefile.inc.am
 include vmx/Makefile.inc.am
 include vmware/Makefile.inc.am
