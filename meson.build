@@ -1695,6 +1695,10 @@ if not get_option('driver_network').disabled() and conf.has('WITH_LIBVIRTD') and
   conf.set('WITH_NETWORK', 1)
 endif
 
+if hal_dep.found() or udev_dep.found()
+  conf.set('WITH_NODE_DEVICES', 1)
+endif
+
 if not get_option('driver_openvz').disabled() and host_machine.system() == 'linux'
   conf.set('WITH_OPENVZ', 1)
 elif get_option('driver_openvz').enabled()
