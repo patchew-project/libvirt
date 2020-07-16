@@ -123,3 +123,16 @@ nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
                                  char **uuid_out);
 virCommandPtr
 nodeDeviceGetMdevctlStopCommand(const char *uuid);
+
+virCommandPtr
+nodeDeviceGetMdevctlListCommand(bool defined, char **output);
+
+int
+nodeDeviceParseMdevctlJSON(const char *jsonstring,
+                           virNodeDeviceDefPtr **devs);
+
+void
+nodeDeviceGenerateName(virNodeDeviceDefPtr def,
+                       const char *subsystem,
+                       const char *sysname,
+                       const char *s);
