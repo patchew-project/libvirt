@@ -49,24 +49,6 @@ ICON_FILES = \
 	libvirt_win_icon_64x64.ico \
 	virsh_win_icon.rc
 
-EXTRA_DIST = \
-	$(ICON_FILES) \
-	$(conf_DATA) \
-	virt-xml-validate.in \
-	virt-pki-validate.in \
-	virt-sanlock-cleanup.in \
-	libvirt-guests.sysconf \
-	virt-login-shell.conf \
-	virsh-edit.c \
-	bash-completion/vsh \
-	libvirt_recover_xattrs.sh \
-	$(NULL)
-
-
-CLEANFILES =
-DISTCLEANFILES =
-MAINTAINERCLEANFILES =
-
 confdir = $(sysconfdir)/libvirt
 conf_DATA =
 
@@ -76,7 +58,6 @@ libexec_SCRIPTS = libvirt-guests.sh
 
 if WITH_SANLOCK
 sbin_SCRIPTS = virt-sanlock-cleanup
-DISTCLEANFILES += virt-sanlock-cleanup
 endif WITH_SANLOCK
 
 if WITH_LOGIN_SHELL
@@ -139,20 +120,14 @@ VIRT_HOST_VALIDATE_BHYVE = \
 		virt-host-validate-bhyve.h
 if WITH_QEMU
 virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_QEMU)
-else ! WITH_QEMU
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_QEMU)
 endif ! WITH_QEMU
 
 if WITH_LXC
 virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_LXC)
-else ! WITH_LXC
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_LXC)
 endif ! WITH_LXC
 
 if WITH_BHYVE
 virt_host_validate_SOURCES += $(VIRT_HOST_VALIDATE_BHYVE)
-else ! WITH_BHYVE
-EXTRA_DIST += $(VIRT_HOST_VALIDATE_BHYVE)
 endif ! WITH_BHYVE
 
 virt_host_validate_LDFLAGS = \
@@ -260,7 +235,6 @@ virt_admin_LDADD = \
 virt_admin_CFLAGS = \
 		$(AM_CFLAGS) \
 		$(READLINE_CFLAGS)
-BUILT_SOURCES =
 
 if WITH_WIN_ICON
 virsh_LDADD += virsh_win_icon.$(OBJEXT)
@@ -303,8 +277,6 @@ uninstall-sysconfig:
 	rm -f $(DESTDIR)$(sysconfdir)/sysconfig/libvirt-guests
 	rmdir $(DESTDIR)$(sysconfdir)/sysconfig ||:
 
-EXTRA_DIST += libvirt-guests.sh.in
-
 libvirt-guests.sh: libvirt-guests.sh.in $(top_builddir)/config.status
 	$(AM_V_GEN)sed \
 	    -e 's|[@]PACKAGE[@]|$(PACKAGE)|g' \
@@ -316,9 +288,7 @@ libvirt-guests.sh: libvirt-guests.sh.in $(top_builddir)/config.status
 	    < $< > $@-t && \
 	    chmod a+x $@-t && \
 	    mv $@-t $@
-BUILT_SOURCES += libvirt-guests.sh
 
-EXTRA_DIST += libvirt-guests.service.in
 SYSTEMD_UNIT_DIR = $(prefix)/lib/systemd/system
 
 if LIBVIRT_INIT_SCRIPT_SYSTEMD
@@ -330,8 +300,6 @@ install-systemd: libvirt-guests.service install-sysconfig libvirt-guests.sh
 uninstall-systemd: uninstall-sysconfig
 	rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/libvirt-guests.service
 	rmdir $(DESTDIR)$(SYSTEMD_UNIT_DIR) ||:
-
-BUILT_SOURCES += libvirt-guests.service
 
 else ! LIBVIRT_INIT_SCRIPT_SYSTEMD
 install-systemd:
@@ -371,8 +339,6 @@ install-bash-completion:
 uninstall-bash-completion:
 endif ! WITH_BASH_COMPLETION
 
-
-EXTRA_DIST += wireshark/util/genxdrstub.pl
 
 if WITH_WIRESHARK_DISSECTOR
 
@@ -514,16 +480,3 @@ lib_LTLIBRARIES = \
 	nss/libnss_libvirt_guest.la
 
 endif WITH_NSS
-
-EXTRA_DIST += $(LIBVIRT_NSS_SOURCES) \
-	$(srcdir)/nss/libvirt_nss.syms \
-	$(srcdir)/nss/libvirt_nss_bsd.syms \
-	$(srcdir)/nss/libvirt_guest_nss.syms
-
-clean-local:
-	-rm -rf wireshark/src/libvirt
-
-CLEANFILES += $(bin_SCRIPTS)
-CLEANFILES += *.gcov .libs/*.gcda .libs/*.gcno *.gcno *.gcda *.i *.s
-
-DISTCLEANFILES += $(BUILT_SOURCES)

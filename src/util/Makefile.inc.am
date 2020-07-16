@@ -239,11 +239,6 @@ UTIL_SOURCES = \
 	$(NULL)
 
 
-EXTRA_DIST += \
-	$(srcdir)/keycodemapdb/data/keymaps.csv \
-	$(srcdir)/keycodemapdb/tools/keymap-gen \
-	$(NULL)
-
 # Sync with docs/
 KEYCODES = linux osx atset1 atset2 atset3 xtkbd usb win32 qnum
 KEYNAMES = linux osx win32
@@ -252,9 +247,6 @@ KEYTABLES = \
 	$(KEYCODES:%=util/virkeycodetable_%.h) \
 	$(KEYNAMES:%=util/virkeynametable_%.h) \
 	$(NULL)
-
-BUILT_SOURCES += $(KEYTABLES)
-CLEANFILES += $(KEYTABLES)
 
 UTIL_IO_HELPER_SOURCES = util/iohelper.c
 

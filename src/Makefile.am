@@ -48,12 +48,6 @@ AM_LDFLAGS_MOD = \
 	$(AM_LDFLAGS)
 AM_LDFLAGS_MOD_NOUNDEF = $(AM_LDFLAGS_MOD) $(NO_UNDEFINED_LDFLAGS)
 
-EXTRA_DIST = $(conf_DATA)
-
-BUILT_SOURCES =
-CLEANFILES =
-DISTCLEANFILES =
-MAINTAINERCLEANFILES =
 nodist_conf_DATA =
 DRIVER_SOURCE_FILES =
 STATEFUL_DRIVER_SOURCE_FILES =
@@ -145,14 +139,9 @@ moddir = $(libdir)/libvirt/connection-driver
 confdir = $(sysconfdir)/libvirt
 conf_DATA += libvirt.conf
 
-CLEANFILES += $(nodist_conf_DATA)
-BUILT_SOURCES += $(nodist_conf_DATA)
-
 augeasdir = $(datadir)/augeas/lenses
 
 augeastestdir = $(datadir)/augeas/lenses/tests
-
-CLEANFILES += $(augeastest_DATA)
 
 # Internal generic driver infrastructure
 DATATYPES_SOURCES = datatypes.h datatypes.c
@@ -252,7 +241,6 @@ else !WITH_REMOTE
 # re-generated when configured --without-remote.
 check-protocol:
 endif !WITH_REMOTE
-EXTRA_DIST += $(PROTOCOL_STRUCTS)
 
 DRIVERS = \
 	$(srcdir)/driver-hypervisor.h \
@@ -392,15 +380,6 @@ else ! WITH_LIBSSH
 SYM_FILES += $(srcdir)/libvirt_libssh.syms
 endif ! WITH_LIBSSH
 
-EXTRA_DIST += \
-	libvirt_public.syms \
-	libvirt_lxc.syms \
-	libvirt_qemu.syms \
-	$(SYM_FILES) \
-	$(NULL)
-
-BUILT_SOURCES += $(GENERATED_SYM_FILES)
-
 libvirt.syms: libvirt_public.syms $(USED_SYM_FILES) \
 		$(ACCESS_DRIVER_SYM_FILES) \
 		$(top_builddir)/config.status
@@ -450,9 +429,6 @@ libvirt_la_BUILT_LIBADD += libvirt_probes.lo
 libvirt_la_DEPENDENCIES += libvirt_probes.lo libvirt_probes.o
 nodist_libvirt_la_SOURCES = libvirt_probes.h
 
-BUILT_SOURCES += libvirt_probes.h libvirt_probes.stp libvirt_functions.stp
-
-
 tapsetdir = $(datadir)/systemtap/tapset
 tapset_DATA += libvirt_probes.stp libvirt_functions.stp
 
@@ -489,11 +465,7 @@ libvirt_functions.stp: $(RPC_PROBE_FILES) $(top_srcdir)/scripts/gensystemtap.py
 	$(AM_V_GEN)$(RUNUTF8) $(PYTHON) $(top_srcdir)/scripts/dtrace2systemtap.py \
 	  $(bindir) $(sbindir) $(libdir) $< > $@
 
-CLEANFILES += libvirt_probes.h libvirt_probes.o libvirt_probes.lo \
-              libvirt_functions.stp libvirt_probes.stp
 endif WITH_DTRACE_PROBES
-
-EXTRA_DIST += libvirt_probes.d
 
 libvirt_qemu_la_SOURCES = libvirt-qemu.c
 libvirt_qemu_la_LDFLAGS = \
@@ -514,10 +486,6 @@ libvirt_lxc_la_LDFLAGS = \
 		$(NULL)
 libvirt_lxc_la_CFLAGS = $(AM_CFLAGS)
 libvirt_lxc_la_LIBADD = libvirt.la
-
-EXTRA_DIST += \
-	$(SYSCONF_FILES) \
-	$(OPENRC_CONF_FILES)
 
 install-sysconfig:
 	$(MKDIR_P) $(DESTDIR)$(sysconfdir)/sysconfig
@@ -557,11 +525,6 @@ uninstall-openrc-conf:
 
 LOGROTATE_FILES := $(LOGROTATE_FILES_IN:remote/%.in=%)
 
-EXTRA_DIST += $(LOGROTATE_FILES_IN)
-
-BUILT_SOURCES += $(LOGROTATE_FILES)
-CLEANFILES += $(LOGROTATE_FILES)
-
 %.logrotate: remote/%.logrotate.in
 	$(AM_V_GEN)sed \
 	    -e 's|[@]localstatedir[@]|$(localstatedir)|g' \
@@ -587,19 +550,10 @@ UNINSTALL_LOCAL += uninstall-logrotate
 endif WITH_LIBVIRTD
 
 
-EXTRA_DIST += \
-        $(SYSTEMD_UNIT_FILES_IN) \
-        $(OPENRC_INIT_FILES_IN) \
-        $(NULL)
-
-
 if WITH_LIBVIRTD
 if LIBVIRT_INIT_SCRIPT_SYSTEMD
 
 SYSTEMD_UNIT_DIR = $(prefix)/lib/systemd/system
-
-BUILT_SOURCES += $(SYSTEMD_UNIT_FILES)
-DISTCLEANFILES += $(SYSTEMD_UNIT_FILES)
 
 install-systemd: $(SYSTEMD_UNIT_FILES) install-sysconfig
 	$(MKDIR_P) $(DESTDIR)$(SYSTEMD_UNIT_DIR)
@@ -619,9 +573,6 @@ endif LIBVIRT_INIT_SCRIPT_SYSTEMD
 if LIBVIRT_INIT_SCRIPT_OPENRC
 
 OPENRC_INIT_DIR = $(sysconfdir)/init.d
-
-BUILT_SOURCES += $(OPENRC_INIT_FILES)
-DISTCLEANFILES += $(OPENRC_INIT_FILES)
 
 install-openrc: $(OPENRC_INIT_FILES) install-openrc-conf
 	$(MKDIR_P) $(DESTDIR)$(OPENRC_INIT_DIR)
@@ -671,9 +622,6 @@ libvirt_iohelper_CFLAGS = \
 endif WITH_LIBVIRTD
 
 
-generated-sources: $(BUILT_SOURCES)
-
-
 install-data-local: $(INSTALL_DATA_LOCAL) \
 		$(INSTALL_DATA_DIRS:%=install-data-%)
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/cache/libvirt"
@@ -688,6 +636,3 @@ uninstall-local: $(UNINSTALL_LOCAL) \
 	rmdir "$(DESTDIR)$(localstatedir)/lib/libvirt/filesystems" ||:
 	rmdir "$(DESTDIR)$(localstatedir)/lib/libvirt/boot" ||:
 	rmdir "$(DESTDIR)$(localstatedir)/lib/libvirt" ||:
-
-CLEANFILES += *.gcov .libs/*.gcda .libs/*.gcno *.gcno *.gcda *.i *.s
-DISTCLEANFILES += $(GENERATED_SYM_FILES)
