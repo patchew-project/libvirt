@@ -2086,6 +2086,20 @@ elif get_option('host_validate').enabled()
   error('virt-host-validate is not supported on Windows')
 endif
 
+if get_option('init_script') == 'check'
+  if meson.is_cross_build()
+    init_script = 'none'
+  elif find_program('systemctl', required: false).found()
+    init_script = 'systemd'
+  elif find_program('openrc', required: false).found()
+    init_script = 'openrc'
+  else
+    init_script = 'none'
+  endif
+else
+  init_script = get_option('init_script')
+endif
+
 
 # define top include directory
 
@@ -2211,6 +2225,7 @@ misc_summary = {
   'Use -Werror': cc_flags.contains('-Werror'),
   'Warning Flags': supported_cc_flags,
   'DTrace': conf.has('WITH_DTRACE_PROBES'),
+  'Init script': init_script,
   'Char device locks': chrdev_lock_files,
   'Default Editor': conf.get_unquoted('DEFAULT_EDITOR'),
   'virt-host-validate': conf.has('WITH_HOST_VALIDATE'),

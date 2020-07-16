@@ -95,3 +95,4 @@ option('debug_logs', type: 'boolean', value: true, description: 'enable debuggin
 option('default_editor', type: 'string', value: 'vi', description: 'Editor to use for interactive commands')
 option('dtrace', type: 'feature', value: 'auto', description: 'use dtrace for static probing')
 option('host_validate', type: 'feature', value: 'auto', description: 'build virt-host-validate')
+option('init_script', type: 'combo', choices: ['systemd', 'openrc', 'check', 'none'], value: 'check', description: 'Style of init script to install')
