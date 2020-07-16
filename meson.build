@@ -2073,6 +2073,13 @@ if conf.has('WITH_LIBVIRTD')
   driver_modules_flags = libvirt_export_dynamic
 endif
 
+if host_machine.system() == 'linux'
+  dtrace_prog = find_program('dtrace', required: get_option('dtrace'), dirs: libvirt_sbin_path)
+  if dtrace_prog.found()
+    conf.set('WITH_DTRACE_PROBES', 1)
+  endif
+endif
+
 
 # define top include directory
 
@@ -2197,6 +2204,7 @@ misc_summary = {
   'Debug': conf.has('ENABLE_DEBUG'),
   'Use -Werror': cc_flags.contains('-Werror'),
   'Warning Flags': supported_cc_flags,
+  'DTrace': conf.has('WITH_DTRACE_PROBES'),
   'Char device locks': chrdev_lock_files,
   'Default Editor': conf.get_unquoted('DEFAULT_EDITOR'),
 }
