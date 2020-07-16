@@ -3,3 +3,4 @@ option('packager', type: 'string', value: '', description: 'Extra packager name'
 option('packager_version', type: 'string', value: '', description: 'Extra packager version')
 option('system', type: 'boolean', value: false, description: 'Set install paths to system ones')
 option('runstatedir', type: 'string', value: '', description: 'State directory for temporary sockets, pid files, etc')
+option('test_suite', type: 'boolean', value: true, description: 'Whether to enable and build test suite by default')

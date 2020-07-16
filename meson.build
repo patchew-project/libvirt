@@ -124,6 +124,11 @@ if packager_version != ''
 endif
 
 
+# test options
+
+use_test_suite = get_option('test_suite')
+
+
 # figure out libvirt version strings
 
 arr_version = meson.project_version().split('.')
