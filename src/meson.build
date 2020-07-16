@@ -147,6 +147,7 @@ subdir('network')
 subdir('node_device')
 subdir('nwfilter')
 subdir('security')
+subdir('storage')
 
 subdir('bhyve')
 subdir('esx')
