@@ -52,4 +52,9 @@ if conf.has('WITH_VZ')
     'sockets': [ 'main', 'ro', 'admin' ],
     'conflicts': true,
   }
+
+  openrc_init_files += {
+    'name': 'virtvzd',
+    'in_file': files('virtvzd.init.in'),
+  }
 endif

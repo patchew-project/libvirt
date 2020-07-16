@@ -87,4 +87,9 @@ if conf.has('WITH_LIBVIRTD')
     'socket_in': files('virtlogd.socket.in'),
     'socket_admin_in': files('virtlogd-admin.socket.in'),
   }
+
+  openrc_init_files += {
+    'name': 'virtlogd',
+    'in_file': files('virtlogd.init.in'),
+  }
 endif
