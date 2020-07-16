@@ -1781,21 +1781,37 @@ virFileFindResource(const char *filename,
  * virFileActivateDirOverrideForProg:
  * @argv0: argv[0] of the calling program
  *
- * Look at @argv0 and try to detect if running from
- * a build directory, by looking for a 'lt-' prefix
- * on the binary name, or '/.libs/' in the path
+ * Combine $PWD and @argv0, canonicalize it and check if abs_top_builddir
+ * matches as prefix in the path.
  */
 void
 virFileActivateDirOverrideForProg(const char *argv0)
 {
-    char *file = strrchr(argv0, '/');
-    if (!file || file[1] == '\0')
+    const char *pwd = g_getenv("PWD");
+    g_autofree char *fullPath = NULL;
+    g_autofree char *canonPath = NULL;
+    const char *path = NULL;
+
+    if (!pwd)
         return;
-    file++;
-    if (STRPREFIX(file, "lt-") ||
-        strstr(argv0, "/.libs/")) {
+
+    if (argv0[0] != '/') {
+        fullPath = g_strdup_printf("%s/%s", pwd, argv0);
+        canonPath = virFileCanonicalizePath(fullPath);
+
+        if (!canonPath) {
+            VIR_DEBUG("Failed to get canonicalized path errno=%d", errno);
+            return;
+        }
+
+        path = canonPath;
+    } else {
+        path = argv0;
+    }
+
+    if (STRPREFIX(path, abs_top_builddir)) {
         useDirOverride = true;
-        VIR_DEBUG("Activating build dir override for %s", argv0);
+        VIR_DEBUG("Activating build dir override for %s", path);
     }
 }
 
