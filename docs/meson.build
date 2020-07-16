@@ -105,6 +105,27 @@ docs_html_in_files = [
   'windows',
 ]
 
+docs_rst_files = [
+  'advanced-tests',
+  'best-practices',
+  'ci',
+  'coding-style',
+  'committer-guidelines',
+  'daemons',
+  'developer-tooling',
+  'formatbackup',
+  'formatcheckpoint',
+  'hacking',
+  'libvirt-go',
+  'libvirt-go-xml',
+  'newreposetup',
+  'pci-addresses',
+  'platforms',
+  'programming-languages',
+  'styleguide',
+  'submitting-patches',
+]
+
 install_data(docs_assets, install_dir: docs_html_dir)
 
 aclperms_gen = custom_target(
@@ -170,6 +191,46 @@ foreach name : docs_html_in_files
   custom_target(
     html_file,
     input: html_in_file,
+    output: html_file,
+    command: [
+      meson_python_prog,
+      meson_html_gen_prog,
+      xsltproc_prog.path(),
+      xmllint_prog.path(),
+      meson.build_root(),
+      docs_timestamp,
+      site_xsl,
+      '@INPUT@',
+      '@OUTPUT@',
+    ],
+    depends: [ aclperms_gen ],
+    depend_files: [ page_xsl ],
+    install: true,
+    install_dir: docs_html_dir,
+  )
+endforeach
+
+
+# docs_html_in_gen:
+#   each entry is a dictionary with following items:
+#   name - base file name (required)
+#   file - generated file (required)
+docs_html_in_gen = []
+
+foreach name : docs_rst_files
+  rst_file = '@0@.rst'.format(name)
+  docs_html_in_gen += {
+    'name': name,
+    'file': docs_rst2html_gen.process(rst_file),
+  }
+endforeach
+
+foreach data : docs_html_in_gen
+  html_file = '@0@.html'.format(data['name'])
+
+  custom_target(
+    html_file,
+    input: data['file'],
     output: html_file,
     command: [
       meson_python_prog,
