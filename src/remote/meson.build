@@ -63,6 +63,32 @@ foreach name : [ 'remote', 'qemu', 'lxc' ]
   )
 endforeach
 
+libvirt_conf_files = [
+  [ 'libvirtd.conf.in', 'libvirtd.conf.tmp', 'virtd.conf.tmp' ],
+  [ 'libvirtd.aug.in', 'libvirtd.aug.tmp', 'virtd.aug.tmp' ],
+  [ 'test_libvirtd.aug.in', 'test_libvirtd.aug.tmp', 'test_virtd.aug.tmp' ],
+]
+
+foreach name : libvirt_conf_files
+  tmp = configure_file(
+    input: name[0],
+    output: name[1],
+    command: [ 'sed', '-e', '/[@]CUT_ENABLE_IP[@]/d', '-e', '/[@]END[@]/d', '@INPUT@' ],
+    capture: true,
+  )
+  set_variable(name[1].underscorify(), tmp)
+endforeach
+
+foreach name : libvirt_conf_files
+  tmp = configure_file(
+    input: name[0],
+    output: name[2],
+    command: [ 'sed', '-e', '/[@]CUT_ENABLE_IP[@]/,/[@]END[@]/d', '@INPUT@' ],
+    capture: true,
+  )
+  set_variable(name[2].underscorify(), tmp)
+endforeach
+
 if conf.has('WITH_REMOTE')
   remote_driver_lib = static_library(
     'virt_remote_driver',
