@@ -87,6 +87,7 @@ subdir('hypervisor')
 subdir('vmx')
 
 subdir('admin')
+subdir('locking')
 
 subdir('esx')
 subdir('hyperv')
