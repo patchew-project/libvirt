@@ -96,3 +96,4 @@ option('default_editor', type: 'string', value: 'vi', description: 'Editor to us
 option('dtrace', type: 'feature', value: 'auto', description: 'use dtrace for static probing')
 option('host_validate', type: 'feature', value: 'auto', description: 'build virt-host-validate')
 option('init_script', type: 'combo', choices: ['systemd', 'openrc', 'check', 'none'], value: 'check', description: 'Style of init script to install')
+option('login_shell', type: 'feature', value: 'auto', description: 'build virt-login-shell')
