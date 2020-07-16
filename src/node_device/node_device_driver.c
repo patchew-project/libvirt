@@ -833,6 +833,17 @@ nodeDeviceGetMdevctlStopCommand(const char *uuid)
 
 }
 
+virCommandPtr
+nodeDeviceGetMdevctlUndefineCommand(const char *uuid)
+{
+    return virCommandNewArgList(MDEVCTL,
+                                "undefine",
+                                "-u",
+                                uuid,
+                                NULL);
+
+}
+
 static int
 virMdevctlStop(virNodeDeviceDefPtr def)
 {
@@ -840,6 +851,21 @@ virMdevctlStop(virNodeDeviceDefPtr def)
     g_autoptr(virCommand) cmd = NULL;
 
     cmd = nodeDeviceGetMdevctlStopCommand(def->caps->data.mdev.uuid);
+
+    if (virCommandRun(cmd, &status) < 0 || status != 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
+virMdevctlUndefine(virNodeDeviceDefPtr def)
+{
+    int status;
+    g_autoptr(virCommand) cmd = NULL;
+
+    cmd = nodeDeviceGetMdevctlUndefineCommand(def->caps->data.mdev.uuid);
 
     if (virCommandRun(cmd, &status) < 0 || status != 0)
         return -1;
@@ -1090,6 +1116,48 @@ nodeDeviceDefineXML(virConnectPtr conn,
     return device;
 }
 
+
+int
+nodeDeviceUndefine(virNodeDevicePtr device)
+{
+    int ret = -1;
+    virNodeDeviceObjPtr obj = NULL;
+    virNodeDeviceDefPtr def;
+    g_autofree char *parent = NULL;
+
+    if (nodeDeviceWaitInit() < 0)
+        return -1;
+
+    if (!(obj = nodeDeviceObjFindByName(device->name)))
+        return -1;
+    def = virNodeDeviceObjGetDef(obj);
+
+    if (virNodeDeviceUndefineEnsureACL(device->conn, def) < 0)
+        goto cleanup;
+
+    if (virNodeDeviceObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("node device '%s' is still active"),
+                       def->name);
+        goto cleanup;
+    }
+
+    if (nodeDeviceHasCapability(def, VIR_NODE_DEV_CAP_MDEV)) {
+        if (virMdevctlUndefine(def) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Unable to undefine mediated device"));
+            goto cleanup;
+        }
+        ret = 0;
+    } else {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Unsupported device type"));
+    }
+
+ cleanup:
+    virNodeDeviceObjEndAPI(&obj);
+    return ret;
+}
 
 
 int

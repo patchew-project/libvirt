@@ -113,6 +113,9 @@ nodeDeviceDefineXML(virConnectPtr conn,
                     unsigned int flags);
 
 int
+nodeDeviceUndefine(virNodeDevicePtr dev);
+
+int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
                                       virNodeDevicePtr dev,
                                       int eventID,
@@ -133,6 +136,9 @@ nodeDeviceGetMdevctlDefineCommand(virNodeDeviceDefPtr def,
 
 virCommandPtr
 nodeDeviceGetMdevctlStopCommand(const char *uuid);
+
+virCommandPtr
+nodeDeviceGetMdevctlUndefineCommand(const char *uuid);
 
 virCommandPtr
 nodeDeviceGetMdevctlListCommand(bool defined, char **output);
