@@ -21,15 +21,27 @@
 #
 #
 
+import os
+import random
 import re
+import string
 import sys
 
-if len(sys.argv) != 3:
-    print("syntax: %s ACCESS-FILE PERMITTED-ACCESS-FILE")
-    sys.exit(1)
+abs_builddir = os.environ.get('abs_builddir', '')
+abs_srcdir = os.environ.get('abs_srcdir', '')
 
-access_file = sys.argv[1]
-permitted_file = sys.argv[2]
+filename = ''.join(random.choice(string.ascii_letters) for _ in range(16))
+access_file = os.path.join(abs_builddir, 'file-access-{0}.txt'.format(filename))
+permitted_file = os.path.join(abs_srcdir, 'permitted_file_access.txt')
+
+os.environ['VIR_TEST_FILE_ACCESS_OUTPUT'] = access_file
+
+test = ' '.join(sys.argv[1:])
+
+ret = os.system(test)
+
+if ret != 0 or not os.is_file(access_file):
+    sys.exit(ret)
 
 known_actions = ["open", "fopen", "access", "stat", "lstat", "connect"]
 
@@ -119,6 +131,8 @@ for file in files:
         if file["testname"] is not None:
             print(": %s" % file["testname"], end="")
         print("")
+
+os.remove(access_file)
 
 if err:
     sys.exit(1)

@@ -665,3 +665,11 @@ foreach name : test_scripts
   script = find_program(name)
   test(name, script, env: tests_env)
 endforeach
+
+add_test_setup(
+  'access',
+  env: [
+    'VIR_TEST_FILE_ACCESS=1',
+  ],
+  exe_wrapper: [ meson_python_prog, check_file_access_prog ],
+)
