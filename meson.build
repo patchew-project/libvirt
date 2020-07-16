@@ -2211,6 +2211,8 @@ subdir('examples')
 
 subdir('po')
 
+subdir('docs')
+
 
 # generate meson-config.h file
 configure_file(output: 'meson-config.h', configuration: conf)
