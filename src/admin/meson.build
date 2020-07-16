@@ -94,6 +94,13 @@ admin_driver_lib = static_library(
 
 libvirt_libs += admin_driver_lib
 
+check_protocols += {
+  'name': 'admin_protocol',
+  'libname': 'virt_admin_driver',
+  'builddir': meson.current_build_dir(),
+  'depends': admin_driver_lib,
+}
+
 virt_conf_files += files('libvirt-admin.conf')
 
 admin_inc_dir = include_directories('.')

@@ -99,6 +99,13 @@ if conf.has('WITH_LXC')
     ],
   )
 
+  check_protocols += {
+    'name': 'lxc_monitor_protocol',
+    'libname': 'virt_driver_lxc_impl',
+    'builddir': meson.current_build_dir(),
+    'depends': lxc_driver_impl_lib,
+  }
+
   virt_modules += {
     'name': 'virt_driver_lxc',
     'link_whole': [

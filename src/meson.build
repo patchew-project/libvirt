@@ -217,6 +217,14 @@ driver_source_files = []
 #   stateful driver source files to check
 stateful_driver_source_files = []
 
+# check_protocols:
+#   check if $name.x is in sync with $name-structs
+#   name - name of the protocol (required)
+#   libname - name of the meson library (required)
+#   builddir - build directory for the library (required)
+#   depends - library that this test depends on (required)
+check_protocols = []
+
 
 # list subdirectories
 
@@ -886,4 +894,19 @@ if augparse_prog.found()
       augeas_test_data,
     ],
   )
+endif
+
+if pdwtags_prog.found()
+  foreach proto : check_protocols
+    test(
+      'check-@0@'.format(proto['name']),
+      python3_prog,
+      args: [
+        check_remote_protocol_prog.path(), proto['name'], proto['libname'],
+        proto['builddir'], pdwtags_prog.path(), files('@0@-structs'.format(proto['name'])),
+      ],
+      env: runutf8,
+      depends: proto['depends'],
+    )
+  endforeach
 endif

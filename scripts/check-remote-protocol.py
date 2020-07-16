@@ -31,55 +31,32 @@ import re
 import subprocess
 import sys
 
-cc = sys.argv[1]
-proto_lo = sys.argv[2]
-expected = sys.argv[3]
-
-proto_lo = proto_lo.replace("/", "/.libs/")
-
-ccargv = cc.split(" ")
-ccargv.append("-v")
-ccproc = subprocess.Popen(ccargv, stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-out, err = ccproc.communicate()
-out = out.decode("utf-8")
-if out.find("clang") != -1:
-    print("WARNING: skipping pdwtags test with Clang", file=sys.stderr)
-    sys.exit(0)
+name = sys.argv[1]
+libname = sys.argv[2]
+builddir = sys.argv[3]
+pdwtags = sys.argv[4]
+expected = sys.argv[5]
 
 
-def which(program):
-    def is_exe(fpath):
-        return (os.path.isfile(fpath) and
-                os.access(fpath, os.X_OK))
+def get_subdir(dirname, subdir):
+    objectdir = ""
+    reg = re.compile(subdir)
+    for d in os.listdir(path=dirname):
+        if reg.match(d):
+            objectdir = d
+            break
 
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
+    if objectdir == "":
+        raise Exception("Failed to find '{0}' in '{1}'".format(subdir, dirname))
 
-    return None
+    return os.path.join(dirname, objectdir)
 
 
-pdwtags = which("pdwtags")
-if pdwtags is None:
-    print("WARNING: you lack pdwtags; skipping the protocol test",
-          file=sys.stderr)
-    print("WARNING: install the dwarves package to get pdwtags",
-          file=sys.stderr)
-    sys.exit(0)
+objectdir = get_subdir(builddir, r'.*@{0}@.*'.format(libname))
 
-proto_o = proto_lo.replace(".lo", ".o")
+proto_o = get_subdir(objectdir, r'.*{0}\.c\.o'.format(name))
 
-if not os.path.exists(proto_o):
-    raise Exception("Missing %s", proto_o)
-
-pdwtagsproc = subprocess.Popen(["pdwtags", "--verbose", proto_o],
+pdwtagsproc = subprocess.Popen([pdwtags, "--verbose", proto_o],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 out, err = pdwtagsproc.communicate()
 out = out.decode("utf-8")

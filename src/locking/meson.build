@@ -90,6 +90,13 @@ if conf.has('WITH_LIBVIRTD')
     ],
   )
 
+  check_protocols += {
+    'name': 'lock_protocol',
+    'libname': 'lockd_impl',
+    'builddir': meson.current_build_dir(),
+    'depends': lockd_lib_impl,
+  }
+
   lockdriver_dir = libdir / 'libvirt' / 'lock-driver'
 
   virt_modules += {

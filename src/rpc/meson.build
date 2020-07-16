@@ -81,6 +81,20 @@ virt_rpc_lib = static_library(
   ],
 )
 
+check_protocols += {
+  'name': 'virnetprotocol',
+  'libname': 'virt_net_rpc',
+  'builddir': meson.current_build_dir(),
+  'depends': virt_rpc_lib,
+}
+
+check_protocols += {
+  'name': 'virkeepaliveprotocol',
+  'libname': 'virt_net_rpc',
+  'builddir': meson.current_build_dir(),
+  'depends': virt_rpc_lib,
+}
+
 virt_rpc_server_lib = static_library(
   'virt_net_rpc_server',
   [
