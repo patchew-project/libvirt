@@ -29,6 +29,16 @@ docs_assets = [
 
 install_data(docs_assets, install_dir: docs_html_dir)
 
+aclperms_gen = custom_target(
+  'aclperms.htmlinc',
+  input: access_perm_h,
+  output: 'aclperms.htmlinc',
+  command: [
+    meson_python_prog, genaclperms_prog, '@INPUT@',
+  ],
+  capture: true,
+)
+
 docs_timestamp = run_command(meson_timestamp_prog).stdout()
 
 docs_api_generated = custom_target(
