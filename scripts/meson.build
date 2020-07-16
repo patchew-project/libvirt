@@ -12,6 +12,7 @@ scripts = [
   'dtrace2systemtap.py',
   'esx_vi_generator.py',
   'gen-def-files.sh',
+  'gen-sym-files.sh',
   'genaclperms.py',
   'genpolkit.py',
   'gensystemtap.py',
