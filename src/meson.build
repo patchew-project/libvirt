@@ -197,6 +197,12 @@ virt_daemon_units = []
 #   * in_file - source init file (required)
 openrc_init_files = []
 
+# sysconf_files
+#   install libvirt daemon sysconf files
+#   * name - daemon name (required)
+#   * file - source sysconf file (required)
+sysconf_files = []
+
 
 # list subdirectories
 
@@ -760,3 +766,11 @@ if conf.has('WITH_LIBVIRTD')
     endforeach
   endif
 endif
+
+foreach sysconf : sysconf_files
+  install_data(
+    sysconf['file'],
+    install_dir: sysconfdir / 'sysconfig',
+    rename: [ sysconf['name'] ],
+  )
+endforeach

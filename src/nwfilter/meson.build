@@ -60,4 +60,9 @@ if conf.has('WITH_NWFILTER')
     'name': 'virtnwfilterd',
     'in_file': files('virtnwfilterd.init.in'),
   }
+
+  sysconf_files += {
+    'name': 'virtnwfilterd',
+    'file': files('virtnwfilterd.sysconf'),
+  }
 endif
