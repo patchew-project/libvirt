@@ -2307,6 +2307,7 @@ summary(libs_summary, section: 'Libraries', bool_yn: true)
 
 win_summary = {
   'MinGW': host_machine.system() == 'windows',
+  'windres': host_machine.system() == 'windows',
 }
 summary(win_summary, section: 'Windows', bool_yn: true)
 
