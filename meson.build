@@ -2200,6 +2200,8 @@ subdir('scripts')
 
 subdir('include')
 
+subdir('src')
+
 
 # generate meson-config.h file
 configure_file(output: 'meson-config.h', configuration: conf)
