@@ -55,3 +55,9 @@ if conf.has('WITH_ESX')
     ],
   )
 endif
+
+if conf.has('WITH_ESX')
+  used_sym_files += 'libvirt_esx.syms'
+else
+  sym_files += 'libvirt_esx.syms'
+endif
