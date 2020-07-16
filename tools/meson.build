@@ -286,3 +286,7 @@ endif
 if conf.has('WITH_NSS')
   subdir('nss')
 endif
+
+if wireshark_dep.found()
+  subdir('wireshark')
+endif
