@@ -305,3 +305,53 @@ libvirt_qemu_lib = shared_library(
   version: libvirt_lib_version,
   soversion: libvirt_so_version,
 )
+
+
+# libvirt-lxc.so symbol files
+
+libvirt_lxc_syms = meson.current_source_dir() / 'libvirt_lxc.syms'
+libvirt_lxc_syms_file = libvirt_lxc_syms
+libvirt_lxc_syms_path = libvirt_lxc_syms
+if host_machine.system() == 'windows'
+  libvirt_lxc_def = custom_target(
+    'libvirt_lxc.def',
+    input: libvirt_lxc_syms,
+    output: 'libvirt_lxc.def',
+    command: [ gen_def_files_prog, '@INPUT@' ],
+    capture: true,
+  )
+  libvirt_lxc_syms_file = libvirt_lxc_def
+  libvirt_lxc_syms_path = libvirt_lxc_def.full_path()
+endif
+
+
+# libvirt-lxc.so
+
+libvirt_lxc_syms_flags = '@0@@1@'.format(
+  version_script_flags,
+  libvirt_lxc_syms_path,
+)
+
+libvirt_lxc_lib = shared_library(
+  'virt-lxc',
+  'libvirt-lxc.c',
+  dependencies: [
+    apparmor_dep,
+    selinux_dep,
+    src_dep,
+  ],
+  link_args: [
+    libvirt_nodelete,
+    libvirt_lxc_syms_flags,
+  ],
+  link_with: [
+    libvirt_lib,
+  ],
+  link_depends: [
+    libvirt_lxc_syms_file,
+  ],
+  install: true,
+  install_rpath: libdir,
+  version: libvirt_lib_version,
+  soversion: libvirt_so_version,
+)
