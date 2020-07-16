@@ -131,6 +131,9 @@ int
 nodeDeviceParseMdevctlJSON(const char *jsonstring,
                            virNodeDeviceDefPtr **devs);
 
+int
+mdevctlEnumerateDevices(void);
+
 void
 nodeDeviceGenerateName(virNodeDeviceDefPtr def,
                        const char *subsystem,
