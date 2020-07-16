@@ -99,3 +99,4 @@ option('init_script', type: 'combo', choices: ['systemd', 'openrc', 'check', 'no
 option('login_shell', type: 'feature', value: 'auto', description: 'build virt-login-shell')
 option('nss', type: 'feature', value: 'auto', description: 'enable Name Service Switch plugin for resolving guest IP addresses')
 option('numad', type: 'feature', value: 'auto', description: 'use numad to manage CPU placement dynamically')
+option('pm_utils', type: 'feature', value: 'auto', description: 'use pm-utils for power management')
