@@ -889,6 +889,8 @@ qemuStateInitialize(bool privileged,
         run_gid = cfg->group;
     }
 
+    qemuProcessQMPClear(cfg->libDir);
+
     qemu_driver->qemuCapsCache = virQEMUCapsCacheNew(cfg->libDir,
                                                      cfg->cacheDir,
                                                      run_uid,
