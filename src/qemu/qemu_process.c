@@ -8375,6 +8375,46 @@ static qemuMonitorCallbacks callbacks = {
 };
 
 
+/**
+ * qemuProcessQMPClear
+ *
+ * Try to kill residual QMP caps processes
+ */
+void
+qemuProcessQMPClear(const char *libDir)
+{
+    virErrorPtr orig_err;
+    DIR *dirp = NULL;
+    struct dirent *dp;
+
+    if (!virFileExists(libDir))
+        return;
+
+    if (virDirOpen(&dirp, libDir) < 0)
+        return;
+
+    virErrorPreserveLast(&orig_err);
+    while (virDirRead(dirp, &dp, libDir) > 0) {
+        g_autofree char *qmp_uniqDir = NULL;
+        g_autofree char *qmp_pidfile = NULL;
+
+        if (!STRPREFIX(dp->d_name, "qmp-"))
+            continue;
+
+        qmp_uniqDir = g_strdup_printf("%s/%s", libDir, dp->d_name);
+        qmp_pidfile = g_strdup_printf("%s/%s", qmp_uniqDir, "qmp.pid");
+
+        ignore_value(virPidFileForceCleanupPath(qmp_pidfile));
+
+        if (qmp_uniqDir)
+            rmdir(qmp_uniqDir);
+    }
+    virErrorRestore(&orig_err);
+
+    VIR_DIR_CLOSE(dirp);
+}
+
+
 static void
 qemuProcessQMPStop(qemuProcessQMPPtr proc)
 {

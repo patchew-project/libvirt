@@ -233,6 +233,8 @@ qemuProcessQMPPtr qemuProcessQMPNew(const char *binary,
                                     gid_t runGid,
                                     bool forceTCG);
 
+void qemuProcessQMPClear(const char *libDir);
+
 void qemuProcessQMPFree(qemuProcessQMPPtr proc);
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuProcessQMP, qemuProcessQMPFree);
 
