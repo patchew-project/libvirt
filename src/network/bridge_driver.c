@@ -2253,7 +2253,9 @@ static int
 networkSetIPv6Sysctls(virNetworkObjPtr obj)
 {
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
-    char *field = NULL;
+    g_autofree char *disable_ipv6 = NULL;
+    g_autofree char *accept_ra = NULL;
+    g_autofree char *autoconf = NULL;
     int ret = -1;
     bool enableIPv6 = !!virNetworkDefGetIPByIndex(def, AF_INET6, 0);
 
@@ -2261,10 +2263,10 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
      * network. But also unset it if there *are* ipv6 addresses, as we
      * can't be sure of its default value.
      */
-    field = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/disable_ipv6",
-                            def->bridge);
+    disable_ipv6 = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/disable_ipv6",
+                                   def->bridge);
 
-    if (access(field, W_OK) < 0 && errno == ENOENT) {
+    if (access(disable_ipv6, W_OK) < 0 && errno == ENOENT) {
         if (!enableIPv6)
             VIR_DEBUG("ipv6 appears to already be disabled on %s",
                       def->bridge);
@@ -2272,13 +2274,12 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
         goto cleanup;
     }
 
-    if (virFileWriteStr(field, enableIPv6 ? "0" : "1", 0) < 0) {
+    if (virFileWriteStr(disable_ipv6, enableIPv6 ? "0" : "1", 0) < 0) {
         virReportSystemError(errno,
                              _("cannot write to %s to enable/disable IPv6 "
-                               "on bridge %s"), field, def->bridge);
+                               "on bridge %s"), disable_ipv6, def->bridge);
         goto cleanup;
     }
-    VIR_FREE(field);
 
     /* The rest of the ipv6 sysctl tunables should always be set the
      * same, whether or not we're using ipv6 on this bridge.
@@ -2287,30 +2288,29 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
     /* Prevent guests from hijacking the host network by sending out
      * their own router advertisements.
      */
-    field = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/accept_ra",
-                            def->bridge);
+    accept_ra = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/accept_ra",
+                                def->bridge);
 
-    if (virFileWriteStr(field, "0", 0) < 0) {
+    if (virFileWriteStr(accept_ra, "0", 0) < 0) {
         virReportSystemError(errno,
-                             _("cannot disable %s"), field);
+                             _("cannot disable %s"), accept_ra);
         goto cleanup;
     }
-    VIR_FREE(field);
 
     /* All interfaces used as a gateway (which is what this is, by
      * definition), must always have autoconf=0.
      */
-    field = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/autoconf", def->bridge);
+    autoconf = g_strdup_printf(SYSCTL_PATH "/net/ipv6/conf/%s/autoconf",
+                               def->bridge);
 
-    if (virFileWriteStr(field, "0", 0) < 0) {
+    if (virFileWriteStr(autoconf, "0", 0) < 0) {
         virReportSystemError(errno,
-                             _("cannot disable %s"), field);
+                             _("cannot disable %s"), autoconf);
         goto cleanup;
     }
 
     ret = 0;
  cleanup:
-    VIR_FREE(field);
     return ret;
 }
 
