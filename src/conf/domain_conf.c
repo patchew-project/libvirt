@@ -1643,7 +1643,7 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
         if (node->type != XML_ELEMENT_NODE)
             continue;
 
-        c = (char *)xmlNodeGetContent(node);
+        c = virXMLNodeContentString(node);
 
         if (virXMLNodeNameEqual(node, "path")) {
             /* To avoid the need for explicit cleanup on failure,
@@ -9370,10 +9370,10 @@ virDomainLeaseDefParseXML(xmlNodePtr node)
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
             if (!key && virXMLNodeNameEqual(cur, "key")) {
-                key = (char *)xmlNodeGetContent(cur);
+                key = virXMLNodeContentString(cur);
             } else if (!lockspace &&
                        virXMLNodeNameEqual(cur, "lockspace")) {
-                lockspace = (char *)xmlNodeGetContent(cur);
+                lockspace = virXMLNodeContentString(cur);
             } else if (!path &&
                        virXMLNodeNameEqual(cur, "target")) {
                 path = virXMLPropString(cur, "path");
@@ -10592,16 +10592,16 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         } else if (!serial &&
                    virXMLNodeNameEqual(cur, "serial")) {
-            serial = (char *)xmlNodeGetContent(cur);
+            serial = virXMLNodeContentString(cur);
         } else if (!wwn &&
                    virXMLNodeNameEqual(cur, "wwn")) {
-            wwn = (char *)xmlNodeGetContent(cur);
+            wwn = virXMLNodeContentString(cur);
 
             if (!virValidateWWN(wwn))
                 goto error;
         } else if (!vendor &&
                    virXMLNodeNameEqual(cur, "vendor")) {
-            vendor = (char *)xmlNodeGetContent(cur);
+            vendor = virXMLNodeContentString(cur);
 
             if (strlen(vendor) > VENDOR_LEN) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -10616,7 +10616,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         } else if (!product &&
                    virXMLNodeNameEqual(cur, "product")) {
-            product = (char *)xmlNodeGetContent(cur);
+            product = virXMLNodeContentString(cur);
 
             if (strlen(product) > PRODUCT_LEN) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -13522,7 +13522,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
                                      "exactly three certificates"));
                     goto error;
                 }
-                def->data.cert.file[i] = (char *)xmlNodeGetContent(cur);
+                def->data.cert.file[i] = virXMLNodeContentString(cur);
                 if (!def->data.cert.file[i]) {
                     virReportOOMError();
                     goto error;
@@ -13531,7 +13531,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
             } else if (cur->type == XML_ELEMENT_NODE &&
                        virXMLNodeNameEqual(cur, "database") &&
                        !def->data.cert.database) {
-                def->data.cert.database = (char *)xmlNodeGetContent(cur);
+                def->data.cert.database = virXMLNodeContentString(cur);
                 if (!def->data.cert.database) {
                     virReportOOMError();
                     goto error;
@@ -19881,7 +19881,7 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
     if (!fwAutoSelect) {
         readonly_str = virXMLPropString(node, "readonly");
         type_str = virXMLPropString(node, "type");
-        loader->path = (char *) xmlNodeGetContent(node);
+        loader->path = virXMLNodeContentString(node);
         if (STREQ_NULLABLE(loader->path, ""))
             VIR_FREE(loader->path);
     }
