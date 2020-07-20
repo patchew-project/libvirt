@@ -538,7 +538,17 @@ virXMLPropStringLimit(xmlNodePtr node,
 char *
 virXMLNodeContentString(xmlNodePtr node)
 {
-    char *ret = (char *)xmlNodeGetContent(node);
+    /* We specifically avoid using virXMLNodeContentString() here, because
+     * when NULL is returned, it is difficult/impossible to
+     * distinguish between 1) OOM, 2) NULL content, 3) some other error.
+     */
+
+    /* for elements used the way libvirt uses them, the xmlNode object
+     * for an element will have a type of XML_ELEMENT_NODE, and if the
+     * node has any content, it will be in the content field of a
+     * child node of that object which is itself of type
+     * XML_TEXT_NODE.
+     */
 
     if (node->type !=  XML_ELEMENT_NODE) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -547,15 +557,38 @@ virXMLNodeContentString(xmlNodePtr node)
         return NULL;
     }
 
-    if (!ret) {
+    /* no children --> empty element node */
+    if (!node->children)
+        return g_strdup("");
+
+    /* if the child isn't text, or there is more than a single node
+     * hanging off "children", our assumptions have been wrong
+     */
+    if (node->children->type != XML_TEXT_NODE) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("node '%s' has unexpected NULL content. This could be caused by malformed input, or a memory allocation failure"),
+                       _("child of element node '%s' has unexpected name '%s', type %d"),
+                       node->name, node->children->name, node->children->type);
+        return NULL;
+    }
+    if (node->children->next) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("child of element node '%s' is type XML_TEXT_NODE, but is a list"),
+                       node->name);
+        return NULL;
+    }
+    if (node->children->children) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("child of element node '%s' is type XML_TEXT_NODE, but has children"),
                        node->name);
         return NULL;
     }
 
-    return ret;
-}
+    /* if content is NULL, return "" instead */
+    if (!node->children->content)
+        return g_strdup("");
+
+    return g_strdup((char *)node->children->content);
+ }
 
 
 /**
