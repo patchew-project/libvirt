@@ -783,6 +783,7 @@ virExec(virCommandPtr cmd)
                                      _("Unable to wait for child process"));
                 _exit(EXIT_FAILURE);
             }
+            g_usleep(100*1000);
             _exit(EXIT_SUCCESS);
         }
     }
