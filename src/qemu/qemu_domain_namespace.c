@@ -762,11 +762,11 @@ qemuDomainSetupAllInputs(virDomainObjPtr vm,
 
 static int
 qemuDomainSetupRNG(virDomainRNGDefPtr rng,
-                   const struct qemuDomainCreateDeviceData *data)
+                   char ***paths)
 {
     switch ((virDomainRNGBackend) rng->backend) {
     case VIR_DOMAIN_RNG_BACKEND_RANDOM:
-        if (qemuDomainCreateDevice(rng->source.file, data, false) < 0)
+        if (virStringListAdd(paths, rng->source.file) < 0)
             return -1;
         break;
 
@@ -783,14 +783,14 @@ qemuDomainSetupRNG(virDomainRNGDefPtr rng,
 
 static int
 qemuDomainSetupAllRNGs(virDomainObjPtr vm,
-                       const struct qemuDomainCreateDeviceData *data)
+                       char ***paths)
 {
     size_t i;
 
     VIR_DEBUG("Setting up RNGs");
     for (i = 0; i < vm->def->nrngs; i++) {
         if (qemuDomainSetupRNG(vm->def->rngs[i],
-                               data) < 0)
+                               paths) < 0)
             return -1;
     }
 
@@ -888,6 +888,9 @@ qemuDomainBuildNamespace(virQEMUDriverConfigPtr cfg,
     if (qemuDomainSetupAllInputs(vm, &paths) < 0)
         return -1;
 
+    if (qemuDomainSetupAllRNGs(vm, &paths) < 0)
+        return -1;
+
     if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths) < 0)
         return -1;
 
@@ -937,9 +940,6 @@ qemuDomainUnshareNamespace(virQEMUDriverConfigPtr cfg,
         goto cleanup;
 
     if (qemuDomainSetupDev(mgr, vm, devPath) < 0)
-        goto cleanup;
-
-    if (qemuDomainSetupAllRNGs(vm, &data) < 0)
         goto cleanup;
 
     if (qemuDomainSetupLoader(vm, &data) < 0)
@@ -1582,16 +1582,6 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver G_GNUC_UNUSED,
 
 
 static int
-qemuDomainNamespaceMknodPath(virDomainObjPtr vm,
-                             const char *path)
-{
-    const char *paths[] = { path, NULL };
-
-    return qemuDomainNamespaceMknodPaths(vm, paths);
-}
-
-
-static int
 qemuDomainNamespaceUnlinkPaths(virDomainObjPtr vm,
                                const char **paths,
                                size_t npaths)
@@ -1818,23 +1808,15 @@ int
 qemuDomainNamespaceSetupRNG(virDomainObjPtr vm,
                             virDomainRNGDefPtr rng)
 {
-    const char *path = NULL;
+    VIR_AUTOSTRINGLIST paths = NULL;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
 
-    switch ((virDomainRNGBackend) rng->backend) {
-    case VIR_DOMAIN_RNG_BACKEND_RANDOM:
-        path = rng->source.file;
-        break;
+    if (qemuDomainSetupRNG(rng, &paths) < 0)
+        return -1;
 
-    case VIR_DOMAIN_RNG_BACKEND_EGD:
-    case VIR_DOMAIN_RNG_BACKEND_BUILTIN:
-    case VIR_DOMAIN_RNG_BACKEND_LAST:
-        break;
-    }
-
-    if (path && qemuDomainNamespaceMknodPath(vm, path) < 0)
+    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths) < 0)
         return -1;
 
     return 0;
