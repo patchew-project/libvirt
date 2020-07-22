@@ -1385,12 +1385,12 @@ qemuDomainMknodItemInit(qemuDomainMknodItemPtr item,
 
 
 static int
-qemuDomainAttachDeviceMknodOne(qemuDomainMknodDataPtr data,
-                               virQEMUDriverConfigPtr cfg,
-                               virDomainObjPtr vm,
-                               const char *file,
-                               char * const *devMountsPath,
-                               size_t ndevMountsPath)
+qemuDomainNamespacePrepareOne(qemuDomainMknodDataPtr data,
+                              virQEMUDriverConfigPtr cfg,
+                              virDomainObjPtr vm,
+                              const char *file,
+                              char * const *devMountsPath,
+                              size_t ndevMountsPath)
 {
     long ttl = sysconf(_SC_SYMLOOP_MAX);
     const char *next = file;
@@ -1433,23 +1433,36 @@ qemuDomainAttachDeviceMknodOne(qemuDomainMknodDataPtr data,
 
 
 static int
-qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
-                            virDomainObjPtr vm,
-                            const char *file,
-                            char * const *devMountsPath,
-                            size_t ndevMountsPath)
+qemuDomainNamespaceMknodPaths(virDomainObjPtr vm,
+                              const char **paths,
+                              size_t npaths)
 {
-    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    g_autoptr(virQEMUDriverConfig) cfg = NULL;
+    char **devMountsPath = NULL;
+    size_t ndevMountsPath = 0;
     qemuDomainMknodData data = { 0 };
     size_t i;
     int ret = -1;
 
+    if (npaths == 0)
+        return 0;
+
+    cfg = virQEMUDriverGetConfig(driver);
+    if (qemuDomainGetPreservedMounts(cfg, vm,
+                                     &devMountsPath, NULL,
+                                     &ndevMountsPath) < 0)
+        return -1;
+
     data.driver = driver;
     data.vm = vm;
 
-    if (qemuDomainAttachDeviceMknodOne(&data, cfg, vm, file,
-                                       devMountsPath, ndevMountsPath) < 0)
-        return -1;
+    for (i = 0; i < npaths; i++) {
+        if (qemuDomainNamespacePrepareOne(&data, cfg, vm, paths[i],
+                                          devMountsPath, ndevMountsPath) < 0)
+            goto cleanup;
+    }
 
     for (i = 0; i < data.nitems; i++) {
         qemuDomainMknodItemPtr item = &data.items[i];
@@ -1481,6 +1494,7 @@ qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
         }
     }
     qemuDomainMknodDataClear(&data);
+    virStringListFreeCount(devMountsPath, ndevMountsPath);
     return ret;
 }
 
@@ -1489,11 +1503,9 @@ qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver G_GNUC_UNUSED,
-                            virDomainObjPtr vm G_GNUC_UNUSED,
-                            const char *file G_GNUC_UNUSED,
-                            char * const *devMountsPath G_GNUC_UNUSED,
-                            size_t ndevMountsPath G_GNUC_UNUSED)
+qemuDomainNamespaceMknodPaths(virDomainObjPtr vm G_GNUC_UNUSED,
+                              const char **paths G_GNUC_UNUSED,
+                              size_t npaths G_GNUC_UNUSED)
 {
     virReportSystemError(ENOSYS, "%s",
                          _("Namespaces are not supported on this platform."));
@@ -1547,43 +1559,6 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver G_GNUC_UNUSED,
     }
 
     return 0;
-}
-
-
-static int
-qemuDomainNamespaceMknodPaths(virDomainObjPtr vm,
-                              const char **paths,
-                              size_t npaths)
-{
-    qemuDomainObjPrivatePtr priv = vm->privateData;
-    virQEMUDriverPtr driver = priv->driver;
-    g_autoptr(virQEMUDriverConfig) cfg = NULL;
-    char **devMountsPath = NULL;
-    size_t ndevMountsPath = 0;
-    int ret = -1;
-    size_t i;
-
-    if (!npaths)
-        return 0;
-
-    cfg = virQEMUDriverGetConfig(driver);
-    if (qemuDomainGetPreservedMounts(cfg, vm,
-                                     &devMountsPath, NULL,
-                                     &ndevMountsPath) < 0)
-        goto cleanup;
-
-    for (i = 0; i < npaths; i++) {
-        if (qemuDomainAttachDeviceMknod(driver,
-                                        vm,
-                                        paths[i],
-                                        devMountsPath, ndevMountsPath) < 0)
-            goto cleanup;
-    }
-
-    ret = 0;
- cleanup:
-    virStringListFreeCount(devMountsPath, ndevMountsPath);
-    return ret;
 }
 
 
