@@ -156,6 +156,7 @@ virDevMapperGetTargetsImpl(const char *path,
     virStringListFree(recursiveDevPaths);
     virStringListFree(devPaths);
     dm_task_destroy(dmt);
+    dm_lib_release();
     return ret;
 }
 
