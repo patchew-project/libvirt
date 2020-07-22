@@ -1098,34 +1098,64 @@ qemuDomainNamespaceAvailable(qemuDomainNamespace ns G_GNUC_UNUSED)
 }
 
 
-struct qemuDomainMknodData {
-    virQEMUDriverPtr driver;
-    virDomainObjPtr vm;
+typedef struct _qemuDomainMknodItem qemuDomainMknodItem;
+typedef qemuDomainMknodItem *qemuDomainMknodItemPtr;
+struct _qemuDomainMknodItem {
     const char *file;
     char *target;
+    bool bindmounted;
     GStatBuf sb;
     void *acl;
-#ifdef WITH_SELINUX
     char *tcon;
-#endif
 };
+
+typedef struct _qemuDomainMknodData qemuDomainMknodData;
+typedef qemuDomainMknodData *qemuDomainMknodDataPtr;
+struct _qemuDomainMknodData {
+    virQEMUDriverPtr driver;
+    virDomainObjPtr vm;
+    qemuDomainMknodItemPtr items;
+    size_t nitems;
+};
+
+
+static void
+qemuDomainMknodItemClear(qemuDomainMknodItemPtr item)
+{
+    VIR_FREE(item->target);
+    virFileFreeACLs(&item->acl);
+#ifdef WITH_SELINUX
+    freecon(item->tcon);
+#endif
+}
+
+
+static void
+qemuDomainMknodDataClear(qemuDomainMknodDataPtr data)
+{
+    size_t i;
+
+    for (i = 0; i < data->nitems; i++) {
+        qemuDomainMknodItemPtr item = &data->items[i];
+
+        qemuDomainMknodItemClear(item);
+    }
+
+    VIR_FREE(data->items);
+}
 
 
 /* Our way of creating devices is highly linux specific */
 #if defined(__linux__)
 static int
-qemuDomainAttachDeviceMknodHelper(pid_t pid G_GNUC_UNUSED,
-                                  void *opaque)
+qemuDomainMknodOne(qemuDomainMknodItemPtr data)
 {
-    struct qemuDomainMknodData *data = opaque;
     int ret = -1;
     bool delDevice = false;
     bool isLink = S_ISLNK(data->sb.st_mode);
     bool isDev = S_ISCHR(data->sb.st_mode) || S_ISBLK(data->sb.st_mode);
     bool isReg = S_ISREG(data->sb.st_mode) || S_ISFIFO(data->sb.st_mode) || S_ISSOCK(data->sb.st_mode);
     bool isDir = S_ISDIR(data->sb.st_mode);
-
-    qemuSecurityPostFork(data->driver->securityManager);
 
     if (virFileMakeParentPath(data->file) < 0) {
         virReportSystemError(errno,
@@ -1244,11 +1274,6 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid G_GNUC_UNUSED,
         else
             unlink(data->file);
     }
-# ifdef WITH_SELINUX
-    freecon(data->tcon);
-# endif
-    virFileFreeACLs(&data->acl);
-    VIR_FREE(data->target);
     return ret;
 }
 
@@ -1265,63 +1290,66 @@ qemuDomainMknodItemIsBindMounted(mode_t st_mode)
 
 
 static int
-qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
-                                     virDomainObjPtr vm,
-                                     const char *file,
-                                     char * const *devMountsPath,
-                                     size_t ndevMountsPath,
-                                     unsigned int ttl)
+qemuDomainMknodHelper(pid_t pid G_GNUC_UNUSED,
+                      void *opaque)
 {
-    g_autoptr(virQEMUDriverConfig) cfg = NULL;
-    struct qemuDomainMknodData data;
+    qemuDomainMknodDataPtr data = opaque;
+    size_t i;
     int ret = -1;
+
+    qemuSecurityPostFork(data->driver->securityManager);
+
+    for (i = 0; i < data->nitems; i++) {
+        if (qemuDomainMknodOne(&data->items[i]) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    qemuDomainMknodDataClear(data);
+    return ret;
+}
+
+
+static int
+qemuDomainMknodItemInit(qemuDomainMknodItemPtr item,
+                        virQEMUDriverConfigPtr cfg,
+                        virDomainObjPtr vm,
+                        const char *file)
+{
     g_autofree char *target = NULL;
     bool isLink;
     bool isReg;
 
-    if (!ttl) {
-        virReportSystemError(ELOOP,
-                             _("Too many levels of symbolic links: %s"),
-                             file);
-        return ret;
-    }
+    item->file = file;
 
-    memset(&data, 0, sizeof(data));
-
-    data.driver = driver;
-    data.vm = vm;
-    data.file = file;
-
-    if (g_lstat(file, &data.sb) < 0) {
+    if (g_lstat(file, &item->sb) < 0) {
         virReportSystemError(errno,
                              _("Unable to access %s"), file);
-        return ret;
+        return -1;
     }
 
-    isLink = S_ISLNK(data.sb.st_mode);
-    isReg = qemuDomainMknodItemIsBindMounted(data.sb.st_mode);
+    isLink = S_ISLNK(item->sb.st_mode);
+    isReg = qemuDomainMknodItemIsBindMounted(item->sb.st_mode);
 
     if (isReg && STRPREFIX(file, QEMU_DEVPREFIX)) {
-        cfg = virQEMUDriverGetConfig(driver);
         if (!(target = qemuDomainGetPreservedMountPath(cfg, vm, file)))
-            goto cleanup;
+            return -1;
 
-        if (virFileBindMountDevice(file, target) < 0)
-            goto cleanup;
-
-        data.target = target;
+        item->target = g_steal_pointer(&target);
     } else if (isLink) {
         g_autoptr(GError) gerr = NULL;
 
         if (!(target = g_file_read_link(file, &gerr))) {
             virReportError(VIR_ERR_SYSTEM_ERROR,
                            _("failed to resolve symlink %s: %s"), file, gerr->message);
-            return ret;
+            return -1;
         }
 
         if (!g_path_is_absolute(target)) {
             g_autofree char *fileTmp = g_strdup(file);
-            char *c = NULL, *tmp = NULL;
+            char *c = NULL;
+            char *tmp = NULL;
 
             if ((c = strrchr(fileTmp, '/')))
                 *(c + 1) = '\0';
@@ -1331,90 +1359,77 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
             target = g_steal_pointer(&tmp);
         }
 
-        data.target = target;
+        item->target = g_steal_pointer(&target);
     }
 
     /* Symlinks don't have ACLs. */
     if (!isLink &&
-        virFileGetACLs(file, &data.acl) < 0 &&
+        virFileGetACLs(file, &item->acl) < 0 &&
         errno != ENOTSUP) {
         virReportSystemError(errno,
                              _("Unable to get ACLs on %s"), file);
-        goto cleanup;
+        return -1;
     }
 
 # ifdef WITH_SELINUX
-    if (lgetfilecon_raw(file, &data.tcon) < 0 &&
+    if (lgetfilecon_raw(file, &item->tcon) < 0 &&
         (errno != ENOTSUP && errno != ENODATA)) {
         virReportSystemError(errno,
                              _("Unable to get SELinux label from %s"), file);
-        goto cleanup;
+        return -1;
     }
 # endif
 
-    if (STRPREFIX(file, QEMU_DEVPREFIX)) {
-        size_t i;
-
-        for (i = 0; i < ndevMountsPath; i++) {
-            if (STREQ(devMountsPath[i], "/dev"))
-                continue;
-            if (STRPREFIX(file, devMountsPath[i]))
-                break;
-        }
-
-        if (i == ndevMountsPath) {
-            if (qemuSecurityPreFork(driver->securityManager) < 0)
-                goto cleanup;
-
-            if (virProcessRunInMountNamespace(vm->pid,
-                                              qemuDomainAttachDeviceMknodHelper,
-                                              &data) < 0) {
-                qemuSecurityPostFork(driver->securityManager);
-                goto cleanup;
-            }
-            qemuSecurityPostFork(driver->securityManager);
-        } else {
-            VIR_DEBUG("Skipping dev %s because of %s mount point",
-                      file, devMountsPath[i]);
-        }
-    }
-
-    if (isLink &&
-        qemuDomainAttachDeviceMknodRecursive(driver, vm, target,
-                                             devMountsPath, ndevMountsPath,
-                                             ttl -1) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-# ifdef WITH_SELINUX
-    freecon(data.tcon);
-# endif
-    virFileFreeACLs(&data.acl);
-    if (isReg && target)
-        umount(target);
-    return ret;
+    return 0;
 }
-
-
-#else /* !defined(__linux__) */
 
 
 static int
-qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver G_GNUC_UNUSED,
-                                     virDomainObjPtr vm G_GNUC_UNUSED,
-                                     const char *file G_GNUC_UNUSED,
-                                     char * const *devMountsPath G_GNUC_UNUSED,
-                                     size_t ndevMountsPath G_GNUC_UNUSED,
-                                     unsigned int ttl G_GNUC_UNUSED)
+qemuDomainAttachDeviceMknodOne(qemuDomainMknodDataPtr data,
+                               virQEMUDriverConfigPtr cfg,
+                               virDomainObjPtr vm,
+                               const char *file,
+                               char * const *devMountsPath,
+                               size_t ndevMountsPath)
 {
-    virReportSystemError(ENOSYS, "%s",
-                         _("Namespaces are not supported on this platform."));
-    return -1;
+    long ttl = sysconf(_SC_SYMLOOP_MAX);
+    const char *next = file;
+    size_t i;
+
+    while (1) {
+        qemuDomainMknodItem item = { 0 };
+
+        if (qemuDomainMknodItemInit(&item, cfg, vm, next) < 0)
+            return -1;
+
+        if (STRPREFIX(next, QEMU_DEVPREFIX)) {
+            for (i = 0; i < ndevMountsPath; i++) {
+                if (STREQ(devMountsPath[i], "/dev"))
+                    continue;
+                if (STRPREFIX(next, devMountsPath[i]))
+                    break;
+            }
+
+            if (i == ndevMountsPath &&
+                VIR_APPEND_ELEMENT_COPY(data->items, data->nitems, item) < 0)
+                return -1;
+        }
+
+        if (!S_ISLNK(item.sb.st_mode))
+            break;
+
+        if (ttl-- == 0) {
+            virReportSystemError(ELOOP,
+                                 _("Too many levels of symbolic links: %s"),
+                                 next);
+            return -1;
+        }
+
+        next = item.target;
+    }
+
+    return 0;
 }
-
-
-#endif /* !defined(__linux__) */
 
 
 static int
@@ -1424,12 +1439,69 @@ qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
                             char * const *devMountsPath,
                             size_t ndevMountsPath)
 {
-    long symloop_max = sysconf(_SC_SYMLOOP_MAX);
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainMknodData data = { 0 };
+    size_t i;
+    int ret = -1;
 
-    return qemuDomainAttachDeviceMknodRecursive(driver, vm, file,
-                                                devMountsPath, ndevMountsPath,
-                                                symloop_max);
+    data.driver = driver;
+    data.vm = vm;
+
+    if (qemuDomainAttachDeviceMknodOne(&data, cfg, vm, file,
+                                       devMountsPath, ndevMountsPath) < 0)
+        return -1;
+
+    for (i = 0; i < data.nitems; i++) {
+        qemuDomainMknodItemPtr item = &data.items[i];
+        if (item->target &&
+            qemuDomainMknodItemIsBindMounted(item->sb.st_mode)) {
+            if (virFileBindMountDevice(item->file, item->target) < 0)
+                goto cleanup;
+            item->bindmounted = true;
+        }
+    }
+
+    if (qemuSecurityPreFork(driver->securityManager) < 0)
+        goto cleanup;
+
+    if (virProcessRunInMountNamespace(vm->pid,
+                                      qemuDomainMknodHelper,
+                                      &data) < 0) {
+        qemuSecurityPostFork(driver->securityManager);
+        goto cleanup;
+    }
+    qemuSecurityPostFork(driver->securityManager);
+
+    ret = 0;
+ cleanup:
+    for (i = 0; i < data.nitems; i++) {
+        if (data.items[i].bindmounted &&
+            umount(data.items[i].target) < 0) {
+            VIR_WARN("Unable to unmount %s", data.items[i].target);
+        }
+    }
+    qemuDomainMknodDataClear(&data);
+    return ret;
 }
+
+
+#else /* !defined(__linux__) */
+
+
+static int
+qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver G_GNUC_UNUSED,
+                            virDomainObjPtr vm G_GNUC_UNUSED,
+                            const char *file G_GNUC_UNUSED,
+                            char * const *devMountsPath G_GNUC_UNUSED,
+                            size_t ndevMountsPath G_GNUC_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Namespaces are not supported on this platform."));
+    return -1;
+}
+
+
+#endif /* !defined(__linux__) */
 
 
 static int
