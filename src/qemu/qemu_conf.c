@@ -30,6 +30,7 @@
 #include "qemu_conf.h"
 #include "qemu_capabilities.h"
 #include "qemu_domain.h"
+#include "qemu_domain_namespace.h"
 #include "qemu_firmware.h"
 #include "qemu_security.h"
 #include "viruuid.h"
