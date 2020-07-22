@@ -176,9 +176,6 @@ virDevMapperGetTargetsImpl(const char *path,
  * If @path consists of yet another devmapper targets these are
  * consulted recursively.
  *
- * If we don't have permissions to talk to kernel, -1 is returned
- * and errno is set to EBADF.
- *
  * Returns 0 on success,
  *        -1 otherwise (with errno set, no libvirt error is
  *        reported)
