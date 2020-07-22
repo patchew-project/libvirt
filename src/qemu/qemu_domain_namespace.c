@@ -1530,17 +1530,15 @@ int
 qemuDomainNamespaceTeardownChardev(virDomainObjPtr vm,
                                    virDomainChrDefPtr chr)
 {
-    const char *path = NULL;
+    VIR_AUTOSTRINGLIST paths = NULL;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
 
-    if (chr->source->type != VIR_DOMAIN_CHR_TYPE_DEV)
-        return 0;
+    if (qemuDomainSetupChardev(vm->def, chr, &paths) < 0)
+        return -1;
 
-    path = chr->source->data.file.path;
-
-    if (qemuDomainNamespaceUnlinkPath(vm, path) < 0)
+    if (qemuDomainNamespaceUnlinkPaths(vm, (const char **) paths) < 0)
         return -1;
 
     return 0;
