@@ -1253,6 +1253,17 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid G_GNUC_UNUSED,
 }
 
 
+static bool
+qemuDomainMknodItemIsBindMounted(mode_t st_mode)
+{
+    /* A block device S_ISBLK() or a chardev S_ISCHR() is intentionally not
+     * handled.  We want to mknod() it instead of passing in through bind
+     * mounting. */
+    return S_ISREG(st_mode) || S_ISFIFO(st_mode) ||
+           S_ISSOCK(st_mode) || S_ISDIR(st_mode);
+}
+
+
 static int
 qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
                                      virDomainObjPtr vm,
@@ -1267,7 +1278,6 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
     g_autofree char *target = NULL;
     bool isLink;
     bool isReg;
-    bool isDir;
 
     if (!ttl) {
         virReportSystemError(ELOOP,
@@ -1289,10 +1299,9 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
     }
 
     isLink = S_ISLNK(data.sb.st_mode);
-    isReg = S_ISREG(data.sb.st_mode) || S_ISFIFO(data.sb.st_mode) || S_ISSOCK(data.sb.st_mode);
-    isDir = S_ISDIR(data.sb.st_mode);
+    isReg = qemuDomainMknodItemIsBindMounted(data.sb.st_mode);
 
-    if ((isReg || isDir) && STRPREFIX(file, QEMU_DEVPREFIX)) {
+    if (isReg && STRPREFIX(file, QEMU_DEVPREFIX)) {
         cfg = virQEMUDriverGetConfig(driver);
         if (!(target = qemuDomainGetPreservedMountPath(cfg, vm, file)))
             goto cleanup;
