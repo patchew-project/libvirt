@@ -856,10 +856,27 @@ qemuDomainSetupLaunchSecurity(virDomainObjPtr vm,
 }
 
 
+static int
+qemuDomainNamespaceMknodPaths(virDomainObjPtr vm,
+                              const char **paths);
+
+
 int
-qemuDomainBuildNamespace(virQEMUDriverConfigPtr cfg,
-                         virSecurityManagerPtr mgr,
-                         virDomainObjPtr vm)
+qemuDomainBuildNamespace(virDomainObjPtr vm)
+{
+    VIR_AUTOSTRINGLIST paths = NULL;
+
+    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+int
+qemuDomainUnshareNamespace(virQEMUDriverConfigPtr cfg,
+                           virSecurityManagerPtr mgr,
+                           virDomainObjPtr vm)
 {
     struct qemuDomainCreateDeviceData data;
     const char *devPath = NULL;
