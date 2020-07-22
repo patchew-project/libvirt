@@ -1434,18 +1434,19 @@ qemuDomainNamespacePrepareOne(qemuDomainMknodDataPtr data,
 
 static int
 qemuDomainNamespaceMknodPaths(virDomainObjPtr vm,
-                              const char **paths,
-                              size_t npaths)
+                              const char **paths)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverPtr driver = priv->driver;
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
     char **devMountsPath = NULL;
     size_t ndevMountsPath = 0;
+    size_t npaths = 0;
     qemuDomainMknodData data = { 0 };
     size_t i;
     int ret = -1;
 
+    npaths = virStringListLength(paths);
     if (npaths == 0)
         return 0;
 
@@ -1566,9 +1567,9 @@ static int
 qemuDomainNamespaceMknodPath(virDomainObjPtr vm,
                              const char *path)
 {
-    const char *paths[] = { path };
+    const char *paths[] = { path, NULL };
 
-    return qemuDomainNamespaceMknodPaths(vm, paths, 1);
+    return qemuDomainNamespaceMknodPaths(vm, paths);
 }
 
 
@@ -1624,7 +1625,6 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
 {
     virStorageSourcePtr next;
     VIR_AUTOSTRINGLIST paths = NULL;
-    size_t npaths = 0;
     bool hasNVMe = false;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
@@ -1674,8 +1674,7 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
         virStringListAdd(&paths, QEMU_DEV_VFIO) < 0)
         return -1;
 
-    npaths = virStringListLength((const char **) paths);
-    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths, npaths) < 0)
+    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths) < 0)
         return -1;
 
     return 0;
@@ -1713,7 +1712,6 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
 {
     g_autofree char *path = NULL;
     VIR_AUTOSTRINGLIST paths = NULL;
-    size_t npaths = 0;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
@@ -1729,8 +1727,7 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
         virStringListAdd(&paths, QEMU_DEV_VFIO) < 0)
         return -1;
 
-    npaths = virStringListLength((const char **) paths);
-    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths, npaths) < 0)
+    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths) < 0)
         return -1;
 
     return 0;
