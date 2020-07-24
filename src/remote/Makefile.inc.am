@@ -217,6 +217,8 @@ if WITH_LIBVIRTD
 
 sbin_PROGRAMS += libvirtd virtproxyd
 
+bin_PROGRAMS += virt-ssh-helper
+
 augeas_DATA += \
 	remote/libvirtd.aug \
 	remote/virtproxyd.aug \
@@ -282,6 +284,35 @@ remote/virtproxyd.conf: remote/libvirtd.conf.in
 		-e 's|[@]runstatedir[@]|@runstatedir@|' \
 		-e 's/[@]DAEMON_NAME[@]/virtproxyd/' \
 		$< > $@
+
+virt_ssh_helper_SOURCES = \
+	remote/remote_sockets.h \
+	remote/remote_sockets.c \
+	remote/remote_ssh_helper.c \
+	$(NULL)
+
+virt_ssh_helper_CFLAGS = \
+	$(LIBXML_CFLAGS) \
+	$(GLIB_CFLAGS) \
+	$(WARN_CFLAGS) \
+	$(PIE_CFLAGS) \
+	-I$(srcdir)/access \
+	-I$(srcdir)/rpc \
+	$(NULL)
+
+virt_ssh_helper_LDFLAGS = \
+	$(RELRO_LDFLAGS) \
+	$(PIE_LDFLAGS) \
+	$(NO_INDIRECT_LDFLAGS) \
+	$(NO_UNDEFINED_LDFLAGS) \
+	$(NULL)
+
+virt_ssh_helper_LDADD = \
+	libvirt.la \
+	$(GLIB_LIBS) \
+	$(LIBXML_LIBS) \
+	$(NULL)
+
 
 INSTALL_DATA_DIRS += remote
 
