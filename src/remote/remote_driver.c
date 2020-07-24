@@ -1010,8 +1010,8 @@ doRemoteOpen(virConnectPtr conn,
                                                 username,
                                                 !tty,
                                                 !verify,
-                                                netcat,
                                                 keyfile,
+                                                netcat,
                                                 sockname)))
             goto failed;
 
