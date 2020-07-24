@@ -13,6 +13,8 @@ REMOTE_DRIVER_GENERATED = \
 	$(NULL)
 
 REMOTE_DRIVER_SOURCES = \
+	remote/remote_sockets.c \
+	remote/remote_sockets.h \
 	remote/remote_driver.c \
 	remote/remote_driver.h \
 	$(NULL)
