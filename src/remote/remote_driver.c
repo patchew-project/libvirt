@@ -761,18 +761,28 @@ doRemoteOpen(virConnectPtr conn,
     g_autofree char *knownHosts = NULL;
     g_autofree char *mode_str = NULL;
     g_autofree char *daemon_name = NULL;
+    g_autofree char *proxy_str = NULL;
     bool sanity = true;
     bool verify = true;
 #ifndef WIN32
     bool tty = true;
 #endif
     int mode;
+    int proxy;
 
     if (inside_daemon && !conn->uri->server) {
         mode = REMOTE_DRIVER_MODE_DIRECT;
     } else {
         mode = REMOTE_DRIVER_MODE_AUTO;
     }
+
+    /* Historically we didn't allow ssh tunnel with session mode,
+     * since we can't construct the accurate path remotely,
+     * so we can default to modern virt-ssh-helper */
+    if (flags & VIR_DRV_OPEN_REMOTE_USER)
+        proxy = VIR_NET_CLIENT_PROXY_NATIVE;
+    else
+        proxy = VIR_NET_CLIENT_PROXY_NETCAT;
 
     /* We handle *ALL* URIs here. The caller has rejected any
      * URIs we don't care about */
@@ -813,6 +823,7 @@ doRemoteOpen(virConnectPtr conn,
             EXTRACT_URI_ARG_STR("known_hosts_verify", knownHostsVerify);
             EXTRACT_URI_ARG_STR("tls_priority", tls_priority);
             EXTRACT_URI_ARG_STR("mode", mode_str);
+            EXTRACT_URI_ARG_STR("proxy", proxy_str);
             EXTRACT_URI_ARG_BOOL("no_sanity", sanity);
             EXTRACT_URI_ARG_BOOL("no_verify", verify);
 #ifndef WIN32
@@ -863,6 +874,14 @@ doRemoteOpen(virConnectPtr conn,
 
     if (mode_str &&
         (mode = remoteDriverModeTypeFromString(mode_str)) < 0)
+        goto failed;
+
+    if (conf && !proxy_str &&
+        virConfGetValueString(conf, "remote_proxy", &proxy_str) < 0)
+        goto failed;
+
+    if (proxy_str &&
+        (proxy = virNetClientProxyTypeFromString(proxy_str)) < 0)
         goto failed;
 
     /* Sanity check that nothing requested !direct mode by mistake */
@@ -949,8 +968,11 @@ doRemoteOpen(virConnectPtr conn,
                                               knownHosts,
                                               knownHostsVerify,
                                               sshauth,
+                                              proxy,
                                               netcat,
                                               sockname,
+                                              name,
+                                              flags & VIR_DRV_OPEN_REMOTE_RO,
                                               auth,
                                               conn->uri);
         if (!priv->client)
@@ -970,8 +992,11 @@ doRemoteOpen(virConnectPtr conn,
                                              knownHosts,
                                              knownHostsVerify,
                                              sshauth,
+                                             proxy,
                                              netcat,
                                              sockname,
+                                             name,
+                                             flags & VIR_DRV_OPEN_REMOTE_RO,
                                              auth,
                                              conn->uri);
         if (!priv->client)
@@ -1011,8 +1036,11 @@ doRemoteOpen(virConnectPtr conn,
                                                 !tty,
                                                 !verify,
                                                 keyfile,
+                                                proxy,
                                                 netcat,
-                                                sockname)))
+                                                sockname,
+                                                name,
+                                                flags & VIR_DRV_OPEN_REMOTE_RO)))
             goto failed;
 
         priv->is_secure = 1;
