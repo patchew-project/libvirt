@@ -3073,6 +3073,9 @@ qemuMigrationSrcConfirmPhase(virQEMUDriverPtr driver,
         qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
                                  jobPriv->migParams, priv->job.apiFlags);
 
+        if (!virDomainObjIsActive(vm))
+            goto done;
+
         if (virDomainObjSave(vm, driver->xmlopt, cfg->stateDir) < 0)
             VIR_WARN("Failed to save status on vm %s", vm->def->name);
     }
