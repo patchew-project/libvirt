@@ -52,7 +52,7 @@ stages:
   script:
     - mkdir build
     - cd build
-    - ../autogen.sh || (cat config.log && exit 1)
+    - ../autogen.sh CC=$CC || (cat config.log && exit 1)
     - $MAKE distcheck
 
 # Jobs that we delegate to Cirrus CI because they require an operating
@@ -304,6 +304,20 @@ x64-fedora-32:
 x64-fedora-rawhide:
   <<: *native_build_job_definition
   variables:
+    NAME: fedora-rawhide
+
+x64-fedora-31-clang:
+  <<: *native_build_job_definition
+  needs: ["x64-fedora-31-container"]
+  variables:
+    CC: clang
+    NAME: fedora-31
+
+x64-fedora-rawhide-clang:
+  <<: *native_build_job_definition
+  needs: ["x64-fedora-rawhide-container"]
+  variables:
+    CC: clang
     NAME: fedora-rawhide
 
 x64-opensuse-151:
