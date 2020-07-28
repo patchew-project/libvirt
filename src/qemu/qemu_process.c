@@ -8009,6 +8009,7 @@ qemuProcessReconnect(void *opaque)
     virQEMUDriverPtr driver = data->driver;
     virDomainObjPtr obj = data->obj;
     qemuDomainObjPrivatePtr priv;
+    virDomainXMLOptionPtr xmlopt;
     qemuDomainJobObj oldjob;
     int state;
     int reason;
@@ -8029,6 +8030,9 @@ qemuProcessReconnect(void *opaque)
 
     cfg = virQEMUDriverGetConfig(driver);
     priv = obj->privateData;
+
+    /* need xmlopt later to save status, do not free */
+    xmlopt = virObjectRef(driver->xmlopt);
 
     if (qemuDomainObjBeginJob(driver, obj, QEMU_JOB_MODIFY) < 0)
         goto error;
@@ -8229,7 +8233,7 @@ qemuProcessReconnect(void *opaque)
     }
 
     /* update domain state XML with possibly updated state in virDomainObj */
-    if (virDomainObjSave(obj, driver->xmlopt, cfg->stateDir) < 0)
+    if (virDomainObjSave(obj, xmlopt, cfg->stateDir) < 0)
         goto error;
 
     /* Run an hook to allow admins to do some magic */
@@ -8262,6 +8266,7 @@ qemuProcessReconnect(void *opaque)
         if (!virDomainObjIsActive(obj))
             qemuDomainRemoveInactiveJob(driver, obj);
     }
+    virObjectUnref(xmlopt);
     virDomainObjEndAPI(&obj);
     virNWFilterUnlockFilterUpdates();
     virIdentitySetCurrent(NULL);
