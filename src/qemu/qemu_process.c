@@ -92,6 +92,7 @@
 #include "viridentity.h"
 #include "virthreadjob.h"
 #include "virutil.h"
+#include "virkmod.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -6414,6 +6415,7 @@ qemuProcessPrepareHostStorage(virQEMUDriverPtr driver,
     return 0;
 }
 
+#define VHOST_VSOCK_MODULE "vhost-vsock"
 
 int
 qemuProcessOpenVhostVsock(virDomainVsockDefPtr vsock)
@@ -6421,6 +6423,22 @@ qemuProcessOpenVhostVsock(virDomainVsockDefPtr vsock)
     qemuDomainVsockPrivatePtr priv = (qemuDomainVsockPrivatePtr)vsock->privateData;
     const char *vsock_path = "/dev/vhost-vsock";
     int fd;
+
+    if (virKModIsProhibited(VHOST_VSOCK_MODULE)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Failed to load vhost-vsock module: "
+                         "administratively prohibited"));
+        return -1;
+    } else {
+        g_autofree char *errbuf = NULL;
+
+        if ((errbuf = virKModLoad(VHOST_VSOCK_MODULE))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Failed to load vhost-vsock module: %s"),
+                           errbuf);
+            return -1;
+        }
+    }
 
     if ((fd = open(vsock_path, O_RDWR)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
