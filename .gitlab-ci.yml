@@ -2,7 +2,6 @@ variables:
   GIT_DEPTH: 100
 
 stages:
-  - sanity_checks
   - containers
   - builds
 
@@ -479,8 +478,15 @@ potfile:
 # Skip on "libvirt" namespace, since we only need to run
 # this test on developer's personal forks from which
 # merge requests are submitted
+#
+# Put it in the same stage as other tests we expect to fail
+# because of developer's changes as to not frustrate them
+# with partial feedback, but run it as soon as the pipeline
+# starts, since it does not have any `needs` from the previous
+# stages.
 check-dco:
-  stage: sanity_checks
+  stage: builds
+  needs: []
   image: registry.gitlab.com/libvirt/libvirt-ci/check-dco:master
   script:
     - /check-dco
