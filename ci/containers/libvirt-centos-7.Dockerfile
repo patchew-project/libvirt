@@ -87,7 +87,6 @@ WEiJKtQrZDJloqtyi/mmRa1VsV7RYR0VPJjhK/R8EQ7Ysshy\n\
         lsof \
         lvm2 \
         make \
-        ncurses-devel \
         net-tools \
         netcf-devel \
         nfs-utils \

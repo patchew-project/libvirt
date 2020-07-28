@@ -58,7 +58,6 @@ RUN dnf update -y && \
         lvm2 \
         make \
         meson \
-        ncurses-devel \
         net-tools \
         netcf-devel \
         nfs-utils \
