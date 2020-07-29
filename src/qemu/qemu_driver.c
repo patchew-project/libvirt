@@ -3356,18 +3356,15 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
      * is NULL or whether it was the live xml of the domain moments
      * before.  */
     if (xmlin) {
-        virDomainDefPtr def = NULL;
+        g_autoptr(virDomainDef) def = NULL;
 
         if (!(def = virDomainDefParseString(xmlin, driver->xmlopt,
                                             priv->qemuCaps,
                                             VIR_DOMAIN_DEF_PARSE_INACTIVE |
-                                            VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE))) {
+                                            VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto endjob;
-        }
-        if (!qemuDomainCheckABIStability(driver, vm, def)) {
-            virDomainDefFree(def);
+        if (!qemuDomainCheckABIStability(driver, vm, def))
             goto endjob;
-        }
         xml = qemuDomainDefFormatLive(driver, priv->qemuCaps, def, NULL, true, true);
     } else {
         xml = qemuDomainDefFormatLive(driver, priv->qemuCaps, vm->def,
