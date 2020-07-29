@@ -3369,6 +3369,7 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
             goto endjob;
         }
         xml = qemuDomainDefFormatLive(driver, priv->qemuCaps, def, NULL, true, true);
+        virDomainDefFree(def);
     } else {
         xml = qemuDomainDefFormatLive(driver, priv->qemuCaps, vm->def,
                                       priv->origCPU, true, true);
