@@ -454,7 +454,7 @@ VIR_ONCE_GLOBAL_INIT(virResctrl);
 
 /* Common functions */
 static int
-virResctrlLockWrite(void)
+virResctrlLock(void)
 {
 #ifndef WIN32
 
@@ -2404,7 +2404,7 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     if (STREQ(alloc->path, SYSFS_RESCTRL_PATH))
         return 0;
 
-    lockfd = virResctrlLockWrite();
+    lockfd = virResctrlLock();
     if (lockfd < 0)
         goto cleanup;
 
@@ -2597,7 +2597,7 @@ virResctrlMonitorCreate(virResctrlMonitorPtr monitor,
     if (virResctrlMonitorDeterminePath(monitor, machinename) < 0)
         return -1;
 
-    lockfd = virResctrlLockWrite();
+    lockfd = virResctrlLock();
     if (lockfd < 0)
         return -1;
 
