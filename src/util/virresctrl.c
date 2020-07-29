@@ -456,6 +456,8 @@ VIR_ONCE_GLOBAL_INIT(virResctrl);
 static int
 virResctrlLockWrite(void)
 {
+#ifndef WIN32
+
     int fd = open(SYSFS_RESCTRL_PATH, O_RDONLY | O_CLOEXEC);
 
     if (fd < 0) {
@@ -463,13 +465,20 @@ virResctrlLockWrite(void)
         return -1;
     }
 
-    if (virFileFlock(fd, true, false) < 0) {
+    if (flock(fd, LOCK_EX) < 0) {
         virReportSystemError(errno, "%s", _("Cannot lock resctrl"));
         VIR_FORCE_CLOSE(fd);
         return -1;
     }
 
     return fd;
+
+#else /* WIN32 */
+
+    virReportSystemError(ENOSYS, "%s", _("Cannot lock resctrl"));
+    return -1;
+
+#endif
 }
 
 
@@ -484,9 +493,13 @@ virResctrlUnlock(int fd)
     if (VIR_CLOSE(fd) < 0) {
         virReportSystemError(errno, "%s", _("Cannot close resctrl"));
 
+#ifndef WIN32
+
         /* Trying to save the already broken */
-        if (virFileFlock(fd, false, false) < 0)
+        if (flock(fd, LOCK_UN) < 0)
             virReportSystemError(errno, "%s", _("Cannot unlock resctrl"));
+
+#endif
 
         return -1;
     }
