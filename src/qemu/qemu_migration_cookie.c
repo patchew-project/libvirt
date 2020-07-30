@@ -756,8 +756,8 @@ qemuMigrationCookieCapsXMLFormat(virBufferPtr buf,
         bool supported = false;
         bool automatic = false;
 
-        ignore_value(virBitmapGetBit(caps->supported, cap, &supported));
-        ignore_value(virBitmapGetBit(caps->automatic, cap, &automatic));
+        virBitmapGetBit(caps->supported, cap, &supported);
+        virBitmapGetBit(caps->automatic, cap, &automatic);
         if (supported) {
             virBufferAsprintf(buf, "<cap name='%s' auto='%s'/>\n",
                               qemuMigrationCapabilityTypeToString(cap),

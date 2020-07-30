@@ -786,11 +786,11 @@ qemuMigrationCapsToJSON(virBitmapPtr caps,
         bool supported = false;
         bool state = false;
 
-        ignore_value(virBitmapGetBit(caps, bit, &supported));
+        virBitmapGetBit(caps, bit, &supported);
         if (!supported)
             continue;
 
-        ignore_value(virBitmapGetBit(states, bit, &state));
+        virBitmapGetBit(states, bit, &state);
 
         cap = virJSONValueNewObject();
 
@@ -1164,7 +1164,7 @@ qemuMigrationParamsCheck(virQEMUDriverPtr driver,
     for (cap = 0; cap < QEMU_MIGRATION_CAP_LAST; cap++) {
         bool state = false;
 
-        ignore_value(virBitmapGetBit(migParams->caps, cap, &state));
+        virBitmapGetBit(migParams->caps, cap, &state);
 
         if (state && !qemuMigrationCapsGet(vm, cap)) {
             virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
@@ -1183,7 +1183,7 @@ qemuMigrationParamsCheck(virQEMUDriverPtr driver,
                 bool remote = false;
 
                 if (remoteCaps)
-                    ignore_value(virBitmapGetBit(remoteCaps, cap, &remote));
+                    virBitmapGetBit(remoteCaps, cap, &remote);
 
                 if (!remote) {
                     VIR_DEBUG("Not enabling migration capability '%s'; it is "
@@ -1473,7 +1473,7 @@ qemuMigrationCapsGet(virDomainObjPtr vm,
     bool enabled = false;
 
     if (priv->migrationCaps)
-        ignore_value(virBitmapGetBit(priv->migrationCaps, cap, &enabled));
+        virBitmapGetBit(priv->migrationCaps, cap, &enabled);
 
     return enabled;
 }

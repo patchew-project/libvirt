@@ -75,7 +75,7 @@ bool virBitmapIsBitSet(virBitmapPtr bitmap, size_t b)
  * Get setting of bit position @b in @bitmap and store in @result
  */
 int virBitmapGetBit(virBitmapPtr bitmap, size_t b, bool *result)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) G_GNUC_WARN_UNUSED_RESULT;
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
 
 virBitmapPtr
 virBitmapNewString(const char *string)
