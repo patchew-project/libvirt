@@ -1364,7 +1364,7 @@ testOpenDefault(virConnectPtr conn)
         virBitmapPtr siblings = virBitmapNew(16);
         if (!siblings)
             goto error;
-        ignore_value(virBitmapSetBit(siblings, i));
+        virBitmapSetBit(siblings, i);
         privconn->cells[i / 8].cpus[(i % 8)].id = i;
         privconn->cells[i / 8].cpus[(i % 8)].socket_id = i / 8;
         privconn->cells[i / 8].cpus[(i % 8)].core_id = i % 8;

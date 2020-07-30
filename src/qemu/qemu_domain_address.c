@@ -3063,7 +3063,7 @@ qemuDomainGetMemorySlotMap(const virDomainDef *def)
         mem = def->mems[i];
 
         if (mem->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DIMM)
-            ignore_value(virBitmapSetBit(ret, mem->info.addr.dimm.slot));
+            virBitmapSetBit(ret, mem->info.addr.dimm.slot);
     }
 
     return ret;
@@ -3085,7 +3085,7 @@ qemuAssignMemoryDeviceSlot(virDomainMemoryDefPtr mem,
         return -1;
     }
 
-    ignore_value(virBitmapSetBit(slotmap, nextslot));
+    virBitmapSetBit(slotmap, nextslot);
     mem->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DIMM;
     mem->info.addr.dimm.slot = nextslot;
 

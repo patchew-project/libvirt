@@ -1547,7 +1547,7 @@ virVMXParseConfig(virVMXContext *ctx,
                 goto cleanup;
             }
 
-            ignore_value(virBitmapSetBit(def->cpumask, number));
+            virBitmapSetBit(def->cpumask, number);
         }
     }
 

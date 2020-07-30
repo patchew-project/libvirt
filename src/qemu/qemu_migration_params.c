@@ -234,7 +234,7 @@ qemuMigrationParamsGetAlwaysOnCaps(qemuMigrationParty party)
         if (!(qemuMigrationParamsAlwaysOn[i].party & party))
             continue;
 
-        ignore_value(virBitmapSetBit(caps, qemuMigrationParamsAlwaysOn[i].cap));
+        virBitmapSetBit(caps, qemuMigrationParamsAlwaysOn[i].cap);
     }
 
     return caps;
@@ -505,7 +505,7 @@ qemuMigrationParamsSetCompression(virTypedParameterPtr params,
         default:
             continue;
         }
-        ignore_value(virBitmapSetBit(migParams->caps, cap));
+        virBitmapSetBit(migParams->caps, cap);
     }
 
     if ((migParams->params[QEMU_MIGRATION_PARAM_COMPRESS_LEVEL].set ||
@@ -526,8 +526,7 @@ qemuMigrationParamsSetCompression(virTypedParameterPtr params,
 
     if (!migParams->compMethods && (flags & VIR_MIGRATE_COMPRESSED)) {
         migParams->compMethods = 1ULL << QEMU_MIGRATION_COMPRESS_XBZRLE;
-        ignore_value(virBitmapSetBit(migParams->caps,
-                                     QEMU_MIGRATION_CAP_XBZRLE));
+        virBitmapSetBit(migParams->caps, QEMU_MIGRATION_CAP_XBZRLE);
     }
 
     return 0;
@@ -553,7 +552,7 @@ qemuMigrationParamsFromFlags(virTypedParameterPtr params,
             flags & qemuMigrationParamsFlagMap[i].flag) {
             VIR_DEBUG("Enabling migration capability '%s'",
                       qemuMigrationCapabilityTypeToString(cap));
-            ignore_value(virBitmapSetBit(migParams->caps, cap));
+            virBitmapSetBit(migParams->caps, cap);
         }
     }
 
@@ -1197,7 +1196,7 @@ qemuMigrationParamsCheck(virQEMUDriverPtr driver,
 
             VIR_DEBUG("Enabling migration capability '%s'",
                       qemuMigrationCapabilityTypeToString(cap));
-            ignore_value(virBitmapSetBit(migParams->caps, cap));
+            virBitmapSetBit(migParams->caps, cap);
         }
     }
 
@@ -1419,7 +1418,7 @@ qemuMigrationCapsCheck(virQEMUDriverPtr driver,
         if (cap < 0) {
             VIR_DEBUG("Unknown migration capability: '%s'", *capStr);
         } else {
-            ignore_value(virBitmapSetBit(priv->migrationCaps, cap));
+            virBitmapSetBit(priv->migrationCaps, cap);
             VIR_DEBUG("Found migration capability: '%s'", *capStr);
         }
     }
@@ -1429,7 +1428,7 @@ qemuMigrationCapsCheck(virQEMUDriverPtr driver,
         if (!migEvent)
             goto cleanup;
 
-        ignore_value(virBitmapSetBit(migEvent, QEMU_MIGRATION_CAP_EVENTS));
+        virBitmapSetBit(migEvent, QEMU_MIGRATION_CAP_EVENTS);
 
         if (!(json = qemuMigrationCapsToJSON(migEvent, migEvent)))
             goto cleanup;

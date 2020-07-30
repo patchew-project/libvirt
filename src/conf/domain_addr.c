@@ -1694,7 +1694,7 @@ virDomainVirtioSerialAddrReserve(virDomainDefPtr def G_GNUC_UNUSED,
         return -1;
     }
 
-    ignore_value(virBitmapSetBit(map, info->addr.vioserial.port));
+    virBitmapSetBit(map, info->addr.vioserial.port);
 
     return 0;
 }
@@ -2201,7 +2201,7 @@ virDomainUSBAddressSetAddHub(virDomainUSBAddressSetPtr addrs,
                        hub->info.addr.usb.bus, portStr);
         goto cleanup;
     }
-    ignore_value(virBitmapSetBit(targetHub->portmap, targetPort));
+    virBitmapSetBit(targetHub->portmap, targetPort);
     targetHub->ports[targetPort] = newHub;
     newHub = NULL;
 
@@ -2414,7 +2414,7 @@ virDomainUSBAddressReserve(virDomainDeviceInfoPtr info,
         return -1;
     }
 
-    ignore_value(virBitmapSetBit(targetHub->portmap, targetPort));
+    virBitmapSetBit(targetHub->portmap, targetPort);
 
     return 0;
 }

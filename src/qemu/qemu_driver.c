@@ -14412,7 +14412,7 @@ qemuDomainSnapshotCreateInactiveExternal(virQEMUDriverPtr driver,
 
         /* If the target does not exist, we're going to create it possibly */
         if (!virFileExists(snapdisk->src->path))
-            ignore_value(virBitmapSetBit(created, i));
+            virBitmapSetBit(created, i);
 
         if (virCommandRun(cmd, NULL) < 0)
             goto cleanup;
@@ -22336,10 +22336,10 @@ qemuDomainGetGuestVcpusParams(virTypedParameterPtr *params,
         }
 
         if (info[i].online)
-            ignore_value(virBitmapSetBit(online, info[i].id));
+            virBitmapSetBit(online, info[i].id);
 
         if (info[i].offlinable)
-            ignore_value(virBitmapSetBit(offlinable, info[i].id));
+            virBitmapSetBit(offlinable, info[i].id);
     }
 
 #define ADD_BITMAP(name) \

@@ -156,7 +156,7 @@ test3(const void *data G_GNUC_UNUSED)
         goto error;
 
     for (i = 0; i < size; i++)
-        ignore_value(virBitmapSetBit(bitmap, i));
+        virBitmapSetBit(bitmap, i);
 
     if (!virBitmapIsAllSet(bitmap))
         goto error;
@@ -321,8 +321,8 @@ test5(const void *v G_GNUC_UNUSED)
     if (virBitmapNextSetBit(bitmap, j) > 0)
         goto error;
 
-    ignore_value(virBitmapSetBit(bitmap, 2));
-    ignore_value(virBitmapSetBit(bitmap, 15));
+    virBitmapSetBit(bitmap, 2);
+    virBitmapSetBit(bitmap, 15);
 
     if (virBitmapToData(bitmap, &data2, &len2) < 0)
         goto error;
@@ -376,7 +376,7 @@ test6(const void *v G_GNUC_UNUSED)
 
     VIR_FREE(str);
 
-    ignore_value(virBitmapSetBit(bitmap, 0));
+    virBitmapSetBit(bitmap, 0);
     str = virBitmapFormat(bitmap);
     if (!str)
         goto error;
@@ -386,8 +386,8 @@ test6(const void *v G_GNUC_UNUSED)
 
     VIR_FREE(str);
 
-    ignore_value(virBitmapSetBit(bitmap, 4));
-    ignore_value(virBitmapSetBit(bitmap, 5));
+    virBitmapSetBit(bitmap, 4);
+    virBitmapSetBit(bitmap, 5);
     str = virBitmapFormat(bitmap);
     if (!str)
         goto error;
@@ -397,7 +397,7 @@ test6(const void *v G_GNUC_UNUSED)
 
     VIR_FREE(str);
 
-    ignore_value(virBitmapSetBit(bitmap, 6));
+    virBitmapSetBit(bitmap, 6);
     str = virBitmapFormat(bitmap);
     if (!str)
         goto error;
@@ -407,10 +407,10 @@ test6(const void *v G_GNUC_UNUSED)
 
     VIR_FREE(str);
 
-    ignore_value(virBitmapSetBit(bitmap, 13));
-    ignore_value(virBitmapSetBit(bitmap, 14));
-    ignore_value(virBitmapSetBit(bitmap, 15));
-    ignore_value(virBitmapSetBit(bitmap, 16));
+    virBitmapSetBit(bitmap, 13);
+    virBitmapSetBit(bitmap, 14);
+    virBitmapSetBit(bitmap, 15);
+    virBitmapSetBit(bitmap, 16);
     str = virBitmapFormat(bitmap);
     if (!str)
         goto error;
@@ -420,8 +420,8 @@ test6(const void *v G_GNUC_UNUSED)
 
     VIR_FREE(str);
 
-    ignore_value(virBitmapSetBit(bitmap, 62));
-    ignore_value(virBitmapSetBit(bitmap, 63));
+    virBitmapSetBit(bitmap, 62);
+    virBitmapSetBit(bitmap, 63);
     str = virBitmapFormat(bitmap);
     if (!str)
         goto error;
@@ -455,7 +455,7 @@ test7(const void *v G_GNUC_UNUSED)
         if (virBitmapIsAllSet(bitmap))
             goto error;
 
-        ignore_value(virBitmapSetBit(bitmap, 1));
+        virBitmapSetBit(bitmap, 1);
         if (virBitmapIsAllSet(bitmap))
             goto error;
 

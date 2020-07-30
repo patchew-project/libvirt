@@ -6157,7 +6157,7 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
                 goto error;
             }
 
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
         }
     } else {
         *enable = false;
@@ -6184,7 +6184,7 @@ qemuDomainSelectHotplugVcpuEntities(virDomainDefPtr def,
                 goto error;
             }
 
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
         }
     }
 

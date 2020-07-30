@@ -471,7 +471,7 @@ virCommandMassCloseGetFDsLinux(virCommandPtr cmd G_GNUC_UNUSED,
             goto cleanup;
         }
 
-        ignore_value(virBitmapSetBit(fds, fd));
+        virBitmapSetBit(fds, fd);
     }
 
     if (rc < 0)

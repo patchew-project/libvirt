@@ -1156,11 +1156,11 @@ qemuMigrationCookieCapsXMLParse(xmlXPathContextPtr ctxt)
         if ((cap = qemuMigrationCapabilityTypeFromString(name)) < 0)
             VIR_DEBUG("unknown migration capability '%s'", name);
         else
-            ignore_value(virBitmapSetBit(caps->supported, cap));
+            virBitmapSetBit(caps->supported, cap);
 
         if ((automatic = virXMLPropString(nodes[i], "auto")) &&
             STREQ(automatic, "yes"))
-            ignore_value(virBitmapSetBit(caps->automatic, cap));
+            virBitmapSetBit(caps->automatic, cap);
 
         VIR_FREE(name);
         VIR_FREE(automatic);

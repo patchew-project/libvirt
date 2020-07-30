@@ -843,7 +843,7 @@ qcow2GetFeatures(virBitmapPtr *features,
     bits = virReadBufInt64BE(buf + QCOW2v3_HDR_FEATURES_COMPATIBLE);
     for (i = 0; i < QCOW2_COMPATIBLE_FEATURE_LAST; i++) {
         if (bits & ((uint64_t) 1 << i))
-            ignore_value(virBitmapSetBit(feat, qcow2CompatibleFeatureArray[i]));
+            virBitmapSetBit(feat, qcow2CompatibleFeatureArray[i]);
     }
 
     *features = feat;

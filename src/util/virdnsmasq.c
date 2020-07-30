@@ -629,7 +629,7 @@ static void
 dnsmasqCapsSet(dnsmasqCapsPtr caps,
                dnsmasqCapsFlags flag)
 {
-    ignore_value(virBitmapSetBit(caps->flags, flag));
+    virBitmapSetBit(caps->flags, flag);
 }
 
 

@@ -1160,7 +1160,7 @@ virNodeDevCapNetParseXML(xmlXPathContextPtr ctxt,
                            tmp);
             goto out;
         }
-        ignore_value(virBitmapSetBit(net->features, val));
+        virBitmapSetBit(net->features, val);
         VIR_FREE(tmp);
     }
 

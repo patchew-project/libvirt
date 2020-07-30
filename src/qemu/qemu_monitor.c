@@ -1942,7 +1942,7 @@ qemuMonitorGetCpuHalted(qemuMonitorPtr mon,
 
     for (i = 0; i < ncpuentries; i++) {
         if (cpuentries[i].halted)
-            ignore_value(virBitmapSetBit(ret, cpuentries[i].qemu_id));
+            virBitmapSetBit(ret, cpuentries[i].qemu_id);
     }
 
  cleanup:

@@ -1581,7 +1581,7 @@ virCapabilitiesHostNUMAInitFake(virCapsHostNUMAPtr caps)
             for (c = 0; c < nodeinfo.cores; c++) {
                 g_autoptr(virBitmap) siblings = virBitmapNew(ncpus);
                 for (t = 0; t < nodeinfo.threads; t++)
-                    ignore_value(virBitmapSetBit(siblings, id + t));
+                    virBitmapSetBit(siblings, id + t);
 
                 for (t = 0; t < nodeinfo.threads; t++) {
                     if (virHostCPUGetOnline(id, &tmp) < 0)

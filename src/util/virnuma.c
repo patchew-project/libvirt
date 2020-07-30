@@ -286,7 +286,7 @@ virNumaGetNodeCPUs(int node,
 
     for (i = 0; i < max_n_cpus; i++) {
         if (MASK_CPU_ISSET(mask, i)) {
-            ignore_value(virBitmapSetBit(cpumap, i));
+            virBitmapSetBit(cpumap, i);
             ncpus++;
         }
     }
@@ -1035,7 +1035,7 @@ virNumaGetHostMemoryNodeset(void)
 
         /* if we can't detect NUMA node size assume that it's present */
         if (virNumaGetNodeMemory(i, &nodesize, NULL) < 0 || nodesize > 0)
-            ignore_value(virBitmapSetBit(nodeset, i));
+            virBitmapSetBit(nodeset, i);
     }
 
     return nodeset;

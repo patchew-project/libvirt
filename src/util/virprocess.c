@@ -520,7 +520,7 @@ virProcessGetAffinity(pid_t pid)
     for (i = 0; i < ncpus; i++) {
          /* coverity[overrun-local] */
         if (CPU_ISSET_S(i, masklen, mask))
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
     }
 
  cleanup:
@@ -573,7 +573,7 @@ virProcessGetAffinity(pid_t pid)
 
     for (i = 0; i < sizeof(mask) * 8; i++)
         if (CPU_ISSET(i, &mask))
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
 
     return ret;
 }

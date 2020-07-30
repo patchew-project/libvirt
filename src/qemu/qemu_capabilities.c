@@ -1996,7 +1996,7 @@ void
 virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
                virQEMUCapsFlags flag)
 {
-    ignore_value(virBitmapSetBit(qemuCaps->flags, flag));
+    virBitmapSetBit(qemuCaps->flags, flag);
 }
 
 

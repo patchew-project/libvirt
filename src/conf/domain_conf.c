@@ -2009,7 +2009,7 @@ virDomainDefGetOnlineVcpumap(const virDomainDef *def)
 
     for (i = 0; i < def->maxvcpus; i++) {
         if (def->vcpus[i]->online)
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
     }
 
     return ret;
@@ -4483,7 +4483,7 @@ virDomainDefRejectDuplicateControllers(virDomainDefPtr def)
                            cont->idx);
             goto cleanup;
         }
-        ignore_value(virBitmapSetBit(bitmaps[cont->type], cont->idx));
+        virBitmapSetBit(bitmaps[cont->type], cont->idx);
     }
 
     ret = 0;

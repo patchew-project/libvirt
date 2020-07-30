@@ -1459,7 +1459,7 @@ virStorageVolDefParseXML(virStoragePoolDefPtr pool,
                                (const char*)nodes[i]->name);
                 return NULL;
             }
-            ignore_value(virBitmapSetBit(def->target.features, f));
+            virBitmapSetBit(def->target.features, f);
         }
         VIR_FREE(nodes);
     }

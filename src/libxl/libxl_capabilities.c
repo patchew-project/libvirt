@@ -316,7 +316,7 @@ libxlCapsInitNuma(libxl_ctx *ctx, virCapsPtr caps)
         for (j = 0; j < nr_cpus_node[node]; j++) {
             if (cpus[node][j].socket_id == cpu_topo[i].socket &&
                 cpus[node][j].core_id == cpu_topo[i].core)
-                ignore_value(virBitmapSetBit(cpus[node][j].siblings, i));
+                virBitmapSetBit(cpus[node][j].siblings, i);
         }
     }
 

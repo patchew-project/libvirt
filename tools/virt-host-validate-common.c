@@ -238,7 +238,7 @@ virBitmapPtr virHostValidateGetCPUFlags(void)
             int value;
 
             if ((value = virHostValidateCPUFlagTypeFromString(tokens[i])) >= 0)
-                ignore_value(virBitmapSetBit(flags, value));
+                virBitmapSetBit(flags, value);
         }
 
         virStringListFreeCount(tokens, ntokens);

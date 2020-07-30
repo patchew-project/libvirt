@@ -5143,7 +5143,7 @@ networkUnplugBandwidth(virNetworkObjPtr obj,
                                     obj, network_driver->xmlopt) < 0) {
             tmp_floor_sum += ifaceBand->in->floor;
             virNetworkObjSetFloorSum(obj, tmp_floor_sum);
-            ignore_value(virBitmapSetBit(classIdMap, *class_id));
+            virBitmapSetBit(classIdMap, *class_id);
             return ret;
         }
         /* update rate for non guaranteed NICs */

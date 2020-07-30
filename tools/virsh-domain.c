@@ -6845,7 +6845,7 @@ virshDomainGetVcpuBitmap(vshControl *ctl,
     if ((nnodes = virXPathNodeSet("/domain/vcpus/vcpu", ctxt, &nodes)) <= 0) {
         /* if the specific vcpu state is missing provide a fallback */
         for (i = 0; i < curvcpus; i++)
-            ignore_value(virBitmapSetBit(ret, i));
+            virBitmapSetBit(ret, i);
 
         goto cleanup;
     }
@@ -6858,7 +6858,7 @@ virshDomainGetVcpuBitmap(vshControl *ctl,
             continue;
 
         if (STREQ(online, "yes"))
-            ignore_value(virBitmapSetBit(ret, vcpuid));
+            virBitmapSetBit(ret, vcpuid);
 
         VIR_FREE(online);
     }

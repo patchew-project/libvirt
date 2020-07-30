@@ -1263,7 +1263,7 @@ virJSONValueGetArrayAsBitmap(const virJSONValue *val,
 
     /* second pass sets the correct bits in the map */
     for (i = 0; i < val->data.array.nvalues; i++)
-        ignore_value(virBitmapSetBit(*bitmap, elems[i]));
+        virBitmapSetBit(*bitmap, elems[i]);
 
     return 0;
 }

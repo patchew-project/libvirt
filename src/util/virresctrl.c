@@ -2081,7 +2081,7 @@ virResctrlAllocFindUnused(virResctrlAllocPtr alloc,
         return -1;
 
     for (i = last_pos; i < last_pos + need_bits; i++)
-        ignore_value(virBitmapSetBit(a_mask, i));
+        virBitmapSetBit(a_mask, i);
 
     if (virResctrlAllocUpdateMask(alloc, level, type, cache, a_mask) < 0)
         goto cleanup;

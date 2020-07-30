@@ -66,7 +66,7 @@ void
 qemuSlirpSetFeature(qemuSlirpPtr slirp,
                     qemuSlirpFeature feature)
 {
-    ignore_value(virBitmapSetBit(slirp->features, feature));
+    virBitmapSetBit(slirp->features, feature);
 }
 
 

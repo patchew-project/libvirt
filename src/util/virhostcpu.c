@@ -269,7 +269,7 @@ virHostCPUGetSiblingsList(unsigned int cpu)
         /* If the file doesn't exist, the threadis its only sibling */
         ret = virBitmapNew(cpu + 1);
         if (ret)
-            ignore_value(virBitmapSetBit(ret, cpu));
+            virBitmapSetBit(ret, cpu);
     }
 
     return ret;

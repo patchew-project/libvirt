@@ -695,7 +695,7 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
                            disk->name);
             goto cleanup;
         }
-        ignore_value(virBitmapSetBit(map, idx));
+        virBitmapSetBit(map, idx);
         disk->idx = idx;
 
         disk_snapshot = def->parent.dom->disks[idx]->snapshot;

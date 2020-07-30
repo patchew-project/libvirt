@@ -2828,7 +2828,7 @@ virNetDevRDMAFeature(const char *ifname,
 
         if (virFileReadAll(ib_devpath, RESOURCE_FILE_LEN, &ib_res_buf) > 0 &&
             STREQ(eth_res_buf, ib_res_buf)) {
-            ignore_value(virBitmapSetBit(*out, VIR_NET_DEV_FEAT_RDMA));
+            virBitmapSetBit(*out, VIR_NET_DEV_FEAT_RDMA);
             break;
         }
     }
@@ -2943,7 +2943,7 @@ virNetDevGetEthtoolFeatures(virBitmapPtr bitmap,
     for (i = 0; i < G_N_ELEMENTS(ethtool_cmds); i++) {
         cmd.cmd = ethtool_cmds[i].cmd;
         if (virNetDevFeatureAvailable(fd, ifr, &cmd))
-            ignore_value(virBitmapSetBit(bitmap, ethtool_cmds[i].feat));
+            virBitmapSetBit(bitmap, ethtool_cmds[i].feat);
     }
 
 # if HAVE_DECL_ETHTOOL_GFLAGS
@@ -2951,7 +2951,7 @@ virNetDevGetEthtoolFeatures(virBitmapPtr bitmap,
     if (virNetDevFeatureAvailable(fd, ifr, &cmd)) {
         for (i = 0; i < G_N_ELEMENTS(flags); i++) {
             if (cmd.data & flags[i].cmd)
-                ignore_value(virBitmapSetBit(bitmap, flags[i].feat));
+                virBitmapSetBit(bitmap, flags[i].feat);
         }
     }
 # endif
@@ -3103,7 +3103,7 @@ virNetDevSwitchdevFeature(const char *ifname,
 
     if (tb[DEVLINK_ATTR_ESWITCH_MODE] &&
         *(int *)RTA_DATA(tb[DEVLINK_ATTR_ESWITCH_MODE]) == DEVLINK_ESWITCH_MODE_SWITCHDEV) {
-        ignore_value(virBitmapSetBit(*out, VIR_NET_DEV_FEAT_SWITCHDEV));
+        virBitmapSetBit(*out, VIR_NET_DEV_FEAT_SWITCHDEV);
     }
 
     ret = 0;
@@ -3159,7 +3159,7 @@ virNetDevGetEthtoolGFeatures(virBitmapPtr bitmap,
     g_cmd->cmd = ETHTOOL_GFEATURES;
     g_cmd->size = GFEATURES_SIZE;
     if (virNetDevGFeatureAvailable(fd, ifr, g_cmd))
-        ignore_value(virBitmapSetBit(bitmap, VIR_NET_DEV_FEAT_TXUDPTNL));
+        virBitmapSetBit(bitmap, VIR_NET_DEV_FEAT_TXUDPTNL);
     return 0;
 }
 # else

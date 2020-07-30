@@ -987,7 +987,7 @@ virTestCapsBuildNUMATopology(int seq)
             if (!(cell_cpus[core_id].siblings =
                   virBitmapNew(MAX_CPUS_IN_CELL)))
                 goto error;
-            ignore_value(virBitmapSetBit(cell_cpus[core_id].siblings, id));
+            virBitmapSetBit(cell_cpus[core_id].siblings, id);
         }
         id++;
 

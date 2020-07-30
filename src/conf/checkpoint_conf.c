@@ -351,7 +351,7 @@ virDomainCheckpointAlignDisks(virDomainCheckpointDefPtr def)
                            disk->name);
             goto cleanup;
         }
-        ignore_value(virBitmapSetBit(map, idx));
+        virBitmapSetBit(map, idx);
         disk->idx = idx;
 
         if (STRNEQ(disk->name, def->parent.dom->disks[idx]->dst)) {
