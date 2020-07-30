@@ -989,6 +989,9 @@ qemuDomainFixupCPUs(virDomainObjPtr vm,
 char *
 qemuDomainGetMachineName(virDomainObjPtr vm);
 
+unsigned long long
+qemuDomainGetMemorySizeAlignment(virDomainDefPtr def);
+
 void
 qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
                                          virTristateBool allowReboot);
