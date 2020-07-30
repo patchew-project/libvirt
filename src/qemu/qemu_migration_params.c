@@ -1453,8 +1453,7 @@ qemuMigrationCapsCheck(virQEMUDriverPtr driver,
      * migration capabilities bitmap makes sure it won't be touched anywhere
      * else.
      */
-    ignore_value(virBitmapClearBit(priv->migrationCaps,
-                                   QEMU_MIGRATION_CAP_EVENTS));
+    virBitmapClearBit(priv->migrationCaps, QEMU_MIGRATION_CAP_EVENTS);
 
     ret = 0;
 

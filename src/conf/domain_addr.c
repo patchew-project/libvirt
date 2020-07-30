@@ -2460,7 +2460,7 @@ virDomainUSBAddressRelease(virDomainUSBAddressSetPtr addrs,
                                                   portStr)))
         return -1;
 
-    ignore_value(virBitmapClearBit(targetHub->portmap, targetPort));
+    virBitmapClearBit(targetHub->portmap, targetPort);
 
     return 0;
 }

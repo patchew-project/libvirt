@@ -3286,10 +3286,9 @@ virDomainIOThreadIDDefArrayInit(virDomainDefPtr def,
 
     /* Clear 0 since we don't use it, then mark those which are
      * already provided by the user */
-    ignore_value(virBitmapClearBit(thrmap, 0));
+    virBitmapClearBit(thrmap, 0);
     for (i = 0; i < def->niothreadids; i++)
-        ignore_value(virBitmapClearBit(thrmap,
-                                       def->iothreadids[i]->iothread_id));
+        virBitmapClearBit(thrmap, def->iothreadids[i]->iothread_id);
 
     /* resize array */
     if (VIR_REALLOC_N(def->iothreadids, iothreads) < 0)

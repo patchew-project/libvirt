@@ -61,7 +61,7 @@ int virBitmapSetBitExpand(virBitmapPtr bitmap, size_t b)
  * Clear bit position @b in @bitmap
  */
 int virBitmapClearBit(virBitmapPtr bitmap, size_t b)
-    ATTRIBUTE_NONNULL(1) G_GNUC_WARN_UNUSED_RESULT;
+    ATTRIBUTE_NONNULL(1);
 
 int virBitmapClearBitExpand(virBitmapPtr bitmap, size_t b)
     ATTRIBUTE_NONNULL(1) G_GNUC_WARN_UNUSED_RESULT;

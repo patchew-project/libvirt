@@ -5058,7 +5058,7 @@ networkPlugBandwidthImpl(virNetworkObjPtr obj,
     virNetworkObjSetFloorSum(obj, tmp_floor_sum);
     /* update status file */
     if (virNetworkObjSaveStatus(driver->stateDir, obj, network_driver->xmlopt) < 0) {
-        ignore_value(virBitmapClearBit(classIdMap, next_id));
+        virBitmapClearBit(classIdMap, next_id);
         tmp_floor_sum -= ifaceBand->in->floor;
         virNetworkObjSetFloorSum(obj, tmp_floor_sum);
         *class_id = 0;
@@ -5137,7 +5137,7 @@ networkUnplugBandwidth(virNetworkObjPtr obj,
         virNetworkObjSetFloorSum(obj, tmp_floor_sum);
 
         /* return class ID */
-        ignore_value(virBitmapClearBit(classIdMap, *class_id));
+        virBitmapClearBit(classIdMap, *class_id);
         /* update status file */
         if (virNetworkObjSaveStatus(driver->stateDir,
                                     obj, network_driver->xmlopt) < 0) {

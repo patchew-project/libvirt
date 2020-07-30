@@ -6455,7 +6455,7 @@ qemuDomainFilterHotplugVcpuEntities(virDomainDefPtr def,
             }
 
             /* clear the subthreads */
-            ignore_value(virBitmapClearBit(map, i));
+            virBitmapClearBit(map, i);
         }
     }
 

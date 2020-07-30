@@ -2017,7 +2017,7 @@ void
 virQEMUCapsClear(virQEMUCapsPtr qemuCaps,
                  virQEMUCapsFlags flag)
 {
-    ignore_value(virBitmapClearBit(qemuCaps->flags, flag));
+    virBitmapClearBit(qemuCaps->flags, flag);
 }
 
 

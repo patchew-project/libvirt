@@ -22475,7 +22475,7 @@ qemuDomainSetGuestVcpus(virDomainPtr dom,
         info[i].online = !!state;
         info[i].modified = true;
 
-        ignore_value(virBitmapClearBit(map, info[i].id));
+        virBitmapClearBit(map, info[i].id);
     }
 
     if (!virBitmapIsAllClear(map)) {
