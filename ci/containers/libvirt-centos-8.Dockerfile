@@ -15,6 +15,7 @@ RUN dnf install 'dnf-command(config-manager)' -y && \
         ca-certificates \
         ccache \
         chrony \
+        clang \
         cyrus-sasl-devel \
         dbus-devel \
         device-mapper-devel \

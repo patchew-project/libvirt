@@ -43,6 +43,7 @@ WEiJKtQrZDJloqtyi/mmRa1VsV7RYR0VPJjhK/R8EQ7Ysshy\n\
         ca-certificates \
         ccache \
         chrony \
+        clang \
         cyrus-sasl-devel \
         dbus-devel \
         device-mapper-devel \

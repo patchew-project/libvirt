@@ -13,6 +13,7 @@ RUN zypper update -y && \
            ca-certificates \
            ccache \
            chrony \
+           clang \
            cppi \
            cyrus-sasl-devel \
            dbus-1-devel \

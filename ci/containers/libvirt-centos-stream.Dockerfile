@@ -16,6 +16,7 @@ RUN dnf install -y centos-release-stream && \
         ca-certificates \
         ccache \
         chrony \
+        clang \
         cyrus-sasl-devel \
         dbus-devel \
         device-mapper-devel \

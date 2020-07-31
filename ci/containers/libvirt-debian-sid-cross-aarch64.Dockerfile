@@ -14,6 +14,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             ca-certificates \
             ccache \
             chrony \
+            clang \
             cpanminus \
             dnsmasq-base \
             dwarves \
