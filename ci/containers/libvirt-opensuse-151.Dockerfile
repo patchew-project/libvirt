@@ -59,7 +59,6 @@ RUN zypper update -y && \
            lsof \
            lvm2 \
            make \
-           ncurses-devel \
            net-tools \
            nfs-utils \
            ninja \

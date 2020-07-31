@@ -90,7 +90,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             libglusterfs-dev:mips \
             libgnutls28-dev:mips \
             libiscsi-dev:mips \
-            libncurses-dev:mips \
             libnl-3-dev:mips \
             libnl-route-3-dev:mips \
             libnuma-dev:mips \

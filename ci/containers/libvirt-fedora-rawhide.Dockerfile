@@ -59,7 +59,6 @@ RUN dnf update -y --nogpgcheck fedora-gpg-keys && \
         lvm2 \
         make \
         meson \
-        ncurses-devel \
         net-tools \
         netcf-devel \
         nfs-utils \

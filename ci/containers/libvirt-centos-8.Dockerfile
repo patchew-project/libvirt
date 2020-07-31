@@ -60,7 +60,6 @@ RUN dnf install 'dnf-command(config-manager)' -y && \
         lvm2 \
         make \
         meson \
-        ncurses-devel \
         net-tools \
         netcf-devel \
         nfs-utils \
