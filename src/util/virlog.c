@@ -1537,7 +1537,7 @@ virLogParseOutput(const char *src)
     }
 
  cleanup:
-    virStringListFree(tokens);
+    g_strfreev(tokens);
     return ret;
 }
 
@@ -1612,7 +1612,7 @@ virLogParseFilter(const char *src)
         goto cleanup;
 
  cleanup:
-    virStringListFree(tokens);
+    g_strfreev(tokens);
     return ret;
 }
 
@@ -1672,7 +1672,7 @@ virLogParseOutputs(const char *src, virLogOutputPtr **outputs)
     *outputs = list;
     list = NULL;
  cleanup:
-    virStringListFree(strings);
+    g_strfreev(strings);
     return ret;
 }
 
@@ -1722,7 +1722,7 @@ virLogParseFilters(const char *src, virLogFilterPtr **filters)
     *filters = list;
     list = NULL;
  cleanup:
-    virStringListFree(strings);
+    g_strfreev(strings);
     return ret;
 }
 

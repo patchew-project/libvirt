@@ -1193,7 +1193,7 @@ vshExtractCPUDefXMLs(vshControl *ctl,
     return cpus;
 
  error:
-    virStringListFree(cpus);
+    g_strfreev(cpus);
     goto cleanup;
 }
 
@@ -1267,7 +1267,7 @@ cmdCPUCompare(vshControl *ctl, const vshCmd *cmd)
     ret = true;
 
  cleanup:
-    virStringListFree(cpus);
+    g_strfreev(cpus);
 
     return ret;
 }
@@ -1329,7 +1329,7 @@ cmdCPUBaseline(vshControl *ctl, const vshCmd *cmd)
     }
 
     VIR_FREE(result);
-    virStringListFree(list);
+    g_strfreev(list);
     return ret;
 }
 
@@ -1705,7 +1705,7 @@ cmdHypervisorCPUCompare(vshControl *ctl,
     ret = true;
 
  cleanup:
-    virStringListFree(cpus);
+    g_strfreev(cpus);
     return ret;
 }
 
@@ -1795,7 +1795,7 @@ cmdHypervisorCPUBaseline(vshControl *ctl,
     }
 
     VIR_FREE(result);
-    virStringListFree(list);
+    g_strfreev(list);
     return ret;
 }
 

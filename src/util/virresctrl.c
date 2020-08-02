@@ -216,7 +216,7 @@ virResctrlInfoDispose(void *obj)
     }
 
     if (resctrl->monitor_info)
-        virStringListFree(resctrl->monitor_info->features);
+        g_strfreev(resctrl->monitor_info->features);
 
     VIR_FREE(resctrl->membw_info);
     VIR_FREE(resctrl->levels);
@@ -230,7 +230,7 @@ virResctrlInfoMonFree(virResctrlInfoMonPtr mon)
     if (!mon)
         return;
 
-    virStringListFree(mon->features);
+    g_strfreev(mon->features);
     VIR_FREE(mon);
 }
 
@@ -755,7 +755,7 @@ virResctrlGetMonitorInfo(virResctrlInfoPtr resctrl)
     ret = 0;
  cleanup:
     VIR_FREE(featurestr);
-    virStringListFree(features);
+    g_strfreev(features);
     VIR_FREE(info_monitor);
     return ret;
 }
@@ -1533,7 +1533,7 @@ virResctrlAllocParseMemoryBandwidthLine(virResctrlInfoPtr resctrl,
 
     ret = 0;
  cleanup:
-    virStringListFree(mbs);
+    g_strfreev(mbs);
     return ret;
 }
 
@@ -1707,7 +1707,7 @@ virResctrlAllocParseCacheLine(virResctrlInfoPtr resctrl,
 
     ret = 0;
  cleanup:
-    virStringListFree(caches);
+    g_strfreev(caches);
     return ret;
 }
 
@@ -1733,7 +1733,7 @@ virResctrlAllocParse(virResctrlInfoPtr resctrl,
 
     ret = 0;
  cleanup:
-    virStringListFree(lines);
+    g_strfreev(lines);
     return ret;
 }
 
@@ -2768,7 +2768,7 @@ virResctrlMonitorStatsFree(virResctrlMonitorStatsPtr stat)
     if (!stat)
         return;
 
-    virStringListFree(stat->features);
+    g_strfreev(stat->features);
     VIR_FREE(stat->vals);
     VIR_FREE(stat);
 }
