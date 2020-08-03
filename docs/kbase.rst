@@ -2,7 +2,7 @@
 Knowledge base
 ==============
 
-.. container:: panel widepanel
+.. container::
 
    `Debug logs <kbase/debuglogs.html>`__
      Configuration of logging and tips on how to file a good bug report.
