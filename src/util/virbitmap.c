@@ -68,13 +68,8 @@ virBitmapNewQuiet(size_t size)
 
     sz = VIR_DIV_UP(size, VIR_BITMAP_BITS_PER_UNIT);
 
-    if (VIR_ALLOC_QUIET(bitmap) < 0)
-        return NULL;
-
-    if (VIR_ALLOC_N_QUIET(bitmap->map, sz) < 0) {
-        VIR_FREE(bitmap);
-        return NULL;
-    }
+    bitmap = g_new0(virBitmap, 1);
+    bitmap->map = g_new0(unsigned long, sz);
 
     bitmap->nbits = size;
     bitmap->map_len = sz;
@@ -126,10 +121,9 @@ virBitmapNewEmpty(void)
 void
 virBitmapFree(virBitmapPtr bitmap)
 {
-    if (bitmap) {
-        VIR_FREE(bitmap->map);
-        VIR_FREE(bitmap);
-    }
+    if (bitmap)
+        g_free(bitmap->map);
+    g_free(bitmap);
 }
 
 
@@ -779,9 +773,7 @@ virBitmapToData(virBitmapPtr bitmap,
     else
         len = (len + CHAR_BIT) / CHAR_BIT;
 
-    if (VIR_ALLOC_N(*data, len) < 0)
-        return -1;
-
+    *data = g_new0(unsigned char, len);
     *dataLen = len;
 
     virBitmapToDataBuf(bitmap, *data, *dataLen);
