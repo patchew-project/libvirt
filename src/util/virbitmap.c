@@ -34,7 +34,6 @@
 struct _virBitmap {
     size_t nbits;
     size_t map_len;
-    size_t map_alloc;
 
     /* Note that code below depends on the fact that unused bits of the bitmap
      * are not set. Any function decreasing the size of the map needs clear
@@ -79,7 +78,6 @@ virBitmapNewQuiet(size_t size)
 
     bitmap->nbits = size;
     bitmap->map_len = sz;
-    bitmap->map_alloc = sz;
     return bitmap;
 }
 
@@ -197,13 +195,12 @@ virBitmapExpand(virBitmapPtr map,
 
     /* resize the memory if necessary */
     if (map->map_len < new_len) {
-        if (VIR_RESIZE_N(map->map, map->map_alloc, map->map_len,
+        if (VIR_RESIZE_N(map->map, map->map_len, map->map_len,
                          new_len - map->map_len) < 0)
             return -1;
     }
 
     map->nbits = b + 1;
-    map->map_len = new_len;
 
     return 0;
 }
@@ -1317,13 +1314,10 @@ virBitmapShrink(virBitmapPtr map,
     nb = map->nbits % VIR_BITMAP_BITS_PER_UNIT;
     map->map[nl] &= ((1UL << nb) - 1);
 
-    toremove = map->map_alloc - (nl + 1);
+    toremove = map->map_len - (nl + 1);
 
     if (toremove == 0)
         return;
 
-    VIR_SHRINK_N(map->map, map->map_alloc, toremove);
-
-    /* length needs to be fixed as well */
-    map->map_len = map->map_alloc;
+    VIR_SHRINK_N(map->map, map->map_len, toremove);
 }
