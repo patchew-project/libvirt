@@ -8305,7 +8305,7 @@ virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &def->u.iscsi;
     g_autoptr(virStorageAuthDef) authdef = NULL;
     xmlNodePtr node;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
 
     ctxt->node = sourcenode;
 
@@ -8793,7 +8793,7 @@ virDomainNetDefCoalesceParseXML(xmlNodePtr node,
                                 xmlXPathContextPtr ctxt)
 {
     virNetDevCoalescePtr ret = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned long long tmp = 0;
     g_autofree char *str = NULL;
 
@@ -9164,7 +9164,7 @@ virSecurityLabelDefsParseXML(virDomainDefPtr def,
                              virDomainXMLOptionPtr xmlopt,
                              unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     size_t i = 0, j;
     int n;
     g_autofree xmlNodePtr *list = NULL;
@@ -9262,7 +9262,7 @@ virSecurityDeviceLabelDefParseXML(virSecurityDeviceLabelDefPtr **seclabels_rtn,
                                   xmlXPathContextPtr ctxt,
                                   unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virSecurityDeviceLabelDefPtr *seclabels = NULL;
     size_t nseclabels = 0;
     int n;
@@ -9458,7 +9458,7 @@ static virStorageNetCookieDefPtr
 virDomainStorageNetCookieParse(xmlNodePtr node,
                                xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autoptr(virStorageNetCookieDef) cookie = NULL;
 
     ctxt->node = node;
@@ -9485,7 +9485,7 @@ virDomainStorageNetCookiesParse(xmlNodePtr node,
                                 xmlXPathContextPtr ctxt,
                                 virStorageSourcePtr src)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree xmlNodePtr *nodes = NULL;
     ssize_t nnodes;
     size_t i;
@@ -9702,7 +9702,7 @@ virDomainDiskSourcePRParse(xmlNodePtr node,
                            xmlXPathContextPtr ctxt,
                            virStoragePRDefPtr *pr)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
 
     ctxt->node = node;
 
@@ -9757,7 +9757,7 @@ static virStorageSourceSlicePtr
 virDomainStorageSourceParseSlice(xmlNodePtr node,
                                  xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *offset = NULL;
     g_autofree char *size = NULL;
     g_autofree virStorageSourceSlicePtr ret = g_new0(virStorageSourceSlice, 1);
@@ -9823,7 +9823,7 @@ virDomainStorageSourceParse(xmlNodePtr node,
                             unsigned int flags,
                             virDomainXMLOptionPtr xmlopt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr tmp;
 
     ctxt->node = node;
@@ -9901,7 +9901,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
                                unsigned int flags,
                                virDomainXMLOptionPtr xmlopt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr source;
     g_autoptr(virStorageSource) backingStore = NULL;
     g_autofree char *type = NULL;
@@ -10039,7 +10039,7 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
                             virDomainXMLOptionPtr xmlopt)
 {
     xmlNodePtr mirrorNode;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *mirrorFormat = NULL;
     g_autofree char *mirrorType = NULL;
     g_autofree char *ready = NULL;
@@ -10408,7 +10408,7 @@ virDomainDiskDefParsePrivateData(xmlXPathContextPtr ctxt,
                                  virDomainXMLOptionPtr xmlopt)
 {
     xmlNodePtr private_node = virXPathNode("./privateData", ctxt);
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
 
     if (!xmlopt ||
         !xmlopt->privateData.diskParse ||
@@ -10435,7 +10435,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 {
     virDomainDiskDefPtr def;
     xmlNodePtr cur;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     bool source = false;
     virStorageEncryptionPtr encryption = NULL;
     g_autoptr(virStorageAuthDef) authdef = NULL;
@@ -11038,7 +11038,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     bool processedTarget = false;
     int numaNode = -1;
     int ports = -1;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int rc;
     g_autofree char *typeStr = NULL;
     g_autofree char *idx = NULL;
@@ -11424,7 +11424,7 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
                        xmlXPathContextPtr ctxt,
                        unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainFSDefPtr def;
     xmlNodePtr cur;
     g_autofree char *type = NULL;
@@ -11676,7 +11676,7 @@ virDomainActualNetDefParseXML(xmlNodePtr node,
 {
     virDomainActualNetDefPtr actual = NULL;
     int ret = -1;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr bandwidth_node = NULL;
     xmlNodePtr vlanNode;
     xmlNodePtr virtPortNode;
@@ -11876,7 +11876,7 @@ virDomainChrSourceReconnectDefParseXML(virDomainChrSourceReconnectDefPtr def,
                                        xmlXPathContextPtr ctxt)
 {
     int tmpVal;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr cur;
     g_autofree char *tmp = NULL;
 
@@ -11927,7 +11927,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     xmlNodePtr tmpNode;
     virHashTablePtr filterparams = NULL;
     virDomainActualNetDefPtr actual = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainChrSourceReconnectDef reconnect = {0};
     int rv, val;
     g_autofree char *macaddr = NULL;
@@ -13255,7 +13255,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
 
             /* Check for an optional seclabel override in <source/>. */
             if (chr_def) {
-                VIR_XPATH_NODE_AUTORESTORE(ctxt);
+                VIR_XPATH_NODE_AUTORESTORE(ctxt)
                 ctxt->node = cur;
                 if (virSecurityDeviceLabelDefParseXML(&def->seclabels,
                                                       &def->nseclabels,
@@ -13632,7 +13632,7 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
                         unsigned int flags)
 {
     virDomainTPMDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int nbackends;
     g_autofree char *path = NULL;
     g_autofree char *model = NULL;
@@ -13765,7 +13765,7 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
                           xmlXPathContextPtr ctxt,
                           unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainInputDefPtr def;
     g_autofree char *evdev = NULL;
     g_autofree char *type = NULL;
@@ -13960,7 +13960,7 @@ virDomainTimerDefParseXML(xmlNodePtr node,
                           xmlXPathContextPtr ctxt)
 {
     virDomainTimerDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr catchup;
     int ret;
     g_autofree char *name = NULL;
@@ -14307,7 +14307,7 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
                                  xmlXPathContextPtr ctxt,
                                  unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainGraphicsListenDef newListen = {0};
     int nListens;
     int ret = -1;
@@ -14464,7 +14464,7 @@ virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node,
                                 xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int enableVal;
     xmlNodePtr glNode;
     g_autofree char *fullscreen = virXMLPropString(node, "fullscreen");
@@ -14853,7 +14853,7 @@ virDomainGraphicsDefParseXMLEGLHeadless(virDomainGraphicsDefPtr def,
                                         xmlNodePtr node,
                                         xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr glNode;
 
     ctxt->node = node;
@@ -14998,7 +14998,7 @@ virDomainSoundDefParseXML(virDomainXMLOptionPtr xmlopt,
                           unsigned int flags)
 {
     virDomainSoundDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *model = NULL;
 
     if (VIR_ALLOC(def) < 0)
@@ -15146,7 +15146,7 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
                         unsigned int flags)
 {
     virDomainRNGDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int nbackends;
     g_autofree xmlNodePtr *backends = NULL;
     g_autofree char *model = NULL;
@@ -15259,7 +15259,7 @@ virDomainMemballoonDefParseXML(virDomainXMLOptionPtr xmlopt,
                                unsigned int flags)
 {
     virDomainMemballoonDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned int period = 0;
     g_autofree char *model = NULL;
     g_autofree char *deflate = NULL;
@@ -15344,7 +15344,7 @@ virDomainShmemDefParseXML(virDomainXMLOptionPtr xmlopt,
     virDomainShmemDefPtr def = NULL;
     virDomainShmemDefPtr ret = NULL;
     xmlNodePtr msi = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr server = NULL;
     g_autofree char *tmp = NULL;
 
@@ -15447,7 +15447,7 @@ virSysinfoBIOSParseXML(xmlNodePtr node,
                        xmlXPathContextPtr ctxt,
                        virSysinfoBIOSDefPtr *bios)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int ret = -1;
     virSysinfoBIOSDefPtr def;
 
@@ -15510,7 +15510,7 @@ virSysinfoSystemParseXML(xmlNodePtr node,
                          unsigned char *domUUID,
                          bool uuid_generated)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int ret = -1;
     virSysinfoSystemDefPtr def;
     g_autofree char *tmpUUID = NULL;
@@ -15584,7 +15584,7 @@ virSysinfoBaseBoardParseXML(xmlXPathContextPtr ctxt,
                             size_t *nbaseBoard)
 {
     size_t i, nboards = 0;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int n;
     g_autofree virSysinfoBaseBoardDefPtr boards = NULL;
     g_autofree xmlNodePtr *nodes = NULL;
@@ -15633,7 +15633,7 @@ virSysinfoOEMStringsParseXML(xmlNodePtr node,
                              xmlXPathContextPtr ctxt,
                              virSysinfoOEMStringsDefPtr *oem)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int ret = -1;
     virSysinfoOEMStringsDefPtr def;
     int nstrings;
@@ -15671,7 +15671,7 @@ virSysinfoChassisParseXML(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
                          virSysinfoChassisDefPtr *chassisdef)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int ret = -1;
     virSysinfoChassisDefPtr def;
 
@@ -15757,7 +15757,7 @@ virSysinfoParseFWCfgDef(virSysinfoDefPtr def,
                         xmlNodePtr node,
                         xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree xmlNodePtr *nodes = NULL;
     int n;
     size_t i;
@@ -15816,7 +15816,7 @@ virSysinfoParseXML(xmlNodePtr node,
                    unsigned char *domUUID,
                    bool uuid_generated)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virSysinfoDefPtr def;
     g_autofree char *typeStr = NULL;
     int type;
@@ -16029,7 +16029,7 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
 {
     virDomainVideoDefPtr def;
     xmlNodePtr cur;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *type = NULL;
     g_autofree char *driver_name = NULL;
     g_autofree char *heads = NULL;
@@ -16184,7 +16184,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
                             unsigned int flags)
 {
     virDomainHostdevDefPtr def;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *mode = virXMLPropString(node, "mode");
     g_autofree char *type = virXMLPropString(node, "type");
 
@@ -16448,7 +16448,7 @@ virDomainRedirFilterDefParseXML(xmlNodePtr node,
 {
     int n;
     size_t i;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainRedirFilterDefPtr def = NULL;
     g_autofree xmlNodePtr *nodes = NULL;
 
@@ -16586,7 +16586,7 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
                                  xmlXPathContextPtr ctxt,
                                  virDomainMemoryDefPtr def)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *nodemask = NULL;
 
     ctxt->node = node;
@@ -16640,9 +16640,10 @@ virDomainMemoryTargetDefParseXML(xmlNodePtr node,
                                  xmlXPathContextPtr ctxt,
                                  virDomainMemoryDefPtr def)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
-    ctxt->node = node;
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     int rv;
+
+    ctxt->node = node;
 
     /* initialize to value which marks that the user didn't specify it */
     def->targetNode = -1;
@@ -16687,7 +16688,7 @@ static virDomainSEVDefPtr
 virDomainSEVDefParseXML(xmlNodePtr sevNode,
                         xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainSEVDefPtr def;
     unsigned long policy;
     g_autofree char *type = NULL;
@@ -16753,7 +16754,7 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
                            const virDomainDef *dom,
                            unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr node;
     virDomainMemoryDefPtr def;
     int val;
@@ -16848,7 +16849,7 @@ static virDomainIOMMUDefPtr
 virDomainIOMMUDefParseXML(xmlNodePtr node,
                           xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr driver;
     int val;
     g_autofree char *tmp = NULL;
@@ -16928,7 +16929,7 @@ virDomainVsockDefParseXML(virDomainXMLOptionPtr xmlopt,
                           xmlXPathContextPtr ctxt,
                           unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     xmlNodePtr cid;
     int val;
     g_autofree char *tmp = NULL;
@@ -18851,7 +18852,7 @@ virDomainIdmapDefParseXML(xmlXPathContextPtr ctxt,
 {
     size_t i;
     virDomainIdMapEntryPtr idmap = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
 
     if (VIR_ALLOC_N(idmap, num) < 0)
         return idmap;
@@ -19250,7 +19251,7 @@ virDomainHugepagesParseXML(xmlNodePtr node,
                            xmlXPathContextPtr ctxt,
                            virDomainHugePagePtr hugepage)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     g_autofree char *nodeset = NULL;
 
     ctxt->node = node;
@@ -19285,7 +19286,7 @@ static virDomainResourceDefPtr
 virDomainResourceDefParse(xmlNodePtr node,
                           xmlXPathContextPtr ctxt)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainResourceDefPtr def = NULL;
 
     ctxt->node = node;
@@ -20462,7 +20463,7 @@ virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
                                 xmlNodePtr node,
                                 virResctrlAllocPtr alloc)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned int level;
     unsigned int cache;
     int type;
@@ -20606,7 +20607,7 @@ virDomainResctrlMonDefParse(virDomainDefPtr def,
                             virDomainResctrlDefPtr resctrl)
 {
     virDomainResctrlMonDefPtr domresmon = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned int level = 0;
     size_t i = 0;
     int n = 0;
@@ -20760,7 +20761,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
                            xmlNodePtr node,
                            unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainResctrlDefPtr resctrl = NULL;
     ssize_t i = 0;
     int n;
@@ -20902,7 +20903,7 @@ virDomainMemorytuneDefParseMemory(xmlXPathContextPtr ctxt,
                                   xmlNodePtr node,
                                   virResctrlAllocPtr alloc)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned int id;
     unsigned int bandwidth;
     g_autofree char *tmp = NULL;
@@ -20948,7 +20949,7 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
                             xmlNodePtr node,
                             unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virDomainResctrlDefPtr resctrl = NULL;
     virDomainResctrlDefPtr newresctrl = NULL;
     g_autoptr(virBitmap) vcpus = NULL;
