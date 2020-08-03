@@ -46,6 +46,9 @@ profile virt-aa-helper @libexecdir@/virt-aa-helper {
   @sysconfdir@/apparmor.d/libvirt/* r,
   @sysconfdir@/apparmor.d/libvirt/libvirt-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]* rw,
 
+  # for openvswitch sockets
+  /{,var/}run/openvswitch/** rw,
+
   # for backingstore -- allow access to non-hidden files in @{HOME} as well
   # as storage pools
   audit deny @{HOME}/.* mrwkl,
