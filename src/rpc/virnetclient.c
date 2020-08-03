@@ -1043,8 +1043,10 @@ int virNetClientAddStream(virNetClientPtr client,
 void virNetClientRemoveStream(virNetClientPtr client,
                               virNetClientStreamPtr st)
 {
-    virObjectLock(client);
     size_t i;
+
+    virObjectLock(client);
+
     for (i = 0; i < client->nstreams; i++) {
         if (client->streams[i] == st)
             break;
