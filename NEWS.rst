@@ -13,6 +13,13 @@ v6.7.0 (unreleased)
 
 * **New features**
 
+  * xen: Add support for device model command-line passthrough
+
+    Xen supports passing arbitrary arguments to the QEMU device model using
+    the ``device_model_args`` setting in xl.cfg(5). The libvirt xen driver now
+    supports this using ``<xen:commandline/>`` XML extensions.
+
+
 * **Improvements**
 
 * **Bug fixes**
@@ -39,6 +46,7 @@ v6.6.0 (2020-08-02)
     The storage pool code now attempts to disable COW by default on btrfs, but
     management applications may wish to override this behaviour. This is now
     possible via new ``cow`` element.
+
 
 * **Improvements**
 
