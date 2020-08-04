@@ -4148,6 +4148,8 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
     int cookieoutlen = 0;
     int ret = -1;
     virErrorPtr orig_err = NULL;
+    virErrorPtr finish_err = NULL;
+    bool living = true;
     bool cancelled = true;
     virStreamPtr st = NULL;
     unsigned long destflags;
@@ -4406,7 +4408,16 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
      * The lock manager plugins should take care of
      * safety in this scenario.
      */
-    cancelled = ddomain == NULL;
+    if (!cancelled && !ddomain)
+        finish_err = virSaveLastError();
+
+    if (finish_err && finish_err->message &&
+        strstr(finish_err->message, "received hangup / error event on socket")) {
+        living = false;
+        VIR_ERROR(_("keepalive messages lost in finish step, shutdown src vm for protection"));
+    } else {
+        cancelled = ddomain == NULL;
+    }
 
     /* If finish3 set an error, and we don't have an earlier
      * one we need to preserve it in case confirm3 overwrites
@@ -4439,10 +4450,17 @@ qemuMigrationSrcPerformPeer2Peer3(virQEMUDriverPtr driver,
         virObjectUnref(ddomain);
         ret = 0;
     } else {
-        ret = -1;
+        if (!living)
+            ret = 0;
+        else
+            ret = -1;
     }
 
     virObjectUnref(st);
+    if (finish_err) {
+        virSetError(finish_err);
+        virFreeError(finish_err);
+    }
 
     virErrorRestore(&orig_err);
     VIR_FREE(uri_out);
