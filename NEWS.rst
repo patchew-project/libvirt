@@ -47,7 +47,7 @@ v6.6.0 (2020-08-02)
     Specifying a virtualHW version greater or equal to 7 (ESXi 4.0) will allow
     you to use up to 10 NICs instead of 4 as it was previously.
 
-  * qemu: Support encrypted TLS keys for NBD disks
+  * qemu: Support encrypted TLS keys for NBD and VxHS disks
 
     The secret key used for disks can now be encrypted similarly to TLS keys
     used for migration, chardev and others.
