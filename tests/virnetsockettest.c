@@ -32,6 +32,7 @@
 #include "virstring.h"
 
 #include "rpc/virnetsocket.h"
+#include "rpc/virnetclient.h"
 
 #define VIR_FROM_THIS VIR_FROM_RPC
 
@@ -468,6 +469,8 @@ static int testSocketSSH(const void *opaque)
     virNetSocketPtr csock = NULL; /* Client socket */
     int ret = -1;
     char buf[1024];
+    g_autofree char *command = virNetClientSSHHelperCommand(data->netcat,
+                                                            data->path);
 
     if (virNetSocketNewConnectSSH(data->nodename,
                                   data->service,
@@ -475,9 +478,8 @@ static int testSocketSSH(const void *opaque)
                                   data->username,
                                   data->noTTY,
                                   data->noVerify,
-                                  data->netcat,
                                   data->keyfile,
-                                  data->path,
+                                  command,
                                   &csock) < 0)
         goto cleanup;
 
@@ -575,6 +577,7 @@ mymain(void)
     struct testSSHData sshData1 = {
         .nodename = "somehost",
         .path = "/tmp/socket",
+        .netcat = "nc",
         .expectOut = "-T -e none -- somehost sh -c '"
                      "if 'nc' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then "
                          "ARG=-q0;"
@@ -635,6 +638,7 @@ mymain(void)
     struct testSSHData sshData5 = {
         .nodename = "crashyhost",
         .path = "/tmp/socket",
+        .netcat = "nc",
         .expectOut = "-T -e none -- crashyhost sh -c "
                      "'if 'nc' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then "
                          "ARG=-q0;"
@@ -650,6 +654,7 @@ mymain(void)
     struct testSSHData sshData6 = {
         .nodename = "example.com",
         .path = "/tmp/socket",
+        .netcat = "nc",
         .keyfile = "/root/.ssh/example_key",
         .noVerify = true,
         .expectOut = "-i /root/.ssh/example_key -T -e none -o StrictHostKeyChecking=no -- example.com sh -c '"
