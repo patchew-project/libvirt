@@ -980,7 +980,12 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                 return NULL;
             }
 
-            virBufferStrcat(&buf, "rbd:", src->volume, "/", src->path, NULL);
+            virBufferStrcat(&buf, "rbd:", src->volume, "/", NULL);
+            /* The filename of image with namespace: rbd:POOL/NAMESPACE/IMAGE... */
+            if (src->namespace)
+                virBufferStrcat(&buf, src->namespace, "/", NULL);
+
+            virBufferStrcat(&buf, src->path, NULL);
 
             if (src->snapshot)
                 virBufferEscape(&buf, '\\', ":", "@%s", src->snapshot);
