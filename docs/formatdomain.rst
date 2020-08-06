@@ -2256,7 +2256,7 @@ paravirtualized driver is specified via the ``disk`` element.
      </disk>
      <disk type='network'>
        <driver name="qemu" type="raw"/>
-       <source protocol="rbd" name="image_name2">
+       <source protocol="rbd" name="image_name2" namespace="ns"">
          <host name="hostname" port="7000"/>
          <snapshot name="snapname"/>
          <config file="/path/to/file"/>
@@ -2496,6 +2496,9 @@ paravirtualized driver is specified via the ``disk`` element.
 
       For protocols ``http`` and ``https`` an optional attribute ``query``
       specifies the query string. ( :since:`Since 6.2.0` )
+
+      For protocol ``rbd``, an optional attribute ``namespace`` specifies the
+      namespace of a rbd pool. ( :since:`Since 6.7.0 and QEMU 5.0.0` )
 
       For "iscsi" ( :since:`since 1.0.4` ), the ``name`` attribute may include a
       logical unit number, separated from the target's name by a slash (e.g.,
