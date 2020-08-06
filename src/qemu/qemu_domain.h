@@ -1017,3 +1017,10 @@ qemuDomainDiskBlockJobIsSupported(virDomainObjPtr vm,
 int
 qemuDomainDefNumaCPUsRectify(virDomainDefPtr def,
                              virQEMUCapsPtr qemuCaps);
+
+int
+qemuDomainOpenFile(virQEMUDriverPtr driver,
+                   virDomainObjPtr vm,
+                   const char *path,
+                   int oflags,
+                   bool *needUnlink);
