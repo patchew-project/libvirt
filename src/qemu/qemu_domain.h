@@ -1024,3 +1024,7 @@ qemuDomainOpenFile(virQEMUDriverPtr driver,
                    const char *path,
                    int oflags,
                    bool *needUnlink);
+
+int
+qemuDomainFileWrapperFDClose(virDomainObjPtr vm,
+                             virFileWrapperFdPtr fd);
