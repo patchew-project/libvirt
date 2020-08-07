@@ -776,6 +776,11 @@ if conf.has('WITH_LIBVIRTD')
       unit_conf.set('service', unit['service'])
       unit_conf.set('sockprefix', unit['sockprefix'])
       unit_conf.set('deps', unit.get('deps', ''))
+      if conf.has('WITH_POLKIT')
+        unit_conf.set('mode', '0666')
+      else
+        unit_conf.set('mode', '0600')
+      endif
 
       configure_file(
         input: unit['service_in'],
