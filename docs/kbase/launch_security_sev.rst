@@ -291,8 +291,9 @@ can still perform DoS on each other.
 Virtio
 ------
 
-In order to make virtio devices work, we need to enable emulated IOMMU
-on the devices so that virtual DMA can work.
+In order to make virtio devices work, we need to use
+``<driver iommu='on'/>`` inside the given device XML element in order
+to enable DMA API in the virtio driver.
 
 ::
 
@@ -336,6 +337,26 @@ model, which means that virtio GPU cannot be used.
      </devices>
      ...
    </domain>
+
+Virtio-net
+~~~~~~~~~~
+With virtio-net it's also necessary to disable the iPXE option ROM on the
+device as well as disable the vhost protocol as SEV doesn't support either
+(at the time of this writing). This translates to the following XML:
+
+::
+
+   <domain>
+     ...
+     <interface type='network'>
+        ...
+       <model type='virtio'/>
+       <driver name='qemu' iommu='on'/>
+       <rom enabled='no'/>
+     </interface>
+     ...
+   <domain>
+
 
 Checking SEV from within the guest
 ==================================
@@ -423,7 +444,8 @@ Q35 machine
          <mac address='52:54:00:cc:56:90'/>
          <source network='default'/>
          <model type='virtio'/>
-         <driver iommu='on'/>
+         <driver name='qemu' iommu='on'/>
+         <rom enabled='no'/>
        </interface>
        <graphics type='spice' autoport='yes'>
          <listen type='address'/>
