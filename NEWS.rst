@@ -13,6 +13,12 @@ v6.7.0 (unreleased)
 
 * **New features**
 
+  * qemu: Support rbd namespace attribute
+
+    The namespaces is for the tenant isolation within a rbd pool, introduced
+    from Ceph Nautilus, supported since QEMU 5.0.0. In libvirt, using it by
+    the namespace attribute in the source element of rbd disk.
+
 * **Improvements**
 
 * **Bug fixes**
