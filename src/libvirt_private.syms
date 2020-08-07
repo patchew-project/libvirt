@@ -525,6 +525,7 @@ virDomainNetGetActualVlan;
 virDomainNetGetModelString;
 virDomainNetInsert;
 virDomainNetIsVirtioModel;
+virDomainNetIsVnetCompatModel;
 virDomainNetModelTypeFromString;
 virDomainNetModelTypeToString;
 virDomainNetNotifyActualDevice;

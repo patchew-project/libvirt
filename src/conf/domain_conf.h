@@ -3371,6 +3371,7 @@ const char *virDomainNetGetModelString(const virDomainNetDef *net);
 int virDomainNetSetModelString(virDomainNetDefPtr et,
                                const char *model);
 bool virDomainNetIsVirtioModel(const virDomainNetDef *net);
+bool virDomainNetIsVnetCompatModel(const virDomainNetDef *net);
 int virDomainNetAppendIPAddress(virDomainNetDefPtr def,
                                 const char *address,
                                 int family,

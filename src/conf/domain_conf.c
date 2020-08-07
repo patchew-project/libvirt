@@ -31010,7 +31010,13 @@ virDomainNetIsVirtioModel(const virDomainNetDef *net)
             net->model == VIR_DOMAIN_NET_MODEL_VIRTIO_TRANSITIONAL ||
             net->model == VIR_DOMAIN_NET_MODEL_VIRTIO_NON_TRANSITIONAL);
 }
-
+bool
+virDomainNetIsVnetCompatModel(const virDomainNetDef *net)
+{
+    return (virDomainNetIsVirtioModel(net) ||
+            net->model == VIR_DOMAIN_NET_MODEL_E1000E ||
+            net->model == VIR_DOMAIN_NET_MODEL_VMXNET3);
+}
 
 /* Return listens[i] from the appropriate union for the graphics
  * type, or NULL if this is an unsuitable type, or the index is out of
