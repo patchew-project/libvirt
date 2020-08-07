@@ -9593,6 +9593,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
 
     /* config file currently only works with remote disks */
     src->configFile = virXPathString("string(./config/@file)", ctxt);
+    src->ns = virXPathString("string(./@namespace)", ctxt);
 
     if (src->protocol == VIR_STORAGE_NET_PROTOCOL_HTTP ||
         src->protocol == VIR_STORAGE_NET_PROTOCOL_HTTPS)
@@ -25075,6 +25076,9 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
         path = g_strdup_printf("%s/%s", src->volume, src->path);
 
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
+    if (src->ns)
+        virBufferEscapeString(attrBuf, " namespace='%s'", src->ns);
+
     virBufferEscapeString(attrBuf, " query='%s'", src->query);
 
     if (src->haveTLS != VIR_TRISTATE_BOOL_ABSENT &&

@@ -1762,6 +1762,9 @@
         <optional>
           <attribute name="name"/>
         </optional>
+        <optional>
+          <attribute name="namespace"/>
+        </optional>
         <zeroOrMore>
           <ref name="diskSourceNetworkHost"/>
         </zeroOrMore>
