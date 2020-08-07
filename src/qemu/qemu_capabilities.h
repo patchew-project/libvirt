@@ -578,6 +578,9 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_NUMA_HMAT, /* -numa hmat */
     QEMU_CAPS_BLOCKDEV_HOSTDEV_SCSI, /* -blockdev used for (i)SCSI hostdevs */
 
+    /* 380 */
+    QEMU_CAPS_RBD_NAMESPACE, /* -blockdev '{"driver":"rbd",...,"namespace":str}' */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
