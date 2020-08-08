@@ -770,7 +770,7 @@ symbols = [
   [ 'linux/if_vlan.h', 'GET_VLAN_VID_CMD' ],
 
   # Check for BSD approach for setting MAC addr
-  [ 'net/if_dl.h', 'link_addr' ],
+  [ 'net/if_dl.h', 'link_addr', '#include <sys/types.h>\n#include <sys/socket.h>' ],
 ]
 
 if host_machine.system() == 'linux'
@@ -791,15 +791,18 @@ if host_machine.system() == 'linux'
 endif
 
 foreach symbol : symbols
-  if cc.has_header_symbol(symbol[0], symbol[1], args: '-D_GNU_SOURCE')
+  if cc.has_header_symbol(symbol[0], symbol[1], args: '-D_GNU_SOURCE', prefix: symbol.get(2, ''))
     conf.set('HAVE_DECL_@0@'.format(symbol[1].to_upper()), 1)
   endif
 endforeach
 
 # Check for BSD approach for bridge management
-if (cc.has_header_symbol('net/if_bridgevar.h', 'BRDGSFD') and
-    cc.has_header_symbol('net/if_bridgevar.h', 'BRDGADD') and
-    cc.has_header_symbol('net/if_bridgevar.h', 'BRDGDEL'))
+brd_required_headers = '''#include <stdint.h>
+#include <net/if.h>
+#include <net/ethernet.h>'''
+if (cc.has_header_symbol('net/if_bridgevar.h', 'BRDGSFD', prefix: brd_required_headers) and
+    cc.has_header_symbol('net/if_bridgevar.h', 'BRDGADD', prefix: brd_required_headers) and
+    cc.has_header_symbol('net/if_bridgevar.h', 'BRDGDEL', prefix: brd_required_headers))
   conf.set('HAVE_BSD_BRIDGE_MGMT', 1)
 endif
 
@@ -900,6 +903,7 @@ foreach name : required_programs
   prog = find_program(name, required: true, dirs: libvirt_sbin_path)
   varname = name.underscorify()
   conf.set_quoted(varname.to_upper(), prog.path())
+  conf.set_quoted('@0@_PATH'.format(varname.to_upper()), prog.path())
   set_variable('@0@_prog'.format(varname), prog)
 endforeach
 
