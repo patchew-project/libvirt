@@ -58,3 +58,4 @@ int qemuInterfaceOpenVhostNet(virDomainDefPtr def,
 
 qemuSlirpPtr qemuInterfacePrepareSlirp(virQEMUDriverPtr driver,
                                        virDomainNetDefPtr net);
+bool qemuInterfaceIsVnetCompatModel(const virDomainNetDef *net);

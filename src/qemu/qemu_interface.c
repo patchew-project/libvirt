@@ -230,6 +230,13 @@ qemuInterfaceStopDevices(virDomainDefPtr def)
     return 0;
 }
 
+bool qemuInterfaceIsVnetCompatModel(const virDomainNetDef *net)
+{
+    return (virDomainNetIsVirtioModel(net) ||
+           net->model == VIR_DOMAIN_NET_MODEL_E1000E ||
+           net->model == VIR_DOMAIN_NET_MODEL_VMXNET3);
+}
+
 
 /**
  * qemuInterfaceDirectConnect:
@@ -255,7 +262,7 @@ qemuInterfaceDirectConnect(virDomainDefPtr def,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     unsigned int macvlan_create_flags = VIR_NETDEV_MACVLAN_CREATE_WITH_TAP;
 
-    if (virDomainNetIsVirtioModel(net))
+    if (qemuInterfaceIsVnetCompatModel(net))
         macvlan_create_flags |= VIR_NETDEV_MACVLAN_VNET_HDR;
 
     if (virNetDevMacVLanCreateWithVPortProfile(net->ifname,
@@ -417,7 +424,7 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
         }
     }
 
-    if (virDomainNetIsVirtioModel(net))
+    if (qemuInterfaceIsVnetCompatModel(net))
         tap_create_flags |= VIR_NETDEV_TAP_CREATE_VNET_HDR;
 
     if (net->managed_tap == VIR_TRISTATE_BOOL_NO) {
@@ -436,7 +443,7 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
             if (virNetDevMacVLanTapOpen(net->ifname, tapfd, tapfdSize) < 0)
                 goto cleanup;
             if (virNetDevMacVLanTapSetup(tapfd, tapfdSize,
-                                         virDomainNetIsVirtioModel(net)) < 0) {
+                                         qemuInterfaceIsVnetCompatModel(net)) < 0) {
                 goto cleanup;
             }
         } else {
@@ -559,7 +566,7 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         template_ifname = true;
     }
 
-    if (virDomainNetIsVirtioModel(net))
+    if (qemuInterfaceIsVnetCompatModel(net))
         tap_create_flags |= VIR_NETDEV_TAP_CREATE_VNET_HDR;
 
     if (driver->privileged) {
