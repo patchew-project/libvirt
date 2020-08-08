@@ -4376,6 +4376,48 @@ qemuProcessUpdateCPU(virQEMUDriverPtr driver,
 }
 
 
+static bool
+qemuIsNvramFileHealthy(virQEMUDriverConfigPtr cfg,
+                       virDomainLoaderDefPtr loader)
+{
+    const char *masterNvramPath;
+    off_t nvramSize;
+    off_t masterSize;
+
+    masterNvramPath = loader->templt;
+    if (!loader->templt) {
+        size_t i;
+        for (i = 0; i < cfg->nfirmwares; i++) {
+            if (STREQ(cfg->firmwares[i]->name, loader->path)) {
+                masterNvramPath = cfg->firmwares[i]->nvram;
+                break;
+            }
+        }
+    }
+
+    if (!masterNvramPath) {
+        VIR_WARN("no nvram template is found; assume the nvram file is healthy");
+        return true;
+    }
+
+    if ((nvramSize = virFileLength(loader->nvram, -1)) < 0 ||
+        (masterSize = virFileLength(masterNvramPath, -1)) < 0) {
+        virReportSystemError(errno,
+                             _("unable to get the size of '%s' or '%s'"),
+                             loader->nvram, masterNvramPath);
+        return false;
+    }
+
+    if (nvramSize != masterSize) {
+        VIR_WARN("the size(%zd) of the nvram file is not equal to that of the template %s",
+                 nvramSize, masterNvramPath);
+        return false;
+    }
+
+    return true;
+}
+
+
 static int
 qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
                  virDomainObjPtr vm)
@@ -4388,8 +4430,18 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
     const char *master_nvram_path;
     ssize_t r;
 
-    if (!loader || !loader->nvram || virFileExists(loader->nvram))
+    if (!loader || !loader->nvram)
         return 0;
+
+    if (virFileExists(loader->nvram)) {
+        if (qemuIsNvramFileHealthy(cfg, loader))
+            return 0;
+
+        ignore_value(virFileRemove(loader->nvram, -1, -1));
+        VIR_WARN("the nvram file %s exists but may be corrupted! "
+                 "Remove it and try to copy a new one from template.",
+                 loader->nvram);
+    }
 
     master_nvram_path = loader->templt;
     if (!loader->templt) {
