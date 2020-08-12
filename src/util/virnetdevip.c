@@ -496,7 +496,7 @@ virNetDevIPGetAcceptRA(const char *ifname)
 }
 
 struct virNetDevIPCheckIPv6ForwardingData {
-    bool hasRARoutes;
+    bool hasKernelRARoutes;
 
     /* Devices with conflicting accept_ra */
     char **devices;
@@ -552,15 +552,26 @@ virNetDevIPCheckIPv6ForwardingCallback(struct nlmsghdr *resp,
         if (!ifname)
            return -1;
 
-        accept_ra = virNetDevIPGetAcceptRA(ifname);
-
         VIR_DEBUG("Checking route for device %s (%d), accept_ra: %d",
                   ifname, ifindex, accept_ra);
 
-        if (accept_ra != 2 && virNetDevIPCheckIPv6ForwardingAddIF(data, &ifname) < 0)
+        accept_ra = virNetDevIPGetAcceptRA(ifname);
+        /* 0 = do no accept RA
+         * 1 = accept if forwarding disabled
+         * 2 = ovveride and accept RA when forwarding enabled
+         *
+         * When RA is managed by userspace (systemd-networkd or
+         * NetworkManager) accept_ra is unset and we don't need to
+         * worry about it.  If it is 1, enabling forwarding might
+         * change the behaviour so the user needs to be warned.
+         */
+        if (accept_ra == 0)
+            return 0;
+
+        if (accept_ra == 1 && virNetDevIPCheckIPv6ForwardingAddIF(data, &ifname) < 0)
             return -1;
 
-        data->hasRARoutes = true;
+        data->hasKernelRARoutes = true;
         return 0;
     }
 
@@ -590,11 +601,13 @@ virNetDevIPCheckIPv6ForwardingCallback(struct nlmsghdr *resp,
             VIR_DEBUG("Checking multipath route nexthop device %s (%d), accept_ra: %d",
                       ifname, nh->rtnh_ifindex, accept_ra);
 
-            if (accept_ra != 2 && virNetDevIPCheckIPv6ForwardingAddIF(data, &ifname) < 0)
-                return -1;
+            if (accept_ra == 1) {
+                if (virNetDevIPCheckIPv6ForwardingAddIF(data, &ifname) < 0)
+                    return -1;
+                data->hasKernelRARoutes = true;
+            }
 
             VIR_FREE(ifname);
-            data->hasRARoutes = true;
 
             len -= NLMSG_ALIGN(nh->rtnh_len);
             VIR_WARNINGS_NO_CAST_ALIGN
@@ -613,7 +626,7 @@ virNetDevIPCheckIPv6Forwarding(void)
     struct rtgenmsg genmsg;
     size_t i;
     struct virNetDevIPCheckIPv6ForwardingData data = {
-        .hasRARoutes = false,
+        .hasKernelRARoutes = false,
         .devices = NULL,
         .ndevices = 0
     };
@@ -644,11 +657,11 @@ virNetDevIPCheckIPv6Forwarding(void)
         goto cleanup;
     }
 
-    valid = !data.hasRARoutes || data.ndevices == 0;
+    valid = !data.hasKernelRARoutes || data.ndevices == 0;
 
     /* Check the global accept_ra if at least one isn't set on a
        per-device basis */
-    if (!valid && data.hasRARoutes) {
+    if (!valid && data.hasKernelRARoutes) {
         int accept_ra = virNetDevIPGetAcceptRA(NULL);
         valid = accept_ra == 2;
         VIR_DEBUG("Checked global accept_ra: %d", accept_ra);
@@ -663,9 +676,9 @@ virNetDevIPCheckIPv6Forwarding(void)
         }
 
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Check the host setup: enabling IPv6 forwarding with "
-                         "RA routes without accept_ra set to 2 is likely to cause "
-                         "routes loss. Interfaces to look at: %s"),
+                       _("Check the host setup: interface has accept_ra set to 1 "
+                         "and enabling forwarding without accept_ra set to 2 is "
+                         "likely to cause routes loss. Interfaces to look at: %s"),
                        virBufferCurrentContent(&buf));
     }
 
