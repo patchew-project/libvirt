@@ -381,10 +381,11 @@ xenParsePCI(char *entry)
     int busID;
     int slotID;
     int funcID;
+    virTristateBool filtered = VIR_TRISTATE_BOOL_ABSENT;
 
     domain[0] = bus[0] = slot[0] = func[0] = '\0';
 
-    /* pci=['0000:00:1b.0','0000:00:13.0'] */
+    /* pci=['0000:00:1b.0','0000:00:13.0,permissive=1'] */
     if (!(key = entry))
         return NULL;
     if (!(nextkey = strchr(key, ':')))
@@ -414,12 +415,36 @@ xenParsePCI(char *entry)
     }
 
     key = nextkey + 1;
-    if (strlen(key) != 1)
+    if (!(nextkey = strchrnul(key, ',')))
         return NULL;
-    if (virStrncpy(func, key, 1, sizeof(func)) < 0) {
+    if (virStrncpy(func, key, (nextkey - key), sizeof(func)) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Function %s too big for destination"), key);
         return NULL;
+    }
+
+    /* options */
+    while (*nextkey != '\0') {
+        char *data;
+        key = nextkey + 1;
+        if (!(data = strchr(key, '=')))
+            return NULL;
+        data++;
+        if (!(nextkey = strchrnul(key, ',')))
+            return NULL;
+        if (STRPREFIX(key, "permissive=")) {
+            char valuestr[5];
+            int valueint;
+            if (virStrncpy(valuestr, data, (nextkey - data), sizeof(valuestr)) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("Permissive %s too big for destination"), data);
+                return NULL;
+            }
+            /* xl.cfg(5) specifies false as 0 and true as any other numeric value */
+            if (virStrToLong_i(valuestr, NULL, 10, &valueint) < 0)
+                return NULL;
+            filtered = valueint ? VIR_TRISTATE_BOOL_NO : VIR_TRISTATE_BOOL_YES;
+        }
     }
 
     if (virStrToLong_i(domain, NULL, 16, &domainID) < 0)
@@ -435,6 +460,7 @@ xenParsePCI(char *entry)
        return NULL;
 
     hostdev->managed = false;
+    hostdev->writeFiltering = filtered;
     hostdev->source.subsys.type = VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI;
     hostdev->source.subsys.u.pci.addr.domain = domainID;
     hostdev->source.subsys.u.pci.addr.bus = busID;
@@ -1849,12 +1875,28 @@ xenFormatPCI(virConfPtr conf, virDomainDefPtr def)
             def->hostdevs[i]->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
             virConfValuePtr val, tmp;
             char *buf;
+            const char *permissive_str = NULL;
 
-            buf = g_strdup_printf("%04x:%02x:%02x.%x",
+            switch (def->hostdevs[i]->writeFiltering) {
+                case VIR_TRISTATE_BOOL_YES:
+                    permissive_str = ",permissive=0";
+                    break;
+                case VIR_TRISTATE_BOOL_NO:
+                    permissive_str = ",permissive=1";
+                    break;
+                case VIR_TRISTATE_BOOL_ABSENT:
+                case VIR_TRISTATE_BOOL_LAST:
+                    permissive_str = "";
+                    break;
+            }
+
+            buf = g_strdup_printf("%04x:%02x:%02x.%x%s",
                                   def->hostdevs[i]->source.subsys.u.pci.addr.domain,
                                   def->hostdevs[i]->source.subsys.u.pci.addr.bus,
                                   def->hostdevs[i]->source.subsys.u.pci.addr.slot,
-                                  def->hostdevs[i]->source.subsys.u.pci.addr.function);
+                                  def->hostdevs[i]->source.subsys.u.pci.addr.function,
+                                  permissive_str);
+
 
             if (VIR_ALLOC(val) < 0) {
                 VIR_FREE(buf);
