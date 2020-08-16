@@ -374,6 +374,33 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
             return -1;
     }
 
+    for (i = 0; i < def->ntpms; i++) {
+        virDomainTPMDefPtr tpm = def->tpms[i];
+        const char *dev = NULL;
+
+        switch (tpm->type) {
+        case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+        case VIR_DOMAIN_TPM_TYPE_LAST:
+            break;
+        case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
+            dev = "/dev/tpm0";
+            break;
+        }
+
+        if (!dev)
+            continue;
+
+        if (!virFileExists(dev)) {
+            VIR_DEBUG("Ignoring non-existent device %s", dev);
+            continue;
+        }
+
+        if (virCgroupAllowDevicePath(cgroup, dev,
+                                     VIR_CGROUP_DEVICE_READ,
+                                     false) < 0)
+            return -1;
+    }
+
     VIR_DEBUG("Device ACL setup complete");
 
     return 0;

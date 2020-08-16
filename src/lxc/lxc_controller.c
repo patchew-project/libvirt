@@ -1645,6 +1645,59 @@ virLXCControllerSetupHostdevSubsysUSB(virDomainDefPtr vmDef,
 
 
 static int
+virLXCControllerSetupTPM(virLXCControllerPtr ctrl)
+{
+    virDomainDefPtr def = ctrl->def;
+    size_t i;
+
+    for (i = 0; i < def->ntpms; i++) {
+        virDomainTPMDefPtr tpm = def->tpms[i];
+        g_autofree char *path = NULL;
+        const char *tpm_dev = NULL;
+        struct stat sb;
+        dev_t dev;
+
+        switch (tpm->type) {
+        case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+        case VIR_DOMAIN_TPM_TYPE_LAST:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported timer type (name) '%s'"),
+                           virDomainTPMBackendTypeToString(tpm->type));
+            return -1;
+        case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
+            tpm_dev = "/dev/tpm0";
+            path = g_strdup_printf("/%s/%s.dev/%s", LXC_STATE_DIR,
+                                   def->name, "/rtc");
+            break;
+        }
+
+        if (!tpm_dev)
+            continue;
+
+        if (stat(tpm_dev, &sb) < 0) {
+            virReportSystemError(errno, _("Unable to access %s"),
+                                 tpm_dev);
+            return -1;
+        }
+
+        dev = makedev(major(sb.st_rdev), minor(sb.st_rdev));
+        if (mknod(path, S_IFCHR, dev) < 0 ||
+            chmod(path, sb.st_mode)) {
+            virReportSystemError(errno,
+                                 _("Failed to make device %s"),
+                                 path);
+            return -1;
+        }
+
+        if (lxcContainerChown(def, path) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virLXCControllerSetupHostdevCapsStorage(virDomainDefPtr vmDef,
                                         virDomainHostdevDefPtr def,
                                         virSecurityManagerPtr securityDriver)
@@ -2356,6 +2409,9 @@ virLXCControllerRun(virLXCControllerPtr ctrl)
         goto cleanup;
 
     if (virLXCControllerSetupAllHostdevs(ctrl) < 0)
+        goto cleanup;
+
+    if (virLXCControllerSetupTPM(ctrl) < 0)
         goto cleanup;
 
     if (virLXCControllerSetupFuse(ctrl) < 0)
