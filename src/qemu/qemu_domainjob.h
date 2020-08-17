@@ -204,12 +204,6 @@ void qemuDomainObjDiscardAsyncJob(virQEMUDriverPtr driver,
                                   virDomainObjPtr obj);
 void qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj);
 
-void qemuDomainRemoveInactiveJob(virQEMUDriverPtr driver,
-                                 virDomainObjPtr vm);
-
-void qemuDomainRemoveInactiveJobLocked(virQEMUDriverPtr driver,
-                                       virDomainObjPtr vm);
-
 bool qemuDomainTrackJob(qemuDomainJob job);
 
 void qemuDomainObjFreeJob(qemuDomainJobObjPtr job);
