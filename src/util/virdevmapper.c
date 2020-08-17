@@ -47,10 +47,11 @@
 G_STATIC_ASSERT(BUF_SIZE > sizeof(struct dm_ioctl));
 
 static unsigned int virDMMajor;
+static virMutex virDevMapperInitMutex = VIR_MUTEX_INITIALIZER;
 
 
 static int
-virDevMapperOnceInit(void)
+virDevMapperGetMajor(unsigned int *dmmaj)
 {
     g_autofree char *buf = NULL;
     VIR_AUTOSTRINGLIST lines = NULL;
@@ -69,23 +70,34 @@ virDevMapperOnceInit(void)
 
         if (sscanf(lines[i], "%u %ms\n", &maj, &dev) == 2 &&
             STREQ(dev, DM_NAME)) {
-            virDMMajor = maj;
+            *dmmaj = maj;
             break;
         }
     }
 
     if (!lines[i]) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Unable to find major for %s"),
-                       DM_NAME);
-        return -1;
+        /* Don't error here. Maybe the kernel was built without
+         * devmapper. Let the caller decide. */
+        return -2;
     }
 
     return 0;
 }
 
 
-VIR_ONCE_GLOBAL_INIT(virDevMapper);
+static int
+virDevMapperInit(void)
+{
+    int rc = 0;
+
+    virMutexLock(&virDevMapperInitMutex);
+
+    if (virDMMajor == 0)
+        rc = virDevMapperGetMajor(&virDMMajor);
+
+    virMutexUnlock(&virDevMapperInitMutex);
+    return rc;
+}
 
 
 static void *
@@ -220,7 +232,6 @@ virDevMapperGetTargetsImpl(int controlFD,
     size_t i;
 
     memset(&dm, 0, sizeof(dm));
-    *devPaths_ret = NULL;
 
     if (ttl == 0) {
         errno = ELOOP;
@@ -298,14 +309,24 @@ virDevMapperGetTargets(const char *path,
                        char ***devPaths)
 {
     VIR_AUTOCLOSE controlFD = -1;
+    int rc;
     const unsigned int ttl = 32;
 
     /* Arbitrary limit on recursion level. A devmapper target can
      * consist of devices or yet another targets. If that's the
      * case, we have to stop recursion somewhere. */
 
-    if (virDevMapperInitialize() < 0)
+    *devPaths = NULL;
+
+    if ((rc = virDevMapperInit()) < 0) {
+        if (rc == -2) {
+            /* Devmapper is not available. Yet. Maybe the module
+             * will be loaded later, but do not error out for now. */
+            return 0;
+        }
+
         return -1;
+    }
 
     if ((controlFD = virDMOpen()) < 0)
         return -1;
@@ -319,7 +340,7 @@ virIsDevMapperDevice(const char *dev_name)
 {
     struct stat buf;
 
-    if (virDevMapperInitialize() < 0)
+    if (virDevMapperInit() < 0)
         return false;
 
     if (!stat(dev_name, &buf) &&
