@@ -117,10 +117,12 @@ qemuDomainAsyncJobPhaseFromString(qemuDomainAsyncJob job,
 
 int
 qemuDomainObjInitJob(qemuDomainJobObjPtr job,
-                     qemuDomainObjPrivateJobCallbacksPtr cb)
+                     qemuDomainObjPrivateJobCallbacksPtr cb,
+                     unsigned int maxQueuedJobs)
 {
     memset(job, 0, sizeof(*job));
     job->cb = cb;
+    job->maxQueuedJobs = maxQueuedJobs;
 
     if (!(job->privateData = job->cb->allocJobPrivate()))
         return -1;
@@ -344,7 +346,6 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     unsigned long long then;
     bool nested = job == QEMU_JOB_ASYNC_NESTED;
     bool async = job == QEMU_JOB_ASYNC;
-    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     const char *blocker = NULL;
     const char *agentBlocker = NULL;
     int ret = -1;
@@ -370,8 +371,8 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
 
  retry:
     if ((!async && job != QEMU_JOB_DESTROY) &&
-        cfg->maxQueuedJobs &&
-        priv->job.jobs_queued > cfg->maxQueuedJobs) {
+        priv->job.maxQueuedJobs &&
+        priv->job.jobs_queued > priv->job.maxQueuedJobs) {
         goto error;
     }
 
@@ -501,8 +502,8 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
                            _("cannot acquire state change lock"));
         }
         ret = -2;
-    } else if (cfg->maxQueuedJobs &&
-               priv->job.jobs_queued > cfg->maxQueuedJobs) {
+    } else if (priv->job.maxQueuedJobs &&
+               priv->job.jobs_queued > priv->job.maxQueuedJobs) {
         if (blocker && agentBlocker) {
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("cannot acquire state change "
