@@ -152,6 +152,8 @@ struct _qemuDomainJobObj {
     char *error;                        /* job event completion error */
     unsigned long apiFlags; /* flags passed to the API which started the async job */
 
+    int jobs_queued;
+
     void *privateData;                  /* job specific collection of data */
     qemuDomainObjPrivateJobCallbacksPtr cb;
 };
