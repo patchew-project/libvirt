@@ -143,8 +143,13 @@ virDMOpen(void)
 
     memset(&dm, 0, sizeof(dm));
 
-    if ((controlFD = open(CONTROL_PATH, O_RDWR)) < 0)
+    if ((controlFD = open(CONTROL_PATH, O_RDWR)) < 0) {
+        if (errno == ENOENT)
+            return -2;
+
+        virReportSystemError(errno, _("Unable to open %s"), CONTROL_PATH);
         return -1;
+    }
 
     if (!virDMIoctl(controlFD, DM_VERSION, &dm, &tmp)) {
         virReportSystemError(errno, "%s",
@@ -328,8 +333,17 @@ virDevMapperGetTargets(const char *path,
         return -1;
     }
 
-    if ((controlFD = virDMOpen()) < 0)
+    if ((controlFD = virDMOpen()) < 0) {
+        if (controlFD == -2) {
+            /* Devmapper was available but now it isn't. Somebody
+             * must have removed the module. Reset the major
+             * number we remember. */
+            virDMMajor = 0;
+            return 0;
+        }
+
         return -1;
+    }
 
     return virDevMapperGetTargetsImpl(controlFD, path, devPaths, ttl);
 }
