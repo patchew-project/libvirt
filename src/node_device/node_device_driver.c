@@ -812,6 +812,137 @@ virMdevctlStop(virNodeDeviceDefPtr def)
 }
 
 
+virCommandPtr
+nodeDeviceGetMdevctlListCommand(bool defined,
+                                char **output)
+{
+    virCommandPtr cmd = virCommandNewArgList(MDEVCTL,
+                                             "list",
+                                             "--dumpjson",
+                                             NULL);
+
+    if (defined)
+        virCommandAddArg(cmd, "--defined");
+
+    virCommandSetOutputBuffer(cmd, output);
+
+    return cmd;
+}
+
+
+static void mdevGenerateDeviceName(virNodeDeviceDefPtr dev)
+{
+    nodeDeviceGenerateName(dev, "mdev", dev->caps->data.mdev.uuid, NULL);
+}
+
+int
+nodeDeviceParseMdevctlJSON(const char *jsonstring,
+                               virNodeDeviceDefPtr **devs)
+{
+    int n;
+    g_autoptr(virJSONValue) json_devicelist = NULL;
+    virNodeDeviceDefPtr *outdevs = NULL;
+    size_t noutdevs = 0;
+    size_t i, j, k, m;
+
+    json_devicelist = virJSONValueFromString(jsonstring);
+
+    if (!json_devicelist)
+        goto parsefailure;
+
+    if (!virJSONValueIsArray(json_devicelist))
+        goto parsefailure;
+
+    n = virJSONValueArraySize(json_devicelist);
+
+    for (i = 0; i < n; i++) {
+        virJSONValuePtr obj = virJSONValueArrayGet(json_devicelist, i);
+        int nparents;
+
+        if (!virJSONValueIsObject(obj))
+            goto parsefailure;
+
+        nparents = virJSONValueObjectKeysNumber(obj);
+
+        for (j = 0; j < nparents; j++) {
+            const char *parent = virJSONValueObjectGetKey(obj, j);
+            virJSONValuePtr child_array = virJSONValueObjectGetValue(obj, j);
+            int nchildren;
+
+            if (!virJSONValueIsArray(child_array))
+                goto parsefailure;
+
+            nchildren = virJSONValueArraySize(child_array);
+
+            for (k = 0; k < nchildren; k++) {
+                virNodeDevCapMdevPtr mdev;
+                const char *uuid;
+                virJSONValuePtr props;
+                g_autoptr(virNodeDeviceDef) child = g_new0(virNodeDeviceDef, 1);
+                virJSONValuePtr child_obj = virJSONValueArrayGet(child_array, k);
+
+                /* the child object should have a single key equal to its uuid.
+                 * The value is an object describing the properties of the mdev */
+                if (virJSONValueObjectKeysNumber(child_obj) != 1)
+                    goto parsefailure;
+
+                uuid = virJSONValueObjectGetKey(child_obj, 0);
+                props = virJSONValueObjectGetValue(child_obj, 0);
+
+                child->parent = g_strdup(parent);
+                child->caps = g_new0(virNodeDevCapsDef, 1);
+                child->caps->data.type = VIR_NODE_DEV_CAP_MDEV;
+
+                mdev = &child->caps->data.mdev;
+                mdev->uuid = g_strdup(uuid);
+                mdev->type =
+                    g_strdup(virJSONValueObjectGetString(props, "mdev_type"));
+
+                virJSONValuePtr attrs = virJSONValueObjectGet(props, "attrs");
+
+                if (attrs && virJSONValueIsArray(attrs)) {
+                    int nattrs = virJSONValueArraySize(attrs);
+
+                    mdev->attributes = g_new0(virMediatedDeviceAttrPtr, nattrs);
+                    mdev->nattributes = nattrs;
+
+                    for (m = 0; m < nattrs; m++) {
+                        virJSONValuePtr attr = virJSONValueArrayGet(attrs, m);
+                        virMediatedDeviceAttrPtr attribute;
+
+                        if (!virJSONValueIsObject(attr) ||
+                            virJSONValueObjectKeysNumber(attr) != 1)
+                            goto parsefailure;
+
+                        attribute = g_new0(virMediatedDeviceAttr, 1);
+                        attribute->name = g_strdup(virJSONValueObjectGetKey(attr, 0));
+                        virJSONValuePtr value = virJSONValueObjectGetValue(attr, 0);
+                        attribute->value = g_strdup(virJSONValueGetString(value));
+                        mdev->attributes[m] = attribute;
+                    }
+                }
+                mdevGenerateDeviceName(child);
+
+                if (VIR_APPEND_ELEMENT(outdevs, noutdevs, child) < 0)
+                child = NULL;
+            }
+        }
+    }
+
+    *devs = outdevs;
+    return noutdevs;
+
+ parsefailure:
+    for (i = 0; i < noutdevs; i++)
+        virNodeDeviceDefFree(outdevs[i]);
+    VIR_FREE(outdevs);
+
+    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                   _("unable to parse JSON response"));
+    return -1;
+}
+
+
 int
 nodeDeviceDestroy(virNodeDevicePtr device)
 {
@@ -930,4 +1061,29 @@ nodedevRegister(void)
     return halNodeRegister();
 # endif
 #endif
+}
+
+
+void
+nodeDeviceGenerateName(virNodeDeviceDefPtr def,
+                       const char *subsystem,
+                       const char *sysname,
+                       const char *s)
+{
+    size_t i;
+    g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAsprintf(&buf, "%s_%s",
+                      subsystem,
+                      sysname);
+
+    if (s != NULL)
+        virBufferAsprintf(&buf, "_%s", s);
+
+    def->name = virBufferContentAndReset(&buf);
+
+    for (i = 0; i < strlen(def->name); i++) {
+        if (!(g_ascii_isalnum(*(def->name + i))))
+            *(def->name + i) = '_';
+    }
 }
