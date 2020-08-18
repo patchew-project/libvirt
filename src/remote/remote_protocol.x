@@ -2139,6 +2139,15 @@ struct remote_node_device_destroy_args {
     remote_nonnull_string name;
 };
 
+struct remote_node_device_define_xml_args {
+    remote_nonnull_string xml_desc;
+    unsigned int flags;
+};
+
+struct remote_node_device_define_xml_ret {
+    remote_nonnull_node_device dev;
+};
+
 
 /*
  * Events Register/Deregister:
@@ -6664,5 +6673,12 @@ enum remote_procedure {
      * @priority: high
      * @acl: domain:read
      */
-    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422
+    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422,
+
+    /**
+     * @generate: both
+     * @acl: node_device:write
+     * @acl: node_device:start
+     */
+    REMOTE_PROC_NODE_DEVICE_DEFINE_XML = 423
 };
