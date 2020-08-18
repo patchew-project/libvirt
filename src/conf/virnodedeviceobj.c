@@ -865,6 +865,16 @@ virNodeDeviceObjMatch(virNodeDeviceObjPtr obj,
             return false;
     }
 
+#undef MATCH
+#define MATCH(FLAG) (flags & (FLAG))
+
+    if (MATCH(VIR_CONNECT_LIST_NODE_DEVICES_FILTERS_ACTIVE) &&
+        !((MATCH(VIR_CONNECT_LIST_NODE_DEVICES_ACTIVE) &&
+           virNodeDeviceObjIsActive(obj)) ||
+          (MATCH(VIR_CONNECT_LIST_NODE_DEVICES_INACTIVE) &&
+           !virNodeDeviceObjIsActive(obj))))
+            return false;
+
     return true;
 }
 #undef MATCH
