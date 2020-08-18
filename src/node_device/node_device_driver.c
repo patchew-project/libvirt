@@ -894,6 +894,7 @@ nodeDeviceParseMdevctlJSON(const char *jsonstring,
                 child->caps->data.type = VIR_NODE_DEV_CAP_MDEV;
 
                 mdev = &child->caps->data.mdev;
+                mdev->persistent = true;
                 mdev->uuid = g_strdup(uuid);
                 mdev->type =
                     g_strdup(virJSONValueObjectGetString(props, "mdev_type"));
