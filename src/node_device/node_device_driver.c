@@ -1088,3 +1088,79 @@ nodeDeviceGenerateName(virNodeDeviceDefPtr def,
             *(def->name + i) = '_';
     }
 }
+
+
+static int
+virMdevctlListDefined(virNodeDeviceDefPtr **devs)
+{
+    int status;
+    g_autofree char *output = NULL;
+    g_autoptr(virCommand) cmd = nodeDeviceGetMdevctlListCommand(true, &output);
+
+    if (virCommandRun(cmd, &status) < 0)
+        return -1;
+
+    if (!output)
+        return -1;
+
+    return nodeDeviceParseMdevctlJSON(output, devs);
+}
+
+
+int
+mdevctlEnumerateDevices(void)
+{
+    g_autofree virNodeDeviceDefPtr *devs = NULL;
+    int ndevs;
+    size_t i;
+
+    if ((ndevs = virMdevctlListDefined(&devs)) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to query mdevs from mdevctl"));
+        return -1;
+    }
+
+    for (i = 0; i < ndevs; i++) {
+        virNodeDeviceObjPtr obj;
+        virObjectEventPtr event;
+        virNodeDeviceDefPtr dev = devs[i];
+
+        dev->driver = g_strdup("vfio_mdev");
+
+        /* If a device defined by mdevctl is already in the list, that means
+         * that it was found via the normal device discovery process and thus
+         * is already activated. Active devices contain some additional
+         * information (e.g. sysfs path) that is not provided by mdevctl, so
+         * preserve that info */
+        bool new_device = true;
+        if ((obj = virNodeDeviceObjListFindByName(driver->devs, dev->name))) {
+            virNodeDeviceDefPtr olddef = virNodeDeviceObjGetDef(obj);
+
+            /* Copy any data from the existing device */
+            dev->sysfs_path = g_strdup(olddef->sysfs_path);
+            dev->parent_sysfs_path = g_strdup(olddef->parent_sysfs_path);
+            dev->driver = g_strdup(olddef->driver);
+            dev->devnode = g_strdup(olddef->devnode);
+            dev->caps->data.mdev.iommuGroupNumber = olddef->caps->data.mdev.iommuGroupNumber;
+
+            virNodeDeviceObjEndAPI(&obj);
+            new_device = false;
+        }
+
+        if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, dev))) {
+            virNodeDeviceDefFree(dev);
+            return -1;
+        }
+
+        if (new_device)
+            event = virNodeDeviceEventLifecycleNew(dev->name,
+                                                   VIR_NODE_DEVICE_EVENT_CREATED,
+                                                   0);
+        else
+            event = virNodeDeviceEventUpdateNew(dev->name);
+        virNodeDeviceObjEndAPI(&obj);
+        virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+    }
+
+    return 0;
+}

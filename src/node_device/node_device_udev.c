@@ -1306,6 +1306,45 @@ udevSetParent(struct udev_device *device,
     return 0;
 }
 
+static virMediatedDeviceAttrPtr *
+virMediatedDeviceAttrsCopy(virMediatedDeviceAttrPtr *attrs,
+                           size_t nattrs)
+{
+    size_t i;
+    size_t j = 0;
+    g_autofree virMediatedDeviceAttrPtr *ret = NULL;
+
+    if (nattrs == 0)
+        return NULL;
+
+    if (VIR_ALLOC_N(ret, nattrs) < 0)
+        return NULL;
+
+    for (i = 0; i < nattrs; i++) {
+        virMediatedDeviceAttrPtr attr = virMediatedDeviceAttrNew();
+        attr->name = g_strdup(attrs[i]->name);
+        attr->value = g_strdup(attrs[i]->value);
+        VIR_APPEND_ELEMENT_INPLACE(ret, j, attr);
+    }
+
+    return g_steal_pointer(ret);
+}
+
+/* An existing device definition may have additional info from mdevctl that is
+ * not available from udev. Transfer this data to the new definition */
+static void
+nodeDeviceDefCopyExtraData(virNodeDeviceDefPtr dst,
+                           virNodeDeviceDefPtr src)
+{
+    virNodeDevCapMdevPtr srcmdev = &src->caps->data.mdev;
+    virNodeDevCapMdevPtr dstmdev = &dst->caps->data.mdev;
+
+    dstmdev->persistent = srcmdev->persistent;
+    dstmdev->nattributes = srcmdev->nattributes;
+    dstmdev->attributes = virMediatedDeviceAttrsCopy(srcmdev->attributes,
+                                                     srcmdev->nattributes);
+}
+
 
 static int
 udevAddOneDevice(struct udev_device *device)
@@ -1341,6 +1380,8 @@ udevAddOneDevice(struct udev_device *device)
         goto cleanup;
 
     if ((obj = virNodeDeviceObjListFindByName(driver->devs, def->name))) {
+        nodeDeviceDefCopyExtraData(def, virNodeDeviceObjGetDef(obj));
+
         virNodeDeviceObjEndAPI(&obj);
         new_device = false;
     }
@@ -1772,6 +1813,8 @@ nodeStateInitializeEnumerate(void *opaque)
 
     /* Populate with known devices */
     if (udevEnumerateDevices(udev) != 0)
+        goto error;
+    if (mdevctlEnumerateDevices() != 0)
         goto error;
 
     nodeDeviceLock();
