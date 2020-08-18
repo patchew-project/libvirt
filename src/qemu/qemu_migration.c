@@ -2132,7 +2132,6 @@ qemuMigrationSrcCleanup(virDomainObjPtr vm,
     switch ((qemuMigrationJobPhase) priv->job.phase) {
     case QEMU_MIGRATION_PHASE_BEGIN3:
         /* just forget we were about to migrate */
-        qemuDomainObjDiscardAsyncJob(driver, vm);
         break;
 
     case QEMU_MIGRATION_PHASE_PERFORM3_DONE:
@@ -2142,7 +2141,6 @@ qemuMigrationSrcCleanup(virDomainObjPtr vm,
         qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
                                  jobPriv->migParams, priv->job.apiFlags);
         /* clear the job and let higher levels decide what to do */
-        qemuDomainObjDiscardAsyncJob(driver, vm);
         break;
 
     case QEMU_MIGRATION_PHASE_PERFORM3:
@@ -2159,8 +2157,9 @@ qemuMigrationSrcCleanup(virDomainObjPtr vm,
     case QEMU_MIGRATION_PHASE_NONE:
     case QEMU_MIGRATION_PHASE_LAST:
         /* unreachable */
-        ;
+        return;
     }
+    qemuMigrationJobFinish(driver, vm);
 }
 
 
