@@ -111,23 +111,18 @@ static const vshCmdOptDef opts_node_device_destroy[] = {
     {.name = NULL}
 };
 
-static bool
-cmdNodeDeviceDestroy(vshControl *ctl, const vshCmd *cmd)
+static virNodeDevicePtr
+vshFindNodeDevice(vshControl *ctl, const char *value)
 {
     virNodeDevicePtr dev = NULL;
-    bool ret = false;
-    const char *device_value = NULL;
     char **arr = NULL;
     int narr;
     virshControlPtr priv = ctl->privData;
 
-    if (vshCommandOptStringReq(ctl, cmd, "device", &device_value) < 0)
-        return false;
-
-    if (strchr(device_value, ',')) {
-        narr = vshStringToArray(device_value, &arr);
+    if (strchr(value, ',')) {
+        narr = vshStringToArray(value, &arr);
         if (narr != 2) {
-            vshError(ctl, _("Malformed device value '%s'"), device_value);
+            vshError(ctl, _("Malformed device value '%s'"), value);
             goto cleanup;
         }
 
@@ -136,9 +131,30 @@ cmdNodeDeviceDestroy(vshControl *ctl, const vshCmd *cmd)
 
         dev = virNodeDeviceLookupSCSIHostByWWN(priv->conn, arr[0], arr[1], 0);
     } else {
-        dev = virNodeDeviceLookupByName(priv->conn, device_value);
+        dev = virNodeDeviceLookupByName(priv->conn, value);
     }
 
+    if (!dev) {
+        vshError(ctl, "%s '%s'", _("Could not find matching device"), value);
+        goto cleanup;
+    }
+
+ cleanup:
+    g_strfreev(arr);
+    return dev;
+}
+
+static bool
+cmdNodeDeviceDestroy(vshControl *ctl, const vshCmd *cmd)
+{
+    virNodeDevicePtr dev = NULL;
+    bool ret = false;
+    const char *device_value = NULL;
+
+    if (vshCommandOptStringReq(ctl, cmd, "device", &device_value) < 0)
+        return false;
+
+    dev = vshFindNodeDevice(ctl, device_value);
     if (!dev) {
         vshError(ctl, "%s '%s'", _("Could not find matching device"), device_value);
         goto cleanup;
@@ -153,7 +169,6 @@ cmdNodeDeviceDestroy(vshControl *ctl, const vshCmd *cmd)
 
     ret = true;
  cleanup:
-    g_strfreev(arr);
     if (dev)
         virNodeDeviceFree(dev);
     return ret;
@@ -569,28 +584,12 @@ cmdNodeDeviceDumpXML(vshControl *ctl, const vshCmd *cmd)
     virNodeDevicePtr device = NULL;
     char *xml = NULL;
     const char *device_value = NULL;
-    char **arr = NULL;
-    int narr;
     bool ret = false;
-    virshControlPtr priv = ctl->privData;
 
     if (vshCommandOptStringReq(ctl, cmd, "device", &device_value) < 0)
          return false;
 
-    if (strchr(device_value, ',')) {
-        narr = vshStringToArray(device_value, &arr);
-        if (narr != 2) {
-            vshError(ctl, _("Malformed device value '%s'"), device_value);
-            goto cleanup;
-        }
-
-        if (!virValidateWWN(arr[0]) || !virValidateWWN(arr[1]))
-            goto cleanup;
-
-        device = virNodeDeviceLookupSCSIHostByWWN(priv->conn, arr[0], arr[1], 0);
-    } else {
-        device = virNodeDeviceLookupByName(priv->conn, device_value);
-    }
+    device = vshFindNodeDevice(ctl, device_value);
 
     if (!device) {
         vshError(ctl, "%s '%s'", _("Could not find matching device"), device_value);
@@ -604,7 +603,6 @@ cmdNodeDeviceDumpXML(vshControl *ctl, const vshCmd *cmd)
 
     ret = true;
  cleanup:
-    g_strfreev(arr);
     VIR_FREE(xml);
     if (device)
         virNodeDeviceFree(device);
