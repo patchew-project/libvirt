@@ -4922,7 +4922,6 @@ qemuMigrationSrcPerformJob(virQEMUDriverPtr driver,
  */
 static int
 qemuMigrationSrcPerformPhase(virQEMUDriverPtr driver,
-                             virConnectPtr conn,
                              virDomainObjPtr vm,
                              const char *persist_xml,
                              const char *uri,
@@ -4952,8 +4951,6 @@ qemuMigrationSrcPerformPhase(virQEMUDriverPtr driver,
     }
 
     qemuMigrationJobStartPhase(driver, vm, QEMU_MIGRATION_PHASE_PERFORM3);
-    virCloseCallbacksUnset(driver->closeCallbacks, vm,
-                           qemuMigrationSrcCleanup);
 
     ret = qemuMigrationSrcPerformNative(driver, vm, persist_xml, uri, cookiein, cookieinlen,
                                         cookieout, cookieoutlen,
@@ -4966,10 +4963,6 @@ qemuMigrationSrcPerformPhase(virQEMUDriverPtr driver,
     }
 
     qemuMigrationJobSetPhase(driver, vm, QEMU_MIGRATION_PHASE_PERFORM3_DONE);
-
-    if (virCloseCallbacksSet(driver->closeCallbacks, vm, conn,
-                             qemuMigrationSrcCleanup) < 0)
-        goto endjob;
 
  endjob:
     if (ret < 0) {
@@ -5044,7 +5037,7 @@ qemuMigrationSrcPerform(virQEMUDriverPtr driver,
         }
 
         if (v3proto) {
-            return qemuMigrationSrcPerformPhase(driver, conn, vm, persist_xml, uri,
+            return qemuMigrationSrcPerformPhase(driver, vm, persist_xml, uri,
                                                 graphicsuri,
                                                 nmigrate_disks, migrate_disks,
                                                 migParams,
