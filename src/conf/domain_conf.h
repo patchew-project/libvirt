@@ -872,6 +872,7 @@ typedef enum {
     VIR_DOMAIN_NET_TYPE_DIRECT,
     VIR_DOMAIN_NET_TYPE_HOSTDEV,
     VIR_DOMAIN_NET_TYPE_UDP,
+    VIR_DOMAIN_NET_TYPE_VDPA,
 
     VIR_DOMAIN_NET_TYPE_LAST
 } virDomainNetType;
@@ -1045,6 +1046,9 @@ struct _virDomainNetDef {
              */
             virDomainActualNetDefPtr actual;
         } network;
+        struct {
+            char *devicepath;
+        } vdpa;
         struct {
             char *brname;
         } bridge;

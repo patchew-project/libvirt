@@ -118,6 +118,7 @@ qemuInterfaceStartDevice(virDomainNetDefPtr net)
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
         /* these types all require no action */
         break;
@@ -203,6 +204,7 @@ qemuInterfaceStopDevice(virDomainNetDefPtr net)
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
         /* these types all require no action */
         break;
@@ -627,6 +629,29 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
     virObjectUnref(cfg);
 
     return ret;
+}
+
+
+/* qemuInterfaceVDPAConnect:
+ * @net: pointer to the VM's interface description
+ *
+ * returns: file descriptor of the vdpa device
+ *
+ * Called *only* called if actualType is VIR_DOMAIN_NET_TYPE_VDPA
+ */
+int
+qemuInterfaceVDPAConnect(virDomainNetDefPtr net)
+{
+    int fd;
+
+    if ((fd = open(net->data.vdpa.devicepath, O_RDWR)) < 0) {
+        virReportSystemError(errno,
+                             _("Unable to open '%s' for vdpa device"),
+                             net->data.vdpa.devicepath);
+        return -1;
+    }
+
+    return fd;
 }
 
 

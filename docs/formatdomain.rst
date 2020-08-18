@@ -4632,6 +4632,26 @@ or stopping the guest.
    </devices>
    ...
 
+:anchor:`<a id="elementsNICSVDPA"/>`
+
+vDPA devices
+^^^^^^^^^^^^
+
+A vDPA device can be used to provide wire speed network performance within a
+domain. The host device must already be configured with the appropriate
+device-specific vDPA driver. This creates a vDPA char device (e.g.
+/dev/vhost-vdpa-0) that can be used to assign the device to a libvirt domain.
+
+::
+
+   ...
+   <devices>
+     <interface type='vdpa'>
+       <source dev='/dev/vhost-vdpa-0'/>
+     </interface>
+   </devices>
+   ...
+
 :anchor:`<a id="elementsTeaming"/>`
 
 Teaming a virtio/hostdev NIC pair

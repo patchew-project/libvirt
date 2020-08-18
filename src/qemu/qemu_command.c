@@ -3552,7 +3552,8 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
                     size_t tapfdSize,
                     char **vhostfd,
                     size_t vhostfdSize,
-                    const char *slirpfd)
+                    const char *slirpfd,
+                    const char *vdpafd)
 {
     bool is_tap = false;
     virDomainNetType netType = virDomainNetGetActualType(net);
@@ -3687,6 +3688,13 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
 
         if (net->driver.virtio.queues > 1 &&
             virJSONValueObjectAppendNumberUlong(netprops, "queues", net->driver.virtio.queues) < 0)
+            return NULL;
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_VDPA:
+        /* Caller will pass the fd to qemu with add-fd */
+        if (virJSONValueObjectCreate(&netprops, "s:type", "vhost-vdpa", NULL) < 0 ||
+            virJSONValueObjectAppendString(netprops, "vhostdev", vdpafd) < 0)
             return NULL;
         break;
 
@@ -8013,6 +8021,8 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     char **tapfdName = NULL;
     char **vhostfdName = NULL;
     g_autofree char *slirpfdName = NULL;
+    g_autofree char *vdpafdName = NULL;
+    int vdpafd = -1;
     virDomainNetType actualType = virDomainNetGetActualType(net);
     const virNetDevBandwidth *actualBandwidth;
     bool requireNicdev = false;
@@ -8098,6 +8108,11 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
 
         break;
 
+    case VIR_DOMAIN_NET_TYPE_VDPA:
+        if ((vdpafd = qemuInterfaceVDPAConnect(net)) < 0)
+            goto cleanup;
+        break;
+
     case VIR_DOMAIN_NET_TYPE_USER:
     case VIR_DOMAIN_NET_TYPE_SERVER:
     case VIR_DOMAIN_NET_TYPE_CLIENT:
@@ -8140,6 +8155,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
        /* These types don't use a network device on the host, but
         * instead use some other type of connection to the emulated
@@ -8219,13 +8235,22 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         vhostfd[i] = -1;
     }
 
+    if (vdpafd > 0) {
+        virCommandPassFD(cmd, vdpafd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        g_autofree char *fdset = qemuVirCommandGetFDSet(cmd, vdpafd);
+        if (!fdset)
+            goto cleanup;
+        virCommandAddArgList(cmd, "-add-fd", fdset, NULL);
+        vdpafdName = qemuVirCommandGetDevSet(cmd, vdpafd);
+    }
+
     if (chardev)
         virCommandAddArgList(cmd, "-chardev", chardev, NULL);
 
     if (!(hostnetprops = qemuBuildHostNetStr(net,
                                              tapfdName, tapfdSize,
                                              vhostfdName, vhostfdSize,
-                                             slirpfdName)))
+                                             slirpfdName, vdpafdName)))
         goto cleanup;
 
     if (!(host = virQEMUBuildNetdevCommandlineFromJSON(hostnetprops,
