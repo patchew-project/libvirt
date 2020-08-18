@@ -1089,6 +1089,37 @@ nodeDeviceGenerateName(virNodeDeviceDefPtr def,
     }
 }
 
+static bool
+mdevMatchPersistentDevices(virConnectPtr conn G_GNUC_UNUSED,
+                           virNodeDeviceDefPtr def)
+{
+            return (def->caps->data.type == VIR_NODE_DEV_CAP_MDEV &&
+                    def->caps->data.mdev.persistent);
+
+
+}
+
+/* returns a null-terminated array of strings. Free with virStringListFree() */
+static char **
+nodeDeviceGetMdevPersistentDevices(virNodeDeviceObjListPtr devlist)
+{
+    char **ret = NULL;
+    int ndevs = virNodeDeviceObjListNumOfDevices(devlist,
+                                                 NULL,
+                                                 "mdev",
+                                                 mdevMatchPersistentDevices);
+    if (VIR_ALLOC_N(ret, ndevs+1) < 0)
+        return NULL;
+
+    if (virNodeDeviceObjListGetNames(devlist, NULL,
+                                     mdevMatchPersistentDevices,
+                                     "mdev",
+                                     ret,
+                                     ndevs) < 0)
+        VIR_FREE(ret);
+
+    return ret;
+}
 
 static int
 virMdevctlListDefined(virNodeDeviceDefPtr **devs)
@@ -1113,6 +1144,7 @@ mdevctlEnumerateDevices(void)
     g_autofree virNodeDeviceDefPtr *devs = NULL;
     int ndevs;
     size_t i;
+    char **oldmdevs = nodeDeviceGetMdevPersistentDevices(driver->devs);
 
     if ((ndevs = virMdevctlListDefined(&devs)) < 0) {
         virReportSystemError(errno, "%s",
@@ -1160,7 +1192,36 @@ mdevctlEnumerateDevices(void)
             event = virNodeDeviceEventUpdateNew(dev->name);
         virNodeDeviceObjEndAPI(&obj);
         virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+
+        virStringListRemove(&oldmdevs, dev->name);
     }
+
+    /* Any mdevs that were previously defined but were not returned by mdevctl
+     * this time will need to be checked to see if they should be removed from
+     * the device list */
+    for (i = 0; i < virStringListLength((const char **)oldmdevs); i++) {
+        const char *name = oldmdevs[i];
+        virNodeDeviceObjPtr obj = NULL;
+        if ((obj = virNodeDeviceObjListFindByName(driver->devs, name))) {
+            if (!virNodeDeviceObjIsActive(obj)) {
+                /* An existing device is not active and is no longer defined by
+                 * mdevctl, so remove it */
+                virObjectEventPtr event = virNodeDeviceEventLifecycleNew(name,
+                                                                         VIR_NODE_DEVICE_EVENT_DELETED,
+                                                                         0);
+
+                virNodeDeviceObjListRemove(driver->devs, obj);
+                virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+            } else {
+                /* An existing device is active, but no longer defined. Keep
+                 * the device in the list, but mark it as non-persistent */
+                virNodeDeviceDefPtr def = virNodeDeviceObjGetDef(obj);
+                def->caps->data.mdev.persistent = false;
+            }
+            virNodeDeviceObjEndAPI(&obj);
+        }
+    }
+    g_strfreev(oldmdevs);
 
     return 0;
 }
