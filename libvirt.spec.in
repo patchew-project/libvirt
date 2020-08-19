@@ -1132,6 +1132,7 @@ exit 1
 export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 
 %meson \
+           -Drpath=false \
            -Drunstatedir=%{_rundir} \
            %{?arg_qemu} \
            %{?arg_openvz} \
