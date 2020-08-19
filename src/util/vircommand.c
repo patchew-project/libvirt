@@ -443,7 +443,7 @@ virExecCommon(virCommandPtr cmd, gid_t *groups, int ngroups)
     return 0;
 }
 
-# ifdef __linux__
+# if defined(__linux__) && defined(__GLIBC__)
 /* On Linux, we can utilize procfs and read the table of opened
  * FDs and selectively close only those FDs we don't want to pass
  * onto child process (well, the one we will exec soon since this
@@ -482,17 +482,7 @@ virCommandMassCloseGetFDsLinux(virCommandPtr cmd G_GNUC_UNUSED,
     VIR_DIR_CLOSE(dp);
     return ret;
 }
-
-# else /* !__linux__ */
-
-static int
-virCommandMassCloseGetFDsGeneric(virCommandPtr cmd G_GNUC_UNUSED,
-                                 virBitmapPtr fds)
-{
-    virBitmapSetAll(fds);
-    return 0;
-}
-# endif /* !__linux__ */
+# endif /* __linux__ && __GLIBC__ */
 
 # ifdef __FreeBSD__
 
@@ -546,7 +536,7 @@ virCommandMassClose(virCommandPtr cmd,
     return 0;
 }
 
-# else /* ! __FreeBSD__ */
+# elif defined(__GLIBC_)  /* ! __FreeBSD__ */
 
 static int
 virCommandMassClose(virCommandPtr cmd,
@@ -574,13 +564,8 @@ virCommandMassClose(virCommandPtr cmd,
     if (!(fds = virBitmapNew(openmax)))
         return -1;
 
-#  ifdef __linux__
     if (virCommandMassCloseGetFDsLinux(cmd, fds) < 0)
         return -1;
-#  else
-    if (virCommandMassCloseGetFDsGeneric(cmd, fds) < 0)
-        return -1;
-#  endif
 
     fd = virBitmapNextSetBit(fds, 2);
     for (; fd >= 0; fd = virBitmapNextSetBit(fds, fd)) {
@@ -595,6 +580,61 @@ virCommandMassClose(virCommandPtr cmd,
         }
     }
 
+    return 0;
+}
+
+#else /* ! __FreeBSD__ && ! __GLIBC__ */
+static int
+virCommandMassClose(virCommandPtr cmd,
+                    int childin,
+                    int childout,
+                    int childerr)
+{
+    static struct pollfd pfds[1024];
+    int fd = 0;
+    int i, total;
+    int max_fd = sysconf(_SC_OPEN_MAX);
+
+    if (max_fd < 0) {
+        virReportSystemError(errno, "%s", _("sysconf(_SC_OPEN_MAX) failed"));
+        return -1;
+    }
+
+    total = max_fd - fd;
+    for (i = 0; i < (total < 1024 ? total : 1024); i++)
+        pfds[i].events = 0;
+
+    while (fd < max_fd) {
+        int nfds, r = 0;
+
+        total = max_fd - fd;
+        nfds =  total < 1024 ? total : 1024;
+
+        for (i = 0; i < nfds; i++)
+            pfds[i].fd = fd + i;
+
+        do {
+            r = poll(pfds, nfds, 0);
+        } while (r == -1 && errno == EINTR);
+
+        if (r < 0) {
+            virReportSystemError(errno, "%s", _("poll() failed"));
+            return -1;
+        }
+
+        for (i = 0; i < nfds; i++)
+            if (pfds[i].revents != POLLNVAL) {
+                if (pfds[i].fd == childin || pfds[i].fd == childout || pfds[i].fd == childerr)
+                    continue;
+                if (!virCommandFDIsSet(cmd, pfds[i].fd)) {
+                    VIR_MASS_CLOSE(pfds[i].fd);
+                } else if (virSetInherit(pfds[i].fd, true) < 0) {
+                    virReportSystemError(errno, _("failed to preserve fd %d"), pfds[i].fd);
+                    return -1;
+                }
+            }
+        fd += nfds;
+    }
     return 0;
 }
 
