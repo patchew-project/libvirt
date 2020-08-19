@@ -156,6 +156,13 @@ if rc.returncode() == 0
 endif
 
 
+# whether to enable rpath
+
+if get_option('rpath')
+  conf.set_quoted('RPATH', libdir)
+endif
+
+
 # figure out libvirt version strings
 
 arr_version = meson.project_version().split('.')

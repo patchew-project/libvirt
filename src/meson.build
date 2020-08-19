@@ -437,27 +437,50 @@ libvirt_qemu_sources = files(
   'libvirt-qemu.c',
 )
 
-libvirt_qemu_lib = shared_library(
-  'virt-qemu',
-  libvirt_qemu_sources,
-  dependencies: [
-    src_dep,
-  ],
-  link_args: [
-    libvirt_nodelete,
-    libvirt_qemu_syms_flags,
-  ],
-  link_with: [
-    libvirt_lib,
-  ],
-  link_depends: [
-    libvirt_qemu_syms_file,
-  ],
-  install: true,
-  install_rpath: libdir,
-  version: libvirt_lib_version,
-  soversion: libvirt_so_version,
-)
+if conf.has('RPATH')
+  libvirt_qemu_lib = shared_library(
+    'virt-qemu',
+    libvirt_qemu_sources,
+    dependencies: [
+      src_dep,
+      ],
+    link_args: [
+      libvirt_nodelete,
+      libvirt_qemu_syms_flags,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_qemu_syms_file,
+      ],
+    install: true,
+    install_rpath: conf.get('RPATH'),
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+else
+  libvirt_qemu_lib = shared_library(
+    'virt-qemu',
+    libvirt_qemu_sources,
+    dependencies: [
+      src_dep,
+      ],
+    link_args: [
+      libvirt_nodelete,
+      libvirt_qemu_syms_flags,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_qemu_syms_file,
+      ],
+    install: true,
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+endif
 
 
 # libvirt-lxc.so symbol files
@@ -491,105 +514,201 @@ libvirt_lxc_sources = files(
   'libvirt-lxc.c',
 )
 
-libvirt_lxc_lib = shared_library(
-  'virt-lxc',
-  libvirt_lxc_sources,
-  dependencies: [
-    apparmor_dep,
-    selinux_dep,
-    src_dep,
-  ],
-  link_args: [
-    libvirt_nodelete,
-    libvirt_lxc_syms_flags,
-  ],
-  link_with: [
-    libvirt_lib,
-  ],
-  link_depends: [
-    libvirt_lxc_syms_file,
-  ],
-  install: true,
-  install_rpath: libdir,
-  version: libvirt_lib_version,
-  soversion: libvirt_so_version,
-)
+if conf.has('RPATH')
+  libvirt_lxc_lib = shared_library(
+    'virt-lxc',
+    libvirt_lxc_sources,
+    dependencies: [
+      apparmor_dep,
+      selinux_dep,
+      src_dep,
+      ],
+    link_args: [
+      libvirt_nodelete,
+      libvirt_lxc_syms_flags,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_lxc_syms_file,
+      ],
+    install: true,
+    install_rpath: conf.get('RPATH'),
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+else
+  libvirt_lxc_lib = shared_library(
+    'virt-lxc',
+    libvirt_lxc_sources,
+    dependencies: [
+      apparmor_dep,
+      selinux_dep,
+      src_dep,
+      ],
+    link_args: [
+      libvirt_nodelete,
+      libvirt_lxc_syms_flags,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_lxc_syms_file,
+      ],
+    install: true,
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+endif
 
 
 # libvirt-admin.so
 
-libvirt_admin_lib = shared_library(
-  'virt-admin',
-  [
-    admin_sources,
-    admin_client_generated,
-    admin_driver_generated,
-    datatypes_sources,
-    dtrace_gen_objects,
-  ],
-  dependencies: [
-    capng_dep,
-    devmapper_dep,
-    gnutls_dep,
-    libssh2_dep,
-    libssh_dep,
-    sasl_dep,
-    src_dep,
-    rpc_dep,
-    xdr_dep,
-    yajl_dep,
-  ],
-  include_directories: [
-    admin_inc_dir,
-    remote_inc_dir,
-  ],
-  link_args: [
-    libvirt_admin_syms_flags,
-    libvirt_nodelete,
-  ],
-  link_with: [
-    libvirt_lib,
-  ],
-  link_depends: [
-    libvirt_admin_syms_file,
-  ],
-  install: true,
-  install_rpath: libdir,
-  version: libvirt_lib_version,
-  soversion: libvirt_so_version,
-)
+if conf.has('RPATH')
+  libvirt_admin_lib = shared_library(
+    'virt-admin',
+    [
+      admin_sources,
+      admin_client_generated,
+      admin_driver_generated,
+      datatypes_sources,
+      dtrace_gen_objects,
+      ],
+    dependencies: [
+      capng_dep,
+      devmapper_dep,
+      gnutls_dep,
+      libssh2_dep,
+      libssh_dep,
+      sasl_dep,
+      src_dep,
+      rpc_dep,
+      xdr_dep,
+      yajl_dep,
+      ],
+    include_directories: [
+      admin_inc_dir,
+      remote_inc_dir,
+      ],
+    link_args: [
+      libvirt_admin_syms_flags,
+      libvirt_nodelete,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_admin_syms_file,
+      ],
+    install: true,
+    install_rpath: conf.get('RPATH'),
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+else
+  libvirt_admin_lib = shared_library(
+    'virt-admin',
+    [
+      admin_sources,
+      admin_client_generated,
+      admin_driver_generated,
+      datatypes_sources,
+      dtrace_gen_objects,
+      ],
+    dependencies: [
+      capng_dep,
+      devmapper_dep,
+      gnutls_dep,
+      libssh2_dep,
+      libssh_dep,
+      sasl_dep,
+      src_dep,
+      rpc_dep,
+      xdr_dep,
+      yajl_dep,
+      ],
+    include_directories: [
+      admin_inc_dir,
+      remote_inc_dir,
+      ],
+    link_args: [
+      libvirt_admin_syms_flags,
+      libvirt_nodelete,
+      ],
+    link_with: [
+      libvirt_lib,
+      ],
+    link_depends: [
+      libvirt_admin_syms_file,
+      ],
+    install: true,
+    version: libvirt_lib_version,
+    soversion: libvirt_so_version,
+    )
+endif
 
 
 # build libvirt shared modules
 
 foreach module : virt_modules
-  mod = shared_module(
-    module['name'],
-    module.get('sources', []),
-    name_prefix: module.get('name_prefix', 'lib'),
-    include_directories: [
-      conf_inc_dir,
-      module.get('include', []),
-    ],
-    dependencies: [
-      src_dep,
-      module.get('deps', []),
-    ],
-    link_with: [
-      libvirt_lib,
-      module.get('link_with', []),
-    ],
-    link_whole: [
-      module.get('link_whole', []),
-    ],
-    link_args: [
-      libvirt_nodelete,
-      module.get('link_args', []),
-    ],
-    install: true,
-    install_dir: module.get('install_dir', libdir / 'libvirt' / 'connection-driver'),
-    install_rpath: libdir,
-  )
+  if conf.has('RPATH')
+    mod = shared_module(
+      module['name'],
+      module.get('sources', []),
+      name_prefix: module.get('name_prefix', 'lib'),
+      include_directories: [
+        conf_inc_dir,
+        module.get('include', []),
+        ],
+      dependencies: [
+        src_dep,
+        module.get('deps', []),
+        ],
+      link_with: [
+        libvirt_lib,
+        module.get('link_with', []),
+        ],
+      link_whole: [
+        module.get('link_whole', []),
+        ],
+      link_args: [
+        libvirt_nodelete,
+        module.get('link_args', []),
+        ],
+      install: true,
+      install_dir: module.get('install_dir', libdir / 'libvirt' / 'connection-driver'),
+      install_rpath: conf.get('RPATH'),
+      )
+  else
+    mod = shared_module(
+      module['name'],
+      module.get('sources', []),
+      name_prefix: module.get('name_prefix', 'lib'),
+      include_directories: [
+        conf_inc_dir,
+        module.get('include', []),
+        ],
+      dependencies: [
+        src_dep,
+        module.get('deps', []),
+        ],
+      link_with: [
+        libvirt_lib,
+        module.get('link_with', []),
+        ],
+      link_whole: [
+        module.get('link_whole', []),
+        ],
+      link_args: [
+        libvirt_nodelete,
+        module.get('link_args', []),
+        ],
+      install: true,
+      install_dir: module.get('install_dir', libdir / 'libvirt' / 'connection-driver'),
+      )
+  endif
   set_variable('@0@_module'.format(module['name'].underscorify()), mod)
 endforeach
 
@@ -597,72 +716,136 @@ endforeach
 # build libvirt daemons
 
 foreach daemon : virt_daemons
-  bin = executable(
-    daemon['name'],
-    [
-      daemon.get('sources', [ remote_daemon_sources, remote_daemon_generated ]),
-      dtrace_gen_objects,
-    ],
-    c_args: [
-      daemon.get('c_args', []),
-    ],
-    include_directories: [
-      conf_inc_dir,
-      remote_inc_dir,
-      daemon.get('include', []),
-    ],
-    dependencies: [
-      admin_dep,
-      access_dep,
-      dbus_dep,
-      gnutls_dep,
-      libnl_dep,
-      rpc_dep,
-      src_dep,
-      sasl_dep,
-      xdr_dep,
-    ],
-    link_with: [
-      admin_driver_lib,
-      libvirt_lib,
-      libvirt_lxc_lib,
-      libvirt_qemu_lib,
-    ],
-    link_args: [
-      libvirt_no_undefined,
-    ],
-    install: true,
-    install_dir: sbindir,
-    install_rpath: libdir,
-  )
+  if conf.has('RPATH')
+    bin = executable(
+      daemon['name'],
+      [
+        daemon.get('sources', [ remote_daemon_sources, remote_daemon_generated ]),
+        dtrace_gen_objects,
+        ],
+      c_args: [
+        daemon.get('c_args', []),
+        ],
+      include_directories: [
+        conf_inc_dir,
+        remote_inc_dir,
+        daemon.get('include', []),
+        ],
+      dependencies: [
+        admin_dep,
+        access_dep,
+        dbus_dep,
+        gnutls_dep,
+        libnl_dep,
+        rpc_dep,
+        src_dep,
+        sasl_dep,
+        xdr_dep,
+        ],
+      link_with: [
+        admin_driver_lib,
+        libvirt_lib,
+        libvirt_lxc_lib,
+        libvirt_qemu_lib,
+        ],
+      link_args: [
+        libvirt_no_undefined,
+        ],
+      install: true,
+      install_dir: sbindir,
+      install_rpath: conf.get('RPATH'),
+      )
+  else
+    bin = executable(
+      daemon['name'],
+      [
+        daemon.get('sources', [ remote_daemon_sources, remote_daemon_generated ]),
+        dtrace_gen_objects,
+        ],
+      c_args: [
+        daemon.get('c_args', []),
+        ],
+      include_directories: [
+        conf_inc_dir,
+        remote_inc_dir,
+        daemon.get('include', []),
+        ],
+      dependencies: [
+        admin_dep,
+        access_dep,
+        dbus_dep,
+        gnutls_dep,
+        libnl_dep,
+        rpc_dep,
+        src_dep,
+        sasl_dep,
+        xdr_dep,
+        ],
+      link_with: [
+        admin_driver_lib,
+        libvirt_lib,
+        libvirt_lxc_lib,
+        libvirt_qemu_lib,
+        ],
+      link_args: [
+        libvirt_no_undefined,
+        ],
+      install: true,
+      install_dir: sbindir,
+      )
+endif
 endforeach
 
 
 # build libvirt helpers
 
 foreach helper : virt_helpers
+  if conf.has('RPATH')
+    bin = executable(
+      helper['name'],
+      [
+        helper['sources'],
+        ],
+      c_args: [
+        helper.get('c_args', []),
+        ],
+      include_directories: [
+        helper.get('include', []),
+        ],
+      dependencies: [
+        src_dep,
+        helper.get('deps', []),
+        ],
+      link_with: [
+        libvirt_lib,
+        ],
+      install: true,
+      install_dir: helper.get('install_dir', libexecdir),
+      install_rpath: conf.get('RPATH'),
+      )
+else
   bin = executable(
     helper['name'],
     [
       helper['sources'],
-    ],
+      ],
     c_args: [
       helper.get('c_args', []),
-    ],
+      ],
     include_directories: [
       helper.get('include', []),
-    ],
+      ],
     dependencies: [
       src_dep,
       helper.get('deps', []),
-    ],
+      ],
     link_with: [
       libvirt_lib,
-    ],
+      ],
     install: true,
     install_dir: helper.get('install_dir', libexecdir),
-    install_rpath: libdir,
-  )
+    )
+endif
 endforeach
 
 

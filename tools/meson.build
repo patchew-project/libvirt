@@ -59,24 +59,44 @@ if conf.has('WITH_HOST_VALIDATE')
     ]
   endif
 
-  executable(
-    'virt-host-validate',
-    [
-      virt_host_validate_sources,
-    ],
-    dependencies: [
-      tools_dep,
-    ],
-    link_args: [
-      coverage_flags,
-    ],
-    link_with: [
-      libvirt_lib,
-    ],
-    install: true,
-    install_dir: bindir,
-    install_rpath: libdir,
-  )
+  if conf.has('RPATH')
+    executable(
+      'virt-host-validate',
+      [
+        virt_host_validate_sources,
+        ],
+      dependencies: [
+        tools_dep,
+        ],
+      link_args: [
+        coverage_flags,
+        ],
+      link_with: [
+        libvirt_lib,
+        ],
+      install: true,
+      install_dir: bindir,
+      install_rpath: conf.get('RPATH'),
+      )
+  else
+    executable(
+      'virt-host-validate',
+      [
+        virt_host_validate_sources,
+        ],
+      dependencies: [
+        tools_dep,
+        ],
+      link_args: [
+        coverage_flags,
+        ],
+      link_with: [
+        libvirt_lib,
+        ],
+      install: true,
+      install_dir: bindir,
+      )
+  endif
 endif
 
 if conf.has('WITH_LOGIN_SHELL')
@@ -95,25 +115,46 @@ if conf.has('WITH_LOGIN_SHELL')
     install_dir: bindir,
   )
 
-  executable(
-    'virt-login-shell-helper',
-    [
-      'virt-login-shell-helper.c',
-    ],
-    dependencies: [
-      tools_dep,
-    ],
-    link_args: [
-      coverage_flags,
-    ],
-    link_with: [
-      libvirt_lib,
-      libvirt_lxc_lib,
-    ],
-    install: true,
-    install_dir: libexecdir,
-    install_rpath: libdir,
-  )
+  if conf.has('RPATH')
+    executable(
+      'virt-login-shell-helper',
+      [
+        'virt-login-shell-helper.c',
+        ],
+      dependencies: [
+        tools_dep,
+        ],
+      link_args: [
+        coverage_flags,
+        ],
+      link_with: [
+        libvirt_lib,
+        libvirt_lxc_lib,
+        ],
+      install: true,
+      install_dir: libexecdir,
+      install_rpath: conf.get('RPATH'),
+      )
+  else
+    executable(
+      'virt-login-shell-helper',
+      [
+        'virt-login-shell-helper.c',
+        ],
+      dependencies: [
+        tools_dep,
+        ],
+      link_args: [
+        coverage_flags,
+        ],
+      link_with: [
+        libvirt_lib,
+        libvirt_lxc_lib,
+        ],
+      install: true,
+      install_dir: libexecdir,
+      )
+  endif
 
   install_data('virt-login-shell.conf', install_dir: sysconfdir / 'libvirt')
 endif
@@ -149,78 +190,153 @@ else
   virsh_icon_res = []
 endif
 
-executable(
-  'virsh',
-  [
-    'virsh.c',
-    'virsh-backup.c',
-    'virsh-checkpoint.c',
-    'virsh-completer.c',
-    'virsh-completer-domain.c',
-    'virsh-completer-checkpoint.c',
-    'virsh-completer-host.c',
-    'virsh-completer-interface.c',
-    'virsh-completer-network.c',
-    'virsh-completer-nodedev.c',
-    'virsh-completer-nwfilter.c',
-    'virsh-completer-pool.c',
-    'virsh-completer-secret.c',
-    'virsh-completer-snapshot.c',
-    'virsh-completer-volume.c',
-    'virsh-console.c',
-    'virsh-domain.c',
-    'virsh-domain-monitor.c',
-    'virsh-host.c',
-    'virsh-interface.c',
-    'virsh-network.c',
-    'virsh-nodedev.c',
-    'virsh-nwfilter.c',
-    'virsh-pool.c',
-    'virsh-secret.c',
-    'virsh-snapshot.c',
-    'virsh-util.c',
-    'virsh-volume.c',
-    virsh_icon_res,
-  ],
-  dependencies: [
-    tools_dep,
-    readline_dep,
-    thread_dep,
-  ],
-  link_args: [
-    coverage_flags,
-  ],
-  link_with: [
-    libvirt_lxc_lib,
-    libvirt_qemu_lib,
-    libvirt_shell_lib,
-  ],
-  install: true,
-  install_dir: bindir,
-  install_rpath: libdir,
-)
+if conf.has('RPATH')
+  executable(
+    'virsh',
+    [
+      'virsh.c',
+      'virsh-backup.c',
+      'virsh-checkpoint.c',
+      'virsh-completer.c',
+      'virsh-completer-domain.c',
+      'virsh-completer-checkpoint.c',
+      'virsh-completer-host.c',
+      'virsh-completer-interface.c',
+      'virsh-completer-network.c',
+      'virsh-completer-nodedev.c',
+      'virsh-completer-nwfilter.c',
+      'virsh-completer-pool.c',
+      'virsh-completer-secret.c',
+      'virsh-completer-snapshot.c',
+      'virsh-completer-volume.c',
+      'virsh-console.c',
+      'virsh-domain.c',
+      'virsh-domain-monitor.c',
+      'virsh-host.c',
+      'virsh-interface.c',
+      'virsh-network.c',
+      'virsh-nodedev.c',
+      'virsh-nwfilter.c',
+      'virsh-pool.c',
+      'virsh-secret.c',
+      'virsh-snapshot.c',
+      'virsh-util.c',
+      'virsh-volume.c',
+      virsh_icon_res,
+      ],
+    dependencies: [
+      tools_dep,
+      readline_dep,
+      thread_dep,
+      ],
+    link_args: [
+      coverage_flags,
+      ],
+    link_with: [
+      libvirt_lxc_lib,
+      libvirt_qemu_lib,
+      libvirt_shell_lib,
+      ],
+    install: true,
+    install_dir: bindir,
+    install_rpath: conf.get('RPATH'),
+    )
+else
+  executable(
+    'virsh',
+    [
+      'virsh.c',
+      'virsh-backup.c',
+      'virsh-checkpoint.c',
+      'virsh-completer.c',
+      'virsh-completer-domain.c',
+      'virsh-completer-checkpoint.c',
+      'virsh-completer-host.c',
+      'virsh-completer-interface.c',
+      'virsh-completer-network.c',
+      'virsh-completer-nodedev.c',
+      'virsh-completer-nwfilter.c',
+      'virsh-completer-pool.c',
+      'virsh-completer-secret.c',
+      'virsh-completer-snapshot.c',
+      'virsh-completer-volume.c',
+      'virsh-console.c',
+      'virsh-domain.c',
+      'virsh-domain-monitor.c',
+      'virsh-host.c',
+      'virsh-interface.c',
+      'virsh-network.c',
+      'virsh-nodedev.c',
+      'virsh-nwfilter.c',
+      'virsh-pool.c',
+      'virsh-secret.c',
+      'virsh-snapshot.c',
+      'virsh-util.c',
+      'virsh-volume.c',
+      virsh_icon_res,
+      ],
+    dependencies: [
+      tools_dep,
+      readline_dep,
+      thread_dep,
+      ],
+    link_args: [
+      coverage_flags,
+      ],
+    link_with: [
+      libvirt_lxc_lib,
+      libvirt_qemu_lib,
+      libvirt_shell_lib,
+      ],
+    install: true,
+    install_dir: bindir,
+    )
+endif
 
-executable(
-  'virt-admin',
-  [
-    'virt-admin.c',
-    'virt-admin-completer.c',
-  ],
-  dependencies: [
-    tools_dep,
-    readline_dep,
-  ],
-  link_args: [
-    coverage_flags,
-  ],
-  link_with: [
-    libvirt_admin_lib,
-    libvirt_shell_lib,
-  ],
-  install: true,
-  install_dir: bindir,
-  install_rpath: libdir,
-)
+if conf.has('RPATH')
+  executable(
+    'virt-admin',
+    [
+      'virt-admin.c',
+      'virt-admin-completer.c',
+      ],
+    dependencies: [
+      tools_dep,
+      readline_dep,
+      ],
+    link_args: [
+      coverage_flags,
+      ],
+    link_with: [
+      libvirt_admin_lib,
+      libvirt_shell_lib,
+      ],
+    install: true,
+    install_dir: bindir,
+    install_rpath: conf.get('RPATH'),
+    )
+else
+  executable(
+    'virt-admin',
+    [
+      'virt-admin.c',
+      'virt-admin-completer.c',
+      ],
+    dependencies: [
+      tools_dep,
+      readline_dep,
+      ],
+    link_args: [
+      coverage_flags,
+      ],
+    link_with: [
+      libvirt_admin_lib,
+      libvirt_shell_lib,
+      ],
+    install: true,
+    install_dir: bindir,
+    )
+endif
 
 tools_conf = configuration_data()
 tools_conf.set('PACKAGE', meson.project_name())
