@@ -168,6 +168,7 @@ void virLogSetDefaultOutput(const char *fname, bool godaemon, bool privileged);
 void virLogLock(void);
 void virLogUnlock(void);
 int virLogReset(void);
+int virLogResetWithoutFree(void);
 int virLogParseDefaultPriority(const char *priority);
 int virLogPriorityFromSyslog(int priority);
 void virLogMessage(virLogSourcePtr source,

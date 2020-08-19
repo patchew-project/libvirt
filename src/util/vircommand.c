@@ -304,7 +304,7 @@ virFork(void)
         /* Make sure any hook logging is sent to stderr, since child
          * process may close the logfile FDs */
         logprio = virLogGetDefaultPriority();
-        virLogReset();
+        virLogResetWithoutFree();
         virLogSetDefaultPriority(logprio);
 
         /* Clear out all signal handlers from parent so nothing
@@ -861,7 +861,7 @@ virExec(virCommandPtr cmd)
        goto fork_error;
 
     /* Close logging again to ensure no FDs leak to child */
-    virLogReset();
+    virLogResetWithoutFree();
 
     if (cmd->env)
         execve(binary, cmd->args, cmd->env);

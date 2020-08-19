@@ -108,8 +108,8 @@ static size_t virLogNbOutputs;
  */
 static virLogPriority virLogDefaultPriority = VIR_LOG_DEFAULT;
 
-static void virLogResetFilters(void);
-static void virLogResetOutputs(void);
+static void virLogResetFilters(bool freemem);
+static void virLogResetOutputs(bool freemem);
 static void virLogOutputToFd(virLogSourcePtr src,
                              virLogPriority priority,
                              const char *filename,
@@ -284,8 +284,30 @@ virLogReset(void)
         return -1;
 
     virLogLock();
-    virLogResetFilters();
-    virLogResetOutputs();
+    virLogResetFilters(true);
+    virLogResetOutputs(true);
+    virLogDefaultPriority = VIR_LOG_DEFAULT;
+    virLogUnlock();
+    return 0;
+}
+
+/**
+ * virLogResetWithoutFree:
+ *
+ * Reset the logging module to its default initial state, but avoid doing
+ * free() so it can be used after fork and before exec.
+ *
+ * Returns 0 if successful, and -1 in case or error
+ */
+int
+virLogResetWithoutFree(void)
+{
+    if (virLogInitialize() < 0)
+        return -1;
+
+    virLogLock();
+    virLogResetFilters(false);
+    virLogResetOutputs(false);
     virLogDefaultPriority = VIR_LOG_DEFAULT;
     virLogUnlock();
     return 0;
@@ -324,9 +346,10 @@ virLogSetDefaultPriority(virLogPriority priority)
  * Removes the set of logging filters defined.
  */
 static void
-virLogResetFilters(void)
+virLogResetFilters(bool freemem)
 {
-    virLogFilterListFree(virLogFilters, virLogNbFilters);
+    if (freemem)
+        virLogFilterListFree(virLogFilters, virLogNbFilters);
     virLogFilters = NULL;
     virLogNbFilters = 0;
     virLogFiltersSerial++;
@@ -371,9 +394,10 @@ virLogFilterListFree(virLogFilterPtr *list, int count)
  * Removes the set of logging output defined.
  */
 static void
-virLogResetOutputs(void)
+virLogResetOutputs(bool freemem)
 {
-    virLogOutputListFree(virLogOutputs, virLogNbOutputs);
+    if (freemem)
+        virLogOutputListFree(virLogOutputs, virLogNbOutputs);
     virLogOutputs = NULL;
     virLogNbOutputs = 0;
 }
@@ -1392,7 +1416,7 @@ virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs)
         return -1;
 
     virLogLock();
-    virLogResetOutputs();
+    virLogResetOutputs(true);
 
 #if HAVE_SYSLOG_H
     /* syslog needs to be special-cased, since it keeps the fd in private */
@@ -1435,7 +1459,7 @@ virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters)
         return -1;
 
     virLogLock();
-    virLogResetFilters();
+    virLogResetFilters(true);
     virLogFilters = filters;
     virLogNbFilters = nfilters;
     virLogUnlock();
