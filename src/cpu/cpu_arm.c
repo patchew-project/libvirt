@@ -118,6 +118,36 @@ virCPUarmMapNew(void)
     return map;
 }
 
+static int
+virCPUarmDataCopy(virCPUarmData *dst, const virCPUarmData *src)
+{
+    if (VIR_ALLOC(dst->features) < 0)
+        return -1;
+
+    dst->pvr = src->pvr;
+    dst->vendor_id = src->vendor_id;
+    dst->features = src->features;
+
+    return 0;
+}
+
+static virCPUDataPtr
+virCPUarmMakeCPUData(virArch arch,
+                     virCPUarmData *data)
+{
+    virCPUDataPtr cpuData;
+
+    if (VIR_ALLOC(cpuData) < 0)
+        return NULL;
+
+    cpuData->arch = arch;
+
+    if (virCPUarmDataCopy(&cpuData->data.arm, data) < 0)
+        VIR_FREE(cpuData);
+
+    return cpuData;
+}
+
 static void
 virCPUarmDataClear(virCPUarmData *data)
 {
@@ -376,6 +406,42 @@ virCPUarmModelParse(xmlXPathContextPtr ctxt,
     return 0;
 }
 
+static virCPUarmModelPtr
+virCPUarmModelCopy(virCPUarmModelPtr model)
+{
+    virCPUarmModelPtr copy;
+
+    copy = g_new0(virCPUarmModel, 1);
+    copy->name = g_strdup(model->name);
+    virCPUarmDataCopy(&copy->data, &model->data);
+    copy->vendor = model->vendor;
+
+    return g_steal_pointer(&copy);
+}
+
+static virCPUarmModelPtr
+virCPUarmModelFromCPU(const virCPUDef *cpu,
+                      virCPUarmMapPtr map)
+{
+    g_autoptr(virCPUarmModel) model = NULL;
+
+    if (!cpu->model) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("no CPU model specified"));
+        return NULL;
+    }
+
+    if (!(model = virCPUarmModelFind(map, cpu->model))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("Unknown CPU model %s"), cpu->model);
+        return NULL;
+    }
+
+    model = virCPUarmModelCopy(model);
+
+    return g_steal_pointer(&model);
+}
+
 static virCPUarmMapPtr
 virCPUarmLoadMap(void)
 {
@@ -463,11 +529,125 @@ virCPUarmBaseline(virCPUDefPtr *cpus,
 }
 
 static virCPUCompareResult
-virCPUarmCompare(virCPUDefPtr host G_GNUC_UNUSED,
-                 virCPUDefPtr cpu G_GNUC_UNUSED,
-                 bool failMessages G_GNUC_UNUSED)
+armCompute(virCPUDefPtr host,
+           virCPUDefPtr cpu,
+           virCPUDataPtr *guestData,
+           char **message)
 {
-    return VIR_CPU_COMPARE_IDENTICAL;
+    virCPUarmMapPtr map = NULL;
+    virCPUarmModelPtr host_model = NULL;
+    virCPUarmModelPtr guest_model = NULL;
+    virCPUCompareResult ret = VIR_CPU_COMPARE_ERROR;
+    virArch arch;
+    size_t i;
+
+    if (cpu->arch != VIR_ARCH_NONE) {
+        bool found = false;
+
+        for (i = 0; i < G_N_ELEMENTS(archs); i++) {
+            if (archs[i] == cpu->arch) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            VIR_DEBUG("CPU arch %s does not match host arch",
+                      virArchToString(cpu->arch));
+            if (message)
+                *message = g_strdup_printf(_("CPU arch %s does not match host arch"),
+                                           virArchToString(cpu->arch));
+
+            ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+            goto cleanup;
+        }
+        arch = cpu->arch;
+    } else {
+        arch = host->arch;
+    }
+
+    if (cpu->vendor &&
+        (!host->vendor || STRNEQ(cpu->vendor, host->vendor))) {
+        VIR_DEBUG("host CPU vendor does not match required CPU vendor %s",
+                  cpu->vendor);
+        if (message) {
+            *message = g_strdup_printf(_("host CPU vendor does not match required "
+                                         "CPU vendor %s"),
+                                       cpu->vendor);
+        }
+
+        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+        goto cleanup;
+    }
+
+    if (!(map = virCPUarmLoadMap()))
+        goto cleanup;
+
+    /* Host CPU information */
+    if (!(host_model = virCPUarmModelFromCPU(host, map)))
+        goto cleanup;
+
+    /* Guest CPU information */
+    if (!(guest_model = virCPUarmModelFromCPU(cpu, map)))
+        goto cleanup;
+
+    if (STRNEQ(guest_model->name, host_model->name)) {
+        VIR_DEBUG("host CPU model does not match required CPU model %s",
+                  guest_model->name);
+        if (message) {
+            *message = g_strdup_printf(_("host CPU model does not match required "
+                                         "CPU model %s"),
+                                       guest_model->name);
+        }
+
+        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+        goto cleanup;
+    }
+
+    if (guestData)
+        if (!(*guestData = virCPUarmMakeCPUData(arch, &guest_model->data)))
+            goto cleanup;
+
+    ret = VIR_CPU_COMPARE_IDENTICAL;
+
+ cleanup:
+    virCPUarmModelFree(host_model);
+    virCPUarmModelFree(guest_model);
+    return ret;
+}
+
+static virCPUCompareResult
+virCPUarmCompare(virCPUDefPtr host,
+                 virCPUDefPtr cpu,
+                 bool failIncompatible)
+{
+        virCPUCompareResult ret;
+    char *message = NULL;
+
+    if (!host || !host->model) {
+        if (failIncompatible) {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, "%s",
+                           _("unknown host CPU"));
+        } else {
+            VIR_WARN("unknown host CPU");
+            ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+        }
+        return -1;
+    }
+
+    ret = armCompute(host, cpu, NULL, &message);
+
+    if (failIncompatible && ret == VIR_CPU_COMPARE_INCOMPATIBLE) {
+        ret = VIR_CPU_COMPARE_ERROR;
+        if (message) {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, "%s", message);
+        } else {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, NULL);
+        }
+    }
+    VIR_FREE(message);
+
+    return ret;
 }
 
 static int
