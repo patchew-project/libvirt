@@ -1637,8 +1637,7 @@ qemuValidateDomainWatchdogDef(const virDomainWatchdogDef *dev,
         break;
 
     case VIR_DOMAIN_WATCHDOG_MODEL_IB700:
-        if (dev->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-            dev->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
+        if (dev->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("%s model of watchdog can go only on ISA bus"),
                            virDomainWatchdogModelTypeToString(dev->model));
