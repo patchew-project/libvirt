@@ -107,8 +107,7 @@ typedef void (*qemuDomainObjPrivateJobReset)(void *);
 typedef int (*qemuDomainObjPrivateJobFormat)(virBufferPtr,
                                              qemuDomainJobObjPtr,
                                              virDomainObjPtr);
-typedef int (*qemuDomainObjPrivateJobParse)(xmlXPathContextPtr,
-                                            qemuDomainJobObjPtr,
+typedef int (*qemuDomainObjPrivateJobParse)(xmlXPathContextPtr,                                          qemuDomainJobObjPtr,
                                             virDomainObjPtr);
 typedef void (*qemuDomainObjJobInfoSetOperation)(qemuDomainJobObjPtr,
                                                  virDomainJobOperation);
