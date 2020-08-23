@@ -805,7 +805,7 @@ qemuDomainGetMaxQueuedJobs(virDomainObjPtr vm)
     return cfg->maxQueuedJobs;
 }
 
-static qemuDomainObjPrivateJobCallbacks qemuPrivateJobCallbacks = {
+static qemuDomainJobPrivateJobCallbacks qemuJobPrivateJobCallbacks = {
     .allocJobPrivate = qemuJobAllocPrivate,
     .freeJobPrivate = qemuJobFreePrivate,
     .resetJobPrivate = qemuJobResetPrivate,
@@ -817,6 +817,10 @@ static qemuDomainObjPrivateJobCallbacks qemuPrivateJobCallbacks = {
     .increaseJobsQueued = qemuDomainIncreaseJobsQueued,
     .decreaseJobsQueued = qemuDomainDecreaseJobsQueued,
     .getMaxQueuedJobs = qemuDomainGetMaxQueuedJobs,
+};
+
+static qemuDomainJobPrivateCallbacks qemuJobPrivateCallbacks = {
+    .jobcb = &qemuJobPrivateJobCallbacks,
 };
 
 /**
@@ -2270,7 +2274,7 @@ qemuDomainObjPrivateAlloc(void *opaque)
     if (VIR_ALLOC(priv) < 0)
         return NULL;
 
-    if (qemuDomainObjInitJob(&priv->job, &qemuPrivateJobCallbacks) < 0) {
+    if (qemuDomainObjInitJob(&priv->job, &qemuJobPrivateCallbacks) < 0) {
         virReportSystemError(errno, "%s",
                              _("Unable to init qemu driver mutexes"));
         goto error;
