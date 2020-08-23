@@ -797,6 +797,14 @@ qemuDomainDecreaseJobsQueued(virDomainObjPtr vm)
     priv->jobs_queued--;
 }
 
+static int
+qemuDomainGetMaxQueuedJobs(virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
+    return cfg->maxQueuedJobs;
+}
+
 static qemuDomainObjPrivateJobCallbacks qemuPrivateJobCallbacks = {
     .allocJobPrivate = qemuJobAllocPrivate,
     .freeJobPrivate = qemuJobFreePrivate,
@@ -808,6 +816,7 @@ static qemuDomainObjPrivateJobCallbacks qemuPrivateJobCallbacks = {
     .getJobsQueued = qemuDomainGetJobsQueued,
     .increaseJobsQueued = qemuDomainIncreaseJobsQueued,
     .decreaseJobsQueued = qemuDomainDecreaseJobsQueued,
+    .getMaxQueuedJobs = qemuDomainGetMaxQueuedJobs,
 };
 
 /**
@@ -2255,6 +2264,8 @@ static void *
 qemuDomainObjPrivateAlloc(void *opaque)
 {
     qemuDomainObjPrivatePtr priv;
+    virQEMUDriverPtr driver = opaque;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
 
     if (VIR_ALLOC(priv) < 0)
         return NULL;
