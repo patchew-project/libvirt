@@ -871,6 +871,19 @@ udevProcessSD(struct udev_device *device,
 }
 
 
+static int
+udevProcessDasd(struct udev_device *device,
+                virNodeDeviceDefPtr def)
+{
+    virNodeDevCapStoragePtr storage = &def->caps->data.storage;
+
+    if (udevGetStringSysfsAttr(device, "device/uid", &storage->serial) < 0)
+        return -1;
+
+    return udevProcessDisk(device, def);
+}
+
+
 /* This function exists to deal with the case in which a driver does
  * not provide a device type in the usual place, but udev told us it's
  * a storage device, and we can make a good guess at what kind of
@@ -885,6 +898,15 @@ udevKludgeStorageType(virNodeDeviceDefPtr def)
     /* virtio disk */
     if (STRPREFIX(def->caps->data.storage.block, "/dev/vd")) {
         def->caps->data.storage.drive_type = g_strdup("disk");
+        VIR_DEBUG("Found storage type '%s' for device "
+                  "with sysfs path '%s'",
+                  def->caps->data.storage.drive_type,
+                  def->sysfs_path);
+        return 0;
+    }
+    /* dasd disk */
+    if (STRPREFIX(def->caps->data.storage.block, "/dev/dasd")) {
+        def->caps->data.storage.drive_type = g_strdup("dasd");
         VIR_DEBUG("Found storage type '%s' for device "
                   "with sysfs path '%s'",
                   def->caps->data.storage.drive_type,
@@ -978,6 +1000,8 @@ udevProcessStorage(struct udev_device *device,
         ret = udevProcessFloppy(device, def);
     } else if (STREQ(def->caps->data.storage.drive_type, "sd")) {
         ret = udevProcessSD(device, def);
+    } else if (STREQ(def->caps->data.storage.drive_type, "dasd")) {
+        ret = udevProcessDasd(device, def);
     } else {
         VIR_DEBUG("Unsupported storage type '%s'",
                   def->caps->data.storage.drive_type);
