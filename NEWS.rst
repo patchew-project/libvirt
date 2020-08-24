@@ -15,6 +15,13 @@ v6.7.0 (unreleased)
 
 * **Improvements**
 
+  * Allow sparse streams for block devices
+
+    Sparse streams (e.g. ``virsh vol-download --sparse`` or ``virsh vol-upload
+    --sparse``) now handle if one of the stream ends is a block device. A zero
+    block detection is performed so that zero block are not transferred and
+    thus bandwidth is saved.
+
 * **Bug fixes**
 
   * virdevmapper: Deal with kernels without DM support
