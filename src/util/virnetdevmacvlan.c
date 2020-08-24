@@ -74,6 +74,8 @@ VIR_LOG_INIT("util.netdevmacvlan");
 virMutex virNetDevMacVLanCreateMutex = VIR_MUTEX_INITIALIZER;
 virBitmapPtr macvtapIDs = NULL;
 virBitmapPtr macvlanIDs = NULL;
+static int macvtapLastID = -1;
+static int macvlanLastID = -1;
 
 static int
 virNetDevMacVLanOnceInit(void)
@@ -108,12 +110,18 @@ virNetDevMacVLanReserveID(int id, unsigned int flags,
                           bool quietFail, bool nextFree)
 {
     virBitmapPtr bitmap;
+    int *lastID;
 
     if (virNetDevMacVLanInitialize() < 0)
        return -1;
 
-    bitmap = (flags & VIR_NETDEV_MACVLAN_CREATE_WITH_TAP) ?
-        macvtapIDs :  macvlanIDs;
+    if (flags & VIR_NETDEV_MACVLAN_CREATE_WITH_TAP) {
+        bitmap = macvtapIDs;
+        lastID = &macvtapLastID;
+    } else {
+        bitmap = macvlanIDs;
+        lastID = &macvlanLastID;
+    }
 
     if (id > MACVLAN_MAX_ID) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -122,24 +130,49 @@ virNetDevMacVLanReserveID(int id, unsigned int flags,
         return -1;
     }
 
-    if ((id < 0 || nextFree) &&
-        (id = virBitmapNextClearBit(bitmap, id)) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("no unused %s names available"),
-                       VIR_NET_GENERATED_PREFIX);
-        return -1;
-    }
+    if (id < 0 || nextFree) {
+        /* starting with *lastID + 1, do a loop looking for an unused
+         * device name, wrapping around at MACVLAN_MAX_ID.
+         */
+        int start = (++(*lastID)) % (MACVLAN_MAX_ID + 1);
+        bool found = false;
 
-    if (virBitmapIsBitSet(bitmap, id)) {
-        if (quietFail) {
-            VIR_INFO("couldn't reserve name %s%d - already in use",
-                     VIR_NET_GENERATED_PREFIX, id);
-        } else {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("couldn't reserve name %s%d - already in use"),
-                           VIR_NET_GENERATED_PREFIX, id);
+        for (id = start;
+             id + 1 != start;
+             id = (++(*lastID)) % (MACVLAN_MAX_ID + 1)) {
+
+            if (!virBitmapIsBitSet(bitmap, id)) {
+                found = true;
+                break;
+            }
         }
-        return -1;
+        if (!found) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("no unused %s names available"),
+                           VIR_NET_GENERATED_PREFIX);
+            return -1;
+        }
+    } else {
+        /* A specific ID was requested, we just fail if that
+         * ID isn't available
+         */
+        if (virBitmapIsBitSet(bitmap, id)) {
+            if (quietFail) {
+                VIR_INFO("couldn't reserve name %s%d - already in use",
+                         VIR_NET_GENERATED_PREFIX, id);
+            } else {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("couldn't reserve name %s%d - already in use"),
+                               VIR_NET_GENERATED_PREFIX, id);
+            }
+            return -1;
+        }
+        /* adjust lastID to not look below this ID (even though
+         * eventually we will wrap around and look below it - this is
+         * just a delay tactic
+         */
+        if (*lastID % (MACVLAN_MAX_ID + 1) < id)
+            *lastID = id;
     }
 
     if (virBitmapSetBit(bitmap, id) < 0) {
