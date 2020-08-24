@@ -196,7 +196,7 @@ virNetDevMacVLanReleaseID(int id, unsigned int flags)
 
 
 /**
- * virNetDevMacVLanReserveName:
+ * virNetDevMacVLanReserveNameInternal:
  *
  *  @name: already-known name of device
  *  @quietFail: don't log an error if this name is already in-use
@@ -208,8 +208,8 @@ virNetDevMacVLanReleaseID(int id, unsigned int flags)
  *  Returns reserved ID# on success, -1 on failure, -2 if the name
  *  doesn't fit the auto-pattern (so not reserveable).
  */
-int
-virNetDevMacVLanReserveName(const char *name, bool quietFail)
+static int
+virNetDevMacVLanReserveNameInternal(const char *name, bool quietFail)
 {
     unsigned int id;
     unsigned int flags = 0;
@@ -237,8 +237,21 @@ virNetDevMacVLanReserveName(const char *name, bool quietFail)
 }
 
 
+int
+virNetDevMacVLanReserveName(const char *name, bool quietFail)
+{
+    /* Call the internal function after locking the macvlan mutex */
+    int ret;
+
+    virMutexLock(&virNetDevMacVLanCreateMutex);
+    ret = virNetDevMacVLanReserveNameInternal(name, quietFail);
+    virMutexUnlock(&virNetDevMacVLanCreateMutex);
+    return ret;
+}
+
+
 /**
- * virNetDevMacVLanReleaseName:
+ * virNetDevMacVLanReleaseNameInternal:
  *
  *  @name: already-known name of device
  *
@@ -248,8 +261,8 @@ virNetDevMacVLanReserveName(const char *name, bool quietFail)
  *
  *  returns 0 on success, -1 on failure
  */
-int
-virNetDevMacVLanReleaseName(const char *name)
+static int
+virNetDevMacVLanReleaseNameInternal(const char *name)
 {
     unsigned int id;
     unsigned int flags = 0;
@@ -274,6 +287,19 @@ virNetDevMacVLanReleaseName(const char *name)
         return -1;
     }
     return virNetDevMacVLanReleaseID(id, flags);
+}
+
+
+int
+virNetDevMacVLanReleaseName(const char *name)
+{
+    /* Call the internal function after locking the macvlan mutex */
+    int ret;
+
+    virMutexLock(&virNetDevMacVLanCreateMutex);
+    ret = virNetDevMacVLanReleaseNameInternal(name);
+    virMutexUnlock(&virNetDevMacVLanCreateMutex);
+    return ret;
 }
 
 
@@ -967,7 +993,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
             return -1;
         }
         if (isAutoName &&
-            (reservedID = virNetDevMacVLanReserveName(ifnameRequested, true)) < 0) {
+            (reservedID = virNetDevMacVLanReserveNameInternal(ifnameRequested, true)) < 0) {
             reservedID = -1;
             goto create_name;
         }
@@ -975,7 +1001,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
         if (virNetDevMacVLanCreate(ifnameRequested, type, macaddress,
                                    linkdev, macvtapMode, &do_retry) < 0) {
             if (isAutoName) {
-                virNetDevMacVLanReleaseName(ifnameRequested);
+                virNetDevMacVLanReleaseNameInternal(ifnameRequested);
                 reservedID = -1;
                 goto create_name;
             }
