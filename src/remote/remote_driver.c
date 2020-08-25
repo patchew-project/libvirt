@@ -1430,9 +1430,13 @@ remoteConnectOpen(virConnectPtr conn,
 
         /* If there's a driver registered we must defer to that.
          * If there isn't a driver, we must connect in "direct"
-         * mode - see doRemoteOpen */
+         * mode - see doRemoteOpen.
+         * One exception is if we are trying to connect to an
+         * unknown socket path as that might be proxied to remote
+         * host */
         if (!conn->uri->server &&
-            virHasDriverForURIScheme(driver)) {
+            virHasDriverForURIScheme(driver) &&
+            !virURICheckProxied(conn->uri)) {
             ret = VIR_DRV_OPEN_DECLINED;
             goto cleanup;
         }
