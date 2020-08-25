@@ -2943,34 +2943,41 @@ qemuMigrationDstPrepareDirect(virQEMUDriverPtr driver,
         }
 
         if (STRNEQ(uri->scheme, "tcp") &&
-            STRNEQ(uri->scheme, "rdma")) {
+            STRNEQ(uri->scheme, "rdma") &&
+            STRNEQ(uri->scheme, "unix")) {
             virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
                            _("unsupported scheme %s in migration URI %s"),
                            uri->scheme, uri_in);
             goto cleanup;
         }
 
-        if (uri->server == NULL) {
-            virReportError(VIR_ERR_INVALID_ARG, _("missing host in migration"
-                                                  " URI: %s"), uri_in);
-            goto cleanup;
-        }
-
-        if (uri->port == 0) {
-            if (virPortAllocatorAcquire(driver->migrationPorts, &port) < 0)
-                goto cleanup;
-
-            /* Send well-formed URI only if uri_in was well-formed */
-            if (well_formed_uri) {
-                uri->port = port;
-                if (!(*uri_out = virURIFormat(uri)))
-                    goto cleanup;
-            } else {
-                *uri_out = g_strdup_printf("%s:%d", uri_in, port);
-            }
-        } else {
-            port = uri->port;
+        if (STREQ(uri->scheme, "unix")) {
             autoPort = false;
+            if (!listenAddress)
+                listenAddress = virURIGetParam(uri, "socket");
+        } else {
+            if (uri->server == NULL) {
+                virReportError(VIR_ERR_INVALID_ARG, _("missing host in migration"
+                                                      " URI: %s"), uri_in);
+                goto cleanup;
+            }
+
+            if (uri->port == 0) {
+                if (virPortAllocatorAcquire(driver->migrationPorts, &port) < 0)
+                    goto cleanup;
+
+                /* Send well-formed URI only if uri_in was well-formed */
+                if (well_formed_uri) {
+                    uri->port = port;
+                    if (!(*uri_out = virURIFormat(uri)))
+                        goto cleanup;
+                } else {
+                    *uri_out = g_strdup_printf("%s:%d", uri_in, port);
+                }
+            } else {
+                port = uri->port;
+                autoPort = false;
+            }
         }
     }
 
@@ -3185,6 +3192,7 @@ qemuMigrationSrcConfirm(virQEMUDriverPtr driver,
 enum qemuMigrationDestinationType {
     MIGRATION_DEST_HOST,
     MIGRATION_DEST_CONNECT_HOST,
+    MIGRATION_DEST_CONNECT_SOCKET,
     MIGRATION_DEST_FD,
 };
 
@@ -3203,6 +3211,10 @@ struct _qemuMigrationSpec {
             const char *name;
             int port;
         } host;
+
+        struct {
+            const char *path;
+        } socket;
 
         struct {
             int qemu;
@@ -3418,13 +3430,29 @@ qemuMigrationSrcConnect(virQEMUDriverPtr driver,
 
     if (qemuSecuritySetSocketLabel(driver->securityManager, vm->def) < 0)
         goto cleanup;
-    port = g_strdup_printf("%d", spec->dest.host.port);
-    if (virNetSocketNewConnectTCP(spec->dest.host.name,
-                                  port,
-                                  AF_UNSPEC,
-                                  &sock) == 0) {
-        fd_qemu = virNetSocketDupFD(sock, true);
-        virObjectUnref(sock);
+
+    switch (spec->destType) {
+    case MIGRATION_DEST_CONNECT_HOST:
+        port = g_strdup_printf("%d", spec->dest.host.port);
+        if (virNetSocketNewConnectTCP(spec->dest.host.name,
+                                      port,
+                                      AF_UNSPEC,
+                                      &sock) == 0) {
+            fd_qemu = virNetSocketDupFD(sock, true);
+            virObjectUnref(sock);
+        }
+        break;
+    case MIGRATION_DEST_CONNECT_SOCKET:
+        if (virNetSocketNewConnectUNIX(spec->dest.socket.path,
+                                       false, NULL,
+                                       &sock) == 0) {
+            fd_qemu = virNetSocketDupFD(sock, true);
+            virObjectUnref(sock);
+        }
+        break;
+    case MIGRATION_DEST_HOST:
+    case MIGRATION_DEST_FD:
+        break;
     }
 
     spec->destType = MIGRATION_DEST_FD;
@@ -3632,6 +3660,14 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
     if (migrate_flags & (QEMU_MONITOR_MIGRATE_NON_SHARED_DISK |
                          QEMU_MONITOR_MIGRATE_NON_SHARED_INC)) {
         if (mig->nbd) {
+            const char *host = "";
+
+            if (spec->destType == MIGRATION_DEST_HOST ||
+                spec->destType == MIGRATION_DEST_CONNECT_HOST) {
+                host = spec->dest.host.name;
+            }
+
+
             /* Currently libvirt does not support setting up of the NBD
              * non-shared storage migration with TLS. As we need to honour the
              * VIR_MIGRATE_TLS flag, we need to reject such migration until
@@ -3645,7 +3681,7 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
 
             /* This will update migrate_flags on success */
             if (qemuMigrationSrcNBDStorageCopy(driver, vm, mig,
-                                               spec->dest.host.name,
+                                               host,
                                                migrate_speed,
                                                &migrate_flags,
                                                nmigrate_disks,
@@ -3693,7 +3729,8 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
         goto exit_monitor;
 
     /* connect to the destination qemu if needed */
-    if (spec->destType == MIGRATION_DEST_CONNECT_HOST &&
+    if ((spec->destType == MIGRATION_DEST_CONNECT_HOST ||
+         spec->destType == MIGRATION_DEST_CONNECT_SOCKET) &&
         qemuMigrationSrcConnect(driver, vm, spec) < 0) {
         goto exit_monitor;
     }
@@ -3716,6 +3753,7 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
         break;
 
     case MIGRATION_DEST_CONNECT_HOST:
+    case MIGRATION_DEST_CONNECT_SOCKET:
         /* handled above and transformed into MIGRATION_DEST_FD */
         break;
 
@@ -3931,16 +3969,34 @@ qemuMigrationSrcPerformNative(virQEMUDriverPtr driver,
         }
     }
 
-    /* RDMA and multi-fd migration requires QEMU to connect to the destination
-     * itself.
-     */
-    if (STREQ(uribits->scheme, "rdma") || (flags & VIR_MIGRATE_PARALLEL))
-        spec.destType = MIGRATION_DEST_HOST;
-    else
-        spec.destType = MIGRATION_DEST_CONNECT_HOST;
-    spec.dest.host.protocol = uribits->scheme;
-    spec.dest.host.name = uribits->server;
-    spec.dest.host.port = uribits->port;
+    if (STREQ(uribits->scheme, "unix")) {
+        if (flags & VIR_MIGRATE_TLS) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("Migration over UNIX socket with TLS is not supported"));
+            return -1;
+        }
+        if (flags & VIR_MIGRATE_PARALLEL) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("Parallel migration over UNIX socket is not supported"));
+            return -1;
+        }
+
+        spec.destType = MIGRATION_DEST_CONNECT_SOCKET;
+        spec.dest.socket.path = virURIGetParam(uribits, "socket");
+    } else {
+        /* RDMA and multi-fd migration requires QEMU to connect to the destination
+         * itself.
+         */
+        if (STREQ(uribits->scheme, "rdma") || (flags & VIR_MIGRATE_PARALLEL))
+            spec.destType = MIGRATION_DEST_HOST;
+        else
+            spec.destType = MIGRATION_DEST_CONNECT_HOST;
+
+        spec.dest.host.protocol = uribits->scheme;
+        spec.dest.host.name = uribits->server;
+        spec.dest.host.port = uribits->port;
+    }
+
     spec.fwdType = MIGRATION_FWD_DIRECT;
 
     ret = qemuMigrationSrcRun(driver, vm, persist_xml, cookiein, cookieinlen, cookieout,

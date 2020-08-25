@@ -3237,12 +3237,12 @@ has different semantics:
 
 In a special circumstance where you require a complete control of the connection
 and/or libvirt does not have network access to the remote side you can use a
-unix transport in the URI and specify a socket path in the query, for example
+UNIX transport in the URI and specify a socket path in the query, for example
 with the qemu driver you could use this:
 
 .. code-block::
 
-      qemu+unix://?socket=/path/to/socket
+      qemu+unix:///system?socket=/path/to/socket
 
 When *migrateuri* is not specified, libvirt will automatically determine the
 hypervisor specific URI.  Some hypervisors, including QEMU, have an optional
@@ -3270,6 +3270,14 @@ There are a few scenarios where specifying *migrateuri* may help:
   might be specified to choose a specific port number outside the default range in
   order to comply with local firewall policies.
 
+* The *desturi* uses UNIX transport method.  In this advanced case libvirt
+  should not guess a *migrateuri* and it should be specified using
+  UNIX socket path URI:
+
+.. code-block::
+
+      unix://?socket=/path/to/socket
+
 See `https://libvirt.org/migration.html#uris <https://libvirt.org/migration.html#uris>`_ for more details on
 migration URIs.
 
@@ -3296,7 +3304,10 @@ specific parameters separated by '&'. Currently recognized parameters are
 Optional *listen-address* sets the listen address that hypervisor on the
 destination side should bind to for incoming migration. Both IPv4 and IPv6
 addresses are accepted as well as hostnames (the resolving is done on
-destination). Some hypervisors do not support this feature and will return an
+destination).  In niche scenarios you can also use UNIX socket to make the
+hypervisor connection over UNIX socket in which case you must make sure the
+source can connect to the destination using the socket path provided by you.
+Some hypervisors do not support specifying the listen address and will return an
 error if this parameter is used.
 
 Optional *disks-port* sets the port that hypervisor on destination side should
