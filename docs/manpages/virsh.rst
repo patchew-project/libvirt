@@ -3113,6 +3113,7 @@ migrate
       [--postcopy-bandwidth bandwidth]
       [--parallel [--parallel-connections connections]]
       [--bandwidth bandwidth] [--tls-destination hostname]
+      [--disks-socket socket-path]
 
 Migrate domain to another host.  Add *--live* for live migration; <--p2p>
 for peer-2-peer migration; *--direct* for direct migration; or *--tunnelled*
@@ -3291,6 +3292,13 @@ error if this parameter is used.
 
 Optional *disks-port* sets the port that hypervisor on destination side should
 bind to for incoming disks traffic. Currently it is supported only by QEMU.
+
+Optional *disks-socket* path can also be specified (mutually exclusive with
+*disks-port*) in case you need the disk migration to happen over a UNIX socket
+with that specified path.  In this case you need to make sure the same socket
+path is accessible to both source and destination hypervisors and connecting to
+the socket on the source (after hypervisor creates it on the destination) will
+actually connect to the destination.
 
 
 migrate-compcache

@@ -982,6 +982,18 @@ typedef enum {
 # define VIR_MIGRATE_PARAM_DISKS_PORT    "disks_port"
 
 /**
+ * VIR_MIGRATE_PARAM_DISKS_SOCKET:
+ *
+ * virDomainMigrate* params field: path of a UNIX socket that destination server
+ * should use for incoming disks migration. Type is VIR_TYPED_PARAM_STRING. If
+ * omitted, migration will proceed over network (default). At the moment this is
+ * only supported by the QEMU driver.  This is only usable if the management
+ * application makes sure that socket created with this name on the destination
+ * will be reachable from the source under the same exact path.
+ */
+# define VIR_MIGRATE_PARAM_DISKS_SOCKET    "disks_socket"
+
+/**
  * VIR_MIGRATE_PARAM_COMPRESSION:
  *
  * virDomainMigrate* params multiple field: name of the method used to

@@ -91,6 +91,8 @@ qemuMigrationCookieNBDFree(qemuMigrationCookieNBDPtr nbd)
     while (nbd->ndisks)
         VIR_FREE(nbd->disks[--nbd->ndisks].target);
     VIR_FREE(nbd->disks);
+
+    VIR_FREE(nbd->socketPath);
     VIR_FREE(nbd);
 }
 
@@ -464,7 +466,10 @@ qemuMigrationCookieAddNBD(qemuMigrationCookiePtr mig,
 
     mig->nbd = g_new0(qemuMigrationCookieNBD, 1);
 
-    mig->nbd->port = priv->nbdPort;
+    if (priv->nbdSocketPath)
+        mig->nbd->socketPath = priv->nbdSocketPath;
+    else
+        mig->nbd->port = priv->nbdPort;
     mig->flags |= QEMU_MIGRATION_COOKIE_NBD;
 
     if (vm->def->ndisks == 0)
@@ -988,12 +993,15 @@ qemuMigrationCookieNBDXMLParse(xmlXPathContextPtr ctxt)
     if (VIR_ALLOC(ret) < 0)
         goto error;
 
-    port = virXPathString("string(./nbd/@port)", ctxt);
-    if (port && virStrToLong_i(port, NULL, 10, &ret->port) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Malformed nbd port '%s'"),
-                       port);
-        goto error;
+    ret->socketPath = virXPathString("string(./nbd/@socketPath)", ctxt);
+    if (!ret->socketPath) {
+        port = virXPathString("string(./nbd/@port)", ctxt);
+        if (port && virStrToLong_i(port, NULL, 10, &ret->port) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Malformed nbd port '%s'"),
+                           port);
+            goto error;
+        }
     }
 
     /* Now check if source sent a list of disks to prealloc. We might be

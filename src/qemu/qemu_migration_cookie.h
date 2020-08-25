@@ -93,6 +93,7 @@ typedef struct _qemuMigrationCookieNBD qemuMigrationCookieNBD;
 typedef qemuMigrationCookieNBD *qemuMigrationCookieNBDPtr;
 struct _qemuMigrationCookieNBD {
     int port; /* on which port does NBD server listen for incoming data */
+    char *socketPath;
 
     size_t ndisks;  /* Number of items in @disk array */
     struct qemuMigrationCookieNBDDisk *disks;

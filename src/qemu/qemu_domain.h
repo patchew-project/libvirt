@@ -166,6 +166,7 @@ struct _qemuDomainObjPrivate {
     unsigned long migMaxBandwidth;
     char *origname;
     int nbdPort; /* Port used for migration with NBD */
+    char *nbdSocketPath; /* Port used for migration with NBD */
     unsigned short migrationPort;
     int preMigrationState;
 
