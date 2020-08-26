@@ -133,4 +133,50 @@ profile libvirtd @sbindir@/libvirtd flags=(attach_disconnected) {
 
    /usr/{lib,lib64,lib/qemu,libexec}/qemu-bridge-helper rmix,
   }
+
+  # child profile for virtiofsd helper process
+  /usr/{lib,lib64,lib/qemu,libexec}/virtiofsd Cx -> virtiofsd,
+  profile virtiofsd flags=(attach_disconnected) {
+   #include <abstractions/base>
+   #include <abstractions/libvirt-qemu>
+
+   capability sys_admin,
+   capability sys_resource,
+
+   # init phase
+   / r,
+   mount options=(rw, rslave)  -> /,
+   umount /,
+   mount options=(rw, nosuid, nodev, noexec, relatime)  -> @{PROC},
+   owner /proc/sys/fs/file-max r,
+
+   # For communication/control from libvirtd
+   unix (send, receive) type=stream addr=none peer=(label=libvirtd),
+   signal (receive) set=("term") peer=/usr/sbin/libvirtd,
+   signal (receive) set=("term") peer=libvirtd,
+   owner /var/lib/libvirt/qemu/domain-*/fs[0-9]{[0-9],}-fs.pid w,
+   /var/lib/libvirt/qemu/domain-*/fs[0-9]{[0-9],}-fs.sock rw,
+   /var/lib/libvirt/qemu/ram/*/ram-node[0-9]{[0-9],} rw,
+
+   # For communication with confined and unconfined guests
+   unix (send, receive) type=stream addr=none peer=(label=libvirt-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*-[0-9a-f]*),
+   unix (send, receive) type=stream addr=none peer=(label=unconfined),
+
+   /usr/{lib,lib64,lib/qemu,libexec}/virtiofsd rmix,
+
+   # Common host paths to share from are allowed by default
+   # Further paths should be added as local override
+   # TODO - community to settle on a list of common paths to allow
+   owner /var/lib/libvirt/virtiofsd/*/ r,
+   mount options=(rw, bind)  -> /var/lib/libvirt/virtiofsd/*/,
+   pivot_root /var/lib/libvirt/virtiofsd/*/,
+
+   # TODO - after pivot_root the rules for the actual file access by the guest
+   # through virtiofsd would need to start with / which is too open
+   /** rw,
+
+   # Site-specific additions and overrides. See local/README for details.
+   #include <local/usr.lib.qemu.virtiofsd>
+  }
+
 }

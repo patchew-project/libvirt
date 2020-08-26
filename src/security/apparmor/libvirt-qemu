@@ -221,6 +221,9 @@
   unix (send, receive) type=stream addr=none peer=(label=libvirtd),
   unix (send, receive) type=stream addr=none peer=(label=/usr/sbin/libvirtd),
 
+  # allow to connect to virtiofsd
+  unix (send, receive) type=stream addr=none peer=(label=libvirtd//virtiofsd),
+
   # for gathering information about available host resources
   /sys/devices/system/cpu/ r,
   /sys/devices/system/node/ r,
