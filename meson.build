@@ -1249,7 +1249,11 @@ if numactl_dep.found()
 endif
 
 openwsman_version = '2.2.3'
-openwsman_dep = dependency('openwsman', version: '>=' + openwsman_version, required: get_option('openwsman'))
+if get_option('driver_hyperv').enabled()
+  openwsman_dep = dependency('openwsman', version: '>=' + openwsman_version, required: get_option('openwsman'))
+else
+  openwsman_dep = dependency('', required: false)
+endif
 
 parallels_sdk_version = '7.0.22'
 parallels_sdk_dep = dependency('parallels-sdk', version: '>=' + parallels_sdk_version, required: false)
