@@ -1185,7 +1185,6 @@ int virLXCProcessStart(virConnectPtr conn,
     VIR_AUTOSTRINGLIST veths = NULL;
     int handshakefds[2] = { -1, -1 };
     off_t pos = -1;
-    char ebuf[1024];
     g_autofree char *timestamp = NULL;
     int nsInheritFDs[VIR_LXC_DOMAIN_NAMESPACE_LAST];
     virCommandPtr cmd = NULL;
@@ -1402,13 +1401,14 @@ int virLXCProcessStart(virConnectPtr conn,
         goto cleanup;
 
     if (status != 0) {
+        g_autofree char *ebuf = g_new0(char, BUFSIZ);
         if (virLXCProcessReadLogOutput(vm, logfile, pos, ebuf,
-                                       sizeof(ebuf)) <= 0) {
+                                       BUFSIZ) <= 0) {
             if (WIFEXITED(status))
-                g_snprintf(ebuf, sizeof(ebuf), _("unexpected exit status %d"),
+                g_snprintf(ebuf, BUFSIZ, _("unexpected exit status %d"),
                            WEXITSTATUS(status));
             else
-                g_snprintf(ebuf, sizeof(ebuf), "%s", _("terminated abnormally"));
+                g_snprintf(ebuf, BUFSIZ, "%s", _("terminated abnormally"));
         }
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("guest failed to start: %s"), ebuf);
@@ -1417,7 +1417,8 @@ int virLXCProcessStart(virConnectPtr conn,
 
     /* It has started running, so get its pid */
     if ((r = virPidFileReadPath(pidfile, &vm->pid)) < 0) {
-        if (virLXCProcessReadLogOutput(vm, logfile, pos, ebuf, sizeof(ebuf)) > 0)
+        g_autofree char *ebuf = g_new0(char, BUFSIZ);
+        if (virLXCProcessReadLogOutput(vm, logfile, pos, ebuf, BUFSIZ) > 0)
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("guest failed to start: %s"), ebuf);
         else
@@ -1454,9 +1455,9 @@ int virLXCProcessStart(virConnectPtr conn,
         driver->inhibitCallback(true, driver->inhibitOpaque);
 
     if (lxcContainerWaitForContinue(handshakefds[0]) < 0) {
-        char out[1024];
+        g_autofree char *out = g_new0(char, BUFSIZ);
 
-        if (!(virLXCProcessReadLogOutput(vm, logfile, pos, out, 1024) < 0)) {
+        if (!(virLXCProcessReadLogOutput(vm, logfile, pos, out, BUFSIZ) < 0)) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("guest failed to start: %s"), out);
         }
@@ -1486,10 +1487,12 @@ int virLXCProcessStart(virConnectPtr conn,
 
     /* And we can get the first monitor connection now too */
     if (!(priv->monitor = virLXCProcessConnectMonitor(driver, vm))) {
+        g_autofree char *ebuf = g_new0(char, BUFSIZ);
+
         /* Intentionally overwrite the real monitor error message,
          * since a better one is almost always found in the logs
          */
-        if (virLXCProcessReadLogOutput(vm, logfile, pos, ebuf, sizeof(ebuf)) > 0) {
+        if (virLXCProcessReadLogOutput(vm, logfile, pos, ebuf, BUFSIZ) > 0) {
             virResetLastError();
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("guest failed to start: %s"), ebuf);
