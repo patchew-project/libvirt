@@ -25,6 +25,11 @@ v6.7.0 (unreleased)
     the ``device_model_args`` setting in xl.cfg(5). The libvirt xen driver now
     supports this using ``<xen:commandline/>`` XML extensions.
 
+  * bhyve: Sound device support
+
+    This feature allows to configure guest sound device using
+    the ``<sound>`` element, and map it to the host sound device using
+    the ``<audio>`` element.
 
 * **Improvements**
 
