@@ -1267,7 +1267,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
                  int restore_fd,
                  uint32_t restore_ver LIBXL_DOMSTART_RESTORE_VER_ATTR)
 {
-    libxl_domain_config d_config;
+    libxl_domain_config *d_config = NULL;
     virDomainDefPtr def = NULL;
     virObjectEventPtr event = NULL;
     libxlSavefileHeader hdr;
@@ -1288,7 +1288,9 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
     hostdev_flags |= VIR_HOSTDEV_SP_USB;
 #endif
 
-    libxl_domain_config_init(&d_config);
+    d_config = g_new0(libxl_domain_config, 1);
+
+    libxl_domain_config_init(d_config);
 
     /* If there is a managed saved state restore it instead of starting
      * from scratch. The old state is removed once the restoring succeeded. */
@@ -1364,10 +1366,10 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
         goto cleanup_dom;
 
     if (libxlBuildDomainConfig(driver->reservedGraphicsPorts, vm->def,
-                               cfg, &d_config) < 0)
+                               cfg, d_config) < 0)
         goto cleanup_dom;
 
-    if (cfg->autoballoon && libxlDomainFreeMem(cfg->ctx, &d_config) < 0)
+    if (cfg->autoballoon && libxlDomainFreeMem(cfg->ctx, d_config) < 0)
         goto cleanup_dom;
 
     if (virHostdevPrepareDomainDevices(hostdev_mgr, LIBXL_DRIVER_INTERNAL_NAME,
@@ -1407,14 +1409,14 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
     aop_console_how.for_callback = vm;
     aop_console_how.callback = libxlConsoleCallback;
     if (restore_fd < 0) {
-        ret = libxl_domain_create_new(cfg->ctx, &d_config,
+        ret = libxl_domain_create_new(cfg->ctx, d_config,
                                       &domid, NULL, &aop_console_how);
     } else {
         libxl_domain_restore_params_init(&params);
 #ifdef LIBXL_HAVE_SRM_V2
         params.stream_version = restore_ver;
 #endif
-        ret = libxl_domain_create_restore(cfg->ctx, &d_config, &domid,
+        ret = libxl_domain_create_restore(cfg->ctx, d_config, &domid,
                                           restore_fd, &params, NULL,
                                           &aop_console_how);
         libxl_domain_restore_params_dispose(&params);
@@ -1425,11 +1427,11 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
         if (restore_fd < 0)
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("libxenlight failed to create new domain '%s'"),
-                           d_config.c_info.name);
+                           d_config->c_info.name);
         else
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("libxenlight failed to restore domain '%s'"),
-                           d_config.c_info.name);
+                           d_config->c_info.name);
         goto cleanup_dom;
     }
 
@@ -1438,7 +1440,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
      * be cleaned up if there are any subsequent failures.
      */
     vm->def->id = domid;
-    config_json = libxl_domain_config_to_json(cfg->ctx, &d_config);
+    config_json = libxl_domain_config_to_json(cfg->ctx, d_config);
 
     libxlLoggerOpenFile(cfg->logger, domid, vm->def->name, config_json);
 
@@ -1453,7 +1455,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
     if (libxl_evenable_domain_death(cfg->ctx, vm->def->id, 0, &priv->deathW))
         goto destroy_dom;
 
-    libxlDomainCreateIfaceNames(vm->def, &d_config);
+    libxlDomainCreateIfaceNames(vm->def, d_config);
     libxlDomainUpdateDiskParams(vm->def, cfg->ctx);
 
 #ifdef LIBXL_HAVE_DEVICE_CHANNEL
@@ -1523,7 +1525,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
     libxlDomainCleanup(driver, vm);
 
  cleanup:
-    libxl_domain_config_dispose(&d_config);
+    libxl_domain_config_dispose(d_config);
     VIR_FREE(config_json);
     VIR_FREE(dom_xml);
     VIR_FREE(managed_save_path);
