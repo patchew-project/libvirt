@@ -14,6 +14,7 @@
 
 # The hypervisor drivers that run in libvirtd
 %define with_qemu          0%{!?_without_qemu:1}
+%define with_ch            0%{!?_without_ch:1}
 %define with_lxc           0%{!?_without_lxc:1}
 %define with_libxl         0%{!?_without_libxl:1}
 %define with_vbox          0%{!?_without_vbox:1}
@@ -231,6 +232,9 @@ Requires: libvirt-daemon-driver-lxc = %{version}-%{release}
 %endif
 %if %{with_qemu}
 Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
+%endif
+%if %{with_ch}
+Requires: libvirt-daemon-driver-ch = %{version}-%{release}
 %endif
 # We had UML driver, but we've removed it.
 Obsoletes: libvirt-daemon-driver-uml <= 5.0.0
@@ -744,6 +748,20 @@ QEMU
 %endif
 
 
+%if %{with_ch}
+%package daemon-driver-ch
+Summary: Cloud-Hypervisor driver plugin for the libvirtd daemon
+Requires: libvirt-daemon = %{version}-%{release}
+Requires: libvirt-libs = %{version}-%{release}
+Requires: /usr/bin/cloud-hypervisor
+
+%description daemon-driver-ch
+The Cloud-Hypervisor driver plugin for the libvirtd daemon,
+providing an implementation of the hypervisor driver APIs
+using Cloud-Hypervisor
+%endif
+
+
 %if %{with_lxc}
 %package daemon-driver-lxc
 Summary: LXC driver plugin for the libvirtd daemon
@@ -1001,6 +1019,12 @@ exit 1
     %define arg_qemu -Ddriver_qemu=disabled
 %endif
 
+%if %{with_ch}
+    %define arg_ch -Ddriver_ch=enabled
+%else
+    %define arg_ch -Ddriver_ch=disabled
+%endif
+
 %if %{with_openvz}
     %define arg_openvz -Ddriver_openvz=enabled
 %else
@@ -1132,6 +1156,7 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 %meson \
            -Drunstatedir=%{_rundir} \
            %{?arg_qemu} \
+           %{?arg_ch} \
            %{?arg_openvz} \
            %{?arg_lxc} \
            %{?arg_vbox} \
@@ -1737,6 +1762,13 @@ exit 0
 %dir %attr(0711, root, root) %{_localstatedir}/log/swtpm/libvirt/qemu/
 %{_bindir}/virt-qemu-run
 %{_mandir}/man1/virt-qemu-run.1*
+%endif
+
+%if %{with_ch}
+%files daemon-driver-ch
+%dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/ch/
+%ghost %dir %{_rundir}/libvirt/ch/
+%{_libdir}/%{name}/connection-driver/libvirt_driver_ch.so
 %endif
 
 %if %{with_lxc}

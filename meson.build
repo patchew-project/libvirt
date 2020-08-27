@@ -1722,6 +1722,10 @@ elif get_option('driver_lxc').enabled()
   error('linux and remote_driver are required for LXC')
 endif
 
+if not get_option('driver_ch').disabled() and host_machine.system() == 'linux' and conf.has('WITH_LIBVIRTD')
+  conf.set('WITH_CH', 1)
+endif
+
 # there's no use compiling the network driver without the libvirt
 # daemon, nor compiling it for macOS, where it breaks the compile
 if not get_option('driver_network').disabled() and conf.has('WITH_LIBVIRTD') and host_machine.system() != 'darwin'
@@ -2369,6 +2373,7 @@ driver_summary = {
   'VBox': conf.has('WITH_VBOX'),
   'libxl': conf.has('WITH_LIBXL'),
   'LXC': conf.has('WITH_LXC'),
+  'Cloud-Hypervisor': conf.has('WITH_CH'),
   'ESX': conf.has('WITH_ESX'),
   'Hyper-V': conf.has('WITH_HYPERV'),
   'vz': conf.has('WITH_VZ'),
