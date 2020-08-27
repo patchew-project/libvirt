@@ -25,7 +25,6 @@ scriptversion=2018-03-07.03; # UTC
 # list the version-controlled files in that directory.
 
 # If there's an argument, it must be a single, "."-relative directory name.
-# cvsu is part of the cvsutils package: http://www.red-bean.com/cvsutils/
 
 postprocess=
 case $1 in
@@ -75,29 +74,6 @@ do
     # belong to this package.
     eval exec git ls-tree -r 'HEAD:"$dir"' \
       \| sed -n '"s/^100[^	]*./$sed_esc/p"' $postprocess
-  elif test -d .hg; then
-    eval exec hg locate '"$dir/*"' $postprocess
-  elif test -d .bzr; then
-    test "$postprocess" = '' && postprocess="| sed 's|^\./||'"
-    eval exec bzr ls -R --versioned '"$dir"' $postprocess
-  elif test -d CVS; then
-    test "$postprocess" = '' && postprocess="| sed 's|^\./||'"
-    if test -x build-aux/cvsu; then
-      eval build-aux/cvsu --find --types=AFGM '"$dir"' $postprocess
-    elif (cvsu --help) >/dev/null 2>&1; then
-      eval cvsu --find --types=AFGM '"$dir"' $postprocess
-    else
-      eval awk -F/ \''{			\
-          if (!$1 && $3 !~ /^-/) {	\
-            f=FILENAME;			\
-            if (f ~ /CVS\/Entries$/)	\
-              f = substr(f, 1, length(f)-11); \
-            print f $2;			\
-          }}'\''				\
-        `find "$dir" -name Entries -print` /dev/null' $postprocess
-    fi
-  elif test -d .svn; then
-    eval exec svn list -R '"$dir"' $postprocess
   else
     echo "$0: Failed to determine type of version control used in `pwd`" 1>&2
     exit 1
