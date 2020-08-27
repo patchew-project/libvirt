@@ -813,7 +813,7 @@ esxConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     virDrvOpenStatus result = VIR_DRV_OPEN_ERROR;
     esxPrivate *priv = NULL;
     char *potentialVCenterIPAddress = NULL;
-    char vCenterIPAddress[NI_MAXHOST] = "";
+    g_autofree char *vCenterIPAddress = g_new0(char, NI_MAXHOST);
 
     virCheckFlags(VIR_CONNECT_RO, VIR_DRV_OPEN_ERROR);
 
@@ -876,8 +876,9 @@ esxConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
                     goto cleanup;
                 }
 
-                if (virStrcpyStatic(vCenterIPAddress,
-                                    potentialVCenterIPAddress) < 0) {
+                if (virStrcpy(vCenterIPAddress,
+                              potentialVCenterIPAddress,
+                              NI_MAXHOST) < 0) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("vCenter IP address %s too big for destination"),
                                    potentialVCenterIPAddress);
