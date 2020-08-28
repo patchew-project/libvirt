@@ -2949,6 +2949,22 @@ qemuMigrationDstPrepareDirect(virQEMUDriverPtr driver,
 }
 
 
+static bool
+qemuMigrationTransientDiskExists(virDomainDefPtr def)
+{
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+       virDomainDiskDefPtr disk = def->disks[i];
+
+       if (disk->transient)
+            return true;
+    }
+
+    return false;
+}
+
+
 virDomainDefPtr
 qemuMigrationAnyPrepareDef(virQEMUDriverPtr driver,
                            virQEMUCapsPtr qemuCaps,
@@ -2970,6 +2986,12 @@ qemuMigrationAnyPrepareDef(virQEMUDriverPtr driver,
                                         VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                         VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
         goto cleanup;
+
+    /*
+     * transient disk option is a blocker for migration
+     */
+    if (qemuMigrationTransientDiskExists(def))
+       goto cleanup;
 
     if (dname) {
         name = def->name;
