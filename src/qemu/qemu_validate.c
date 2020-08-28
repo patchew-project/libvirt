@@ -2166,9 +2166,12 @@ qemuValidateDomainDeviceDefDiskFrontend(const virDomainDiskDef *disk,
     }
 
     if (disk->transient) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("transient disks not supported yet"));
-        return -1;
+        if ((disk->src->format != VIR_STORAGE_FILE_QCOW2) &&
+            (disk->src->format != VIR_STORAGE_FILE_RAW)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("transient disks not supported yet"));
+            return -1;
+        }
     }
 
     if (disk->iomode == VIR_DOMAIN_DISK_IO_NATIVE &&
