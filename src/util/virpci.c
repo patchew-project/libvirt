@@ -2409,8 +2409,10 @@ virPCIDeviceAddressGetSysfsFile(virPCIDeviceAddressPtr addr,
  * virPCIGetNetName:
  * @device_link_sysfs_path: sysfs path to the PCI device
  * @idx: used to choose which netdev when there are several
- *       (ignored if physPortID is set)
+ *       (ignored if physPortID or physPortNameRegex is set)
  * @physPortID: match this string in the netdev's phys_port_id
+ *       (or NULL to ignore and use phys_port_name or idx instead)
+ * @physPortNameRegex: match this regex with netdev's phys_port_name
  *       (or NULL to ignore and use idx instead)
  * @netname: used to return the name of the netdev
  *       (set to NULL (but returns success) if there is no netdev)
@@ -2421,11 +2423,13 @@ int
 virPCIGetNetName(const char *device_link_sysfs_path,
                  size_t idx,
                  char *physPortID,
+                 char *physPortNameRegex,
                  char **netname)
 {
     g_autofree char *pcidev_sysfs_net_path = NULL;
     g_autofree char *firstEntryName = NULL;
     g_autofree char *thisPhysPortID = NULL;
+    g_autofree char *thisPhysPortName = NULL;
     int ret = -1;
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -2466,6 +2470,41 @@ virPCIGetNetName(const char *device_link_sysfs_path,
 
                 continue;
             }
+        } else if (physPortNameRegex) {
+            /* Most switch devices use phys_port_name instead of
+             * phys_port_id.
+             * NOTE: VFs' representors net devices can be linked to PF's PCI
+             * device, which mean that there'll be multiple net devices
+             * instances and to get a proper net device need to match on
+             * specific regex.
+             * To get PF netdev, for ex., used following regex:
+             * "(p[0-9]+$)|(p[0-9]+s[0-9]+$)"
+             * or to get exact VF's netdev next regex is used:
+             * "pf0vf1$"
+             */
+            if (virNetDevGetPhysPortName(entry->d_name, &thisPhysPortName) < 0)
+                goto cleanup;
+
+            if (thisPhysPortName) {
+                /* if this one doesn't match, keep looking */
+                if (!virStringMatch(thisPhysPortName, physPortNameRegex)) {
+                    VIR_FREE(thisPhysPortName);
+                    /* Save the first entry we find to use as a failsafe
+                     * in case we fail to match on regex.
+                     */
+                    if (!firstEntryName)
+                        firstEntryName = g_strdup(entry->d_name);
+
+                    continue;
+                }
+            } else {
+                /* Save the first entry we find to use as a failsafe in case
+                 * phys_port_name is not supported.
+                 */
+                if (!firstEntryName)
+                    firstEntryName = g_strdup(entry->d_name);
+                continue;
+            }
         } else {
             if (i++ < idx)
                 continue;
@@ -2493,6 +2532,22 @@ virPCIGetNetName(const char *device_link_sysfs_path,
                                _("Could not find network device with "
                                  "phys_port_id '%s' under PCI device at %s"),
                                physPortID, device_link_sysfs_path);
+            }
+        } else if (physPortNameRegex) {
+            if (firstEntryName) {
+                /* We didn't match the provided phys_port_name regex, probably
+                 * because kernel or NIC driver doesn't support it, so just
+                 * return first netname we found.
+                 */
+                *netname = firstEntryName;
+                firstEntryName = NULL;
+                ret = 0;
+            } else {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Could not find network device with "
+                                 "phys_port_name matching regex '%s' "
+                                 "under PCI device at %s"),
+                               physPortNameRegex, device_link_sysfs_path);
             }
         } else {
             ret = 0; /* no netdev at the given index is *not* an error */
@@ -2539,7 +2594,7 @@ virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path,
      * correct.
      */
     if (pfNetDevIdx == -1) {
-        if (virPCIGetNetName(vf_sysfs_device_path, 0, NULL, &vfname) < 0)
+        if (virPCIGetNetName(vf_sysfs_device_path, 0, NULL, NULL, &vfname) < 0)
             goto cleanup;
 
         if (vfname) {
@@ -2550,7 +2605,8 @@ virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path,
     }
 
     if (virPCIGetNetName(pf_sysfs_device_path,
-                         pfNetDevIdx, vfPhysPortID, pfname) < 0) {
+                         pfNetDevIdx, vfPhysPortID,
+                         VIR_PF_PHYS_PORT_NAME_REGEX, pfname) < 0) {
         goto cleanup;
     }
 
@@ -2688,6 +2744,7 @@ int
 virPCIGetNetName(const char *device_link_sysfs_path G_GNUC_UNUSED,
                  size_t idx G_GNUC_UNUSED,
                  char *physPortID G_GNUC_UNUSED,
+                 char *physPortNameScheme G_GNUC_UNUSED,
                  char **netname G_GNUC_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _(unsupported));
