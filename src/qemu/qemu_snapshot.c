@@ -953,8 +953,9 @@ qemuSnapshotDiskPrepareOne(virQEMUDriverPtr driver,
     if (qemuDomainStorageSourceValidateDepth(disk->src, 1, disk->dst) < 0)
         return -1;
 
-    if (!(dd->src = virStorageSourceCopy(snapdisk->src, false)))
-        return -1;
+    if (snapdisk)
+        if (!(dd->src = virStorageSourceCopy(snapdisk->src, false)))
+            return -1;
 
     if (virStorageSourceInitChainElement(dd->src, dd->disk->src, false) < 0)
         return -1;
