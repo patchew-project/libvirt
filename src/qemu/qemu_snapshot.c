@@ -2265,3 +2265,137 @@ qemuSnapshotDelete(virDomainObjPtr vm,
  cleanup:
     return ret;
 }
+
+static int
+qemuTransientDiskPrepareOne(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            qemuSnapshotDiskDataPtr data,
+                            virHashTablePtr blockNamedNodeData,
+                            int asyncJob,
+                            virJSONValuePtr actions)
+{
+    int rc = -1;
+    virStorageSourcePtr dest;
+    virStorageSourcePtr src = data->disk->src;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
+
+    if (!strlen(src->path))
+        return rc;
+
+    if (!(dest = virStorageSourceNew()))
+        return rc;
+
+    dest->path = g_strdup_printf("%s.TRANSIENT", src->path);
+
+    if (virFileExists(dest->path)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Transient disk '%s' for '%s' exists"),
+                       dest->path, src->path);
+        goto cleanup;
+    }
+
+    dest->type = VIR_STORAGE_TYPE_FILE;
+    dest->format = VIR_STORAGE_FILE_QCOW2;
+    data->src = dest;
+
+    if (qemuSnapshotDiskPrepareOne(driver, vm, cfg, data->disk,
+                                         NULL, data, blockNamedNodeData,
+                                         false, true, asyncJob, actions) < 0)
+        goto cleanup;
+
+    rc = 0;
+ cleanup:
+    if (rc < 0)
+        g_free(dest->path);
+
+    return rc;
+}
+
+static int
+qemuWaitTransaction(virQEMUDriverPtr driver,
+                    virDomainObjPtr vm,
+                    int asyncJob,
+                    virJSONValuePtr *actions)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return -1;
+
+    if (qemuMonitorTransaction(priv->mon, actions) < 0)
+        return -1;
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        return -1;
+
+    return 0;
+}
+
+int
+qemuTransientCreatetDisk(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         int asyncJob)
+{
+    size_t i;
+    int rc = -1;
+    size_t ndata = 0;
+    qemuSnapshotDiskDataPtr data = NULL;
+    g_autoptr(virJSONValue) actions = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virHashTable) blockNamedNodeData = NULL;
+    bool blockdev =  virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
+
+    if (!blockdev)
+        return rc;
+
+    if (VIR_ALLOC_N(data, vm->def->ndisks) < 0)
+        return rc;
+
+    if (!(blockNamedNodeData = qemuBlockGetNamedNodeData(vm, asyncJob)))
+        goto cleanup;
+
+    if (!(actions = virJSONValueNewArray()))
+        goto cleanup;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        if (disk->src->readonly)
+            continue;
+
+        if (disk->transient) {
+            data[ndata].disk = disk;
+            if (qemuTransientDiskPrepareOne(driver, vm, &data[ndata], blockNamedNodeData,
+                                                 asyncJob, actions) < 0)
+                goto cleanup;
+            ndata++;
+        }
+    }
+
+    if (qemuWaitTransaction(driver, vm, asyncJob, &actions) < 0)
+        goto cleanup;
+
+    for (i = 0; i < ndata; i++) {
+        qemuSnapshotDiskDataPtr dd = &data[i];
+
+        qemuSnapshotDiskUpdateSource(driver, vm, dd, blockdev);
+        dd->disk->src->transientEstablished = true;
+    }
+
+    VIR_FREE(data);
+    rc = 0;
+ cleanup:
+    qemuSnapshotDiskCleanup(data, vm->def->ndisks, driver, vm, asyncJob);
+
+    return rc;
+}
+
+void
+qemuTransientRemoveDisk(virDomainDiskDefPtr disk)
+{
+    if (disk->src->transientEstablished) {
+        VIR_DEBUG("unlink transient disk: %s", disk->src->path);
+        unlink(disk->src->path);
+    }
+}
