@@ -91,6 +91,7 @@ qemuMigrationCookieNBDFree(qemuMigrationCookieNBDPtr nbd)
     while (nbd->ndisks)
         VIR_FREE(nbd->disks[--nbd->ndisks].target);
     VIR_FREE(nbd->disks);
+
     VIR_FREE(nbd);
 }
 
@@ -992,7 +993,7 @@ qemuMigrationCookieNBDXMLParse(xmlXPathContextPtr ctxt)
     if (port && virStrToLong_i(port, NULL, 10, &ret->port) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Malformed nbd port '%s'"),
-                       port);
+                           port);
         goto error;
     }
 
