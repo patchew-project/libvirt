@@ -257,6 +257,7 @@ cc_flags += [
   '-Wempty-body',
   '-Wendif-labels',
   '-Wexpansion-to-defined',
+  '-Wformat',
   '-Wformat-contains-nul',
   '-Wformat-extra-args',
   '-Wformat-nonliteral',
