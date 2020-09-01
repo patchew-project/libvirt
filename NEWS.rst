@@ -71,6 +71,12 @@ v6.7.0 (2020-09-01)
     forbidden and no size auto-alignment will be made. Instead, libvirt will
     suggest an aligned round up size for the user.
 
+  * qemu: Allow migration over UNIX sockets
+
+    QEMU migration can now be performed completely over UNIX sockets. This is
+    useful for containerised scenarios and can be used in both peer2peer and
+    direct migrations.
+
 * **Bug fixes**
 
   * virdevmapper: Deal with kernels without DM support
