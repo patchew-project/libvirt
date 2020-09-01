@@ -503,10 +503,6 @@ cc_flags_disabled = [
   # In meson this is specified using 'c_std=gnu99' in project() function.
   '-std=gnu99',
 
-  # In meson this is specified using 'warning_level=2' in project() function.
-  '-Wall',
-  '-Wextra',
-
   # don't care about C++ compiler compat
   '-Wc++-compat',
   '-Wabi',
@@ -572,6 +568,21 @@ cc_flags_disabled = [
   '-Wstack-protector',
   '-Wsuggest-attribute=malloc',
 ]
+
+# In meson this is specified using 'warning_level=2' in project() function.
+# However, meson silently ignores 'warning_level' option with 'buildtype=plain'
+# so we have to enable them explicitly.
+if get_option('buildtype') == 'plain'
+  cc_flags += [
+    '-Wall',
+    '-Wextra',
+  ]
+else
+  cc_flags_disabled += [
+    '-Wall',
+    '-Wextra',
+  ]
+endif
 
 foreach flag : cc_flags_disabled
   if cc_flags.contains(flag)
