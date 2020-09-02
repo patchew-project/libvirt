@@ -4683,6 +4683,14 @@ qemuDomainValidateStorageSource(virStorageSourcePtr src,
         return -1;
     }
 
+    if (src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD &&
+        src->ns &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_RBD_NAMESPACE)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("rbd namespace is not supported by this QEMU"));
+        return -1;
+    }
+
     return 0;
 }
 
