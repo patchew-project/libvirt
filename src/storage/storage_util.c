@@ -710,10 +710,10 @@ storageBackendCreateQemuImgOpts(virStorageEncryptionInfoDefPtr encinfo,
         virQEMUBuildQemuImgKeySecretOpts(&buf, encinfo, info->secretAlias);
 
     if (info->preallocate) {
-        if (info->size_arg > info->allocation)
-            virBufferAddLit(&buf, "preallocation=metadata,");
-        else
+        if (info->size_arg == info->allocation)
             virBufferAddLit(&buf, "preallocation=falloc,");
+        else
+            virBufferAddLit(&buf, "preallocation=metadata,");
     }
 
     if (info->nocow)
