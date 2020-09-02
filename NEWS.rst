@@ -20,6 +20,14 @@ v6.8.0 (unreleased)
     attribute of the device's ``<source>`` element can be used to disable the
     filtering and allow all guest writes to the configuration space.
 
+  * qemu: Support rbd pool namespace in the source name
+
+    The namespaces is for the tenant isolation within a rbd pool, introduced
+    from Ceph Nautilus, supported since ``QEMU 5.0.0``. In libvirt, the format
+    of rbd source name like ``<pool>/<namespace>/<image>`` could be used to
+    access a certain namespace of a rbd pool. And the format ``<pool>/<image>``
+    is reserved for the default namespace of a rbd pool.
+
 * **Improvements**
 
 * **Bug fixes**
