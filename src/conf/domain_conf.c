@@ -9624,8 +9624,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
     /* for historical reasons we store the volume and image name in one XML
      * element although it complicates thing when attempting to access them. */
     if (src->path &&
-        (src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER ||
-         src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD)) {
+        src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
         char *tmp;
         if (!(tmp = strchr(src->path, '/')) ||
             tmp == src->path) {
@@ -9640,6 +9639,30 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
         src->path = g_strdup(tmp + 1);
 
         tmp[0] = '\0';
+    }
+
+    /* the name of rbd could be <pool>/<image> or <pool>/<namespace>/<image> */
+    if (src->path &&
+        src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD) {
+        char *first_slash = strchr(src->path, '/');
+        char *last_slash = strrchr(src->path, '/');
+        if (!first_slash ||
+            first_slash == src->path ||
+            !last_slash ||
+            last_slash[1] == '\0') {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("can't split path '%s' into pool name, pool "
+                             "namespace and image name"), src->path);
+            return -1;
+        }
+
+        src->volume = src->path;
+        src->path = g_strdup(last_slash + 1);
+        src->ns = NULL;
+        first_slash[0] = '\0';
+        last_slash[0] = '\0';
+        if (first_slash != last_slash)
+            src->ns = g_strdup(first_slash + 1);
     }
 
     /* snapshot currently works only for remote disks */
@@ -25211,8 +25234,12 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferAsprintf(attrBuf, " protocol='%s'",
                       virStorageNetProtocolTypeToString(src->protocol));
 
-    if (src->volume)
-        path = g_strdup_printf("%s/%s", src->volume, src->path);
+    if (src->volume) {
+        if (src->ns)
+            path = g_strdup_printf("%s/%s/%s", src->volume, src->ns, src->path);
+        else
+            path = g_strdup_printf("%s/%s", src->volume, src->path);
+    }
 
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
     virBufferEscapeString(attrBuf, " query='%s'", src->query);

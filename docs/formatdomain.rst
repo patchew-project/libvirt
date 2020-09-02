@@ -2256,7 +2256,7 @@ paravirtualized driver is specified via the ``disk`` element.
      </disk>
      <disk type='network'>
        <driver name="qemu" type="raw"/>
-       <source protocol="rbd" name="image_name2">
+       <source protocol="rbd" name="pool/namespace/image">
          <host name="hostname" port="7000"/>
          <snapshot name="snapname"/>
          <config file="/path/to/file"/>
@@ -2485,14 +2485,20 @@ paravirtualized driver is specified via the ``disk`` element.
       requested image. Possible values are "nbd", "iscsi", "rbd", "sheepdog",
       "gluster", "vxhs", "http", "https", "ftp", ftps", or "tftp".
 
-      For any ``protocol`` other than ``nbd`` an additional attribute ``name``
-      is mandatory to specify which volume/image will be used.
+      For any ``protocol`` other than ``nbd`` or ``rbd`` an additional attribute
+      ``name`` is mandatory to specify which volume/image will be used.
 
       For "nbd", the ``name`` attribute is optional. TLS transport for NBD can
       be enabled by setting the ``tls`` attribute to ``yes``. For the QEMU
       hypervisor, usage of a TLS environment can also be globally controlled on
       the host by the ``nbd_tls`` and ``nbd_tls_x509_cert_dir`` in
       /etc/libvirt/qemu.conf. ('tls' :since:`Since 4.5.0` )
+
+      For "rbd", the ``name`` attribute could be two formats: the format of
+      ``pool_name/image_name`` includes the rbd pool name and image name with
+      default rbd pool namespace; for the customized namespace, the format is
+      ``pool_name/namespace/image_name``. The pool name, namespace and image are
+      separated by slash.
 
       For protocols ``http`` and ``https`` an optional attribute ``query``
       specifies the query string. ( :since:`Since 6.2.0` )

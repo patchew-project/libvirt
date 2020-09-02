@@ -2666,6 +2666,7 @@ virStorageSourceClear(virStorageSourcePtr def)
 
     VIR_FREE(def->path);
     VIR_FREE(def->volume);
+    VIR_FREE(def->ns);
     VIR_FREE(def->snapshot);
     VIR_FREE(def->configFile);
     VIR_FREE(def->query);
