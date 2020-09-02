@@ -1333,8 +1333,12 @@ if readline_dep.found()
     endif
   endif
 
-  # We need this to avoid compilation issues with modern compilers.
-  # See 9ea3424a178 for a more detailed explanation
+  # We need both of these hacks to avoid compilation issues with modern
+  # compilers. See 9ea3424a178 for a more detailed explanation.
+  if cc.has_header('stdarg.h')
+    conf.set('HAVE_STDARG_H', 1)
+  endif
+
   readline_dep = declare_dependency(
     compile_args: [ '-D_FUNCTION_DEF' ],
     dependencies: [ readline_dep ],
