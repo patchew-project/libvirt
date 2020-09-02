@@ -4488,6 +4488,12 @@ qemuDomainValidateActualNetDef(const virDomainNetDef *net,
                        macstr, virDomainNetTypeToString(actualType));
         return -1;
     }
+    if (actualType == VIR_DOMAIN_NET_TYPE_VDPA &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NETDEV_VHOST_VDPA)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("vDPA device is not supported with this QEMU binary"));
+        return -1;
+    }
     return 0;
 }
 
