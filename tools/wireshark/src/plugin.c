@@ -14,11 +14,12 @@
 
 #include <gmodule.h>
 
-#include <wireshark/config.h>
+#define HAVE_PLUGINS 1
 #include <wireshark/epan/proto.h>
 /* plugins are DLLs */
 #define WS_BUILD_DLL
 #include <wireshark/ws_symbol_export.h>
+#include <wireshark/ws_version.h>
 
 #include "packet-libvirt.h"
 
@@ -26,9 +27,9 @@
 #define PLUGIN_VERSION VERSION
 
 #define WIRESHARK_VERSION \
-    ((VERSION_MAJOR * 1000 * 1000) + \
-     (VERSION_MINOR * 1000) + \
-     (VERSION_MICRO))
+    ((WIRESHARK_VERSION_MAJOR * 1000 * 1000) + \
+     (WIRESHARK_VERSION_MINOR * 1000) + \
+     (WIRESHARK_VERSION_MICRO))
 
 #if WIRESHARK_VERSION < 2005000
 
@@ -69,8 +70,8 @@ void proto_register_libvirt(void);
 void proto_reg_handoff_libvirt(void);
 
 WS_DLL_PUBLIC_DEF const gchar plugin_version[] = PLUGIN_VERSION;
-WS_DLL_PUBLIC_DEF const int plugin_want_major = VERSION_MAJOR;
-WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_major = WIRESHARK_VERSION_MAJOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 
 WS_DLL_PUBLIC void plugin_register(void);
 
