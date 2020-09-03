@@ -32621,6 +32621,32 @@ virDomainDiskTranslateISCSIDirect(virStorageSourcePtr src,
 
 
 static int
+virDomainDiskTranslateGluster(virStorageSourcePtr src,
+                              virStoragePoolDefPtr pooldef)
+{
+    size_t i;
+
+    src->srcpool->actualtype = VIR_STORAGE_TYPE_NETWORK;
+    src->protocol = VIR_STORAGE_NET_PROTOCOL_GLUSTER;
+
+    src->nhosts = pooldef->source.nhost;
+    src->hosts = g_new0(virStorageNetHostDef, src->nhosts);
+
+    for (i = 0; i < src->nhosts; i++) {
+        src->hosts[i].socket = NULL;
+        src->hosts[i].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+        src->hosts[i].name = g_strdup(pooldef->source.hosts[i].name);
+        src->hosts[i].port = pooldef->source.hosts[i].port;
+    }
+
+    src->volume = g_strdup(pooldef->source.name);
+    src->path = g_strdup_printf("%s/%s", pooldef->source.dir, src->srcpool->volume);
+
+    return 0;
+}
+
+
+static int
 virDomainStorageSourceTranslateSourcePool(virStorageSourcePtr src,
                                           virConnectPtr conn)
 {
@@ -32736,10 +32762,14 @@ virDomainStorageSourceTranslateSourcePool(virStorageSourcePtr src,
        }
        break;
 
+    case VIR_STORAGE_POOL_GLUSTER:
+       if (virDomainDiskTranslateGluster(src, pooldef) < 0)
+           return -1;
+       break;
+
     case VIR_STORAGE_POOL_MPATH:
     case VIR_STORAGE_POOL_RBD:
     case VIR_STORAGE_POOL_SHEEPDOG:
-    case VIR_STORAGE_POOL_GLUSTER:
     case VIR_STORAGE_POOL_LAST:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("using '%s' pools for backing 'volume' disks "
