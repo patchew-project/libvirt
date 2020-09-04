@@ -1703,9 +1703,9 @@ struct _virDomainGraphicsRDPDef {   /* genparse:withhook, genformat:separate */
     char *_listen;                  /* xmlattr:listen, formathook */
 };
 
-struct _virDomainGraphicsDesktopDef {
-    char *display;
-    bool fullscreen;
+struct _virDomainGraphicsDesktopDef {   /* genparse */
+    char *display;                      /* xmlattr */
+    bool fullscreen;                    /* xmlattr */
 };
 
 struct _virDomainGraphicsSpiceDef {

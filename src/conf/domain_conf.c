@@ -14432,28 +14432,6 @@ virDomainGraphicsRDPDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 
 
 static int
-virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDefPtr def,
-                                    xmlNodePtr node)
-{
-    g_autofree char *fullscreen = virXMLPropString(node, "fullscreen");
-
-    if (fullscreen != NULL) {
-        if (virStringParseYesNo(fullscreen, &def->data.desktop.fullscreen) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("unknown fullscreen value '%s'"), fullscreen);
-            return -1;
-        }
-    } else {
-        def->data.desktop.fullscreen = false;
-    }
-
-    def->data.desktop.display = virXMLPropString(node, "display");
-
-    return 0;
-}
-
-
-static int
 virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
                                   xmlNodePtr node,
                                   xmlXPathContextPtr ctxt,
@@ -14826,7 +14804,7 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        if (virDomainGraphicsDefParseXMLDesktop(def, node) < 0)
+        if (virDomainGraphicsDesktopDefParseXML(node, &def->data.desktop, NULL, def, NULL) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
