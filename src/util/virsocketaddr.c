@@ -157,6 +157,15 @@ int virSocketAddrParse(virSocketAddrPtr addr, const char *val, int family)
     return len;
 }
 
+int virSocketAddrParseXML(const char *val,
+                          virSocketAddrPtr addr,
+                          const char *instname G_GNUC_UNUSED,
+                          void *parent G_GNUC_UNUSED,
+                          void *opaque G_GNUC_UNUSED)
+{
+    return virSocketAddrParse(addr, val, AF_UNSPEC);
+}
+
 /**
  * virSocketAddrParseAny:
  * @addr: where to store the return value, optional.
@@ -1306,4 +1315,37 @@ void
 virSocketAddrFree(virSocketAddrPtr addr)
 {
     VIR_FREE(addr);
+}
+
+void
+virSocketAddrClear(virSocketAddrPtr addr)
+{
+    memset(addr, 0, sizeof(virSocketAddr));
+}
+
+int
+virSocketAddrFormatBuf(virBufferPtr buf,
+                       const char *fmt,
+                       const virSocketAddr *addr,
+                       const void *parent G_GNUC_UNUSED,
+                       void *opaque G_GNUC_UNUSED)
+{
+    g_autofree char *str = NULL;
+    if (!VIR_SOCKET_ADDR_VALID(addr))
+        return 0;
+
+    str = virSocketAddrFormatFull(addr, false, NULL);
+    if (!str)
+        return -1;
+
+    virBufferAsprintf(buf, fmt, str);
+    return 0;
+}
+
+bool
+virSocketAddrCheck(const virSocketAddr *addr,
+                   const void *parent G_GNUC_UNUSED,
+                   void *opaque G_GNUC_UNUSED)
+{
+    return VIR_SOCKET_ADDR_VALID(addr);
 }
