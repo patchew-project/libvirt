@@ -175,15 +175,6 @@ virNetworkIPDefClear(virNetworkIPDefPtr def)
 
 
 static void
-virNetworkDNSHostDefClear(virNetworkDNSHostDefPtr def)
-{
-    while (def->nnames)
-        VIR_FREE(def->names[--def->nnames]);
-    VIR_FREE(def->names);
-}
-
-
-static void
 virNetworkDNSForwarderClear(virNetworkDNSForwarderPtr def)
 {
     VIR_FREE(def->domain);
@@ -674,7 +665,7 @@ virNetworkDHCPDefParseXML(const char *networkName,
 }
 
 
-static int
+int
 virNetworkDNSHostDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                  virNetworkDNSHostDefPtr def,
                                  const char *networkName,
@@ -712,58 +703,6 @@ virNetworkDNSHostDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
     return 0;
 
  error:
-    return -1;
-}
-
-
-static int
-virNetworkDNSHostDefParseXML(const char *networkName,
-                             xmlNodePtr node,
-                             virNetworkDNSHostDefPtr def,
-                             bool partialOkay)
-{
-    xmlNodePtr cur;
-    g_autofree char *ip = NULL;
-
-    ip = virXMLPropString(node, "ip");
-    if (ip && (virSocketAddrParse(&def->ip, ip, AF_UNSPEC) < 0)) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("Invalid IP address in network '%s' DNS HOST record"),
-                       networkName);
-        goto error;
-    }
-
-    cur = node->children;
-    while (cur != NULL) {
-        if (cur->type == XML_ELEMENT_NODE &&
-            virXMLNodeNameEqual(cur, "hostname")) {
-              if (cur->children != NULL) {
-                  g_autofree char *name = virXMLNodeContentString(cur);
-
-                  if (!name)
-                      goto error;
-
-                  if (!name[0]) {
-                      virReportError(VIR_ERR_XML_DETAIL,
-                                     _("Missing hostname in network '%s' DNS HOST record"),
-                                     networkName);
-                      goto error;
-                  }
-                  if (VIR_APPEND_ELEMENT(def->names, def->nnames, name) < 0)
-                      goto error;
-              }
-        }
-        cur = cur->next;
-    }
-
-    if (virNetworkDNSHostDefParseXMLHook(node, def, networkName, def, &partialOkay,
-                                         ip, def->nnames) < 0)
-        goto error;
-
-    return 0;
-
- error:
-    virNetworkDNSHostDefClear(def);
     return -1;
 }
 
@@ -1018,8 +957,8 @@ virNetworkDNSDefParseXML(const char *networkName,
             return -1;
 
         for (i = 0; i < nhosts; i++) {
-            if (virNetworkDNSHostDefParseXML(networkName, hostNodes[i],
-                                             &def->hosts[def->nhosts], false) < 0) {
+            if (virNetworkDNSHostDefParseXML(hostNodes[i], &def->hosts[def->nhosts],
+                                             networkName, def, NULL) < 0) {
                 return -1;
             }
             def->nhosts++;
@@ -3421,6 +3360,7 @@ virNetworkDefUpdateDNSHost(virNetworkDefPtr def,
     bool isAdd = (command == VIR_NETWORK_UPDATE_COMMAND_ADD_FIRST ||
                   command == VIR_NETWORK_UPDATE_COMMAND_ADD_LAST);
     int foundCt = 0;
+    bool notAdd;
 
     memset(&host, 0, sizeof(host));
 
@@ -3434,7 +3374,8 @@ virNetworkDefUpdateDNSHost(virNetworkDefPtr def,
     if (virNetworkDefUpdateCheckElementName(def, ctxt->node, "host") < 0)
         goto cleanup;
 
-    if (virNetworkDNSHostDefParseXML(def->name, ctxt->node, &host, !isAdd) < 0)
+    notAdd = !isAdd;
+    if (virNetworkDNSHostDefParseXML(ctxt->node, &host, def->name, def, &notAdd) < 0)
         goto cleanup;
 
     for (i = 0; i < dns->nhosts; i++) {
