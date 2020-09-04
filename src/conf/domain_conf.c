@@ -28177,12 +28177,8 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        if (def->data.desktop.display)
-            virBufferEscapeString(buf, " display='%s'",
-                                  def->data.desktop.display);
-
-        if (def->data.desktop.fullscreen)
-            virBufferAddLit(buf, " fullscreen='yes'");
+        if (virDomainGraphicsDesktopDefFormatAttr(buf, &def->data.desktop, def, NULL) < 0)
+            return -1;
 
         break;
 
