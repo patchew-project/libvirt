@@ -14463,23 +14463,6 @@ virDomainGraphicsSpiceDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 }
 
 
-static int
-virDomainGraphicsDefParseXMLEGLHeadless(virDomainGraphicsDefPtr def,
-                                        xmlNodePtr node,
-                                        xmlXPathContextPtr ctxt)
-{
-    VIR_XPATH_NODE_AUTORESTORE(ctxt)
-    xmlNodePtr glNode;
-
-    ctxt->node = node;
-
-    if ((glNode = virXPathNode("./gl", ctxt)))
-        def->data.egl_headless.rendernode = virXMLPropString(glNode,
-                                                             "rendernode");
-    return 0;
-}
-
-
 virDomainGraphicsDefPtr
 virDomainGraphicsDefNew(virDomainXMLOptionPtr xmlopt)
 {
@@ -14572,7 +14555,7 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-        if (virDomainGraphicsDefParseXMLEGLHeadless(def, node, ctxt) < 0)
+        if (virDomainGraphicsEGLHeadlessDefParseXML(node, &def->data.egl_headless, NULL, def, NULL) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
