@@ -158,9 +158,9 @@ struct _virNetworkDNSHostDef {  /* genparse:withhook, genformat */
 
 typedef struct _virNetworkDNSForwarder virNetworkDNSForwarder;
 typedef virNetworkDNSForwarder *virNetworkDNSForwarderPtr;
-struct _virNetworkDNSForwarder {
-    virSocketAddr addr;
-    char *domain;
+struct _virNetworkDNSForwarder {    /* genparse:withhook */
+    virSocketAddr addr;             /* xmlattr */
+    char *domain;                   /* xmlattr */
 };
 
 typedef struct _virNetworkDNSDef virNetworkDNSDef;

@@ -175,13 +175,6 @@ virNetworkIPDefClear(virNetworkIPDefPtr def)
 
 
 static void
-virNetworkDNSForwarderClear(virNetworkDNSForwarderPtr def)
-{
-    VIR_FREE(def->domain);
-}
-
-
-static void
 virNetworkDNSDefClear(virNetworkDNSDefPtr def)
 {
     if (def->forwarders) {
@@ -870,7 +863,7 @@ virNetworkDNSTxtDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 }
 
 
-static int
+int
 virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                    virNetworkDNSForwarderPtr def,
                                    const char *instname G_GNUC_UNUSED,
@@ -884,33 +877,6 @@ virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                          "at least one of addr or domain"));
         return -1;
     }
-
-    return 0;
-}
-
-
-static int
-virNetworkDNSForwarderParseXML(xmlNodePtr node,
-                               virNetworkDNSForwarderPtr def,
-                               const char *networkName,
-                               void *parent G_GNUC_UNUSED,
-                               void *opaque)
-{
-    g_autofree char *addr = virXMLPropString(node, "addr");
-
-    if (addr && virSocketAddrParse(&def->addr, addr, AF_UNSPEC) < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Invalid forwarder IP address '%s' "
-                         "in network '%s'"),
-                       addr, networkName);
-        return -1;
-    }
-
-    def->domain = virXMLPropString(node, "domain");
-
-    if (virNetworkDNSForwarderParseXMLHook(node, def, networkName, def, opaque,
-                                           addr) < 0)
-        return -1;
 
     return 0;
 }
