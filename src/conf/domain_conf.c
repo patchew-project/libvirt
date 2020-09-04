@@ -14357,9 +14357,54 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
 
 
 static int
+virDomainGraphicsVNCDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                                    virDomainGraphicsVNCDefPtr def,
+                                    const char *instname G_GNUC_UNUSED,
+                                    void *parent G_GNUC_UNUSED,
+                                    void *opaque,
+                                    const char *port,
+                                    const char *websocket G_GNUC_UNUSED,
+                                    const char *websocketGenerated G_GNUC_UNUSED,
+                                    const char *autoport,
+                                    const char *sharePolicy G_GNUC_UNUSED)
+{
+    unsigned int flags = *((unsigned int *) opaque);
+
+    /* Legacy compat syntax, used -1 for auto-port */
+    if (port) {
+        if (def->port == -1) {
+            if (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)
+                def->port = 0;
+            if (autoport == NULL)
+                def->autoport = true;
+        }
+    } else {
+        def->port = 0;
+        if (autoport == NULL)
+            def->autoport = true;
+    }
+
+    if (autoport) {
+        if (def->autoport && flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)
+            def->port = 0;
+    }
+
+    /* VNC supports connected='keep' only */
+    if (def->auth.connected &&
+        def->auth.connected != VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_KEEP) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("VNC supports connected='keep' only"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node,
-                                xmlXPathContextPtr ctxt,
+                                xmlXPathContextPtr ctxt G_GNUC_UNUSED,
                                 unsigned int flags)
 {
     g_autofree char *port = virXMLPropString(node, "port");
@@ -14368,32 +14413,16 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     g_autofree char *sharePolicy = virXMLPropString(node, "sharePolicy");
     g_autofree char *autoport = virXMLPropString(node, "autoport");
 
-    if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-        return -1;
-
     if (port) {
         if (virStrToLong_i(port, NULL, 10, &def->data.vnc.port) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot parse vnc port %s"), port);
             return -1;
         }
-        /* Legacy compat syntax, used -1 for auto-port */
-        if (def->data.vnc.port == -1) {
-            if (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)
-                def->data.vnc.port = 0;
-            def->data.vnc.autoport = true;
-        }
-    } else {
-        def->data.vnc.port = 0;
-        def->data.vnc.autoport = true;
     }
 
-    if (autoport) {
+    if (autoport)
         ignore_value(virStringParseYesNo(autoport, &def->data.vnc.autoport));
-
-        if (def->data.vnc.autoport && flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)
-            def->data.vnc.port = 0;
-    }
 
     if (websocket) {
         if (virStrToLong_i(websocket,
@@ -14429,13 +14458,11 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
                                          NULL, def, NULL) < 0)
         return -1;
 
-    /* VNC supports connected='keep' only */
-    if (def->data.vnc.auth.connected &&
-        def->data.vnc.auth.connected != VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_KEEP) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("VNC supports connected='keep' only"));
+    if (virDomainGraphicsVNCDefParseXMLHook(node, &def->data.vnc, NULL, def, &flags,
+                                            port, websocket,
+                                            websocketGenerated, autoport,
+                                            sharePolicy) < 0)
         return -1;
-    }
 
     return 0;
 }
@@ -14866,6 +14893,8 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
     switch (def->type) {
     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
         if (virDomainGraphicsDefParseXMLVNC(def, node, ctxt, flags) < 0)
+            goto error;
+        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
