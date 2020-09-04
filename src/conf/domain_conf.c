@@ -27995,6 +27995,28 @@ virDomainGraphicsListenDefFormat(virBufferPtr buf,
 }
 
 
+static bool
+virDomainGraphicsListenDefCheckAddr(virDomainGraphicsListenDefPtr glisten,
+                                    unsigned int flags)
+{
+    if (!glisten)
+        return false;
+
+    if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE && glisten->fromConfig)
+        return false;
+
+    if (glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK &&
+        flags & (VIR_DOMAIN_DEF_FORMAT_INACTIVE |
+                 VIR_DOMAIN_DEF_FORMAT_MIGRATABLE))
+        return false;
+
+    if (glisten->address)
+        return true;
+
+    return false;
+}
+
+
 /**
  * virDomainGraphicsListenDefFormatAddr:
  * @buf: buffer where the output XML is written
@@ -28009,19 +28031,10 @@ virDomainGraphicsListenDefFormatAddr(virBufferPtr buf,
                                      virDomainGraphicsListenDefPtr glisten,
                                      unsigned int flags)
 {
-    if (!glisten)
+    if (!virDomainGraphicsListenDefCheckAddr(glisten, flags))
         return;
 
-    if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE && glisten->fromConfig)
-        return;
-
-    if (glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK &&
-        flags & (VIR_DOMAIN_DEF_FORMAT_INACTIVE |
-                 VIR_DOMAIN_DEF_FORMAT_MIGRATABLE))
-        return;
-
-    if (glisten->address)
-        virBufferAsprintf(buf, " listen='%s'", glisten->address);
+    virBufferAsprintf(buf, " listen='%s'", glisten->address);
 }
 
 static void
@@ -28180,22 +28193,8 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        if (def->data.rdp.port)
-            virBufferAsprintf(buf, " port='%d'",
-                              def->data.rdp.port);
-        else if (def->data.rdp.autoport)
-            virBufferAddLit(buf, " port='0'");
-
-        if (def->data.rdp.autoport)
-            virBufferAddLit(buf, " autoport='yes'");
-
-        if (def->data.rdp.replaceUser)
-            virBufferAddLit(buf, " replaceUser='yes'");
-
-        if (def->data.rdp.multiUser)
-            virBufferAddLit(buf, " multiUser='yes'");
-
-        virDomainGraphicsListenDefFormatAddr(buf, glisten, flags);
+        if (virDomainGraphicsRDPDefFormatAttr(buf, &def->data.rdp, def, NULL))
+            return -1;
 
         break;
 
@@ -32942,4 +32941,37 @@ virHostdevIsVFIODevice(const virDomainHostdevDef *hostdev)
     return hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
         hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
         hostdev->source.subsys.u.pci.backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO;
+}
+
+
+bool
+virDomainGraphicsRDPDefCheckAttrHook(const virDomainGraphicsRDPDef *def G_GNUC_UNUSED,
+                                     const void *parent,
+                                     void *opaque,
+                                     bool value)
+{
+    virDomainGraphicsDefPtr graphic = (virDomainGraphicsDefPtr) parent;
+    virDomainGraphicsListenDefPtr glisten = &graphic->listens[0];
+    unsigned int flags = 0;
+    if (opaque)
+        flags = *((unsigned int *) opaque);
+
+    return virDomainGraphicsListenDefCheckAddr(glisten, flags) || value;
+}
+
+
+int
+virDomainGraphicsRDPDefFormatAttrHook(const virDomainGraphicsRDPDef *def G_GNUC_UNUSED,
+                                      const void *parent,
+                                      const void *opaque,
+                                      virBufferPtr listenBuf)
+{
+    virDomainGraphicsDefPtr graphic = (virDomainGraphicsDefPtr) parent;
+    virDomainGraphicsListenDefPtr glisten = &graphic->listens[0];
+    unsigned int flags = 0;
+    if (opaque)
+        flags = *((unsigned int *) opaque);
+
+    virDomainGraphicsListenDefFormatAddr(listenBuf, glisten, flags);
+    return 0;
 }
