@@ -137,14 +137,14 @@ struct _virNetworkDNSTxtDef {   /* genparse:concisehook, genformat */
 
 typedef struct _virNetworkDNSSrvDef virNetworkDNSSrvDef;
 typedef virNetworkDNSSrvDef *virNetworkDNSSrvDefPtr;
-struct _virNetworkDNSSrvDef {
-    char *domain;
-    char *service;
-    char *protocol;
-    char *target;
-    unsigned int port;
-    unsigned int priority;
-    unsigned int weight;
+struct _virNetworkDNSSrvDef {   /* genparse:withhook */
+    char *service;              /* xmlattr */
+    char *protocol;             /* xmlattr */
+    char *domain;               /* xmlattr */
+    char *target;               /* xmlattr */
+    unsigned int port;          /* xmlattr */
+    unsigned int priority;      /* xmlattr */
+    unsigned int weight;        /* xmlattr */
 };
 
 typedef struct _virNetworkDNSHostDef virNetworkDNSHostDef;
