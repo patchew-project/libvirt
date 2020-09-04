@@ -14,15 +14,22 @@ driver_source_files += bhyve_sources
 stateful_driver_source_files += bhyve_sources
 
 if conf.has('WITH_BHYVE')
+  bhyve_driver_deps = [
+    access_dep,
+    src_dep,
+  ]
+  if kvm_dep.found()
+    bhyve_driver_deps += kvm_dep
+  endif
+  if util_dep.found()
+    bhyve_driver_deps += util_dep
+  endif
   bhyve_driver_impl = static_library(
     'virt_driver_bhyve_impl',
     [
       bhyve_sources,
     ],
-    dependencies: [
-      access_dep,
-      src_dep,
-    ],
+    dependencies: bhyve_driver_deps,
     include_directories: [
       conf_inc_dir,
       hypervisor_inc_dir,

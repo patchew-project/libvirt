@@ -172,15 +172,7 @@ io_helper_sources = [
   'iohelper.c',
 ]
 
-virt_util_lib = static_library(
-  'virt_util',
-  [
-    util_sources,
-    util_public_sources,
-    keycode_gen_sources,
-    dtrace_gen_headers,
-  ],
-  dependencies: [
+virt_util_deps = [
     acl_dep,
     audit_dep,
     capng_dep,
@@ -195,7 +187,23 @@ virt_util_lib = static_library(
     thread_dep,
     win32_dep,
     yajl_dep,
+  ]
+if util_dep.found()
+  virt_util_deps += util_dep
+endif
+if intl_dep.found()
+  virt_util_deps += intl_dep
+endif
+
+virt_util_lib = static_library(
+  'virt_util',
+  [
+    util_sources,
+    util_public_sources,
+    keycode_gen_sources,
+    dtrace_gen_headers,
   ],
+  dependencies: virt_util_deps,
 )
 
 libvirt_libs += virt_util_lib
