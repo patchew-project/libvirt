@@ -15681,6 +15681,7 @@ qemuDomainOpenGraphics(virDomainPtr dom,
                        _("Can only open VNC or SPICE graphics backends, not %s"),
                        virDomainGraphicsTypeToString(vm->def->graphics[idx]->type));
         goto endjob;
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
     default:
         virReportEnumRangeError(virDomainGraphicsType,
@@ -15750,6 +15751,7 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
                        _("Can only open VNC or SPICE graphics backends, not %s"),
                        virDomainGraphicsTypeToString(vm->def->graphics[idx]->type));
         goto cleanup;
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
     default:
         virReportEnumRangeError(virDomainGraphicsType,

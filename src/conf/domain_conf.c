@@ -843,6 +843,7 @@ VIR_ENUM_IMPL(virDomainInputModel,
 
 VIR_ENUM_IMPL(virDomainGraphics,
               VIR_DOMAIN_GRAPHICS_TYPE_LAST,
+              "none",
               "sdl",
               "vnc",
               "rdp",
@@ -1824,6 +1825,7 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         VIR_FREE(def->data.egl_headless.rendernode);
         break;
 
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         break;
     }
@@ -14185,47 +14187,6 @@ virDomainGraphicsListenDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 }
 
 
-static int
-virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
-                                 xmlNodePtr node,
-                                 xmlXPathContextPtr ctxt,
-                                 unsigned int flags)
-{
-    int nListens;
-    int ret = -1;
-    g_autofree xmlNodePtr *listenNodes = NULL;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
-
-    ctxt->node = node;
-
-    /* parse the <listen> subelements for graphics types that support it */
-    nListens = virXPathNodeSet("./listen", ctxt, &listenNodes);
-    if (nListens < 0)
-        goto cleanup;
-
-    if (nListens > 0) {
-        size_t i;
-
-        if (VIR_ALLOC_N(def->listens, nListens) < 0)
-            goto cleanup;
-
-        for (i = 0; i < nListens; i++) {
-            virDomainGraphicsListenDefPtr listen = &def->listens[i];
-            if (virDomainGraphicsListenDefParseXML(listenNodes[i],
-                                                   listen, NULL,
-                                                   def, &flags) < 0)
-                goto cleanup;
-
-            def->nListens++;
-        }
-    }
-
-    ret = 0;
- cleanup:
-    return ret;
-}
-
-
 int
 virDomainGraphicsVNCDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                     virDomainGraphicsVNCDefPtr def,
@@ -14368,7 +14329,7 @@ virDomainNetDefNew(virDomainXMLOptionPtr xmlopt)
 }
 
 
-static int
+int
 virDomainGraphicsDefParseXMLHook(xmlNodePtr node,
                                  virDomainGraphicsDefPtr def,
                                  const char *instname G_GNUC_UNUSED,
@@ -14461,78 +14422,6 @@ virDomainGraphicsDefParseXMLHook(xmlNodePtr node,
  cleanup:
     virDomainGraphicsListenDefClear(&newListen);
     return ret;
-}
-
-
-/* Parse the XML definition for a graphics device */
-static virDomainGraphicsDefPtr
-virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
-                             xmlNodePtr node,
-                             xmlXPathContextPtr ctxt,
-                             unsigned int flags)
-{
-    virDomainGraphicsDefPtr def;
-    int typeVal;
-    g_autofree char *type = NULL;
-
-    if (!(def = virDomainGraphicsDefNew(xmlopt)))
-        return NULL;
-
-    type = virXMLPropString(node, "type");
-    if (!type) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("missing graphics device type"));
-        goto error;
-    }
-
-    if ((typeVal = virDomainGraphicsTypeFromString(type)) < 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown graphics device type '%s'"), type);
-        goto error;
-    }
-    def->type = typeVal;
-
-    if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-        goto error;
-
-    switch (def->type) {
-    case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-        if (virDomainGraphicsVNCDefParseXML(node, &def->data.vnc, NULL, def, &flags) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        if (virDomainGraphicsSDLDefParseXML(node, &def->data.sdl, NULL, def, NULL) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        if (virDomainGraphicsRDPDefParseXML(node, &def->data.rdp, NULL, def, &flags) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        if (virDomainGraphicsDesktopDefParseXML(node, &def->data.desktop, NULL, def, NULL) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        if (virDomainGraphicsSpiceDefParseXML(node, &def->data.spice, NULL, def, &flags) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-        if (virDomainGraphicsEGLHeadlessDefParseXML(node, &def->data.egl_headless, NULL, def, NULL) < 0)
-            goto error;
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
-        break;
-    }
-
-    if (virDomainGraphicsDefParseXMLHook(node, def, NULL, NULL, &flags) < 0)
-        goto error;
-
-    return def;
-
- error:
-    virDomainGraphicsDefFree(def);
-    def = NULL;
-    return NULL;
 }
 
 
@@ -16714,9 +16603,14 @@ virDomainDeviceDefParse(const char *xmlStr,
             return NULL;
         break;
     case VIR_DOMAIN_DEVICE_GRAPHICS:
-        if (!(dev->data.graphics = virDomainGraphicsDefParseXML(xmlopt, node,
-                                                                ctxt, flags)))
+        if (!(dev->data.graphics = virDomainGraphicsDefNew(xmlopt)))
             return NULL;
+        if (virDomainGraphicsDefParseXML(node, dev->data.graphics, NULL,
+                                         dev, &flags) < 0) {
+            virDomainGraphicsDefFree(dev->data.graphics);
+            dev->data.graphics = NULL;
+            return NULL;
+        }
         break;
     case VIR_DOMAIN_DEVICE_HUB:
         if (!(dev->data.hub = virDomainHubDefParseXML(xmlopt, node, flags)))
@@ -21572,12 +21466,15 @@ virDomainDefParseXML(xmlDocPtr xml,
     if (n && VIR_ALLOC_N(def->graphics, n) < 0)
         goto error;
     for (i = 0; i < n; i++) {
-        virDomainGraphicsDefPtr graphics = virDomainGraphicsDefParseXML(xmlopt,
-                                                                        nodes[i],
-                                                                        ctxt,
-                                                                        flags);
+        virDomainGraphicsDefPtr graphics = virDomainGraphicsDefNew(xmlopt);
         if (!graphics)
             goto error;
+
+        if (virDomainGraphicsDefParseXML(nodes[i], graphics, NULL,
+                                         def, &flags) < 0) {
+            virDomainGraphicsDefFree(graphics);
+            goto error;
+        }
 
         def->graphics[def->ngraphics++] = graphics;
     }
@@ -27934,6 +27831,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
             return -1;
 
         break;
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         break;
     }
@@ -32343,6 +32241,7 @@ virDomainGraphicsDefHasOpenGL(const virDomainDef *def)
         case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
             return true;
 
+        case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
             break;
         }
@@ -32381,6 +32280,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics)
     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         break;
     }

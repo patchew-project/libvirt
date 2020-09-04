@@ -1545,6 +1545,7 @@ struct _virDomainVideoDef {
 
 /* graphics console modes */
 typedef enum {
+    VIR_DOMAIN_GRAPHICS_TYPE_NONE = 0,
     VIR_DOMAIN_GRAPHICS_TYPE_SDL,
     VIR_DOMAIN_GRAPHICS_TYPE_VNC,
     VIR_DOMAIN_GRAPHICS_TYPE_RDP,
@@ -1750,7 +1751,7 @@ struct _virDomainGraphicsEGLHeadlessDef {   /* genparse, genformat:separate */
     char *rendernode;                       /* xmlattr:gl/rendernode */
 };
 
-struct _virDomainGraphicsDef {
+struct _virDomainGraphicsDef {      /* genparse:concisehook */
     virObjectPtr privateData;
 
     /* Port value discipline:
@@ -1758,20 +1759,20 @@ struct _virDomainGraphicsDef {
      * Value 0 means port wasn't specified in XML at all.
      * Positive value is actual port number given in XML.
      */
-    virDomainGraphicsType type;
+    virDomainGraphicsType type;     /* xmlattr */
     union {
-        virDomainGraphicsSDLDef sdl;
-        virDomainGraphicsVNCDef vnc;
-        virDomainGraphicsRDPDef rdp;
-        virDomainGraphicsDesktopDef desktop;
-        virDomainGraphicsSpiceDef spice;
-        virDomainGraphicsEGLHeadlessDef egl_headless;
-    } data;
+        virDomainGraphicsSDLDef sdl;                    /* xmlgroup */
+        virDomainGraphicsVNCDef vnc;                    /* xmlgroup */
+        virDomainGraphicsRDPDef rdp;                    /* xmlgroup */
+        virDomainGraphicsDesktopDef desktop;            /* xmlgroup */
+        virDomainGraphicsSpiceDef spice;                /* xmlgroup */
+        virDomainGraphicsEGLHeadlessDef egl_headless;   /* xmlgroup */
+    } data;                         /* xmlswitch:type */
     /* nListens, listens, and *port are only useful if type is vnc,
      * rdp, or spice. They've been extracted from the union only to
      * simplify parsing code.*/
     size_t nListens;
-    virDomainGraphicsListenDefPtr listens;
+    virDomainGraphicsListenDefPtr listens;  /* xmlelem, array:nListens */
 };
 
 typedef enum {

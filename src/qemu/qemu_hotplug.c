@@ -4191,6 +4191,7 @@ qemuDomainChangeGraphics(virQEMUDriverPtr driver,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unable to change config on '%s' graphics type"), type);
         break;
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
     default:
         virReportEnumRangeError(virDomainGraphicsType, dev->type);

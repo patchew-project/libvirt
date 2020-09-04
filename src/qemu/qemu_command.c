@@ -7938,6 +7938,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
             return -1;
+        case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         default:
             virReportEnumRangeError(virDomainGraphicsType, graphics->type);
@@ -9772,6 +9773,7 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
             break;
         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+        case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
             break;
         }

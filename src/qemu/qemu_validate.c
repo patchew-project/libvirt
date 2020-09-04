@@ -3416,6 +3416,7 @@ qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
                        _("unsupported graphics type '%s'"),
                        virDomainGraphicsTypeToString(graphics->type));
         return -1;
+    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
     default:
         return -1;

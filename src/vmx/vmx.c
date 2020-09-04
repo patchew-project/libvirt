@@ -3314,6 +3314,7 @@ virVMXFormatConfig(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virDomainDe
                            virDomainGraphicsTypeToString(def->graphics[i]->type));
             goto cleanup;
 
+          case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
           case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
           default:
               virReportEnumRangeError(virDomainGraphicsType, def->graphics[i]->type);
