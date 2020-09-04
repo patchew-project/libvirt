@@ -1708,6 +1708,13 @@ struct _virDomainGraphicsDesktopDef {   /* genparse, genformat:separate */
     bool fullscreen;                    /* xmlattr */
 };
 
+typedef struct _virSpiceChannelDef virSpiceChannelDef;
+typedef virSpiceChannelDef *virSpiceChannelDefPtr;
+struct _virSpiceChannelDef {                /* genparse, genformat */
+    virDomainGraphicsSpiceChannelName name; /* xmlattr */
+    virDomainGraphicsSpiceChannelMode mode; /* xmlattr */
+};
+
 struct _virDomainGraphicsSpiceDef {
     int port;
     int tlsPort;
@@ -1717,7 +1724,12 @@ struct _virDomainGraphicsSpiceDef {
     char *keymap;
     virDomainGraphicsAuthDef auth;
     bool autoport;
+
+    /* The shadow member _channels helps to parse channels. */
+    size_t n_channels;
+    virSpiceChannelDefPtr _channels;
     int channels[VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST];
+
     virDomainGraphicsSpiceChannelMode defaultMode;
     int image;
     int jpeg;
