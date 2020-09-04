@@ -1789,17 +1789,6 @@ bool virDomainObjTaint(virDomainObjPtr obj,
 
 
 static void
-virDomainGraphicsAuthDefClear(virDomainGraphicsAuthDefPtr def)
-{
-    if (!def)
-        return;
-
-    VIR_FREE(def->passwd);
-
-    /* Don't free def */
-}
-
-static void
 virDomainGraphicsListenDefClear(virDomainGraphicsListenDefPtr def)
 {
     if (!def)
@@ -14129,75 +14118,6 @@ virDomainTimerDefParseXML(xmlNodePtr node,
 }
 
 
-static int
-virDomainGraphicsAuthDefParseXML(xmlNodePtr node,
-                                 virDomainGraphicsAuthDefPtr def,
-                                 int type)
-{
-    g_autofree char *validTo = NULL;
-    g_autofree char *connected = virXMLPropString(node, "connected");
-
-    def->passwd = virXMLPropString(node, "passwd");
-
-    if (!def->passwd)
-        return 0;
-
-    validTo = virXMLPropString(node, "passwdValidTo");
-    if (validTo) {
-        g_autoptr(GDateTime) then = NULL;
-        g_autoptr(GTimeZone) tz = g_time_zone_new_utc();
-        char *tmp;
-        int year, mon, mday, hour, min, sec;
-
-        /* Expect: YYYY-MM-DDTHH:MM:SS (%d-%d-%dT%d:%d:%d)  eg 2010-11-28T14:29:01 */
-        if (/* year */
-            virStrToLong_i(validTo, &tmp, 10, &year) < 0 || *tmp != '-' ||
-            /* month */
-            virStrToLong_i(tmp+1, &tmp, 10, &mon) < 0 || *tmp != '-' ||
-            /* day */
-            virStrToLong_i(tmp+1, &tmp, 10, &mday) < 0 || *tmp != 'T' ||
-            /* hour */
-            virStrToLong_i(tmp+1, &tmp, 10, &hour) < 0 || *tmp != ':' ||
-            /* minute */
-            virStrToLong_i(tmp+1, &tmp, 10, &min) < 0 || *tmp != ':' ||
-            /* second */
-            virStrToLong_i(tmp+1, &tmp, 10, &sec) < 0 || *tmp != '\0') {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse password validity time '%s', expect YYYY-MM-DDTHH:MM:SS"),
-                           validTo);
-            VIR_FREE(def->passwd);
-            return -1;
-        }
-
-        then = g_date_time_new(tz, year, mon, mday, hour, min, sec);
-        def->validTo = (time_t)g_date_time_to_unix(then);
-        def->expires = true;
-    }
-
-    if (connected) {
-        int action = virDomainGraphicsAuthConnectedTypeFromString(connected);
-        if (action <= 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown connected value %s"),
-                           connected);
-            return -1;
-        }
-
-        /* VNC supports connected='keep' only */
-        if (type == VIR_DOMAIN_GRAPHICS_TYPE_VNC &&
-            action != VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_KEEP) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("VNC supports connected='keep' only"));
-            return -1;
-        }
-
-        def->connected = action;
-    }
-
-    return 0;
-}
-
-
 /**
  * virDomainGraphicsListenDefParseXML:
  * @def: listen def pointer to be filled
@@ -14506,8 +14426,16 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     def->data.vnc.keymap = virXMLPropString(node, "keymap");
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.vnc.auth,
-                                         def->type) < 0)
+                                         NULL, def, NULL) < 0)
         return -1;
+
+    /* VNC supports connected='keep' only */
+    if (def->data.vnc.auth.connected &&
+        def->data.vnc.auth.connected != VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_KEEP) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("VNC supports connected='keep' only"));
+        return -1;
+    }
 
     return 0;
 }
@@ -14644,7 +14572,7 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
     def->data.spice.keymap = virXMLPropString(node, "keymap");
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.spice.auth,
-                                         def->type) < 0)
+                                         NULL, def, NULL) < 0)
         return -1;
 
     cur = node->children;
