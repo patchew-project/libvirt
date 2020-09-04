@@ -1695,11 +1695,11 @@ struct _virDomainGraphicsVNCDef {   /* genparse:withhook, genformat:separate */
     virDomainGraphicsAuthDef auth;                  /* xmlgroup */
 };
 
-struct _virDomainGraphicsRDPDef {
-    int port;
-    bool autoport;
-    bool replaceUser;
-    bool multiUser;
+struct _virDomainGraphicsRDPDef {   /* genparse:withhook */
+    int port;                       /* xmlattr */
+    bool autoport;                  /* xmlattr */
+    bool replaceUser;               /* xmlattr */
+    bool multiUser;                 /* xmlattr */
 };
 
 struct _virDomainGraphicsDesktopDef {
