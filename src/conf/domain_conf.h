@@ -1682,15 +1682,15 @@ struct _virDomainGraphicsSDLDef {   /* genparse, genformat:separate */
     virTristateBool gl;             /* xmlattr:gl/enable */
 };
 
-struct _virDomainGraphicsVNCDef {
-    int port;
+struct _virDomainGraphicsVNCDef {   /* genparse:withhook */
+    int port;                                       /* xmlattr */
     bool portReserved;
-    int websocket;
-    bool websocketGenerated;
-    bool autoport;
-    char *keymap;
-    virDomainGraphicsAuthDef auth;
-    int sharePolicy;
+    int websocket;                                  /* xmlattr */
+    bool websocketGenerated;                        /* xmlattr */
+    bool autoport;                                  /* xmlattr */
+    char *keymap;                                   /* xmlattr */
+    virDomainGraphicsAuthDef auth;                  /* xmlgroup */
+    virDomainGraphicsVNCSharePolicy sharePolicy;    /* xmlattr */
 };
 
 struct _virDomainGraphicsRDPDef {

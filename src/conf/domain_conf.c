@@ -14356,7 +14356,7 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
 }
 
 
-static int
+int
 virDomainGraphicsVNCDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                     virDomainGraphicsVNCDefPtr def,
                                     const char *instname G_GNUC_UNUSED,
@@ -14396,73 +14396,6 @@ virDomainGraphicsVNCDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                        _("VNC supports connected='keep' only"));
         return -1;
     }
-
-    return 0;
-}
-
-
-static int
-virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
-                                xmlNodePtr node,
-                                xmlXPathContextPtr ctxt G_GNUC_UNUSED,
-                                unsigned int flags)
-{
-    g_autofree char *port = virXMLPropString(node, "port");
-    g_autofree char *websocket = virXMLPropString(node, "websocket");
-    g_autofree char *websocketGenerated = virXMLPropString(node, "websocketGenerated");
-    g_autofree char *sharePolicy = virXMLPropString(node, "sharePolicy");
-    g_autofree char *autoport = virXMLPropString(node, "autoport");
-
-    if (port) {
-        if (virStrToLong_i(port, NULL, 10, &def->data.vnc.port) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse vnc port %s"), port);
-            return -1;
-        }
-    }
-
-    if (autoport)
-        ignore_value(virStringParseYesNo(autoport, &def->data.vnc.autoport));
-
-    if (websocket) {
-        if (virStrToLong_i(websocket,
-                           NULL, 10,
-                           &def->data.vnc.websocket) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse vnc WebSocket port %s"), websocket);
-            return -1;
-        }
-    }
-
-    if (websocketGenerated)
-        ignore_value(virStringParseYesNo(websocketGenerated,
-                     &def->data.vnc.websocketGenerated));
-
-    if (sharePolicy) {
-        int policy =
-           virDomainGraphicsVNCSharePolicyTypeFromString(sharePolicy);
-
-        if (policy < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown vnc display sharing policy '%s'"),
-                           sharePolicy);
-            return -1;
-        } else {
-            def->data.vnc.sharePolicy = policy;
-        }
-    }
-
-    def->data.vnc.keymap = virXMLPropString(node, "keymap");
-
-    if (virDomainGraphicsAuthDefParseXML(node, &def->data.vnc.auth,
-                                         NULL, def, NULL) < 0)
-        return -1;
-
-    if (virDomainGraphicsVNCDefParseXMLHook(node, &def->data.vnc, NULL, def, &flags,
-                                            port, websocket,
-                                            websocketGenerated, autoport,
-                                            sharePolicy) < 0)
-        return -1;
 
     return 0;
 }
@@ -14892,7 +14825,7 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     switch (def->type) {
     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-        if (virDomainGraphicsDefParseXMLVNC(def, node, ctxt, flags) < 0)
+        if (virDomainGraphicsVNCDefParseXML(node, &def->data.vnc, NULL, def, &flags) < 0)
             goto error;
         if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
             goto error;
