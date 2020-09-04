@@ -1716,27 +1716,28 @@ struct _virSpiceChannelDef {                /* genparse, genformat */
     virDomainGraphicsSpiceChannelMode mode; /* xmlattr */
 };
 
-struct _virDomainGraphicsSpiceDef {     /* genparse:concisehook */
+struct _virDomainGraphicsSpiceDef {     /* genparse:concisehook, genformat:separate */
     int port;                           /* xmlattr */
     int tlsPort;                        /* xmlattr */
     bool portReserved;
     bool tlsPortReserved;
-    virDomainGraphicsSpiceMouseMode mousemode;  /* xmlattr:mouse/mode */
     char *keymap;                       /* xmlattr */
+    bool autoport;                      /* xmlattr, formathook */
+    char *_listen;                      /* xmlattr:listen, formathook */
+    virDomainGraphicsSpiceChannelMode defaultMode;  /* xmlattr */
     virDomainGraphicsAuthDef auth;      /* xmlgroup */
-    bool autoport;                      /* xmlattr */
 
     /* The shadow member _channels helps to parse channels. */
     size_t n_channels;
     virSpiceChannelDefPtr _channels;    /* xmlelem:channel, array */
     int channels[VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST];
 
-    virDomainGraphicsSpiceChannelMode defaultMode;  /* xmlattr */
     virDomainGraphicsSpiceImageCompression image;   /* xmlattr:image/compression */
     virDomainGraphicsSpiceJpegCompression jpeg;     /* xmlattr:jpeg/compression */
     virDomainGraphicsSpiceZlibCompression zlib;     /* xmlattr:zlib/compression */
     virTristateSwitch playback;                     /* xmlattr:playback/compression */
     virDomainGraphicsSpiceStreamingMode streaming;  /* xmlattr:streaming/mode */
+    virDomainGraphicsSpiceMouseMode mousemode;      /* xmlattr:mouse/mode */
     virTristateBool copypaste;          /* xmlattr:clipboard/copypaste */
     virTristateBool filetransfer;       /* xmlattr:filetransfer/enable */
     virTristateBool gl;                 /* xmlattr:gl/enable */

@@ -27775,18 +27775,6 @@ virDomainGraphicsListenDefFormatAddr(virBufferPtr buf,
     virBufferAsprintf(buf, " listen='%s'", glisten->address);
 }
 
-static void
-virDomainSpiceGLDefFormat(virBufferPtr buf, virDomainGraphicsDefPtr def)
-{
-    if (def->data.spice.gl == VIR_TRISTATE_BOOL_ABSENT)
-        return;
-
-    virBufferAsprintf(buf, "<gl enable='%s'",
-                      virTristateBoolTypeToString(def->data.spice.gl));
-    virBufferEscapeString(buf, " rendernode='%s'", def->data.spice.rendernode);
-    virBufferAddLit(buf, "/>\n");
-}
-
 bool
 virDomainGraphicsVNCDefCheckAttrHook(const virDomainGraphicsVNCDef *def G_GNUC_UNUSED,
                                      const void *parent,
@@ -27896,7 +27884,6 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
                            virDomainGraphicsDefPtr def,
                            unsigned int flags)
 {
-    virDomainGraphicsListenDefPtr glisten = virDomainGraphicsGetListen(def, 0);
     const char *type = virDomainGraphicsTypeToString(def->type);
     bool children = false;
     size_t i;
@@ -27943,60 +27930,9 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        if (!glisten) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("missing listen element for spice graphics"));
+        if (virDomainGraphicsSpiceDefFormatAttr(buf, &def->data.spice, def, &flags) < 0)
             return -1;
-        }
 
-        switch (glisten->type) {
-        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS:
-        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK:
-            if (def->data.spice.port)
-                virBufferAsprintf(buf, " port='%d'",
-                                  def->data.spice.port);
-
-            if (def->data.spice.tlsPort)
-                virBufferAsprintf(buf, " tlsPort='%d'",
-                                  def->data.spice.tlsPort);
-
-            virBufferAsprintf(buf, " autoport='%s'",
-                              def->data.spice.autoport ? "yes" : "no");
-
-            virDomainGraphicsListenDefFormatAddr(buf, glisten, flags);
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE:
-            if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE)
-                virBufferAddStr(buf, " autoport='no'");
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET:
-            /* If socket is auto-generated based on config option we don't
-             * add any listen element into migratable XML because the original
-             * listen type is "address".
-             * We need to set autoport to make sure that libvirt on destination
-             * will parse it as listen type "address", without autoport it is
-             * parsed as listen type "none". */
-            if ((flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) &&
-                glisten->fromConfig) {
-                virBufferAddStr(buf, " autoport='yes'");
-            }
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
-            break;
-        }
-
-        if (def->data.spice.keymap)
-            virBufferEscapeString(buf, " keymap='%s'",
-                                  def->data.spice.keymap);
-
-        if (def->data.spice.defaultMode != VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MODE_ANY)
-            virBufferAsprintf(buf, " defaultMode='%s'",
-              virDomainGraphicsSpiceChannelModeTypeToString(def->data.spice.defaultMode));
-
-        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.spice.auth, def, &flags);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
@@ -28053,56 +27989,8 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
     }
 
     if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
-        for (i = 0; i < VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST; i++) {
-            int mode = def->data.spice.channels[i];
-            if (mode == VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MODE_ANY)
-                continue;
-
-            if (!children) {
-                virBufferAddLit(buf, ">\n");
-                virBufferAdjustIndent(buf, 2);
-                children = true;
-            }
-
-            virBufferAsprintf(buf, "<channel name='%s' mode='%s'/>\n",
-                              virDomainGraphicsSpiceChannelNameTypeToString(i),
-                              virDomainGraphicsSpiceChannelModeTypeToString(mode));
-        }
-        if (!children && (def->data.spice.image || def->data.spice.jpeg ||
-                          def->data.spice.zlib || def->data.spice.playback ||
-                          def->data.spice.streaming || def->data.spice.copypaste ||
-                          def->data.spice.mousemode || def->data.spice.filetransfer ||
-                          def->data.spice.gl)) {
-            virBufferAddLit(buf, ">\n");
-            virBufferAdjustIndent(buf, 2);
-            children = true;
-        }
-        if (def->data.spice.image)
-            virBufferAsprintf(buf, "<image compression='%s'/>\n",
-                              virDomainGraphicsSpiceImageCompressionTypeToString(def->data.spice.image));
-        if (def->data.spice.jpeg)
-            virBufferAsprintf(buf, "<jpeg compression='%s'/>\n",
-                              virDomainGraphicsSpiceJpegCompressionTypeToString(def->data.spice.jpeg));
-        if (def->data.spice.zlib)
-            virBufferAsprintf(buf, "<zlib compression='%s'/>\n",
-                              virDomainGraphicsSpiceZlibCompressionTypeToString(def->data.spice.zlib));
-        if (def->data.spice.playback)
-            virBufferAsprintf(buf, "<playback compression='%s'/>\n",
-                              virTristateSwitchTypeToString(def->data.spice.playback));
-        if (def->data.spice.streaming)
-            virBufferAsprintf(buf, "<streaming mode='%s'/>\n",
-                              virDomainGraphicsSpiceStreamingModeTypeToString(def->data.spice.streaming));
-        if (def->data.spice.mousemode)
-            virBufferAsprintf(buf, "<mouse mode='%s'/>\n",
-                              virDomainGraphicsSpiceMouseModeTypeToString(def->data.spice.mousemode));
-        if (def->data.spice.copypaste)
-            virBufferAsprintf(buf, "<clipboard copypaste='%s'/>\n",
-                              virTristateBoolTypeToString(def->data.spice.copypaste));
-        if (def->data.spice.filetransfer)
-            virBufferAsprintf(buf, "<filetransfer enable='%s'/>\n",
-                              virTristateBoolTypeToString(def->data.spice.filetransfer));
-
-        virDomainSpiceGLDefFormat(buf, def);
+        if (virDomainGraphicsSpiceDefFormatElem(buf, &def->data.spice, def, NULL) < 0)
+            return -1;
     }
 
     if (children) {
@@ -32694,6 +32582,45 @@ virDomainGraphicsRDPDefCheckAttrHook(const virDomainGraphicsRDPDef *def G_GNUC_U
 }
 
 
+bool
+virDomainGraphicsSpiceDefCheckAttrHook(const virDomainGraphicsSpiceDef *def G_GNUC_UNUSED,
+                                       const void *parent,
+                                       void *opaque,
+                                       bool value)
+{
+    bool ret = false;
+    virDomainGraphicsDefPtr graphic = (virDomainGraphicsDefPtr) parent;
+    virDomainGraphicsListenDefPtr glisten = &graphic->listens[0];
+    unsigned int flags = 0;
+    if (opaque)
+        flags = *((unsigned int *) opaque);
+
+    switch (glisten->type) {
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS:
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK:
+        ret = true;
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE:
+        if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE)
+            ret = true;
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET:
+        if ((flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) &&
+            glisten->fromConfig) {
+            ret = true;
+        }
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
+        break;
+    }
+
+    return ret || value;
+}
+
+
 int
 virDomainGraphicsRDPDefFormatAttrHook(const virDomainGraphicsRDPDef *def G_GNUC_UNUSED,
                                       const void *parent,
@@ -32707,5 +32634,54 @@ virDomainGraphicsRDPDefFormatAttrHook(const virDomainGraphicsRDPDef *def G_GNUC_
         flags = *((unsigned int *) opaque);
 
     virDomainGraphicsListenDefFormatAddr(listenBuf, glisten, flags);
+
+    return 0;
+}
+
+
+int
+virDomainGraphicsSpiceDefFormatAttrHook(const virDomainGraphicsSpiceDef *def,
+                                        const void *parent,
+                                        const void *opaque,
+                                        virBufferPtr autoportBuf,
+                                        virBufferPtr listenBuf)
+{
+    virDomainGraphicsDefPtr graphic = (virDomainGraphicsDefPtr) parent;
+    virDomainGraphicsListenDefPtr glisten = &graphic->listens[0];
+    unsigned int flags = 0;
+    if (opaque)
+        flags = *((unsigned int *) opaque);
+
+    switch (glisten->type) {
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS:
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK:
+        virBufferAsprintf(autoportBuf, " autoport='%s'",
+                          def->autoport ? "yes" : "no");
+
+        virDomainGraphicsListenDefFormatAddr(listenBuf, glisten, flags);
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE:
+        if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE)
+            virBufferAddStr(autoportBuf, " autoport='no'");
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET:
+        /* If socket is auto-generated based on config option we don't
+         * add any listen element into migratable XML because the original
+         * listen type is "address".
+         * We need to set autoport to make sure that libvirt on destination
+         * will parse it as listen type "address", without autoport it is
+         * parsed as listen type "none". */
+        if ((flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) &&
+            glisten->fromConfig) {
+            virBufferAddStr(autoportBuf, " autoport='yes'");
+        }
+        break;
+
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
+        break;
+    }
+
     return 0;
 }
