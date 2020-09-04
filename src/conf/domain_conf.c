@@ -14432,9 +14432,34 @@ virDomainGraphicsRDPDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 
 
 static int
+virDomainGraphicsSpiceDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                                      virDomainGraphicsSpiceDefPtr def,
+                                      const char *instname G_GNUC_UNUSED,
+                                      void *parent G_GNUC_UNUSED,
+                                      void *opaque)
+{
+    unsigned int flags = 0;
+    if (opaque)
+        flags = *((unsigned int *) opaque);
+
+    if (def->port == -1 && def->tlsPort == -1) {
+        /* Legacy compat syntax, used -1 for auto-port */
+        def->autoport = true;
+    }
+
+    if (def->autoport && (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)) {
+        def->port = 0;
+        def->tlsPort = 0;
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
                                   xmlNodePtr node,
-                                  xmlXPathContextPtr ctxt,
+                                  xmlXPathContextPtr ctxt G_GNUC_UNUSED,
                                   unsigned int flags)
 {
     xmlNodePtr cur;
@@ -14443,9 +14468,6 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
     g_autofree char *tlsPort = virXMLPropString(node, "tlsPort");
     g_autofree char *autoport = virXMLPropString(node, "autoport");
     g_autofree char *defaultMode = virXMLPropString(node, "defaultMode");
-
-    if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-        return -1;
 
     if (port) {
         if (virStrToLong_i(port, NULL, 10, &def->data.spice.port) < 0) {
@@ -14480,16 +14502,6 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
             return -1;
         }
         def->data.spice.defaultMode = defaultModeVal;
-    }
-
-    if (def->data.spice.port == -1 && def->data.spice.tlsPort == -1) {
-        /* Legacy compat syntax, used -1 for auto-port */
-        def->data.spice.autoport = true;
-    }
-
-    if (def->data.spice.autoport && (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)) {
-        def->data.spice.port = 0;
-        def->data.spice.tlsPort = 0;
     }
 
     def->data.spice.keymap = virXMLPropString(node, "keymap");
@@ -14701,6 +14713,10 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
         cur = cur->next;
     }
 
+    if (virDomainGraphicsSpiceDefParseXMLHook(node, &def->data.spice, NULL,
+                                              def, &flags) < 0)
+        return -1;
+
     return 0;
 }
 
@@ -14808,6 +14824,8 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
+            goto error;
         if (virDomainGraphicsDefParseXMLSpice(def, node, ctxt, flags) < 0)
             goto error;
         break;
