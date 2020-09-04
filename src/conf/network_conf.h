@@ -137,7 +137,7 @@ struct _virNetworkDNSTxtDef {   /* genparse:concisehook, genformat */
 
 typedef struct _virNetworkDNSSrvDef virNetworkDNSSrvDef;
 typedef virNetworkDNSSrvDef *virNetworkDNSSrvDefPtr;
-struct _virNetworkDNSSrvDef {   /* genparse:withhook */
+struct _virNetworkDNSSrvDef {   /* genparse:withhook, genformat */
     char *service;              /* xmlattr */
     char *protocol;             /* xmlattr */
     char *domain;               /* xmlattr */
