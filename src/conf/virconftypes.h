@@ -362,3 +362,21 @@ typedef virDomainXMLPrivateDataCallbacks *virDomainXMLPrivateDataCallbacksPtr;
 
 typedef struct _virDomainXenbusControllerOpts virDomainXenbusControllerOpts;
 typedef virDomainXenbusControllerOpts *virDomainXenbusControllerOptsPtr;
+
+typedef struct _virDomainGraphicsSDLDef virDomainGraphicsSDLDef;
+typedef virDomainGraphicsSDLDef *virDomainGraphicsSDLDefPtr;
+
+typedef struct _virDomainGraphicsVNCDef virDomainGraphicsVNCDef;
+typedef virDomainGraphicsVNCDef *virDomainGraphicsVNCDefPtr;
+
+typedef struct _virDomainGraphicsRDPDef virDomainGraphicsRDPDef;
+typedef virDomainGraphicsRDPDef *virDomainGraphicsRDPDefPtr;
+
+typedef struct _virDomainGraphicsDesktopDef virDomainGraphicsDesktopDef;
+typedef virDomainGraphicsDesktopDef *virDomainGraphicsDesktopDefPtr;
+
+typedef struct _virDomainGraphicsSpiceDef virDomainGraphicsSpiceDef;
+typedef virDomainGraphicsSpiceDef *virDomainGraphicsSpiceDefPtr;
+
+typedef struct _virDomainGraphicsEGLHeadlessDef virDomainGraphicsEGLHeadlessDef;
+typedef virDomainGraphicsEGLHeadlessDef *virDomainGraphicsEGLHeadlessDefPtr;
