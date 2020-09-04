@@ -27928,10 +27928,9 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
             children = true;
         }
 
-        virBufferAddLit(buf, "<gl");
-        virBufferEscapeString(buf, " rendernode='%s'",
-                              def->data.egl_headless.rendernode);
-        virBufferAddLit(buf, "/>\n");
+        if (virDomainGraphicsEGLHeadlessDefFormatElem(buf, &def->data.egl_headless, def, NULL) < 0)
+            return -1;
+
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         break;

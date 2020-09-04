@@ -1744,7 +1744,7 @@ struct _virDomainGraphicsSpiceDef {     /* genparse:concisehook, genformat:separ
     char *rendernode;                   /* xmlattr:gl/rendernode */
 };
 
-struct _virDomainGraphicsEGLHeadlessDef {   /* genparse */
+struct _virDomainGraphicsEGLHeadlessDef {   /* genparse, genformat:separate */
     char *rendernode;                       /* xmlattr:gl/rendernode */
 };
 
