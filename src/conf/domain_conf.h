@@ -1584,6 +1584,7 @@ struct _virDomainGraphicsAuthDef {  /* genparse, genformat:separate */
 };
 
 typedef enum {
+    VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_NONE = 0,
     VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MAIN,
     VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_DISPLAY,
     VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_INPUT,
@@ -1715,31 +1716,31 @@ struct _virSpiceChannelDef {                /* genparse, genformat */
     virDomainGraphicsSpiceChannelMode mode; /* xmlattr */
 };
 
-struct _virDomainGraphicsSpiceDef {
-    int port;
-    int tlsPort;
+struct _virDomainGraphicsSpiceDef {     /* genparse:concisehook */
+    int port;                           /* xmlattr */
+    int tlsPort;                        /* xmlattr */
     bool portReserved;
     bool tlsPortReserved;
-    virDomainGraphicsSpiceMouseMode mousemode;
-    char *keymap;
-    virDomainGraphicsAuthDef auth;
-    bool autoport;
+    virDomainGraphicsSpiceMouseMode mousemode;  /* xmlattr:mouse/mode */
+    char *keymap;                       /* xmlattr */
+    virDomainGraphicsAuthDef auth;      /* xmlgroup */
+    bool autoport;                      /* xmlattr */
 
     /* The shadow member _channels helps to parse channels. */
     size_t n_channels;
-    virSpiceChannelDefPtr _channels;
+    virSpiceChannelDefPtr _channels;    /* xmlelem:channel, array */
     int channels[VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST];
 
-    virDomainGraphicsSpiceChannelMode defaultMode;
-    int image;
-    int jpeg;
-    int zlib;
-    int playback;
-    int streaming;
-    virTristateBool copypaste;
-    virTristateBool filetransfer;
-    virTristateBool gl;
-    char *rendernode;
+    virDomainGraphicsSpiceChannelMode defaultMode;  /* xmlattr */
+    virDomainGraphicsSpiceImageCompression image;   /* xmlattr:image/compression */
+    virDomainGraphicsSpiceJpegCompression jpeg;     /* xmlattr:jpeg/compression */
+    virDomainGraphicsSpiceZlibCompression zlib;     /* xmlattr:zlib/compression */
+    virTristateSwitch playback;                     /* xmlattr:playback/compression */
+    virDomainGraphicsSpiceStreamingMode streaming;  /* xmlattr:streaming/mode */
+    virTristateBool copypaste;          /* xmlattr:clipboard/copypaste */
+    virTristateBool filetransfer;       /* xmlattr:filetransfer/enable */
+    virTristateBool gl;                 /* xmlattr:gl/enable */
+    char *rendernode;                   /* xmlattr:gl/rendernode */
 };
 
 struct _virDomainGraphicsEGLHeadlessDef {

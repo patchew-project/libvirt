@@ -877,6 +877,7 @@ VIR_ENUM_IMPL(virDomainGraphicsVNCSharePolicy,
 
 VIR_ENUM_IMPL(virDomainGraphicsSpiceChannelName,
               VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST,
+              "none",
               "main",
               "display",
               "inputs",
@@ -14431,13 +14432,14 @@ virDomainGraphicsRDPDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 }
 
 
-static int
+int
 virDomainGraphicsSpiceDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                                       virDomainGraphicsSpiceDefPtr def,
                                       const char *instname G_GNUC_UNUSED,
                                       void *parent G_GNUC_UNUSED,
                                       void *opaque)
 {
+    size_t i;
     unsigned int flags = 0;
     if (opaque)
         flags = *((unsigned int *) opaque);
@@ -14452,270 +14454,10 @@ virDomainGraphicsSpiceDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
         def->tlsPort = 0;
     }
 
-    return 0;
-}
-
-
-static int
-virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
-                                  xmlNodePtr node,
-                                  xmlXPathContextPtr ctxt G_GNUC_UNUSED,
-                                  unsigned int flags)
-{
-    xmlNodePtr cur;
-    int defaultModeVal;
-    g_autofree char *port = virXMLPropString(node, "port");
-    g_autofree char *tlsPort = virXMLPropString(node, "tlsPort");
-    g_autofree char *autoport = virXMLPropString(node, "autoport");
-    g_autofree char *defaultMode = virXMLPropString(node, "defaultMode");
-
-    if (port) {
-        if (virStrToLong_i(port, NULL, 10, &def->data.spice.port) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse spice port %s"), port);
-            return -1;
-        }
-    } else {
-        def->data.spice.port = 0;
+    for (i = 0; i < def->n_channels; i++) {
+        int nameval = def->_channels[i].name;
+        def->channels[nameval] = def->_channels[i].mode;
     }
-
-    if (tlsPort) {
-        if (virStrToLong_i(tlsPort, NULL, 10, &def->data.spice.tlsPort) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse spice tlsPort %s"), tlsPort);
-            return -1;
-        }
-    } else {
-        def->data.spice.tlsPort = 0;
-    }
-
-    if (STREQ_NULLABLE(autoport, "yes"))
-        def->data.spice.autoport = true;
-
-    def->data.spice.defaultMode = VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MODE_ANY;
-
-    if (defaultMode) {
-        if ((defaultModeVal = virDomainGraphicsSpiceChannelModeTypeFromString(defaultMode)) < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown default spice channel mode %s"),
-                           defaultMode);
-            return -1;
-        }
-        def->data.spice.defaultMode = defaultModeVal;
-    }
-
-    def->data.spice.keymap = virXMLPropString(node, "keymap");
-
-    if (virDomainGraphicsAuthDefParseXML(node, &def->data.spice.auth,
-                                         NULL, def, NULL) < 0)
-        return -1;
-
-    cur = node->children;
-    while (cur != NULL) {
-        if (cur->type == XML_ELEMENT_NODE) {
-            if (virXMLNodeNameEqual(cur, "channel")) {
-                int nameval, modeval;
-                g_autofree char *name = NULL;
-                g_autofree char *mode = NULL;
-
-                name = virXMLPropString(cur, "name");
-                mode = virXMLPropString(cur, "mode");
-
-                if (!name || !mode) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("spice channel missing name/mode"));
-                    return -1;
-                }
-
-                if ((nameval = virDomainGraphicsSpiceChannelNameTypeFromString(name)) < 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown spice channel name %s"),
-                                   name);
-                    return -1;
-                }
-                if ((modeval = virDomainGraphicsSpiceChannelModeTypeFromString(mode)) < 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown spice channel mode %s"),
-                                   mode);
-                    return -1;
-                }
-
-                def->data.spice.channels[nameval] = modeval;
-            } else if (virXMLNodeNameEqual(cur, "image")) {
-                int compressionVal;
-                g_autofree char *compression = virXMLPropString(cur, "compression");
-
-                if (!compression) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("spice image missing compression"));
-                    return -1;
-                }
-
-                if ((compressionVal =
-                     virDomainGraphicsSpiceImageCompressionTypeFromString(compression)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown spice image compression %s"),
-                                   compression);
-                    return -1;
-                }
-
-                def->data.spice.image = compressionVal;
-            } else if (virXMLNodeNameEqual(cur, "jpeg")) {
-                int compressionVal;
-                g_autofree char *compression = virXMLPropString(cur, "compression");
-
-                if (!compression) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("spice jpeg missing compression"));
-                    return -1;
-                }
-
-                if ((compressionVal =
-                     virDomainGraphicsSpiceJpegCompressionTypeFromString(compression)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown spice jpeg compression %s"),
-                                   compression);
-                    return -1;
-                }
-
-                def->data.spice.jpeg = compressionVal;
-            } else if (virXMLNodeNameEqual(cur, "zlib")) {
-                int compressionVal;
-                g_autofree char *compression = virXMLPropString(cur, "compression");
-
-                if (!compression) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("spice zlib missing compression"));
-                    return -1;
-                }
-
-                if ((compressionVal =
-                     virDomainGraphicsSpiceZlibCompressionTypeFromString(compression)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown spice zlib compression %s"),
-                                   compression);
-                    return -1;
-                }
-
-                def->data.spice.zlib = compressionVal;
-            } else if (virXMLNodeNameEqual(cur, "playback")) {
-                int compressionVal;
-                g_autofree char *compression = virXMLPropString(cur, "compression");
-
-                if (!compression) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("spice playback missing compression"));
-                    return -1;
-                }
-
-                if ((compressionVal =
-                     virTristateSwitchTypeFromString(compression)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("unknown spice playback compression"));
-                    return -1;
-                }
-
-                def->data.spice.playback = compressionVal;
-            } else if (virXMLNodeNameEqual(cur, "streaming")) {
-                int modeVal;
-                g_autofree char *mode = virXMLPropString(cur, "mode");
-
-                if (!mode) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice streaming missing mode"));
-                    return -1;
-                }
-                if ((modeVal =
-                     virDomainGraphicsSpiceStreamingModeTypeFromString(mode)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("unknown spice streaming mode"));
-                    return -1;
-                }
-
-                def->data.spice.streaming = modeVal;
-            } else if (virXMLNodeNameEqual(cur, "clipboard")) {
-                int copypasteVal;
-                g_autofree char *copypaste = virXMLPropString(cur, "copypaste");
-
-                if (!copypaste) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice clipboard missing copypaste"));
-                    return -1;
-                }
-
-                if ((copypasteVal =
-                     virTristateBoolTypeFromString(copypaste)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown copypaste value '%s'"), copypaste);
-                    return -1;
-                }
-
-                def->data.spice.copypaste = copypasteVal;
-            } else if (virXMLNodeNameEqual(cur, "filetransfer")) {
-                int enableVal;
-                g_autofree char *enable = virXMLPropString(cur, "enable");
-
-                if (!enable) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice filetransfer missing enable"));
-                    return -1;
-                }
-
-                if ((enableVal =
-                     virTristateBoolTypeFromString(enable)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown enable value '%s'"), enable);
-                    return -1;
-                }
-
-                def->data.spice.filetransfer = enableVal;
-            } else if (virXMLNodeNameEqual(cur, "gl")) {
-                int enableVal;
-                g_autofree char *enable = virXMLPropString(cur, "enable");
-                g_autofree char *rendernode = virXMLPropString(cur, "rendernode");
-
-                if (!enable) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice gl element missing enable"));
-                    return -1;
-                }
-
-                if ((enableVal =
-                     virTristateBoolTypeFromString(enable)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown enable value '%s'"), enable);
-                    return -1;
-                }
-
-                def->data.spice.gl = enableVal;
-                def->data.spice.rendernode = g_steal_pointer(&rendernode);
-
-            } else if (virXMLNodeNameEqual(cur, "mouse")) {
-                int modeVal;
-                g_autofree char *mode = virXMLPropString(cur, "mode");
-
-                if (!mode) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice mouse missing mode"));
-                    return -1;
-                }
-
-                if ((modeVal = virDomainGraphicsSpiceMouseModeTypeFromString(mode)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown mouse mode value '%s'"),
-                                   mode);
-                    return -1;
-                }
-
-                def->data.spice.mousemode = modeVal;
-            }
-        }
-        cur = cur->next;
-    }
-
-    if (virDomainGraphicsSpiceDefParseXMLHook(node, &def->data.spice, NULL,
-                                              def, &flags) < 0)
-        return -1;
 
     return 0;
 }
@@ -14826,7 +14568,7 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
         if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
             goto error;
-        if (virDomainGraphicsDefParseXMLSpice(def, node, ctxt, flags) < 0)
+        if (virDomainGraphicsSpiceDefParseXML(node, &def->data.spice, NULL, def, &flags) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
