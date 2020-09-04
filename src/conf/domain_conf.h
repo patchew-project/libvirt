@@ -1573,8 +1573,8 @@ typedef enum {
     VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_LAST
 } virDomainGraphicsAuthConnectedType;
 
-struct _virDomainGraphicsAuthDef {  /* genparse */
-    char *passwd;                   /* xmlattr */
+struct _virDomainGraphicsAuthDef {  /* genparse, genformat:separate */
+    char *passwd;                   /* xmlattr, formatflag:VIR_DOMAIN_DEF_FORMAT_SECURE */
     /* Whether there is an expiry time set */
     bool expires;
     /* seconds since epoch */

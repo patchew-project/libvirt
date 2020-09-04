@@ -28000,32 +28000,6 @@ virDomainTimerDefFormat(virBufferPtr buf,
     return 0;
 }
 
-static void
-virDomainGraphicsAuthDefFormatAttr(virBufferPtr buf,
-                                   virDomainGraphicsAuthDefPtr def,
-                                   unsigned int flags)
-{
-    if (!def->passwd)
-        return;
-
-    if (flags & VIR_DOMAIN_DEF_FORMAT_SECURE)
-        virBufferEscapeString(buf, " passwd='%s'",
-                              def->passwd);
-
-    if (def->expires) {
-        g_autoptr(GDateTime) then = NULL;
-        g_autofree char *thenstr = NULL;
-
-        then = g_date_time_new_from_unix_utc(def->validTo);
-        thenstr = g_date_time_format(then, "%Y-%m-%dT%H:%M:%S");
-        virBufferAsprintf(buf, " passwdValidTo='%s'", thenstr);
-    }
-
-    if (def->connected)
-        virBufferEscapeString(buf, " connected='%s'",
-                              virDomainGraphicsAuthConnectedTypeToString(def->connected));
-}
-
 
 static void
 virDomainGraphicsListenDefFormat(virBufferPtr buf,
@@ -28190,7 +28164,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
                               virDomainGraphicsVNCSharePolicyTypeToString(
                               def->data.vnc.sharePolicy));
 
-        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.vnc.auth, flags);
+        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.vnc.auth, def, &flags);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
@@ -28292,7 +28266,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, " defaultMode='%s'",
               virDomainGraphicsSpiceChannelModeTypeToString(def->data.spice.defaultMode));
 
-        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.spice.auth, flags);
+        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.spice.auth, def, &flags);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
