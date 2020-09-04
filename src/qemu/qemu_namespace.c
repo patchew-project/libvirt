@@ -1166,21 +1166,28 @@ qemuNamespacePrepareOneItem(qemuNamespaceMknodDataPtr data,
                             size_t ndevMountsPath)
 {
     long ttl = sysconf(_SC_SYMLOOP_MAX);
-    const char *next = file;
+    g_autofree char *next = g_strdup(file);
     size_t i;
 
     while (1) {
         qemuNamespaceMknodItem item = { 0 };
+        bool added = false;
+        bool isLink;
         int rc;
 
         rc = qemuNamespaceMknodItemInit(&item, cfg, vm, next);
-        if (rc == -2) {
-            /* @file doesn't exist. We can break here. */
-            break;
-        } else if (rc < 0) {
+        if (rc < 0)  {
+            qemuNamespaceMknodItemClear(&item);
+
+            if (rc == -2) {
+                /* @file doesn't exist. We can break here. */
+                break;
+            }
             /* Some other (critical) error. */
             return -1;
         }
+
+        isLink = S_ISLNK(item.sb.st_mode);
 
         if (STRPREFIX(next, QEMU_DEVPREFIX)) {
             for (i = 0; i < ndevMountsPath; i++) {
@@ -1190,22 +1197,35 @@ qemuNamespacePrepareOneItem(qemuNamespaceMknodDataPtr data,
                     break;
             }
 
-            if (i == ndevMountsPath &&
-                VIR_APPEND_ELEMENT_COPY(data->items, data->nitems, item) < 0)
-                return -1;
+            if (i == ndevMountsPath) {
+                if (VIR_APPEND_ELEMENT_COPY(data->items, data->nitems, item) < 0) {
+                    qemuNamespaceMknodItemClear(&item);
+                    return -1;
+                }
+                added = true;
+            }
         }
 
-        if (!S_ISLNK(item.sb.st_mode))
+        if (!isLink) {
+            if (!added)
+                qemuNamespaceMknodItemClear(&item);
             break;
+        }
 
         if (ttl-- == 0) {
+            if (!added)
+                qemuNamespaceMknodItemClear(&item);
             virReportSystemError(ELOOP,
                                  _("Too many levels of symbolic links: %s"),
-                                 next);
+                                 file);
             return -1;
         }
 
-        next = item.target;
+        g_free(next);
+        next = g_strdup(item.target);
+
+        if (!added)
+            qemuNamespaceMknodItemClear(&item);
     }
 
     return 0;
