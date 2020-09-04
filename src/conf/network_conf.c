@@ -175,32 +175,6 @@ virNetworkIPDefClear(virNetworkIPDefPtr def)
 
 
 static void
-virNetworkDNSDefClear(virNetworkDNSDefPtr def)
-{
-    if (def->forwarders) {
-        while (def->nfwds)
-            virNetworkDNSForwarderClear(&def->forwarders[--def->nfwds]);
-        VIR_FREE(def->forwarders);
-    }
-    if (def->txts) {
-        while (def->ntxts)
-            virNetworkDNSTxtDefClear(&def->txts[--def->ntxts]);
-        VIR_FREE(def->txts);
-    }
-    if (def->hosts) {
-        while (def->nhosts)
-            virNetworkDNSHostDefClear(&def->hosts[--def->nhosts]);
-        VIR_FREE(def->hosts);
-    }
-    if (def->srvs) {
-        while (def->nsrvs)
-            virNetworkDNSSrvDefClear(&def->srvs[--def->nsrvs]);
-        VIR_FREE(def->srvs);
-    }
-}
-
-
-static void
 virNetworkForwardDefClear(virNetworkForwardDefPtr def)
 {
     size_t i;
@@ -882,7 +856,7 @@ virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 }
 
 
-static int
+int
 virNetworkDNSDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                              virNetworkDNSDefPtr def,
                              const char *networkName,
@@ -902,140 +876,6 @@ virNetworkDNSDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
                        networkName);
         return -1;
     }
-
-    return 0;
-}
-
-
-static int
-virNetworkDNSDefParseXML(const char *networkName,
-                         xmlNodePtr node,
-                         xmlXPathContextPtr ctxt,
-                         virNetworkDNSDefPtr def)
-{
-    g_autofree xmlNodePtr *hostNodes = NULL;
-    g_autofree xmlNodePtr *srvNodes = NULL;
-    g_autofree xmlNodePtr *txtNodes = NULL;
-    g_autofree xmlNodePtr *fwdNodes = NULL;
-    g_autofree char *forwardPlainNames = NULL;
-    g_autofree char *enable = NULL;
-    int nhosts, nsrvs, ntxts, nfwds;
-    size_t i;
-    VIR_XPATH_NODE_AUTORESTORE(ctxt)
-
-    ctxt->node = node;
-
-    enable = virXPathString("string(./@enable)", ctxt);
-    if (enable) {
-        def->enable = virTristateBoolTypeFromString(enable);
-        if (def->enable <= 0) {
-            virReportError(VIR_ERR_XML_ERROR,
-                           _("Invalid dns enable setting '%s' "
-                             "in network '%s'"),
-                           enable, networkName);
-            return -1;
-        }
-    }
-
-    forwardPlainNames = virXPathString("string(./@forwardPlainNames)", ctxt);
-    if (forwardPlainNames) {
-        def->forwardPlainNames = virTristateBoolTypeFromString(forwardPlainNames);
-        if (def->forwardPlainNames <= 0) {
-            virReportError(VIR_ERR_XML_ERROR,
-                           _("Invalid dns forwardPlainNames setting '%s' "
-                             "in network '%s'"),
-                           forwardPlainNames, networkName);
-            return -1;
-        }
-    }
-
-    nfwds = virXPathNodeSet("./forwarder", ctxt, &fwdNodes);
-    if (nfwds < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("invalid <forwarder> element found in <dns> of network %s"),
-                       networkName);
-        return -1;
-    }
-    if (nfwds > 0) {
-        if (VIR_ALLOC_N(def->forwarders, nfwds) < 0)
-            return -1;
-
-        for (i = 0; i < nfwds; i++) {
-            if (virNetworkDNSForwarderParseXML(fwdNodes[i],
-                                               &def->forwarders[i],
-                                               networkName,
-                                               def,
-                                               NULL) < 0)
-                return -1;
-
-            def->nfwds++;
-        }
-    }
-
-    nhosts = virXPathNodeSet("./host", ctxt, &hostNodes);
-    if (nhosts < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("invalid <host> element found in <dns> of network %s"),
-                       networkName);
-        return -1;
-    }
-    if (nhosts > 0) {
-        if (VIR_ALLOC_N(def->hosts, nhosts) < 0)
-            return -1;
-
-        for (i = 0; i < nhosts; i++) {
-            if (virNetworkDNSHostDefParseXML(hostNodes[i], &def->hosts[def->nhosts],
-                                             networkName, def, NULL) < 0) {
-                return -1;
-            }
-            def->nhosts++;
-        }
-    }
-
-    nsrvs = virXPathNodeSet("./srv", ctxt, &srvNodes);
-    if (nsrvs < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("invalid <srv> element found in <dns> of network %s"),
-                       networkName);
-        return -1;
-    }
-    if (nsrvs > 0) {
-        if (VIR_ALLOC_N(def->srvs, nsrvs) < 0)
-            return -1;
-
-        for (i = 0; i < nsrvs; i++) {
-            if (virNetworkDNSSrvDefParseXML(srvNodes[i], &def->srvs[def->nsrvs],
-                                            networkName, def, NULL) < 0) {
-                return -1;
-            }
-            def->nsrvs++;
-        }
-    }
-
-    ntxts = virXPathNodeSet("./txt", ctxt, &txtNodes);
-    if (ntxts < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("invalid <txt> element found in <dns> of network %s"),
-                       networkName);
-        return -1;
-    }
-    if (ntxts > 0) {
-        if (VIR_ALLOC_N(def->txts, ntxts) < 0)
-            return -1;
-
-        for (i = 0; i < ntxts; i++) {
-            if (virNetworkDNSTxtDefParseXML(txtNodes[i], &def->txts[def->ntxts],
-                                            networkName, def, NULL) < 0) {
-                return -1;
-            }
-            def->ntxts++;
-        }
-    }
-
-    if (virNetworkDNSDefParseXMLHook(node, def, networkName, def, NULL,
-                                     enable, forwardPlainNames,
-                                     ntxts, nhosts, nsrvs, nfwds) < 0)
-        return -1;
 
     return 0;
 }
@@ -1812,7 +1652,7 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt,
 
     dnsNode = virXPathNode("./dns", ctxt);
     if (dnsNode != NULL &&
-        virNetworkDNSDefParseXML(def->name, dnsNode, ctxt, &def->dns) < 0) {
+        virNetworkDNSDefParseXML(dnsNode, &def->dns, def->name, def, NULL) < 0) {
         return NULL;
     }
 
