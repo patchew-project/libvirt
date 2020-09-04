@@ -7592,6 +7592,7 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
         virBufferAddLit(&opt, "none");
         break;
 
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_DUMMY:
     case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
         break;
     }
@@ -7718,6 +7719,7 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         virBufferAddLit(&opt, "port=0,");
         hasInsecure = true;
         break;
+    case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_DUMMY:
     case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
         break;
     }

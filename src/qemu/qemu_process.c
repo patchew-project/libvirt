@@ -4926,6 +4926,7 @@ qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
             break;
 
         case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE:
+        case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_DUMMY:
         case VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST:
             break;
         }
