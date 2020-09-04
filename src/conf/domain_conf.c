@@ -14402,9 +14402,39 @@ virDomainGraphicsVNCDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 
 
 static int
+virDomainGraphicsRDPDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                                    virDomainGraphicsRDPDefPtr def,
+                                    const char *instname G_GNUC_UNUSED,
+                                    void *parent G_GNUC_UNUSED,
+                                    void *opaque,
+                                    const char *port,
+                                    const char *autoport G_GNUC_UNUSED,
+                                    const char *replaceUser G_GNUC_UNUSED,
+                                    const char *multiUser G_GNUC_UNUSED)
+{
+    unsigned int flags = *((unsigned int *) opaque);
+
+    if (port) {
+        /* Legacy compat syntax, used -1 for auto-port */
+        if (def->port == -1)
+            def->autoport = true;
+
+    } else {
+        def->port = 0;
+        def->autoport = true;
+    }
+
+    if (def->autoport && (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
+        def->port = 0;
+
+    return 0;
+}
+
+
+static int
 virDomainGraphicsDefParseXMLRDP(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node,
-                                xmlXPathContextPtr ctxt,
+                                xmlXPathContextPtr ctxt G_GNUC_UNUSED,
                                 unsigned int flags)
 {
     g_autofree char *port = virXMLPropString(node, "port");
@@ -14412,35 +14442,27 @@ virDomainGraphicsDefParseXMLRDP(virDomainGraphicsDefPtr def,
     g_autofree char *replaceUser = virXMLPropString(node, "replaceUser");
     g_autofree char *multiUser = virXMLPropString(node, "multiUser");
 
-    if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-        return -1;
-
     if (port) {
         if (virStrToLong_i(port, NULL, 10, &def->data.rdp.port) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot parse rdp port %s"), port);
             return -1;
         }
-        /* Legacy compat syntax, used -1 for auto-port */
-        if (def->data.rdp.port == -1)
-            def->data.rdp.autoport = true;
-
-    } else {
-        def->data.rdp.port = 0;
-        def->data.rdp.autoport = true;
     }
 
     if (STREQ_NULLABLE(autoport, "yes"))
         def->data.rdp.autoport = true;
-
-    if (def->data.rdp.autoport && (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
-        def->data.rdp.port = 0;
 
     if (STREQ_NULLABLE(replaceUser, "yes"))
         def->data.rdp.replaceUser = true;
 
     if (STREQ_NULLABLE(multiUser, "yes"))
         def->data.rdp.multiUser = true;
+
+    if (virDomainGraphicsRDPDefParseXMLHook(node, &def->data.rdp,
+                                            NULL, def, &flags, port, autoport,
+                                            replaceUser, multiUser) < 0)
+        return -1;
 
     return 0;
 }
@@ -14835,6 +14857,8 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
+            goto error;
         if (virDomainGraphicsDefParseXMLRDP(def, node, ctxt, flags) < 0)
             goto error;
         break;
