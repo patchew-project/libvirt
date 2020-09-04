@@ -1,0 +1,7 @@
+# This is a command-line tool
+
+export PYTHONDONTWRITEBYTECODE=1
+WORK_DIR=$(cd $(dirname $0); pwd)
+SRCDIR="${WORK_DIR}/../../src"
+BUILDDIR="${WORK_DIR}/../../build/src"
+${WORK_DIR}/main.py -s ${SRCDIR} -b ${BUILDDIR} $@
