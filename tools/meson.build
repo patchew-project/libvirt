@@ -5,11 +5,13 @@ tools_dep = declare_dependency(
   dependencies: [
     libxml_dep,
     glib_dep,
+    xmlgen_dep,
   ],
   include_directories: [
     libvirt_inc,
     src_inc_dir,
     util_inc_dir,
+    conf_inc_dir,
     top_inc_dir,
   ],
   link_args: (

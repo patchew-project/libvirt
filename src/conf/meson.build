@@ -1,3 +1,39 @@
+xmlgen_input = [
+]
+
+xmlgen_output = []
+foreach name : xmlgen_input
+  xmlgen_output += '@0@.generated.c'.format(name.split('.')[0])
+  xmlgen_output += '@0@.generated.h'.format(name.split('.')[0])
+endforeach
+
+xmlgen_headers = []
+if xmlgen_output.length() > 0
+  xmlgen_objects = custom_target(
+    'virxmlgen',
+    input: xmlgen_self + xmlgen_input,
+    output: xmlgen_output,
+    command: [
+      meson_python_prog, python3_prog.path(), '-B', virxmlgen_prog.path(),
+      '-s', meson.source_root() / 'src',
+      '-b', meson.build_root() / 'src',
+      'generate', '-k', 'cpf',
+    ],
+  )
+
+  index = 0
+  foreach header : xmlgen_objects.to_list()
+    if index % 2 == 1
+      xmlgen_headers += header
+    endif
+    index += 1
+  endforeach
+else
+  xmlgen_objects = []
+endif
+
+xmlgen_dep = declare_dependency(sources: xmlgen_headers)
+
 netdev_conf_sources = [
   'netdev_bandwidth_conf.c',
   'netdev_vlan_conf.c',
@@ -87,6 +123,7 @@ device_conf_sources = [
 virt_conf_lib = static_library(
   'virt_conf',
   [
+    xmlgen_objects,
     chrdev_conf_sources,
     cpu_conf_sources,
     device_conf_sources,
@@ -108,3 +145,5 @@ virt_conf_lib = static_library(
 libvirt_libs += virt_conf_lib
 
 conf_inc_dir = include_directories('.')
+
+subdir_done()

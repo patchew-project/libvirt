@@ -37,3 +37,11 @@ foreach name : scripts
   sname = name.split('.')[0].underscorify()
   set_variable('@0@_prog'.format(sname), find_program(name))
 endforeach
+
+xmlgen_self = files(
+  'xmlgen/main.py',
+  'xmlgen/directive.py',
+  'xmlgen/utils.py'
+)
+
+set_variable('virxmlgen_prog', find_program('xmlgen/main.py'))

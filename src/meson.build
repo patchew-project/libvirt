@@ -247,6 +247,12 @@ src_dep = declare_dependency(
 )
 
 subdir('conf')
+
+src_dep = declare_dependency(
+  dependencies: [ src_dep, xmlgen_dep ],
+  include_directories: [ conf_inc_dir ],
+)
+
 subdir('rpc')
 subdir('access')
 subdir('cpu')
