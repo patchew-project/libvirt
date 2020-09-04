@@ -1481,3 +1481,108 @@ virParseScaledValue(const char *xpath,
     *val = bytes;
     return 1;
 }
+
+
+/**
+ * virXMLChildNode:
+ * @node: Parent XML dom node pointer
+ * @name: Name of the child element
+ *
+ * Convenience function to return the child element of a XML node.
+ *
+ * Returns the pointer of child element node or NULL in case of failure.
+ * If there are many nodes match condition, it only returns the first node.
+ */
+xmlNodePtr
+virXMLChildNode(xmlNodePtr node, const char *name)
+{
+    xmlNodePtr cur = node->children;
+    while (cur) {
+        if (cur->type == XML_ELEMENT_NODE && virXMLNodeNameEqual(cur, name))
+            return cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+
+/**
+ * virXMLChildPropString:
+ * @node: Parent XML dom node pointer
+ * @path: Path of the property (attribute) to get
+ *
+ * Convenience function to return copy of an attribute value by a path.
+ * Path consists of names of child elements and an attribute.
+ * The delimiter is '/'.
+ *
+ * E.g.: For <self><son><grandson name="..."></grandson></son></self>,
+ * the path is 'son/grandSon/name' to get attribute 'name'.
+ *
+ * Returns the property (attribute) value as string or NULL in case of failure.
+ * The caller is responsible for freeing the returned buffer.
+ */
+char *
+virXMLChildPropString(xmlNodePtr node, const char *path)
+{
+    char *next;
+    char *sep;
+    xmlNodePtr tnode = node;
+    g_autofree char *tmp = NULL;
+    tmp = g_strdup(path);
+
+    next = tmp;
+    while ((sep = strchr(next, '/'))) {
+        *sep = '\0';
+
+        if ((tnode = virXMLChildNode(tnode, next)) == NULL)
+            return NULL;
+
+        next = sep + 1;
+    }
+
+    return virXMLPropString(tnode, next);
+}
+
+
+/**
+ * virXMLChildNodeSet:
+ * @node: Parent XML dom node pointer
+ * @name: Name of the children element
+ * @list: the returned list of nodes (or NULL if only count matters)
+ *
+ * Convenience function to evaluate a set of children elements
+ *
+ * Returns the number of nodes found in which case @list is set (and
+ *         must be freed) or -1 if the evaluation failed.
+ */
+int
+virXMLChildNodeSet(xmlNodePtr node, const char *name, xmlNodePtr **list)
+{
+    size_t count = 0;
+    xmlNodePtr cur = node->children;
+
+    if (list != NULL)
+        *list = NULL;
+
+    while (cur) {
+        if (cur->type == XML_ELEMENT_NODE && virXMLNodeNameEqual(cur, name)) {
+            if (list != NULL) {
+                if (VIR_APPEND_ELEMENT_COPY(*list, count, cur) < 0)
+                    return -1;
+            } else {
+                count++;
+            }
+        }
+        cur = cur->next;
+    }
+    return count;
+}
+
+
+unsigned int
+virXMLFlag(void *opaque)
+{
+    if (opaque)
+        return *((unsigned int *) opaque);
+    return 0;
+}

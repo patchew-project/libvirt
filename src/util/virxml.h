@@ -79,6 +79,10 @@ char *     virXMLPropStringLimit(xmlNodePtr node,
 char *   virXMLNodeContentString(xmlNodePtr node);
 long     virXMLChildElementCount(xmlNodePtr node);
 
+xmlNodePtr virXMLChildNode(xmlNodePtr node, const char *name);
+int virXMLChildNodeSet(xmlNodePtr node, const char *name, xmlNodePtr **list);
+char * virXMLChildPropString(xmlNodePtr node, const char *path);
+
 /* Internal function; prefer the macros below.  */
 xmlDocPtr      virXMLParseHelper(int domcode,
                                  const char *filename,
@@ -279,3 +283,5 @@ int virParseScaledValue(const char *xpath,
                         unsigned long long scale,
                         unsigned long long max,
                         bool required);
+
+unsigned int virXMLFlag(void *opaque);
