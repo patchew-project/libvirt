@@ -1,5 +1,6 @@
 xmlgen_input = [
   'network_conf.h',
+  'domain_conf.h',
 ]
 
 xmlgen_output = []

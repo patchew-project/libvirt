@@ -1826,8 +1826,7 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        VIR_FREE(def->data.sdl.display);
-        VIR_FREE(def->data.sdl.xauth);
+        virDomainGraphicsSDLDefClear(&def->data.sdl);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -14515,54 +14514,6 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
 
 
 static int
-virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
-                                xmlNodePtr node,
-                                xmlXPathContextPtr ctxt)
-{
-    VIR_XPATH_NODE_AUTORESTORE(ctxt)
-    int enableVal;
-    xmlNodePtr glNode;
-    g_autofree char *fullscreen = virXMLPropString(node, "fullscreen");
-    g_autofree char *enable = NULL;
-
-    ctxt->node = node;
-
-    if (fullscreen != NULL) {
-        if (virStringParseYesNo(fullscreen, &def->data.sdl.fullscreen) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("unknown fullscreen value '%s'"), fullscreen);
-            return -1;
-        }
-    } else {
-        def->data.sdl.fullscreen = false;
-    }
-
-    def->data.sdl.xauth = virXMLPropString(node, "xauth");
-    def->data.sdl.display = virXMLPropString(node, "display");
-
-    glNode = virXPathNode("./gl", ctxt);
-    if (glNode) {
-        enable = virXMLPropString(glNode, "enable");
-        if (!enable) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("sdl gl element missing enable"));
-            return -1;
-        }
-
-        enableVal = virTristateBoolTypeFromString(enable);
-        if (enableVal < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown enable value '%s'"), enable);
-            return -1;
-        }
-        def->data.sdl.gl = enableVal;
-    }
-
-    return 0;
-}
-
-
-static int
 virDomainGraphicsDefParseXMLRDP(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node,
                                 xmlXPathContextPtr ctxt,
@@ -14990,7 +14941,7 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        if (virDomainGraphicsDefParseXMLSDL(def, node, ctxt) < 0)
+        if (virDomainGraphicsSDLDefParseXML(node, &def->data.sdl, NULL, def, NULL) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
