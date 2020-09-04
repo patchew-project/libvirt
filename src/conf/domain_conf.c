@@ -14191,12 +14191,10 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
                                  xmlXPathContextPtr ctxt,
                                  unsigned int flags)
 {
-    VIR_XPATH_NODE_AUTORESTORE(ctxt)
-    virDomainGraphicsListenDef newListen = {0};
     int nListens;
     int ret = -1;
     g_autofree xmlNodePtr *listenNodes = NULL;
-    g_autofree char *socketPath = NULL;
+    VIR_XPATH_NODE_AUTORESTORE(ctxt);
 
     ctxt->node = node;
 
@@ -14218,84 +14216,12 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
                                                    def, &flags) < 0)
                 goto cleanup;
 
-            if (i == 0) {
-                g_autofree char *addressCompat = NULL;
-                g_autofree char *socketCompat = NULL;
-
-                addressCompat = virXMLPropString(node, "listen");
-                socketCompat = virXMLPropString(node, "socket");
-
-                if (listen->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS) {
-                    if (listen->address && addressCompat && STRNEQ(listen->address, addressCompat)) {
-                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                       _("graphics 'listen' attribute '%s' must match "
-                                         "'address' attribute of first listen element "
-                                         "(found '%s')"), addressCompat, listen->address);
-                        goto cleanup;
-                    }
-
-                    if (!listen->address)
-                        listen->address = g_steal_pointer(&addressCompat);
-                }
-
-                if (listen->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET) {
-                    if (listen->socket && socketCompat && STRNEQ(listen->socket, socketCompat)) {
-                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                       _("graphics 'socket' attribute '%s' must match "
-                                         "'socket' attribute of first listen element "
-                                         "(found '%s')"), socketCompat, listen->socket);
-                        goto cleanup;
-                    }
-
-                    if (!listen->socket)
-                        listen->socket = g_steal_pointer(&socketCompat);
-                }
-            }
-
             def->nListens++;
-        }
-    }
-
-    /* If no <listen/> element was found in XML for backward compatibility
-     * we should try to parse 'listen' or 'socket' attribute from <graphics/>
-     * element. */
-    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC)
-        socketPath = virXMLPropString(node, "socket");
-
-    if (socketPath) {
-        newListen.type = VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET;
-        newListen.socket = g_steal_pointer(&socketPath);
-    } else {
-        newListen.type = VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS;
-        newListen.address = virXMLPropString(node, "listen");
-        if (STREQ_NULLABLE(newListen.address, ""))
-            VIR_FREE(newListen.address);
-    }
-
-    /* If no <listen/> element was found add a new one created by parsing
-     * <graphics/> element. */
-    if (def->nListens == 0) {
-        if (VIR_APPEND_ELEMENT(def->listens, def->nListens, newListen) < 0)
-            goto cleanup;
-    } else {
-        virDomainGraphicsListenDefPtr glisten = &def->listens[0];
-
-        /* If the first <listen/> element is 'address' or 'network' and we found
-         * 'socket' attribute inside <graphics/> element for backward
-         * compatibility we need to replace the first listen by
-         * <listen type='socket' .../> element based on the 'socket' attribute. */
-        if ((glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS ||
-             glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK) &&
-            newListen.type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET) {
-            virDomainGraphicsListenDefClear(glisten);
-            *glisten = newListen;
-            memset(&newListen, 0, sizeof(newListen));
         }
     }
 
     ret = 0;
  cleanup:
-    virDomainGraphicsListenDefClear(&newListen);
     return ret;
 }
 
@@ -14442,6 +14368,102 @@ virDomainNetDefNew(virDomainXMLOptionPtr xmlopt)
 }
 
 
+static int
+virDomainGraphicsDefParseXMLHook(xmlNodePtr node,
+                                 virDomainGraphicsDefPtr def,
+                                 const char *instname G_GNUC_UNUSED,
+                                 void *parent G_GNUC_UNUSED,
+                                 void *opaque G_GNUC_UNUSED)
+{
+    int ret = -1;
+    virDomainGraphicsListenDef newListen = {0};
+    g_autofree char *socketPath = NULL;
+
+    if (def->type != VIR_DOMAIN_GRAPHICS_TYPE_VNC &&
+        def->type != VIR_DOMAIN_GRAPHICS_TYPE_RDP &&
+        def->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+        return 0;
+
+    if (def->nListens > 0) {
+        virDomainGraphicsListenDefPtr listen = &def->listens[0];
+        g_autofree char *addressCompat = NULL;
+        g_autofree char *socketCompat = NULL;
+
+        addressCompat = virXMLPropString(node, "listen");
+        socketCompat = virXMLPropString(node, "socket");
+
+        if (listen->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS) {
+            if (listen->address && addressCompat && STRNEQ(listen->address, addressCompat)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("graphics 'listen' attribute '%s' must match "
+                                 "'address' attribute of first listen element "
+                                 "(found '%s')"), addressCompat, listen->address);
+                goto cleanup;
+            }
+
+            if (!listen->address)
+                listen->address = g_steal_pointer(&addressCompat);
+        }
+
+        if (listen->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET) {
+            if (listen->socket && socketCompat && STRNEQ(listen->socket, socketCompat)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("graphics 'socket' attribute '%s' must match "
+                                 "'socket' attribute of first listen element "
+                                 "(found '%s')"), socketCompat, listen->socket);
+                goto cleanup;
+            }
+
+            if (!listen->socket)
+                listen->socket = g_steal_pointer(&socketCompat);
+        }
+    }
+
+    /* If no <listen/> element was found in XML for backward compatibility
+     * we should try to parse 'listen' or 'socket' attribute from <graphics/>
+     * element. */
+    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC)
+        socketPath = virXMLPropString(node, "socket");
+
+    if (socketPath) {
+        newListen.type = VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET;
+        newListen.socket = g_steal_pointer(&socketPath);
+    } else {
+        newListen.type = VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS;
+        newListen.address = virXMLPropString(node, "listen");
+        if (STREQ_NULLABLE(newListen.address, ""))
+            VIR_FREE(newListen.address);
+    }
+
+    /* If no <listen/> element was found add a new one created by parsing
+     * <graphics/> element. */
+    if (def->nListens == 0) {
+        if (VIR_APPEND_ELEMENT(def->listens, def->nListens, newListen) < 0)
+            goto cleanup;
+    } else {
+        virDomainGraphicsListenDefPtr glisten = &def->listens[0];
+
+        /* If the first <listen/> element is 'address' or 'network' and we found
+         * 'socket' attribute inside <graphics/> element for backward
+         * compatibility we need to replace the first listen by
+         * <listen type='socket' .../> element based on the 'socket' attribute. */
+        if ((glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS ||
+             glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NETWORK) &&
+            newListen.type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET) {
+            virDomainGraphicsListenDefClear(glisten);
+            *glisten = newListen;
+            memset(&newListen, 0, sizeof(newListen));
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    virDomainGraphicsListenDefClear(&newListen);
+    return ret;
+}
+
+
 /* Parse the XML definition for a graphics device */
 static virDomainGraphicsDefPtr
 virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
@@ -14470,11 +14492,12 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
     def->type = typeVal;
 
+    if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
+        goto error;
+
     switch (def->type) {
     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
         if (virDomainGraphicsVNCDefParseXML(node, &def->data.vnc, NULL, def, &flags) < 0)
-            goto error;
-        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
@@ -14482,8 +14505,6 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-            goto error;
         if (virDomainGraphicsRDPDefParseXML(node, &def->data.rdp, NULL, def, &flags) < 0)
             goto error;
         break;
@@ -14492,8 +14513,6 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
         break;
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-            goto error;
         if (virDomainGraphicsSpiceDefParseXML(node, &def->data.spice, NULL, def, &flags) < 0)
             goto error;
         break;
@@ -14504,6 +14523,9 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
         break;
     }
+
+    if (virDomainGraphicsDefParseXMLHook(node, def, NULL, NULL, &flags) < 0)
+        goto error;
 
     return def;
 
