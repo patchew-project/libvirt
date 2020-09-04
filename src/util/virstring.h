@@ -19,6 +19,7 @@
 #pragma once
 
 #include "internal.h"
+#include "virbuffer.h"
 
 #define VIR_INT64_STR_BUFLEN 21
 
@@ -179,6 +180,14 @@ int virStringParsePort(const char *str,
 int virStringParseYesNo(const char *str,
                         bool *result)
     G_GNUC_WARN_UNUSED_RESULT;
+
+int virStrToBool(const char *str, const char *truevalue, bool *result);
+
+int virStrToTime(const char *str, time_t *result)
+    G_GNUC_WARN_UNUSED_RESULT;
+
+int virTimeFormatBuf(virBufferPtr buf, const char *layout, const time_t time);
+
 /**
  * VIR_AUTOSTRINGLIST:
  *

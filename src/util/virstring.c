@@ -1349,3 +1349,60 @@ int virStringParseYesNo(const char *str, bool *result)
 
     return 0;
 }
+
+
+int
+virStrToBool(const char *str, const char *truevalue, bool *result)
+{
+    if (STREQ(str, truevalue))
+        *result = true;
+    else
+        *result = false;
+
+    return 0;
+}
+
+
+int virStrToTime(const char *str, time_t *result)
+{
+    g_autoptr(GDateTime) then = NULL;
+    g_autoptr(GTimeZone) tz = g_time_zone_new_utc();
+    char *tmp;
+    int year, mon, mday, hour, min, sec;
+
+    /* Expect: YYYY-MM-DDTHH:MM:SS (%d-%d-%dT%d:%d:%d)  eg 2010-11-28T14:29:01 */
+    if (/* year */
+        virStrToLong_i(str, &tmp, 10, &year) < 0 || *tmp != '-' ||
+        /* month */
+        virStrToLong_i(tmp+1, &tmp, 10, &mon) < 0 || *tmp != '-' ||
+        /* day */
+        virStrToLong_i(tmp+1, &tmp, 10, &mday) < 0 || *tmp != 'T' ||
+        /* hour */
+        virStrToLong_i(tmp+1, &tmp, 10, &hour) < 0 || *tmp != ':' ||
+        /* minute */
+        virStrToLong_i(tmp+1, &tmp, 10, &min) < 0 || *tmp != ':' ||
+        /* second */
+        virStrToLong_i(tmp+1, &tmp, 10, &sec) < 0 || *tmp != '\0') {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("invalid time '%s', expect YYYY-MM-DDTHH:MM:SS"),
+                       str);
+        return -1;
+    }
+
+    then = g_date_time_new(tz, year, mon, mday, hour, min, sec);
+    *result = (time_t)g_date_time_to_unix(then);
+    return 0;
+}
+
+
+int
+virTimeFormatBuf(virBufferPtr buf, const char *layout, const time_t time)
+{
+    g_autoptr(GDateTime) then = NULL;
+    g_autofree char *thenstr = NULL;
+
+    then = g_date_time_new_from_unix_utc(time);
+    thenstr = g_date_time_format(then, "%Y-%m-%dT%H:%M:%S");
+    virBufferAsprintf(buf, layout, thenstr);
+    return 0;
+}
