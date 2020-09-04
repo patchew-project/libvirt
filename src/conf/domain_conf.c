@@ -28266,27 +28266,17 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        if (def->data.sdl.display)
-            virBufferEscapeString(buf, " display='%s'",
-                                  def->data.sdl.display);
+        if (virDomainGraphicsSDLDefFormatAttr(buf, &def->data.sdl, def, NULL) < 0)
+            return -1;
 
-        if (def->data.sdl.xauth)
-            virBufferEscapeString(buf, " xauth='%s'",
-                                  def->data.sdl.xauth);
-        if (def->data.sdl.fullscreen)
-            virBufferAddLit(buf, " fullscreen='yes'");
-
-        if (!children && def->data.sdl.gl != VIR_TRISTATE_BOOL_ABSENT) {
+        if (!children && virDomainGraphicsSDLDefCheckElem(&def->data.sdl, def, NULL)) {
             virBufferAddLit(buf, ">\n");
             virBufferAdjustIndent(buf, 2);
             children = true;
         }
 
-        if (def->data.sdl.gl != VIR_TRISTATE_BOOL_ABSENT) {
-            virBufferAsprintf(buf, "<gl enable='%s'",
-                              virTristateBoolTypeToString(def->data.sdl.gl));
-            virBufferAddLit(buf, "/>\n");
-        }
+        if (virDomainGraphicsSDLDefFormatElem(buf, &def->data.sdl, def, NULL) < 0)
+            return -1;
 
         break;
 
