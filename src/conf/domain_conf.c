@@ -1793,47 +1793,10 @@ bool virDomainObjTaint(virDomainObjPtr obj,
 
 void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
 {
-    size_t i;
-
     if (!def)
         return;
 
-    switch (def->type) {
-    case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-        VIR_FREE(def->data.vnc.keymap);
-        virDomainGraphicsAuthDefClear(&def->data.vnc.auth);
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        virDomainGraphicsSDLDefClear(&def->data.sdl);
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        VIR_FREE(def->data.desktop.display);
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        VIR_FREE(def->data.spice.rendernode);
-        VIR_FREE(def->data.spice.keymap);
-        virDomainGraphicsAuthDefClear(&def->data.spice.auth);
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-        VIR_FREE(def->data.egl_headless.rendernode);
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
-    case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
-        break;
-    }
-
-    for (i = 0; i < def->nListens; i++)
-        virDomainGraphicsListenDefClear(&def->listens[i]);
-    VIR_FREE(def->listens);
-
+    virDomainGraphicsDefClear(def);
     virObjectUnref(def->privateData);
     VIR_FREE(def);
 }
@@ -27760,111 +27723,6 @@ virDomainGraphicsVNCDefFormatAttrHook(const virDomainGraphicsVNCDef *def,
     return 0;
 }
 
-static int
-virDomainGraphicsDefFormat(virBufferPtr buf,
-                           virDomainGraphicsDefPtr def,
-                           unsigned int flags)
-{
-    const char *type = virDomainGraphicsTypeToString(def->type);
-    bool children = false;
-    size_t i;
-
-    if (!type) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unexpected net type %d"), def->type);
-        return -1;
-    }
-
-    virBufferAsprintf(buf, "<graphics type='%s'", type);
-
-    switch (def->type) {
-    case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-        if (virDomainGraphicsVNCDefFormatAttr(buf, &def->data.vnc, def, &flags) < 0)
-            return -1;
-
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-        if (virDomainGraphicsSDLDefFormatAttr(buf, &def->data.sdl, def, NULL) < 0)
-            return -1;
-
-        if (!children && virDomainGraphicsSDLDefCheckElem(&def->data.sdl, def, NULL)) {
-            virBufferAddLit(buf, ">\n");
-            virBufferAdjustIndent(buf, 2);
-            children = true;
-        }
-
-        if (virDomainGraphicsSDLDefFormatElem(buf, &def->data.sdl, def, NULL) < 0)
-            return -1;
-
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        if (virDomainGraphicsRDPDefFormatAttr(buf, &def->data.rdp, def, NULL))
-            return -1;
-
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        if (virDomainGraphicsDesktopDefFormatAttr(buf, &def->data.desktop, def, NULL) < 0)
-            return -1;
-
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        if (virDomainGraphicsSpiceDefFormatAttr(buf, &def->data.spice, def, &flags) < 0)
-            return -1;
-
-        break;
-
-    case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-        if (!def->data.egl_headless.rendernode)
-            break;
-
-        if (!children) {
-            virBufferAddLit(buf, ">\n");
-            virBufferAdjustIndent(buf, 2);
-            children = true;
-        }
-
-        if (virDomainGraphicsEGLHeadlessDefFormatElem(buf, &def->data.egl_headless, def, NULL) < 0)
-            return -1;
-
-        break;
-    case VIR_DOMAIN_GRAPHICS_TYPE_NONE:
-    case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
-        break;
-    }
-
-    for (i = 0; i < def->nListens; i++) {
-        if (!virDomainGraphicsListenDefValid(&def->listens[i], def, flags))
-            continue;
-
-        if (!children) {
-            virBufferAddLit(buf, ">\n");
-            virBufferAdjustIndent(buf, 2);
-            children = true;
-        }
-
-        virDomainGraphicsListenDefFormatBuf(buf, "listen",
-                                            &def->listens[i], def, &flags);
-    }
-
-    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
-        if (virDomainGraphicsSpiceDefFormatElem(buf, &def->data.spice, def, NULL) < 0)
-            return -1;
-    }
-
-    if (children) {
-        virBufferAdjustIndent(buf, -2);
-        virBufferAddLit(buf, "</graphics>\n");
-    } else {
-        virBufferAddLit(buf, "/>\n");
-    }
-
-    return 0;
-}
-
 
 static int
 virDomainHostdevDefFormat(virBufferPtr buf,
@@ -29539,7 +29397,9 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
     }
 
     for (n = 0; n < def->ngraphics; n++) {
-        if (virDomainGraphicsDefFormat(buf, def->graphics[n], flags) < 0)
+        if (virDomainGraphicsDefFormatBuf(buf, "graphics",
+                                          def->graphics[n],
+                                          def, &flags) < 0)
             return -1;
     }
 
@@ -30696,7 +30556,9 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
         rc = virDomainControllerDefFormat(&buf, src->data.controller, flags);
         break;
     case VIR_DOMAIN_DEVICE_GRAPHICS:
-        rc = virDomainGraphicsDefFormat(&buf, src->data.graphics, flags);
+        rc = virDomainGraphicsDefFormatBuf(&buf, "graphics",
+                                           src->data.graphics,
+                                           src, &flags);
         break;
     case VIR_DOMAIN_DEVICE_HUB:
         rc = virDomainHubDefFormat(&buf, src->data.hub, flags);

@@ -1751,7 +1751,7 @@ struct _virDomainGraphicsEGLHeadlessDef {   /* genparse, genformat:separate */
     char *rendernode;                       /* xmlattr:gl/rendernode */
 };
 
-struct _virDomainGraphicsDef {      /* genparse:concisehook */
+struct _virDomainGraphicsDef {      /* genparse:concisehook, genformat */
     virObjectPtr privateData;
 
     /* Port value discipline:
@@ -1760,6 +1760,13 @@ struct _virDomainGraphicsDef {      /* genparse:concisehook */
      * Positive value is actual port number given in XML.
      */
     virDomainGraphicsType type;     /* xmlattr */
+
+    /* nListens, listens, and *port are only useful if type is vnc,
+     * rdp, or spice. They've been extracted from the union only to
+     * simplify parsing code.*/
+    size_t nListens;
+    virDomainGraphicsListenDefPtr listens;  /* xmlelem, array:nListens */
+
     union {
         virDomainGraphicsSDLDef sdl;                    /* xmlgroup */
         virDomainGraphicsVNCDef vnc;                    /* xmlgroup */
@@ -1768,11 +1775,6 @@ struct _virDomainGraphicsDef {      /* genparse:concisehook */
         virDomainGraphicsSpiceDef spice;                /* xmlgroup */
         virDomainGraphicsEGLHeadlessDef egl_headless;   /* xmlgroup */
     } data;                         /* xmlswitch:type */
-    /* nListens, listens, and *port are only useful if type is vnc,
-     * rdp, or spice. They've been extracted from the union only to
-     * simplify parsing code.*/
-    size_t nListens;
-    virDomainGraphicsListenDefPtr listens;  /* xmlelem, array:nListens */
 };
 
 typedef enum {
