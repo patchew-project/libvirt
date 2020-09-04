@@ -883,6 +883,31 @@ virNetworkDNSForwarderParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
 
 
 static int
+virNetworkDNSDefParseXMLHook(xmlNodePtr node G_GNUC_UNUSED,
+                             virNetworkDNSDefPtr def,
+                             const char *networkName,
+                             void *parent G_GNUC_UNUSED,
+                             void *opaque G_GNUC_UNUSED,
+                             const char *enable G_GNUC_UNUSED,
+                             const char *forwardPlainNames G_GNUC_UNUSED,
+                             int ntxts,
+                             int nhosts,
+                             int nsrvs,
+                             int nfwds)
+{
+    if (def->enable == VIR_TRISTATE_BOOL_NO &&
+        (nfwds || nhosts || nsrvs || ntxts)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Extra data in disabled network '%s'"),
+                       networkName);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virNetworkDNSDefParseXML(const char *networkName,
                          xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -1007,13 +1032,10 @@ virNetworkDNSDefParseXML(const char *networkName,
         }
     }
 
-    if (def->enable == VIR_TRISTATE_BOOL_NO &&
-        (nfwds || nhosts || nsrvs || ntxts)) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Extra data in disabled network '%s'"),
-                       networkName);
+    if (virNetworkDNSDefParseXMLHook(node, def, networkName, def, NULL,
+                                     enable, forwardPlainNames,
+                                     ntxts, nhosts, nsrvs, nfwds) < 0)
         return -1;
-    }
 
     return 0;
 }
