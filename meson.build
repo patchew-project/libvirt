@@ -2504,3 +2504,8 @@ if conf.has('WITH_QEMU')
   }
   summary(priv_summary, section: 'Privileges')
 endif
+
+py3_clang = run_command('python3', '-c', 'import clang.cindex;print("ok")')
+if py3_clang.returncode() != 0
+  error('python3-clang is required.')
+endif
