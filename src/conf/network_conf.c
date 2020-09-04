@@ -2155,21 +2155,9 @@ virNetworkDNSDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < def->nfwds; i++) {
-
-        virBufferAddLit(buf, "<forwarder");
-        if (def->forwarders[i].domain) {
-            virBufferEscapeString(buf, " domain='%s'",
-                                  def->forwarders[i].domain);
-        }
-        if (VIR_SOCKET_ADDR_VALID(&def->forwarders[i].addr)) {
-            g_autofree char *addr = virSocketAddrFormat(&def->forwarders[i].addr);
-
-            if (!addr)
-                return -1;
-
-            virBufferAsprintf(buf, " addr='%s'", addr);
-        }
-        virBufferAddLit(buf, "/>\n");
+        if (virNetworkDNSForwarderFormatBuf(buf, "forwarder",
+                                            &def->forwarders[i], def, NULL) < 0)
+            return -1;
     }
 
     for (i = 0; i < def->ntxts; i++) {
