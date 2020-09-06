@@ -110,6 +110,7 @@ char *qemuBuildNicDevStr(virDomainDefPtr def,
 
 char *qemuDeviceDriveHostAlias(virDomainDiskDefPtr disk);
 bool qemuDiskBusIsSD(int bus);
+bool qemuDiskIsUSBCD(virDomainDiskDefPtr disk);
 
 qemuBlockStorageSourceAttachDataPtr
 qemuBuildStorageSourceAttachPrepareDrive(virDomainDiskDefPtr disk,

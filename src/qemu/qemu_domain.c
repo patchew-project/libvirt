@@ -7282,7 +7282,7 @@ qemuDomainDiskGetBackendAlias(virDomainDiskDefPtr disk,
     *backendAlias = NULL;
 
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCKDEV) ||
-        qemuDiskBusIsSD(disk->bus)) {
+        qemuDiskBusIsSD(disk->bus) || qemuDiskIsUSBCD(disk)) {
         if (!(*backendAlias = qemuAliasDiskDriveFromDisk(disk)))
             return -1;
 

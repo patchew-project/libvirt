@@ -1122,6 +1122,22 @@ qemuDiskBusIsSD(int bus)
 
 
 /**
+ * qemuDiskIsUSBCD
+ * @disk: the disk
+ *
+ * Returns true, if the disk is an USB cdrom, which can't be currently
+ * represented by using -blockdev entries (other frontends have extra
+ * '-hd' and '-cd' devices to distinguish the media).
+ */
+bool
+qemuDiskIsUSBCD(virDomainDiskDefPtr disk)
+{
+    return ((virDomainDiskBus)disk->bus) == VIR_DOMAIN_DISK_BUS_USB
+           && disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM;
+}
+
+
+/**
  * qemuDiskSourceNeedsProps:
  * @src: disk source
  *
@@ -1424,6 +1440,9 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
      * qemu requires them on -drive instead of -device */
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_STORAGE_WERROR))
         qemuBuildDiskFrontendAttributeErrorPolicy(disk, &opt);
+
+    if (qemuDiskIsUSBCD(disk))
+        virBufferAddLit(&opt, ",media=cdrom");
 
     if (disk->src->readonly)
         virBufferAddLit(&opt, ",readonly=on");
@@ -2075,7 +2094,7 @@ qemuBuildDiskSourceCommandLine(virCommandPtr cmd,
     size_t i;
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCKDEV) &&
-        !qemuDiskBusIsSD(disk->bus)) {
+        !qemuDiskBusIsSD(disk->bus) && !qemuDiskIsUSBCD(disk)) {
         if (virStorageSourceIsEmpty(disk->src))
             return 0;
 
