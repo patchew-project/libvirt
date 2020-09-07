@@ -734,33 +734,21 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
 static int
 virCPUppc64DriverGetModels(char ***models)
 {
-    ppc64_map *map;
+    g_autoptr(ppc64_map) map = NULL;
     size_t i;
-    int ret = -1;
 
     if (!(map = ppc64LoadMap()))
-        goto error;
+        return -1;
 
     if (models) {
         if (VIR_ALLOC_N(*models, map->nmodels + 1) < 0)
-            goto error;
+            return -1;
 
         for (i = 0; i < map->nmodels; i++)
             (*models)[i] = g_strdup(map->models[i]->name);
     }
 
-    ret = map->nmodels;
-
- cleanup:
-    ppc64MapFree(map);
-    return ret;
-
- error:
-    if (models) {
-        g_strfreev(*models);
-        *models = NULL;
-    }
-    goto cleanup;
+    return map->nmodels;
 }
 
 struct cpuArchDriver cpuDriverPPC64 = {
