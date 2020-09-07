@@ -34,22 +34,31 @@ VIR_LOG_INIT("cpu.cpu_ppc64");
 
 static const virArch archs[] = { VIR_ARCH_PPC64, VIR_ARCH_PPC64LE };
 
-struct ppc64_vendor {
+typedef struct {
     char *name;
-};
+} ppc64_vendor;
 
-struct ppc64_model {
+static void ppc64VendorFree(ppc64_vendor *vendor);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(ppc64_vendor, ppc64VendorFree);
+
+typedef struct {
     char *name;
-    const struct ppc64_vendor *vendor;
+    const ppc64_vendor *vendor;
     virCPUppc64Data data;
-};
+} ppc64_model;
 
-struct ppc64_map {
+static void ppc64ModelFree(ppc64_model *model);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(ppc64_model, ppc64ModelFree);
+
+typedef struct {
     size_t nvendors;
-    struct ppc64_vendor **vendors;
+    ppc64_vendor **vendors;
     size_t nmodels;
-    struct ppc64_model **models;
-};
+    ppc64_model **models;
+} ppc64_map;
+
+static void ppc64MapFree(ppc64_map *map);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(ppc64_map, ppc64MapFree);
 
 /* Convert a legacy CPU definition by transforming
  * model names to generation names:
@@ -142,7 +151,7 @@ ppc64DataCopy(virCPUppc64Data *dst, const virCPUppc64Data *src)
 }
 
 static void
-ppc64VendorFree(struct ppc64_vendor *vendor)
+ppc64VendorFree(ppc64_vendor *vendor)
 {
     if (!vendor)
         return;
@@ -151,8 +160,8 @@ ppc64VendorFree(struct ppc64_vendor *vendor)
     VIR_FREE(vendor);
 }
 
-static struct ppc64_vendor *
-ppc64VendorFind(const struct ppc64_map *map,
+static ppc64_vendor *
+ppc64VendorFind(const ppc64_map *map,
                 const char *name)
 {
     size_t i;
@@ -166,7 +175,7 @@ ppc64VendorFind(const struct ppc64_map *map,
 }
 
 static void
-ppc64ModelFree(struct ppc64_model *model)
+ppc64ModelFree(ppc64_model *model)
 {
     if (!model)
         return;
@@ -176,10 +185,10 @@ ppc64ModelFree(struct ppc64_model *model)
     VIR_FREE(model);
 }
 
-static struct ppc64_model *
-ppc64ModelCopy(const struct ppc64_model *model)
+static ppc64_model *
+ppc64ModelCopy(const ppc64_model *model)
 {
-    struct ppc64_model *copy;
+    ppc64_model *copy;
 
     if (VIR_ALLOC(copy) < 0)
         goto error;
@@ -198,8 +207,8 @@ ppc64ModelCopy(const struct ppc64_model *model)
     return NULL;
 }
 
-static struct ppc64_model *
-ppc64ModelFind(const struct ppc64_map *map,
+static ppc64_model *
+ppc64ModelFind(const ppc64_map *map,
                const char *name)
 {
     size_t i;
@@ -212,15 +221,15 @@ ppc64ModelFind(const struct ppc64_map *map,
     return NULL;
 }
 
-static struct ppc64_model *
-ppc64ModelFindPVR(const struct ppc64_map *map,
+static ppc64_model *
+ppc64ModelFindPVR(const ppc64_map *map,
                   uint32_t pvr)
 {
     size_t i;
     size_t j;
 
     for (i = 0; i < map->nmodels; i++) {
-        struct ppc64_model *model = map->models[i];
+        ppc64_model *model = map->models[i];
         for (j = 0; j < model->data.len; j++) {
             if ((pvr & model->data.pvr[j].mask) == model->data.pvr[j].value)
                 return model;
@@ -230,11 +239,11 @@ ppc64ModelFindPVR(const struct ppc64_map *map,
     return NULL;
 }
 
-static struct ppc64_model *
+static ppc64_model *
 ppc64ModelFromCPU(const virCPUDef *cpu,
-                  const struct ppc64_map *map)
+                  const ppc64_map *map)
 {
-    struct ppc64_model *model;
+    ppc64_model *model;
 
     if (!cpu->model) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -252,7 +261,7 @@ ppc64ModelFromCPU(const virCPUDef *cpu,
 }
 
 static void
-ppc64MapFree(struct ppc64_map *map)
+ppc64MapFree(ppc64_map *map)
 {
     size_t i;
 
@@ -275,8 +284,8 @@ ppc64VendorParse(xmlXPathContextPtr ctxt G_GNUC_UNUSED,
                  const char *name,
                  void *data)
 {
-    struct ppc64_map *map = data;
-    struct ppc64_vendor *vendor;
+    ppc64_map *map = data;
+    ppc64_vendor *vendor;
     int ret = -1;
 
     if (VIR_ALLOC(vendor) < 0)
@@ -306,8 +315,8 @@ ppc64ModelParse(xmlXPathContextPtr ctxt,
                 const char *name,
                 void *data)
 {
-    struct ppc64_map *map = data;
-    struct ppc64_model *model;
+    ppc64_map *map = data;
+    ppc64_model *model;
     xmlNodePtr *nodes = NULL;
     char *vendor = NULL;
     unsigned long pvr;
@@ -388,10 +397,10 @@ ppc64ModelParse(xmlXPathContextPtr ctxt,
 }
 
 
-static struct ppc64_map *
+static ppc64_map *
 ppc64LoadMap(void)
 {
-    struct ppc64_map *map;
+    ppc64_map *map;
 
     if (VIR_ALLOC(map) < 0)
         goto error;
@@ -429,9 +438,9 @@ ppc64Compute(virCPUDefPtr host,
              virCPUDataPtr *guestData,
              char **message)
 {
-    struct ppc64_map *map = NULL;
-    struct ppc64_model *host_model = NULL;
-    struct ppc64_model *guest_model = NULL;
+    ppc64_map *map = NULL;
+    ppc64_model *host_model = NULL;
+    ppc64_model *guest_model = NULL;
     virCPUDefPtr cpu = NULL;
     virCPUCompareResult ret = VIR_CPU_COMPARE_ERROR;
     virArch arch;
@@ -589,8 +598,8 @@ ppc64DriverDecode(virCPUDefPtr cpu,
                   virDomainCapsCPUModelsPtr models)
 {
     int ret = -1;
-    struct ppc64_map *map;
-    const struct ppc64_model *model;
+    ppc64_map *map;
+    const ppc64_model *model;
 
     if (!data || !(map = ppc64LoadMap()))
         return -1;
@@ -689,9 +698,9 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
                     const char **features G_GNUC_UNUSED,
                     bool migratable G_GNUC_UNUSED)
 {
-    struct ppc64_map *map;
-    const struct ppc64_model *model;
-    const struct ppc64_vendor *vendor = NULL;
+    ppc64_map *map;
+    const ppc64_model *model;
+    const ppc64_vendor *vendor = NULL;
     virCPUDefPtr cpu = NULL;
     size_t i;
 
@@ -705,7 +714,7 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
     }
 
     for (i = 0; i < ncpus; i++) {
-        const struct ppc64_vendor *vnd;
+        const ppc64_vendor *vnd;
 
         /* Hosts running old (<= 1.2.18) versions of libvirt will report
          * strings like 'power7+' or 'power8e' instead of proper CPU model
@@ -778,7 +787,7 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
 static int
 virCPUppc64DriverGetModels(char ***models)
 {
-    struct ppc64_map *map;
+    ppc64_map *map;
     size_t i;
     int ret = -1;
 
