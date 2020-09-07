@@ -653,19 +653,19 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
                     const char **features G_GNUC_UNUSED,
                     bool migratable G_GNUC_UNUSED)
 {
-    ppc64_map *map;
+    g_autoptr(ppc64_map) map = NULL;
     const ppc64_model *model;
     const ppc64_vendor *vendor = NULL;
-    virCPUDefPtr cpu = NULL;
+    g_autoptr(virCPUDef) cpu = NULL;
     size_t i;
 
     if (!(map = ppc64LoadMap()))
-        goto error;
+        return NULL;
 
     if (!(model = ppc64ModelFind(map, cpus[0]->model))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unknown CPU model %s"), cpus[0]->model);
-        goto error;
+        return NULL;
     }
 
     for (i = 0; i < ncpus; i++) {
@@ -685,7 +685,7 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
         if (STRNEQ(cpus[i]->model, model->name)) {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("CPUs are incompatible"));
-            goto error;
+            return NULL;
         }
 
         if (!cpus[i]->vendor)
@@ -694,7 +694,7 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
         if (!(vnd = ppc64VendorFind(map, cpus[i]->vendor))) {
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("Unknown CPU vendor %s"), cpus[i]->vendor);
-            goto error;
+            return NULL;
         }
 
         if (model->vendor) {
@@ -704,13 +704,13 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
                                  "vendor %s"),
                                model->vendor->name, model->name,
                                vnd->name);
-                goto error;
+                return NULL;
             }
         } else if (vendor) {
             if (vendor != vnd) {
                 virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                                _("CPU vendors do not match"));
-                goto error;
+                return NULL;
             }
         } else {
             vendor = vnd;
@@ -728,15 +728,7 @@ virCPUppc64Baseline(virCPUDefPtr *cpus,
     cpu->match = VIR_CPU_MATCH_EXACT;
     cpu->fallback = VIR_CPU_FALLBACK_FORBID;
 
- cleanup:
-    ppc64MapFree(map);
-
-    return cpu;
-
- error:
-    virCPUDefFree(cpu);
-    cpu = NULL;
-    goto cleanup;
+    return g_steal_pointer(&cpu);
 }
 
 static int
