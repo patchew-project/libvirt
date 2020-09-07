@@ -384,19 +384,15 @@ ppc64ModelParse(xmlXPathContextPtr ctxt,
 static ppc64_map *
 ppc64LoadMap(void)
 {
-    ppc64_map *map;
+    g_autoptr(ppc64_map) map = NULL;
 
     if (VIR_ALLOC(map) < 0)
-        goto error;
+        return NULL;
 
     if (cpuMapLoad("ppc64", ppc64VendorParse, NULL, ppc64ModelParse, map) < 0)
-        goto error;
+        return NULL;
 
-    return map;
-
- error:
-    ppc64MapFree(map);
-    return NULL;
+    return g_steal_pointer(&map);
 }
 
 static virCPUDataPtr
