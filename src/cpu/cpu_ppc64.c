@@ -188,23 +188,19 @@ ppc64ModelFree(ppc64_model *model)
 static ppc64_model *
 ppc64ModelCopy(const ppc64_model *model)
 {
-    ppc64_model *copy;
+    g_autoptr(ppc64_model) copy = NULL;
 
     if (VIR_ALLOC(copy) < 0)
-        goto error;
+        return NULL;
 
     copy->name = g_strdup(model->name);
 
     if (ppc64DataCopy(&copy->data, &model->data) < 0)
-        goto error;
+        return NULL;
 
     copy->vendor = model->vendor;
 
-    return copy;
-
- error:
-    ppc64ModelFree(copy);
-    return NULL;
+    return g_steal_pointer(&copy);
 }
 
 static ppc64_model *
