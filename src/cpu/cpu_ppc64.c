@@ -418,18 +418,16 @@ ppc64Compute(virCPUDefPtr host,
              virCPUDataPtr *guestData,
              char **message)
 {
-    ppc64_map *map = NULL;
-    ppc64_model *host_model = NULL;
-    ppc64_model *guest_model = NULL;
-    virCPUDefPtr cpu = NULL;
-    virCPUCompareResult ret = VIR_CPU_COMPARE_ERROR;
+    g_autoptr(ppc64_map) map = NULL;
+    g_autoptr(ppc64_model) host_model = NULL;
+    g_autoptr(ppc64_model) guest_model = NULL;
+    g_autoptr(virCPUDef) cpu = NULL;
     virArch arch;
     size_t i;
 
     /* Ensure existing configurations are handled correctly */
-    if (!(cpu = virCPUDefCopy(other)) ||
-        virCPUppc64ConvertLegacy(cpu) < 0)
-        goto cleanup;
+    if (!(cpu = virCPUDefCopy(other)) || virCPUppc64ConvertLegacy(cpu) < 0)
+        return VIR_CPU_COMPARE_ERROR;
 
     if (cpu->arch != VIR_ARCH_NONE) {
         bool found = false;
@@ -448,8 +446,7 @@ ppc64Compute(virCPUDefPtr host,
                 *message = g_strdup_printf(_("CPU arch %s does not match host arch"),
                                            virArchToString(cpu->arch));
 
-            ret = VIR_CPU_COMPARE_INCOMPATIBLE;
-            goto cleanup;
+            return VIR_CPU_COMPARE_INCOMPATIBLE;
         }
         arch = cpu->arch;
     } else {
@@ -466,16 +463,15 @@ ppc64Compute(virCPUDefPtr host,
                                        cpu->vendor);
         }
 
-        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
-        goto cleanup;
+        return VIR_CPU_COMPARE_INCOMPATIBLE;
     }
 
     if (!(map = ppc64LoadMap()))
-        goto cleanup;
+        return VIR_CPU_COMPARE_ERROR;
 
     /* Host CPU information */
     if (!(host_model = ppc64ModelFromCPU(host, map)))
-        goto cleanup;
+        return VIR_CPU_COMPARE_ERROR;
 
     if (cpu->type == VIR_CPU_TYPE_GUEST) {
         /* Guest CPU information */
@@ -485,10 +481,8 @@ ppc64Compute(virCPUDefPtr host,
             /* host-model only:
              * we need to take compatibility modes into account */
             tmp = ppc64CheckCompatibilityMode(host->model, cpu->model);
-            if (tmp != VIR_CPU_COMPARE_IDENTICAL) {
-                ret = tmp;
-                goto cleanup;
-            }
+            if (tmp != VIR_CPU_COMPARE_IDENTICAL)
+                return tmp;
             G_GNUC_FALLTHROUGH;
 
         case VIR_CPU_MODE_HOST_PASSTHROUGH:
@@ -509,7 +503,7 @@ ppc64Compute(virCPUDefPtr host,
     }
 
     if (!guest_model)
-        goto cleanup;
+        return VIR_CPU_COMPARE_ERROR;
 
     if (STRNEQ(guest_model->name, host_model->name)) {
         VIR_DEBUG("host CPU model does not match required CPU model %s",
@@ -520,22 +514,14 @@ ppc64Compute(virCPUDefPtr host,
                                        guest_model->name);
         }
 
-        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
-        goto cleanup;
+        return VIR_CPU_COMPARE_INCOMPATIBLE;
     }
 
     if (guestData)
         if (!(*guestData = ppc64MakeCPUData(arch, &guest_model->data)))
-            goto cleanup;
+            return VIR_CPU_COMPARE_ERROR;
 
-    ret = VIR_CPU_COMPARE_IDENTICAL;
-
- cleanup:
-    virCPUDefFree(cpu);
-    ppc64MapFree(map);
-    ppc64ModelFree(host_model);
-    ppc64ModelFree(guest_model);
-    return ret;
+    return VIR_CPU_COMPARE_IDENTICAL;
 }
 
 static virCPUCompareResult
