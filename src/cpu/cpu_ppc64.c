@@ -563,8 +563,7 @@ ppc64DriverDecode(virCPUDefPtr cpu,
                   const virCPUData *data,
                   virDomainCapsCPUModelsPtr models)
 {
-    int ret = -1;
-    ppc64_map *map;
+    g_autoptr(ppc64_map) map = NULL;
     const ppc64_model *model;
 
     if (!data || !(map = ppc64LoadMap()))
@@ -574,26 +573,21 @@ ppc64DriverDecode(virCPUDefPtr cpu,
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("Cannot find CPU model with PVR 0x%08x"),
                        data->data.ppc64.pvr[0].value);
-        goto cleanup;
+        return -1;
     }
 
     if (!virCPUModelIsAllowed(model->name, models)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("CPU model %s is not supported by hypervisor"),
                        model->name);
-        goto cleanup;
+        return -1;
     }
 
     cpu->model = g_strdup(model->name);
     if (model->vendor)
         cpu->vendor = g_strdup(model->vendor->name);
 
-    ret = 0;
-
- cleanup:
-    ppc64MapFree(map);
-
-    return ret;
+    return 0;
 }
 
 static void
