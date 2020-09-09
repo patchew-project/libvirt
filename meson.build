@@ -141,6 +141,8 @@ if get_option('tests_coverage')
   ]
 endif
 
+tests_timeout = get_option('tests_timeout')
+
 
 # Detect when running under the clang static analyzer's scan-build driver
 # or Coverity-prevent's cov-build. Define STATIC_ANALYSIS accordingly.

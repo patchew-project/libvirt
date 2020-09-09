@@ -582,7 +582,7 @@ foreach data : tests
     ],
     export_dynamic: true,
   )
-  test(data['name'], test_bin, env: tests_env)
+  test(data['name'], test_bin, env: tests_env, timeout: tests_timeout)
 endforeach
 
 
@@ -681,7 +681,7 @@ endif
 
 foreach name : test_scripts
   script = find_program(name)
-  test(name, script, env: tests_env)
+  test(name, script, env: tests_env, timeout: tests_timeout)
 endforeach
 
 add_test_setup(
@@ -701,6 +701,6 @@ add_test_setup(
     '--suppressions=@0@'.format(meson.current_source_dir() / '.valgrind.supp'),
     '--error-exitcode=1',
   ],
-  # default timeout in meson is 30s
+  # Tests take a lot longer when run under Valgrind
   timeout_multiplier: 4,
 )
