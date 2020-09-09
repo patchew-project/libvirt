@@ -1185,7 +1185,7 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
            -Dqemu_group=%{qemu_group} \
            -Dtls_priority=%{tls_priority} \
            %{?enable_werror} \
-           -Dexpensive_tests=enabled \
+           -Dtests_expensive=enabled \
            -Dinit_script=systemd \
            %{?arg_login_shell}
 

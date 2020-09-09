@@ -127,14 +127,14 @@ endif
 
 # test options
 
-if get_option('expensive_tests').auto()
+if get_option('tests_expensive').auto()
   use_expensive_tests = not git
 else
-  use_expensive_tests = get_option('expensive_tests').enabled()
+  use_expensive_tests = get_option('tests_expensive').enabled()
 endif
 
 coverage_flags = []
-if get_option('test_coverage')
+if get_option('tests_coverage')
   coverage_flags = [
     '-fprofile-arcs',
     '-ftest-coverage',
