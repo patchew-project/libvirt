@@ -64,7 +64,7 @@ loadData(const char *mapfile,
         VIR_DEBUG("Load %s name %s", element, name);
         ctxt->node = nodes[i];
         rv = callback(ctxt, name, data);
-        VIR_FREE(name);
+        g_free(name);
         if (rv < 0)
             return -1;
     }
@@ -133,10 +133,10 @@ loadIncludes(xmlXPathContextPtr ctxt,
         }
         VIR_DEBUG("Finding CPU map include '%s'", filename);
         if (cpuMapLoadInclude(filename, vendorCB, featureCB, modelCB, data) < 0) {
-            VIR_FREE(filename);
+            g_free(filename);
             return -1;
         }
-        VIR_FREE(filename);
+        g_free(filename);
     }
 
     return 0;
