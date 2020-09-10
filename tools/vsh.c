@@ -2723,7 +2723,7 @@ vshCompleterFilter(char ***list,
         newList_len++;
     }
 
-    ignore_value(VIR_REALLOC_N_QUIET(newList, newList_len + 1));
+    ignore_value(VIR_REALLOC_N(newList, newList_len + 1));
     VIR_FREE(*list);
     *list = newList;
     return 0;

@@ -4339,7 +4339,7 @@ virFileGetXAttrQuiet(const char *path,
         if ((need = getxattr(path, name, NULL, 0)) < 0)
             goto cleanup;
 
-        if (VIR_REALLOC_N_QUIET(buf, need + 1) < 0)
+        if (VIR_REALLOC_N(buf, need + 1) < 0)
             goto cleanup;
 
         if ((got = getxattr(path, name, buf, need)) < 0) {

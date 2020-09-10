@@ -511,7 +511,7 @@ qemuDomainMasterKeyReadFile(qemuDomainObjPrivatePtr priv)
         goto error;
     }
 
-    ignore_value(VIR_REALLOC_N_QUIET(masterKey, masterKeyLen));
+    ignore_value(VIR_REALLOC_N(masterKey, masterKeyLen));
 
     priv->masterKey = masterKey;
     priv->masterKeyLen = masterKeyLen;
@@ -6357,7 +6357,7 @@ ssize_t qemuDomainLogContextRead(qemuDomainLogContextPtr ctxt,
 
         buf[got] = '\0';
 
-        ignore_value(VIR_REALLOC_N_QUIET(buf, got + 1));
+        ignore_value(VIR_REALLOC_N(buf, got + 1));
         buflen = got;
     }
 
