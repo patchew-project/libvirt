@@ -189,9 +189,7 @@ ppc64ModelCopy(const virCPUppc64Model *model)
 {
     g_autoptr(virCPUppc64Model) copy = NULL;
 
-    if (VIR_ALLOC(copy) < 0)
-        return NULL;
-
+    copy = g_new0(virCPUppc64Model, 1);
     copy->name = g_strdup(model->name);
 
     if (ppc64DataCopy(&copy->data, &model->data) < 0)
@@ -283,9 +281,7 @@ ppc64VendorParse(xmlXPathContextPtr ctxt G_GNUC_UNUSED,
     virCPUppc64MapPtr map = data;
     g_autoptr(virCPUppc64Vendor) vendor = NULL;
 
-    if (VIR_ALLOC(vendor) < 0)
-        return -1;
-
+    vendor = g_new0(virCPUppc64Vendor, 1);
     vendor->name = g_strdup(name);
 
     if (ppc64VendorFind(map, vendor->name)) {
@@ -314,9 +310,7 @@ ppc64ModelParse(xmlXPathContextPtr ctxt,
     size_t i;
     int n;
 
-    if (VIR_ALLOC(model) < 0)
-        return -1;
-
+    model = g_new0(virCPUppc64Model, 1);
     model->name = g_strdup(name);
 
     if (ppc64ModelFind(map, model->name)) {
@@ -386,8 +380,7 @@ ppc64LoadMap(void)
 {
     g_autoptr(virCPUppc64Map) map = NULL;
 
-    if (VIR_ALLOC(map) < 0)
-        return NULL;
+    map = g_new0(virCPUppc64Map, 1);
 
     if (cpuMapLoad("ppc64", ppc64VendorParse, NULL, ppc64ModelParse, map) < 0)
         return NULL;
@@ -399,17 +392,15 @@ static virCPUDataPtr
 ppc64MakeCPUData(virArch arch,
                  virCPUppc64Data *data)
 {
-    virCPUDataPtr cpuData;
+    g_autoptr(virCPUData) cpuData = NULL;
 
-    if (VIR_ALLOC(cpuData) < 0)
-        return NULL;
-
+    cpuData = g_new0(virCPUData, 1);
     cpuData->arch = arch;
 
     if (ppc64DataCopy(&cpuData->data.ppc64, data) < 0)
-        VIR_FREE(cpuData);
+        return NULL;
 
-    return cpuData;
+    return g_steal_pointer(&cpuData);
 }
 
 static virCPUCompareResult
