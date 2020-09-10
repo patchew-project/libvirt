@@ -260,7 +260,7 @@ virDevMapperGetTargetsImpl(int controlFD,
         return -1;
     }
 
-    if (VIR_ALLOC_N_QUIET(devPaths, deps->count + 1) < 0)
+    if (VIR_ALLOC_N(devPaths, deps->count + 1) < 0)
         return -1;
 
     for (i = 0; i < deps->count; i++) {

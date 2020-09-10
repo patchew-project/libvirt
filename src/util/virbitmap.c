@@ -72,7 +72,7 @@ virBitmapNewQuiet(size_t size)
     if (VIR_ALLOC(bitmap) < 0)
         return NULL;
 
-    if (VIR_ALLOC_N_QUIET(bitmap->map, sz) < 0) {
+    if (VIR_ALLOC_N(bitmap->map, sz) < 0) {
         VIR_FREE(bitmap);
         return NULL;
     }

@@ -1320,7 +1320,7 @@ virLogFilterNew(const char *match,
     /* We must treat 'foo' as equiv to '*foo*' for g_pattern_match
      * todo substring matches, so add 2 extra bytes
      */
-    if (VIR_ALLOC_N_QUIET(mdup, mlen + 3) < 0)
+    if (VIR_ALLOC_N(mdup, mlen + 3) < 0)
         return NULL;
 
     mdup[0] = '*';
