@@ -253,7 +253,7 @@ int virThreadCreateFull(virThreadPtr thread,
 
     if ((err = pthread_attr_init(&attr)) != 0)
         goto cleanup;
-    if (VIR_ALLOC_QUIET(args) < 0) {
+    if (VIR_ALLOC(args) < 0) {
         err = ENOMEM;
         goto cleanup;
     }

@@ -1327,7 +1327,7 @@ virLogFilterNew(const char *match,
     memcpy(mdup + 1, match, mlen);
     mdup[mlen + 1] = '*';
 
-    if (VIR_ALLOC_QUIET(ret) < 0) {
+    if (VIR_ALLOC(ret) < 0) {
         VIR_FREE(mdup);
         return NULL;
     }

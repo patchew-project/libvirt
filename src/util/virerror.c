@@ -225,7 +225,7 @@ virErrorCopyNew(virErrorPtr err)
 {
     virErrorPtr ret;
 
-    if (VIR_ALLOC_QUIET(ret) < 0)
+    if (VIR_ALLOC(ret) < 0)
         return NULL;
 
     if (virCopyError(err, ret) < 0)
@@ -241,7 +241,7 @@ virLastErrorObject(void)
     virErrorPtr err;
     err = virThreadLocalGet(&virLastErr);
     if (!err) {
-        if (VIR_ALLOC_QUIET(err) < 0)
+        if (VIR_ALLOC(err) < 0)
             return NULL;
         if (virThreadLocalSet(&virLastErr, err) < 0)
             VIR_FREE(err);
@@ -404,7 +404,7 @@ virSaveLastError(void)
     virErrorPtr to;
     int saved_errno = errno;
 
-    if (VIR_ALLOC_QUIET(to) < 0)
+    if (VIR_ALLOC(to) < 0)
         return NULL;
 
     virCopyLastError(to);
