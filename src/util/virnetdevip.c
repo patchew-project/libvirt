@@ -43,7 +43,10 @@
 #ifdef __linux__
 # include <linux/sockios.h>
 # include <linux/if_vlan.h>
+# include <linux/ipv6_route.h>
 #endif
+
+#define PROC_NET_IPV6_ROUTE "/proc/net/ipv6_route"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -688,15 +691,116 @@ virNetDevIPRouteAdd(const char *ifname,
     return 0;
 }
 
+#endif /* defined(__linux__) && defined(HAVE_LIBNL) */
+
+
+#if defined(__linux__)
+
+/**
+ * virNetDevIPCheckIPv6Forwarding
+ *
+ * This function checks if IPv6 routes have the RTF_ADDRCONF flag set,
+ * indicating they have been created by the kernel's RA configuration
+ * handling.  These routes are subject to being flushed when ipv6
+ * forwarding is enabled unless accept_ra is explicitly set to "2".
+ * This will most likely result in ipv6 networking being broken.
+ *
+ * Returns: true if it is safe to enable forwarding, or false if
+ * breakable routes are found.
+ *
+ **/
+bool
+virNetDevIPCheckIPv6Forwarding(void)
+{
+    int len;
+    char *cur;
+    g_autofree char *buf = NULL;
+    /* lines are 150 chars */
+    enum {MAX_ROUTE_SIZE = 150*100000};
+
+    /* This is /proc/sys/net/ipv6/conf/all/accept_ra */
+    int all_accept_ra = virNetDevIPGetAcceptRA(NULL);
+
+    /* Read ipv6 routes */
+    if ((len = virFileReadAll(PROC_NET_IPV6_ROUTE,
+                              MAX_ROUTE_SIZE, &buf)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unable to read %s "
+                         "for ipv6 forwarding checks"), PROC_NET_IPV6_ROUTE);
+        return false;
+    }
+
+    /* VIR_DEBUG("%s output:\n%s", PROC_NET_IPV6_ROUTE, buf); */
+
+    /* Dropping the last character to stop the loop */
+    if (len > 0)
+        buf[len-1] = '\0';
+
+    cur = buf;
+    while (cur) {
+        char route[33], flags[9], iface[9];
+        unsigned int flags_val;
+        char *iface_val;
+        int num;
+        char *nl = strchr(cur, '\n');
+
+        if (nl)
+            *nl++ = '\0';
+
+        num = sscanf(cur, "%32s %*s %*s %*s %*s %*s %*s %*s %8s %8s",
+                     route, flags, iface);
+
+        cur = nl;
+        if (num != 3) {
+            VIR_DEBUG("Failed to parse route line: %s", cur);
+            continue;
+        }
+
+        if (virStrToLong_ui(flags, NULL, 16, &flags_val)) {
+            VIR_DEBUG("Failed to parse flags: %s", flags);
+            continue;
+        }
+
+        /* This is right justified, strip leading spaces */
+        iface_val = &iface[0];
+        while (*iface_val && g_ascii_isspace(*iface_val))
+            iface_val++;
+
+        VIR_DEBUG("%s iface %s flags %s : RTF_ADDRCONF %sset",
+                  route, iface_val, flags,
+                  (flags_val & RTF_ADDRCONF ? "" : "not "));
+
+        if (flags_val & RTF_ADDRCONF) {
+            int ret = virNetDevIPGetAcceptRA(iface_val);
+            VIR_DEBUG("%s reports accept_ra of %d",
+                      iface_val, ret);
+            /* If the interface for this autoconfigured route
+             * has accept_ra == 1, or it is default and the "all"
+             * value of accept_ra == 1, it will be subject to
+             * flushing if forwarding is enabled.
+             */
+            if (ret == 1 || (ret == 0 && all_accept_ra == 1)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Check the host setup: interface %s has kernel "
+                                 "autoconfigured IPv6 routes and enabling forwarding "
+                                 " without accept_ra set to 2 will cause the kernel "
+                                 "to flush them, breaking networking."), iface_val);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+#else
 
 bool
 virNetDevIPCheckIPv6Forwarding(void)
 {
-    VIR_WARN("built without libnl: unable to check if IPv6 forwarding can be safely enabled");
+    VIR_DEBUG("No checks for IPv6 forwarding issues on non-Linux systems", flags);
     return true;
 }
 
-#endif /* defined(__linux__) && defined(WITH_LIBNL) */
+#endif /* defined(__linux__) */
 
 
 /**
