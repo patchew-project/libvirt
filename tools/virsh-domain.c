@@ -243,6 +243,8 @@ static const vshCmdOptDef opts_attach_disk[] = {
     },
     {.name = "iothread",
      .type = VSH_OT_STRING,
+     .completer = virshDomainIOThreadIdCompleter,
+     .completer_flags = 0,
      .help = N_("IOThread to be used by supported device")
     },
     {.name = "cache",
