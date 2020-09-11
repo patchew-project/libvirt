@@ -7003,6 +7003,8 @@ static const vshCmdOptDef opts_vcpupin[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(0),
     {.name = "vcpu",
      .type = VSH_OT_INT,
+     .completer = virshDomainVcpuCompleter,
+     .completer_flags = 0,
      .help = N_("vcpu number")
     },
     {.name = "cpulist",
