@@ -550,6 +550,7 @@ VIR_ENUM_IMPL(virDomainNet,
               "direct",
               "hostdev",
               "udp",
+              "vdpa",
 );
 
 VIR_ENUM_IMPL(virDomainNetModel,
@@ -2500,6 +2501,10 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
         virObjectUnref(def->data.vhostuser);
         def->data.vhostuser = NULL;
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_VDPA:
+        VIR_FREE(def->data.vdpa.devicepath);
         break;
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
@@ -12129,6 +12134,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 if (virDomainChrSourceReconnectDefParseXML(&reconnect, cur, ctxt) < 0)
                     goto error;
 
+            } else if (!dev
+                       && def->type == VIR_DOMAIN_NET_TYPE_VDPA
+                       && virXMLNodeNameEqual(cur, "source")) {
+                dev = virXMLPropString(cur, "dev");
             } else if (!def->virtPortProfile
                        && virXMLNodeNameEqual(cur, "virtualport")) {
                 if (def->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -12384,6 +12393,16 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                              "type='vhostuser'/>"));
             goto error;
         }
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_VDPA:
+        if (dev == NULL) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("No <source> 'dev' attribute "
+                             "specified with <interface type='vdpa'/>"));
+            goto error;
+        }
+        def->data.vdpa.devicepath = g_steal_pointer(&dev);
         break;
 
     case VIR_DOMAIN_NET_TYPE_BRIDGE:
@@ -12775,6 +12794,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         case VIR_DOMAIN_NET_TYPE_DIRECT:
         case VIR_DOMAIN_NET_TYPE_HOSTDEV:
         case VIR_DOMAIN_NET_TYPE_UDP:
+        case VIR_DOMAIN_NET_TYPE_VDPA:
             break;
         case VIR_DOMAIN_NET_TYPE_LAST:
         default:
@@ -26881,6 +26901,14 @@ virDomainNetDefFormat(virBufferPtr buf,
             }
             break;
 
+        case VIR_DOMAIN_NET_TYPE_VDPA:
+           if (def->data.vdpa.devicepath) {
+               virBufferEscapeString(buf, "<source dev='%s'",
+                                     def->data.vdpa.devicepath);
+               sourceLines++;
+           }
+            break;
+
         case VIR_DOMAIN_NET_TYPE_USER:
         case VIR_DOMAIN_NET_TYPE_LAST:
             break;
@@ -31094,6 +31122,7 @@ virDomainNetGetActualVirtPortProfile(const virDomainNetDef *iface)
     case VIR_DOMAIN_NET_TYPE_MCAST:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
     default:
         return NULL;
@@ -31926,6 +31955,7 @@ virDomainNetTypeSharesHostView(const virDomainNetDef *net)
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }
@@ -32190,6 +32220,7 @@ virDomainNetDefActualToNetworkPort(virDomainDefPtr dom,
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_USER:
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unexpected network port type %s"),
                        virDomainNetTypeToString(virDomainNetGetActualType(iface)));
