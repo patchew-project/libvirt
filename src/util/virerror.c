@@ -223,15 +223,14 @@ virCopyError(virErrorPtr from,
 virErrorPtr
 virErrorCopyNew(virErrorPtr err)
 {
-    virErrorPtr ret;
+    g_autoptr(virError) ret = NULL;
 
-    if (VIR_ALLOC_QUIET(ret) < 0)
-        return NULL;
+    ret = g_new0(virError, 1);
 
     if (virCopyError(err, ret) < 0)
-        VIR_FREE(ret);
+        return NULL;
 
-    return ret;
+    return g_steal_pointer(&ret);
 }
 
 
