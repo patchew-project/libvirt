@@ -10457,18 +10457,21 @@ cmdDomid(vshControl *ctl, const vshCmd *cmd)
 {
     virDomainPtr dom;
     unsigned int id;
+    bool ret = false;
 
     if (!(dom = virshCommandOptDomainBy(ctl, cmd, NULL,
                                         VIRSH_BYNAME|VIRSH_BYUUID)))
-        return false;
+        return ret;
 
     id = virDomainGetID(dom);
-    if (id == ((unsigned int)-1))
-        vshPrint(ctl, "%s\n", "-");
-    else
+    if (id == ((unsigned int)-1)) {
+        vshError(ctl, "%s", _("Domain is not active"));
+    } else {
         vshPrint(ctl, "%d\n", id);
+        ret = true;
+    }
     virshDomainFree(dom);
-    return true;
+    return ret;
 }
 
 /*
