@@ -10369,7 +10369,13 @@ static const vshCmdInfo info_domname[] = {
 };
 
 static const vshCmdOptDef opts_domname[] = {
-    VIRSH_COMMON_OPT_DOMAIN(N_("domain id or uuid"), 0),
+    {.name = "domain",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .completer = virshDomainUUIDCompleter,
+     .completer_flags = 0,
+     .help = N_("domain id or uuid")
+    },
     {.name = NULL}
 };
 
