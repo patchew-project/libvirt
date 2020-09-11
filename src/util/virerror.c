@@ -237,15 +237,17 @@ virErrorCopyNew(virErrorPtr err)
 static virErrorPtr
 virLastErrorObject(void)
 {
-    virErrorPtr err;
+    g_autoptr(virError) err = NULL;
+
     err = virThreadLocalGet(&virLastErr);
-    if (!err) {
-        if (VIR_ALLOC_QUIET(err) < 0)
-            return NULL;
-        if (virThreadLocalSet(&virLastErr, err) < 0)
-            VIR_FREE(err);
-    }
-    return err;
+    if (err)
+        return g_steal_pointer(&err);
+
+    err = g_new0(virError, 1);
+    if (virThreadLocalSet(&virLastErr, err) < 0)
+        return NULL;
+
+    return g_steal_pointer(&err);
 }
 
 
