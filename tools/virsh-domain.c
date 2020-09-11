@@ -13695,6 +13695,8 @@ cmdEvent(vshControl *ctl, const vshCmd *cmd)
     int count = 0;
     virshControlPtr priv = ctl->privData;
 
+    VSH_EXCLUSIVE_OPTIONS("all", "event");
+
     if (vshCommandOptBool(cmd, "list")) {
         for (event = 0; event < VIR_DOMAIN_EVENT_ID_LAST; event++)
             vshPrint(ctl, "%s\n", virshDomainEventCallbacks[event].name);
