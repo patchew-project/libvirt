@@ -7748,6 +7748,8 @@ static const vshCmdOptDef opts_iothreadpin[] = {
     {.name = "iothread",
      .type = VSH_OT_INT,
      .flags = VSH_OFLAG_REQ,
+     .completer = virshDomainIOThreadIdCompleter,
+     .completer_flags = 0,
      .help = N_("IOThread ID number")
     },
     {.name = "cpulist",
@@ -7896,6 +7898,8 @@ static const vshCmdOptDef opts_iothreadset[] = {
     {.name = "id",
      .type = VSH_OT_INT,
      .flags = VSH_OFLAG_REQ,
+     .completer = virshDomainIOThreadIdCompleter,
+     .completer_flags = 0,
      .help = N_("iothread id of existing IOThread")
     },
     {.name = "poll-max-ns",
@@ -7999,6 +8003,8 @@ static const vshCmdOptDef opts_iothreaddel[] = {
     {.name = "id",
      .type = VSH_OT_INT,
      .flags = VSH_OFLAG_REQ,
+     .completer = virshDomainIOThreadIdCompleter,
+     .completer_flags = 0,
      .help = N_("iothread_id for the IOThread to delete")
     },
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
