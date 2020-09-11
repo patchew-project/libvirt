@@ -564,3 +564,36 @@ virshDomainVcpulistCompleter(vshControl *ctl,
     virshDomainFree(dom);
     return ret;
 }
+
+
+char **
+virshDomainCpulistCompleter(vshControl *ctl,
+                            const vshCmd *cmd,
+                            unsigned int flags G_GNUC_UNUSED)
+{
+    int i, cpunum;
+    unsigned char *cpumap = NULL;
+    unsigned int online;
+    VIR_AUTOSTRINGLIST cpulist = NULL;
+    const char *cpuid = NULL;
+    char **ret = NULL;
+    virshControlPtr priv = ctl->privData;
+
+    if ((cpunum = virNodeGetCPUMap(priv->conn, &cpumap, &online, 0)) < 0)
+        goto cleanup;
+
+    if (VIR_ALLOC_N(cpulist, cpunum + 1) < 0)
+        goto cleanup;
+
+    for (i = 0; i < cpunum; i++)
+        cpulist[i] = g_strdup_printf("%u", i);
+
+    if (vshCommandOptStringQuiet(ctl, cmd, "cpulist", &cpuid) < 0)
+        goto cleanup;
+
+    ret = virshCommaStringListComplete(cpuid, (const char **)cpulist);
+
+ cleanup:
+    VIR_FREE(cpumap);
+    return ret;
+}

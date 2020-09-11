@@ -88,3 +88,8 @@ char **
 virshDomainVcpulistCompleter(vshControl *ctl,
                              const vshCmd *cmd,
                              unsigned int flags);
+
+char **
+virshDomainCpulistCompleter(vshControl *ctl,
+                            const vshCmd *cmd,
+                            unsigned int flags);
