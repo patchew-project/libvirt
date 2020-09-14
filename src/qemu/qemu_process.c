@@ -8081,7 +8081,7 @@ qemuProcessReconnect(void *opaque)
     virQEMUDriverPtr driver = data->driver;
     virDomainObjPtr obj = data->obj;
     qemuDomainObjPrivatePtr priv;
-    qemuDomainJobObj oldjob;
+    g_auto(qemuDomainJobObj) oldjob = { 0 };
     int state;
     int reason;
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
