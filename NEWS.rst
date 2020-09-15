@@ -28,6 +28,18 @@ v6.8.0 (unreleased)
     useful for containerised scenarios and can be used in both peer2peer and
     direct migrations.
 
+  * Re-introduce NVDIMM auto-alignment for pSeries Guests
+
+    This feature was removed in libvirt v6.7.0 due to its shortcomings, namely
+    the lack of consistency between domain XML and actual NVDIMM size the guest
+    is using, but it came at a too high of a cost - we broke existing guests
+    that were running in libvirt v.6.6.0 and now had to adjust the size by
+    hand. The auto-alignment was re-introduced back, allowing existing guests
+    to keep running as usual. But now, instead of auto-aligning in a transparent
+    manner, it is also changing the domain XML. This brings a good balance
+    between consistency of domain XML and guest information, and also relieves
+    the user of knowing the alignment internals of pSeries NVDIMMs.
+
 * **Bug fixes**
 
 
