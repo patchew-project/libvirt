@@ -16965,6 +16965,25 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
     VIR_FREE(tmp);
 
+    /* source */
+    if ((node = virXPathNode("./source", ctxt)) &&
+        virDomainMemorySourceDefParseXML(node, ctxt, def) < 0)
+        goto error;
+
+    /* target */
+    if (!(node = virXPathNode("./target", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing <target> element for <memory> device"));
+        goto error;
+    }
+
+    if (virDomainMemoryTargetDefParseXML(node, ctxt, def) < 0)
+        goto error;
+
+    /* The UUID calculation for pSeries NVDIMM can be done earlier,
+     * but we'll also need to handle the size alignment, which depends
+     * on virDomainMemoryTargetDefParseXML() already done. Let's do it
+     * all here. */
     if (def->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
         ARCH_IS_PPC64(dom->os.arch)) {
         /* Extract nvdimm uuid or generate a new one */
@@ -16981,22 +17000,10 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
                            "%s", _("malformed uuid element"));
             goto error;
         }
+
+        if (virDomainNVDimmAlignSizePseries(def) < 0)
+            goto error;
     }
-
-    /* source */
-    if ((node = virXPathNode("./source", ctxt)) &&
-        virDomainMemorySourceDefParseXML(node, ctxt, def) < 0)
-        goto error;
-
-    /* target */
-    if (!(node = virXPathNode("./target", ctxt))) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("missing <target> element for <memory> device"));
-        goto error;
-    }
-
-    if (virDomainMemoryTargetDefParseXML(node, ctxt, def) < 0)
-        goto error;
 
     if (virDomainDeviceInfoParseXML(xmlopt, memdevNode,
                                     &def->info, flags) < 0)
