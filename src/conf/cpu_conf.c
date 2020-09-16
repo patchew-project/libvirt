@@ -659,6 +659,44 @@ virCPUDefParseXML(xmlXPathContextPtr ctxt,
         def->cache->mode = mode;
     }
 
+    g_clear_pointer(&nodes, g_free);
+    if ((n = virXPathNodeSet("./@*", ctxt, &nodes)) < 0)
+        return -1;
+
+    for (i = 0; i < n; i++) {
+        if (virXMLNodeNameEqual(nodes[i], "check") ||
+            virXMLNodeNameEqual(nodes[i], "match") ||
+            virXMLNodeNameEqual(nodes[i], "migratable") ||
+            virXMLNodeNameEqual(nodes[i], "mode"))
+            continue;
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unrecognized attribute in cpu element: %s"),
+                       nodes[i]->name);
+        return -1;
+    }
+
+    g_clear_pointer(&nodes, g_free);
+    if ((n = virXPathNodeSet("./*", ctxt, &nodes)) < 0)
+        return -1;
+
+    for (i = 0; i < n; i++) {
+        if (virXMLNodeNameEqual(nodes[i], "arch") ||
+            virXMLNodeNameEqual(nodes[i], "cache") ||
+            virXMLNodeNameEqual(nodes[i], "counter") ||
+            virXMLNodeNameEqual(nodes[i], "feature") ||
+            virXMLNodeNameEqual(nodes[i], "model") ||
+            virXMLNodeNameEqual(nodes[i], "microcode") ||
+            virXMLNodeNameEqual(nodes[i], "numa") ||
+            virXMLNodeNameEqual(nodes[i], "pages") ||
+            virXMLNodeNameEqual(nodes[i], "topology") ||
+            virXMLNodeNameEqual(nodes[i], "vendor"))
+            continue;
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unrecognized element in cpu element: %s"),
+                       nodes[i]->name);
+        return -1;
+    }
+
     *cpu = g_steal_pointer(&def);
     return 0;
 }
