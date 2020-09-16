@@ -463,11 +463,54 @@ virCPUarmBaseline(virCPUDefPtr *cpus,
 }
 
 static virCPUCompareResult
-virCPUarmCompare(virCPUDefPtr host G_GNUC_UNUSED,
-                 virCPUDefPtr cpu G_GNUC_UNUSED,
-                 bool failMessages G_GNUC_UNUSED)
+virCPUarmCompare(virCPUDefPtr host,
+                 virCPUDefPtr cpu,
+                 bool failIncompatible
+)
 {
-    return VIR_CPU_COMPARE_IDENTICAL;
+    g_autofree char *message = NULL;
+    virCPUCompareResult ret = VIR_CPU_COMPARE_IDENTICAL;
+
+    /* Only support host to host CPU compare for ARM*/
+    if (cpu->type != VIR_CPU_TYPE_HOST)
+        return ret;
+
+    if (!host || !host->model) {
+        if (failIncompatible) {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, "%s",
+                           _("unknown host CPU"));
+            ret = VIR_CPU_COMPARE_ERROR;
+        } else {
+            VIR_WARN("unknown host CPU");
+            ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+        }
+        return ret;
+    }
+
+    /* Compare vendor and model to check if CPUs are identical */
+    if (STRNEQ(host->vendor, cpu->vendor) ||
+        STRNEQ(host->model, cpu->model)) {
+        VIR_DEBUG("host CPU model does not match required CPU model %s",
+                  cpu->model);
+        if (message) {
+            message = g_strdup_printf(_("host CPU model does not match required "
+                                        "CPU model %s"),
+                                      cpu->model);
+        }
+
+        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+    }
+
+    if (failIncompatible && ret == VIR_CPU_COMPARE_INCOMPATIBLE) {
+        ret = VIR_CPU_COMPARE_ERROR;
+        if (message) {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, "%s", message);
+        } else {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, NULL);
+        }
+    }
+
+    return ret;
 }
 
 static int
