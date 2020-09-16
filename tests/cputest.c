@@ -1114,6 +1114,8 @@ mymain(void)
     /* guest to host comparison */
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "bogus-model", VIR_CPU_COMPARE_ERROR);
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "bogus-feature", VIR_CPU_COMPARE_ERROR);
+    DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "bogus-element", VIR_CPU_COMPARE_ERROR);
+    DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "bogus-attribute", VIR_CPU_COMPARE_ERROR);
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "min", VIR_CPU_COMPARE_SUPERSET);
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "pentium3", VIR_CPU_COMPARE_SUPERSET);
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "exact", VIR_CPU_COMPARE_SUPERSET);
