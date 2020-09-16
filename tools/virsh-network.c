@@ -1523,6 +1523,7 @@ cmdNetworkPortCreate(vshControl *ctl, const vshCmd *cmd)
 
     ret = true;
  cleanup:
+    vshSaveLibvirtError();
     VIR_FREE(buffer);
     if (port)
         virNetworkPortFree(port);
