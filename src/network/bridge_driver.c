@@ -4068,6 +4068,13 @@ networkGetDHCPLeases(virNetworkPtr net,
     if (virNetworkGetDHCPLeasesEnsureACL(net->conn, def) < 0)
         goto cleanup;
 
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto error;
+    }
+
     /* Retrieve custom leases file location */
     custom_lease_file = networkDnsmasqLeaseFileNameCustom(driver, def->bridge);
 
