@@ -34,6 +34,7 @@ foreach name : [ 'remote', 'qemu', 'lxc' ]
 
   access_gen_headers += custom_target(
     header_file,
+    input: protocol_file,
     output: header_file,
     command: [
       gendispatch_prog, '--mode=aclheader', name, name.to_upper(), protocol_file,
@@ -43,6 +44,7 @@ foreach name : [ 'remote', 'qemu', 'lxc' ]
 
   access_gen_sources += custom_target(
     source_file,
+    input: protocol_file,
     output: source_file,
     command: [
       gendispatch_prog, '--mode=aclbody', name, name.to_upper(),
@@ -53,6 +55,7 @@ foreach name : [ 'remote', 'qemu', 'lxc' ]
 
   access_gen_sym += custom_target(
     syms_file,
+    input: protocol_file,
     output: syms_file,
     capture: true,
     command: [
@@ -62,6 +65,7 @@ foreach name : [ 'remote', 'qemu', 'lxc' ]
 
   access_gen_xml += custom_target(
     xml_file,
+    input: protocol_file,
     output: xml_file,
     capture: true,
     command: [
