@@ -201,13 +201,18 @@ cpuTestCompare(const void *arg)
     int ret = -1;
     virCPUDefPtr host = NULL;
     virCPUDefPtr cpu = NULL;
-    virCPUCompareResult result;
+    virCPUCompareResult result = VIR_CPU_COMPARE_ERROR;
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)) ||
-        !(cpu = cpuTestLoadXML(data->arch, data->name)))
+    if (!(host = cpuTestLoadXML(data->arch, data->host)))
         goto cleanup;
 
-    result = virCPUCompare(host->arch, host, cpu, false);
+    if (!(cpu = cpuTestLoadXML(data->arch, data->name))) {
+        if (data->result != VIR_CPU_COMPARE_ERROR)
+            goto cleanup;
+    } else {
+        result = virCPUCompare(host->arch, host, cpu, false);
+    }
+
     if (data->result == VIR_CPU_COMPARE_ERROR)
         virResetLastError();
 
