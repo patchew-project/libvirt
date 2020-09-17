@@ -2472,6 +2472,8 @@ virStorageSourceCopy(const virStorageSource *src,
     def->ssh_host_key_check_disabled = src->ssh_host_key_check_disabled;
     def->ssh_user = g_strdup(src->ssh_user);
 
+    def->transientEstablished = src->transientEstablished;
+
     return g_steal_pointer(&def);
 }
 

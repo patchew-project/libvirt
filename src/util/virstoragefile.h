@@ -384,6 +384,10 @@ struct _virStorageSource {
     /* these must not be used apart from formatting the output JSON in the qemu driver */
     char *ssh_user;
     bool ssh_host_key_check_disabled;
+
+    /* set to true if the storage source is setup as a transient disk. */
+    /* The changes to the disk are dropped after the guest machine is shutdown. */
+    bool transientEstablished;
 };
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStorageSource, virObjectUnref);

@@ -53,3 +53,8 @@ int
 qemuSnapshotDelete(virDomainObjPtr vm,
                    virDomainSnapshotPtr snapshot,
                    unsigned int flags);
+
+int
+qemuSnapshotCreateTransientDisk(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                int asyncJob);

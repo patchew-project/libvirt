@@ -1158,7 +1158,8 @@ qemuSnapshotCreateDiskActive(virQEMUDriverPtr driver,
                              virHashTablePtr blockNamedNodeData,
                              unsigned int flags,
                              virQEMUDriverConfigPtr cfg,
-                             qemuDomainAsyncJob asyncJob)
+                             qemuDomainAsyncJob asyncJob,
+                             bool domSave)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     g_autoptr(virJSONValue) actions = NULL;
@@ -1201,17 +1202,26 @@ qemuSnapshotCreateDiskActive(virQEMUDriverPtr driver,
 
         virDomainAuditDisk(vm, dd->disk->src, dd->src, "snapshot", rc >= 0);
 
-        if (rc == 0)
+        if (rc == 0) {
             qemuSnapshotDiskUpdateSource(driver, vm, dd, blockdev);
+
+            if (dd->disk->transient) {
+                /* Mark the transient working is completed to make sure we can */
+                /* remove the transient disk when the guest is shutdown. */
+                dd->disk->src->transientEstablished = true;
+            }
+        }
     }
 
     if (rc < 0)
         goto cleanup;
 
-    if (virDomainObjSave(vm, driver->xmlopt, cfg->stateDir) < 0 ||
-        (vm->newDef && virDomainDefSave(vm->newDef, driver->xmlopt,
-                                        cfg->configDir) < 0))
-        goto cleanup;
+    if (domSave) {
+        if (virDomainObjSave(vm, driver->xmlopt, cfg->stateDir) < 0 ||
+            (vm->newDef && virDomainDefSave(vm->newDef, driver->xmlopt,
+                                            cfg->configDir) < 0))
+            goto cleanup;
+    }
 
     ret = 0;
 
@@ -1349,7 +1359,7 @@ qemuSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
 
     if ((ret = qemuSnapshotCreateDiskActive(driver, vm, snap,
                                             blockNamedNodeData, flags, cfg,
-                                            QEMU_ASYNC_JOB_SNAPSHOT)) < 0)
+                                            QEMU_ASYNC_JOB_SNAPSHOT, true)) < 0)
         goto cleanup;
 
     /* the snapshot is complete now */
@@ -2259,4 +2269,83 @@ qemuSnapshotDelete(virDomainObjPtr vm,
 
  cleanup:
     return ret;
+}
+
+
+static int
+qemuSnapshotSetupTransientDisk(virDomainSnapshotDiskDefPtr def,
+                               virStorageSourcePtr src)
+{
+    g_autoptr(virStorageSource) trans = NULL;
+
+    if (!(trans = virStorageSourceNew()))
+        return -1;
+
+    trans->path = g_strdup_printf("%s.TRANSIENT", src->path);
+    if (virFileExists(trans->path)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Transient disk '%s' for '%s' exists"),
+                       trans->path, src->path);
+        return -1;
+    }
+
+    trans->type = VIR_STORAGE_TYPE_FILE;
+    trans->format = VIR_STORAGE_FILE_QCOW2;
+
+    def->src = g_steal_pointer(&trans);
+
+    return 0;
+}
+
+
+int
+qemuSnapshotCreateTransientDisk(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                int asyncJob)
+{
+    int rc;
+    size_t i;
+    virDomainMomentObjPtr snap = NULL;
+    g_autoptr(virDomainSnapshotDef) snapdef = NULL;
+    g_autoptr(virHashTable) blockNamedNodeData = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
+
+    if (!(snapdef = virDomainSnapshotDefNew()))
+        return -1;
+
+    snapdef->parent.name = g_strdup_printf("transient");
+
+    snapdef->ndisks = vm->def->ndisks;
+    if (VIR_ALLOC_N(snapdef->disks, snapdef->ndisks) < 0)
+        return -1;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        virDomainSnapshotDiskDefPtr snapdisk = &(snapdef->disks[i]);
+
+        if (disk->transient) {
+            if ((rc = qemuSnapshotSetupTransientDisk(snapdisk, disk->src)) < 0)
+                return -1;
+
+        } else {
+            snapdisk->snapshot = VIR_DOMAIN_SNAPSHOT_LOCATION_NONE;
+        }
+    }
+
+    if (!(snap = virDomainSnapshotAssignDef(vm->snapshots, snapdef)))
+        return -1;
+
+    if (!(blockNamedNodeData = qemuBlockGetNamedNodeData(vm, asyncJob)))
+        goto cleanup;
+
+    /* The last argument domSave is false here because transient disk config */
+    /* is volatile so we don't need to save it. */
+    rc = qemuSnapshotCreateDiskActive(driver, vm, snap, blockNamedNodeData,
+                                      0, cfg, asyncJob, false);
+
+ cleanup:
+    virDomainSnapshotObjListRemove(vm->snapshots, snap);
+
+    return rc;
 }
