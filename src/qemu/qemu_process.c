@@ -60,6 +60,7 @@
 #include "qemu_firmware.h"
 #include "qemu_backup.h"
 #include "qemu_dbus.h"
+#include "qemu_snapshot.h"
 
 #include "cpu/cpu.h"
 #include "cpu/cpu_x86.h"
@@ -7074,6 +7075,10 @@ qemuProcessLaunch(virConnectPtr conn,
         qemuProcessAutoDestroyAdd(driver, vm, conn) < 0)
         goto cleanup;
 
+    VIR_DEBUG("Setting up transient disk");
+    if (qemuSnapshotCreateTransientDisk(driver, vm, asyncJob) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
@@ -7710,6 +7715,11 @@ void qemuProcessStop(virQEMUDriverPtr driver,
             }
 
             qemuBlockRemoveImageMetadata(driver, vm, disk->dst, disk->src);
+
+            if ((disk->transient) && (disk->src->transientEstablished)) {
+                VIR_DEBUG("unlink transient disk: %s", disk->src->path);
+                unlink(disk->src->path);
+            }
         }
     }
 
