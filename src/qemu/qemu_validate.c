@@ -2003,6 +2003,28 @@ qemuValidateDomainDeviceDefDiskSerial(const char *value)
 
 
 static int
+qemuValidateDomainDeviceDefDiskTransient(const virDomainDiskDef *disk,
+                                         virQEMUCapsPtr qemuCaps)
+{
+    if ((!qemuCaps) || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCKDEV))
+        return false;
+
+    if (disk->src->readonly)
+        return false;
+
+    if ((disk->src->format != VIR_STORAGE_FILE_QCOW2) &&
+        (disk->src->format != VIR_STORAGE_FILE_RAW) &&
+        (disk->src->type != VIR_STORAGE_TYPE_FILE)) {
+        return false;
+    }
+
+    if (virStorageSourceIsEmpty(disk->src))
+        return false;
+
+    return true;
+}
+
+static int
 qemuValidateDomainDeviceDefDiskFrontend(const virDomainDiskDef *disk,
                                         virQEMUCapsPtr qemuCaps)
 {
@@ -2186,7 +2208,8 @@ qemuValidateDomainDeviceDefDiskFrontend(const virDomainDiskDef *disk,
         }
     }
 
-    if (disk->transient) {
+    if ((disk->transient) &&
+        !qemuValidateDomainDeviceDefDiskTransient(disk, qemuCaps)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("transient disks not supported yet"));
         return -1;
