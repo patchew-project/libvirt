@@ -754,6 +754,7 @@ typedef enum {
 typedef enum {
     VIR_CONNECT_COMPARE_CPU_FAIL_INCOMPATIBLE = (1 << 0), /* treat incompatible
                                                              CPUs as failure */
+    VIR_CONNECT_COMPARE_CPU_VALIDATE_XML = (1 << 1), /* validate xml files */
 } virConnectCompareCPUFlags;
 
 int virConnectCompareCPU(virConnectPtr conn,
