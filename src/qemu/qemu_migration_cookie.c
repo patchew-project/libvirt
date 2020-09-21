@@ -1342,7 +1342,8 @@ qemuMigrationCookieXMLParse(qemuMigrationCookiePtr mig,
         goto error;
 
     if (flags & QEMU_MIGRATION_COOKIE_CPU &&
-        virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST, &mig->cpu) < 0)
+        virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST, &mig->cpu,
+                          false) < 0)
         goto error;
 
     if (flags & QEMU_MIGRATION_COOKIE_ALLOW_REBOOT &&

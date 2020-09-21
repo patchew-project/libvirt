@@ -1465,7 +1465,7 @@ bhyveConnectCompareCPU(virConnectPtr conn,
         }
     } else {
         ret = virCPUCompareXML(caps->host.arch, caps->host.cpu,
-                               xmlDesc, failIncompatible);
+                               xmlDesc, failIncompatible, false);
     }
 
  cleanup:

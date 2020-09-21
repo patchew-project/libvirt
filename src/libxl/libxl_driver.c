@@ -6548,7 +6548,7 @@ libxlConnectCompareCPU(virConnectPtr conn,
     cfg = libxlDriverConfigGet(driver);
 
     ret = virCPUCompareXML(cfg->caps->host.arch, cfg->caps->host.cpu,
-                           xmlDesc, failIncompatible);
+                           xmlDesc, failIncompatible, false);
 
     virObjectUnref(cfg);
     return ret;

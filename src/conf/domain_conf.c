@@ -21663,7 +21663,8 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
-    if (virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST, &def->cpu) < 0)
+    if (virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST, &def->cpu,
+                          false) < 0)
         goto error;
 
     if (virDomainNumaDefParseXML(def->numa, ctxt) < 0)

@@ -12240,7 +12240,7 @@ qemuConnectCompareCPU(virConnectPtr conn,
         return VIR_CPU_COMPARE_ERROR;
 
     return virCPUCompareXML(driver->hostarch, cpu,
-                            xmlDesc, failIncompatible);
+                            xmlDesc, failIncompatible, false);
 }
 
 
@@ -12330,10 +12330,10 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
     }
 
     if (ARCH_IS_X86(arch)) {
-        ret = virCPUCompareXML(arch, hvCPU, xmlCPU, failIncompatible);
+        ret = virCPUCompareXML(arch, hvCPU, xmlCPU, failIncompatible, false);
     } else if (ARCH_IS_S390(arch) &&
                virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON)) {
-        if (virCPUDefParseXMLString(xmlCPU, VIR_CPU_TYPE_AUTO, &cpu) < 0)
+        if (virCPUDefParseXMLString(xmlCPU, VIR_CPU_TYPE_AUTO, &cpu, false) < 0)
             goto cleanup;
 
         if (!cpu->model) {
