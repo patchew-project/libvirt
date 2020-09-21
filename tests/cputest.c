@@ -1108,6 +1108,10 @@ mymain(void)
         } \
     } while (0)
 
+    /* invalid xml */
+    DO_TEST_COMPARE_FLAGS(VIR_ARCH_X86_64, "host", "bogus-element", VIR_CPU_COMPARE_ERROR, VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
+    DO_TEST_COMPARE_FLAGS(VIR_ARCH_X86_64, "host", "bogus-attribute", VIR_CPU_COMPARE_ERROR, VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
+
     /* host to host comparison */
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "host", VIR_CPU_COMPARE_IDENTICAL);
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "host-better", VIR_CPU_COMPARE_INCOMPATIBLE);
