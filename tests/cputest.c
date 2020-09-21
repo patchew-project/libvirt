@@ -68,7 +68,7 @@ static virQEMUDriver driver;
 
 
 static virCPUDefPtr
-cpuTestLoadXML(virArch arch, const char *name)
+cpuTestLoadXML(virArch arch, const char *name, bool validate)
 {
     char *xml = NULL;
     xmlDocPtr doc = NULL;
@@ -81,7 +81,7 @@ cpuTestLoadXML(virArch arch, const char *name)
     if (!(doc = virXMLParseFileCtxt(xml, &ctxt)))
         goto cleanup;
 
-    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, false);
+    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, validate);
 
  cleanup:
     xmlXPathFreeContext(ctxt);
@@ -205,12 +205,20 @@ cpuTestCompare(const void *arg)
     virCPUDefPtr host = NULL;
     virCPUDefPtr cpu = NULL;
     virCPUCompareResult result;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)) ||
-        !(cpu = cpuTestLoadXML(data->arch, data->name)))
-        goto cleanup;
+    host = cpuTestLoadXML(data->arch, data->host, validate);
+    cpu = cpuTestLoadXML(data->arch, data->name, validate);
 
-    result = virCPUCompare(host->arch, host, cpu, false);
+    if (!host || !cpu) {
+        if (validate)
+            result = VIR_CPU_COMPARE_ERROR;
+        else
+            goto cleanup;
+    } else {
+        result = virCPUCompare(host->arch, host, cpu, false);
+    }
+
     if (data->result == VIR_CPU_COMPARE_ERROR)
         virResetLastError();
 
@@ -242,9 +250,10 @@ cpuTestGuestCPU(const void *arg)
     virCPUCompareResult cmpResult;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     char *result = NULL;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)) ||
-        !(cpu = cpuTestLoadXML(data->arch, data->name)))
+    if (!(host = cpuTestLoadXML(data->arch, data->host, validate)) ||
+        !(cpu = cpuTestLoadXML(data->arch, data->name, validate)))
         goto cleanup;
 
     if (virCPUConvertLegacy(host->arch, cpu) < 0)
@@ -383,9 +392,10 @@ cpuTestUpdate(const void *arg)
     virCPUDefPtr migHost = NULL;
     virCPUDefPtr cpu = NULL;
     char *result = NULL;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)) ||
-        !(cpu = cpuTestLoadXML(data->arch, data->name)))
+    if (!(host = cpuTestLoadXML(data->arch, data->host, validate)) ||
+        !(cpu = cpuTestLoadXML(data->arch, data->name, validate)))
         goto cleanup;
 
     if (!(migHost = virCPUCopyMigratable(data->arch, host)))
@@ -415,8 +425,9 @@ cpuTestHasFeature(const void *arg)
     virCPUDefPtr host = NULL;
     virCPUDataPtr hostData = NULL;
     int result;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)))
+    if (!(host = cpuTestLoadXML(data->arch, data->host, validate)))
         goto cleanup;
 
     if (cpuEncode(host->arch, host, NULL, &hostData,
@@ -796,9 +807,10 @@ cpuTestUpdateLive(const void *arg)
     virDomainCapsCPUModelsPtr hvModels = NULL;
     virDomainCapsCPUModelsPtr models = NULL;
     int ret = -1;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
     cpuFile = g_strdup_printf("cpuid-%s-guest", data->host);
-    if (!(cpu = cpuTestLoadXML(data->arch, cpuFile)))
+    if (!(cpu = cpuTestLoadXML(data->arch, cpuFile, validate)))
         goto cleanup;
 
     enabledFile = g_strdup_printf("%s/cputestdata/%s-cpuid-%s-enabled.xml",
@@ -814,7 +826,7 @@ cpuTestUpdateLive(const void *arg)
         goto cleanup;
 
     expectedFile = g_strdup_printf("cpuid-%s-json", data->host);
-    if (!(expected = cpuTestLoadXML(data->arch, expectedFile)))
+    if (!(expected = cpuTestLoadXML(data->arch, expectedFile, validate)))
         goto cleanup;
 
     /* In case the host CPU signature does not exactly match any CPU model from
@@ -1020,10 +1032,13 @@ mymain(void)
         VIR_FREE(testLabel); \
     } while (0)
 
-#define DO_TEST_COMPARE(arch, host, cpu, result) \
+#define DO_TEST_COMPARE_FLAGS(arch, host, cpu, result, flags) \
     DO_TEST(arch, cpuTestCompare, \
             host "/" cpu " (" #result ")", \
-            host, cpu, NULL, 0, result)
+            host, cpu, NULL, flags, result)
+
+#define DO_TEST_COMPARE(arch, host, cpu, result) \
+    DO_TEST_COMPARE_FLAGS(arch, host, cpu, result, 0)
 
 #define DO_TEST_UPDATE_ONLY(arch, host, cpu) \
     DO_TEST(arch, cpuTestUpdate, \
