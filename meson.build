@@ -1392,6 +1392,10 @@ if not get_option('virtualport').disabled()
   endif
 endif
 
+if cc.has_header_symbol('linux/if_link.h', 'IFLA_VF_STATS')
+  conf.set('WITH_VF_STATS', 1)
+endif
+
 if host_machine.system() == 'windows'
   ole32_dep = cc.find_library('ole32')
   oleaut32_dep = cc.find_library('oleaut32')
