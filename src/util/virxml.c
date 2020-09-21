@@ -1320,6 +1320,21 @@ virXMLValidateAgainstSchema(const char *schemafile,
 }
 
 
+int
+virXMLValidateNodeAgainstSchema(const char *schemafile,
+                                xmlDocPtr doc,
+                                xmlNodePtr node)
+{
+    xmlNodePtr root;
+    int ret;
+
+    root = xmlDocSetRootElement(doc, node);
+    ret = virXMLValidateAgainstSchema(schemafile, doc);
+    xmlDocSetRootElement(doc, root);
+    return ret;
+}
+
+
 void
 virXMLValidatorFree(virXMLValidatorPtr validator)
 {
