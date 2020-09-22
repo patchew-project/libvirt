@@ -73,8 +73,7 @@ testBuildDomainDef(bool dynamic,
     def->virtType = VIR_DOMAIN_VIRT_KVM;
     def->seclabels = g_new0(char, 1);
 
-    if (VIR_ALLOC(secdef) < 0)
-        goto error;
+    secdef = g_new0(virSecurityLabelDef, 1);
 
     secdef->model = g_strdup("selinux");
 
