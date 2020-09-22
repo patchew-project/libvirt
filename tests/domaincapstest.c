@@ -147,8 +147,7 @@ fillXenCaps(virDomainCapsPtr domCaps)
     virFirmwarePtr *firmwares;
     int ret = -1;
 
-    if (VIR_ALLOC_N(firmwares, 2) < 0)
-        return ret;
+    firmwares = g_new0(virFirmwarePtr, 2);
 
     if (VIR_ALLOC(firmwares[0]) < 0 || VIR_ALLOC(firmwares[1]) < 0)
         goto cleanup;
