@@ -477,7 +477,7 @@ if conf.has('WITH_REMOTE')
 endif
 
 if conf.has('WITH_SECDRIVER_SELINUX')
-  if conf.has('WITH_ATTR')
+  if conf.has('WITH_LIBATTR')
     tests += [
       { 'name': 'securityselinuxtest' },
       { 'name': 'viridentitytest' },
