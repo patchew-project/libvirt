@@ -25,6 +25,7 @@
 import sys
 import os
 import os.path
+import time
 
 
 OCCURRENCE__REQUIRED_ITEM = "r"
@@ -42,6 +43,8 @@ valid_occurrences = [OCCURRENCE__REQUIRED_ITEM,
 autobind_names = set()
 
 separator = "/* " + ("* " * 37) + "*\n"
+
+time.sleep(15)
 
 
 def aligned(left, right, length=59):
