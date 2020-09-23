@@ -130,7 +130,7 @@ virNumaGetPages(int node,
 {
     const int pages_def[] = { 4, 2 * 1024, 1 * 1024 * 1024};
     const int npages_def = G_N_ELEMENTS(pages_def);
-    size_t i = 0;
+    size_t i;
 
     if (pages_size)
         *pages_size = g_new0(unsigned int, npages_def);

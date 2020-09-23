@@ -69,7 +69,7 @@ int
 gnutls_dh_params_generate2(gnutls_dh_params_t dparams,
                            unsigned int bits)
 {
-    int rc = 0;
+    int rc;
 
     VIR_MOCK_REAL_INIT(gnutls_dh_params_generate2);
 

@@ -4354,7 +4354,7 @@ testNodeGetFreePages(virConnectPtr conn G_GNUC_UNUSED,
                      unsigned long long *counts,
                      unsigned int flags)
 {
-    size_t i = 0, j = 0;
+    size_t i, j;
     int x = 6;
 
     virCheckFlags(0, -1);
