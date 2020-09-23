@@ -312,4 +312,9 @@ int virNetDevSysfsFile(char **pf_sysfs_device_link,
 int virNetDevRunEthernetScript(const char *ifname, const char *script)
     G_GNUC_NO_INLINE;
 
+int virNetDevVFInterfaceStats(virMacAddrPtr mac,
+                              virDomainInterfaceStatsPtr stats)
+ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virNetDevRxFilter, virNetDevRxFilterFree);

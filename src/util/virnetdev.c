@@ -1489,6 +1489,7 @@ static struct nla_policy ifla_vf_policy[IFLA_VF_MAX+1] = {
                             .maxlen = sizeof(struct ifla_vf_mac) },
     [IFLA_VF_VLAN]      = { .type = NLA_UNSPEC,
                             .maxlen = sizeof(struct ifla_vf_vlan) },
+    [IFLA_VF_STATS]     = { .type = NLA_NESTED },
 };
 
 
@@ -2265,6 +2266,132 @@ virNetDevSetNetConfig(const char *linkdev, int vf,
     return 0;
 }
 
+static struct nla_policy ifla_vfstats_policy[IFLA_VF_STATS_MAX+1] = {
+    [IFLA_VF_STATS_RX_PACKETS]  = { .type = NLA_U64 },
+    [IFLA_VF_STATS_TX_PACKETS]  = { .type = NLA_U64 },
+    [IFLA_VF_STATS_RX_BYTES]    = { .type = NLA_U64 },
+    [IFLA_VF_STATS_TX_BYTES]    = { .type = NLA_U64 },
+    [IFLA_VF_STATS_BROADCAST]   = { .type = NLA_U64 },
+    [IFLA_VF_STATS_MULTICAST]   = { .type = NLA_U64 },
+};
+
+static int
+virNetDevParseVfStats(struct nlattr **tb, virMacAddrPtr mac,
+                      virDomainInterfaceStatsPtr stats)
+{
+    int ret = -1, len;
+    struct ifla_vf_mac *vf_lladdr;
+    struct nlattr *nla, *t[IFLA_VF_MAX+1];
+    struct nlattr *stb[IFLA_VF_STATS_MAX+1];
+
+    if (tb == NULL || mac == NULL || stats == NULL) {
+        return -1;
+    }
+
+    if (!tb[IFLA_VFINFO_LIST])
+        return -1;
+
+    len = nla_len(tb[IFLA_VFINFO_LIST]);
+
+    for (nla = nla_data(tb[IFLA_VFINFO_LIST]); nla_ok(nla, len);
+            nla = nla_next(nla, &len)) {
+        ret = nla_parse(t, IFLA_VF_MAX, nla_data(nla), nla_len(nla),
+                ifla_vf_policy);
+        if (ret < 0)
+            return -1;
+
+        if (t[IFLA_VF_MAC] == NULL) {
+            continue;
+        }
+
+        vf_lladdr = nla_data(t[IFLA_VF_MAC]);
+        if (virMacAddrCmpRaw(mac, vf_lladdr->mac)) {
+            continue;
+        }
+
+        if (t[IFLA_VF_STATS]) {
+            ret = nla_parse_nested(stb, IFLA_VF_STATS_MAX,
+                    t[IFLA_VF_STATS],
+                    ifla_vfstats_policy);
+            if (ret < 0)
+                return -1;
+
+            stats->rx_bytes = nla_get_u64(stb[IFLA_VF_STATS_RX_BYTES]);
+            stats->tx_bytes = nla_get_u64(stb[IFLA_VF_STATS_TX_BYTES]);
+            stats->rx_packets = nla_get_u64(stb[IFLA_VF_STATS_RX_PACKETS]);
+            stats->tx_packets = nla_get_u64(stb[IFLA_VF_STATS_TX_PACKETS]);
+        }
+        return 0;
+    }
+
+    return ret;
+}
+
+/**
+ * virNetDevVFInterfaceStats:
+ * @mac: MAC address of the VF interface
+ * @stats: returns stats of the VF interface
+ *
+ * Get the VF interface from kernel by netlink.
+ * Returns 0 on success, -1 on failure.
+ */
+int
+virNetDevVFInterfaceStats(virMacAddrPtr mac,
+                     virDomainInterfaceStatsPtr stats)
+{
+    FILE *fp;
+    char line[256], *colon, *ifname;
+    int rc = -1;
+    void *nlData = NULL;
+    struct nlattr *tb[IFLA_MAX + 1] = {NULL, };
+    char *sysfsDevicePath = NULL;
+
+    fp = fopen("/proc/net/dev", "r");
+    if (!fp) {
+        virReportSystemError(errno, "%s",
+                _("Could not open /proc/net/dev"));
+        return -1;
+    }
+
+    /* get all PCI net devices, and parse VFs list from netlink API.
+     * compare MAC address, collect device stats if matching.
+     */
+    while (fgets(line, sizeof(line), fp)) {
+        /* The line looks like:
+         *   "   eth0:..."
+         * Split it at the colon. and strip blank from head.
+         */
+        colon = strchr(line, ':');
+        if (!colon)
+            continue;
+        *colon = '\0';
+        ifname = line;
+        while ((*ifname == ' ') && (ifname < colon))
+            ifname++;
+
+        if (virNetDevSysfsFile(&sysfsDevicePath, ifname, "device") < 0)
+            break;
+
+        if (virNetDevIsPCIDevice(sysfsDevicePath)) {
+            rc = virNetlinkDumpLink(ifname, -1, &nlData, tb, 0, 0);
+            if (rc < 0) {
+                rc = -1;
+                goto cleanup;
+            }
+
+            rc = virNetDevParseVfStats(tb, mac, stats);
+            VIR_FREE(nlData);
+            if (rc == 0)
+                goto cleanup;
+        }
+        VIR_FREE(sysfsDevicePath);
+    }
+
+ cleanup:
+    VIR_FREE(sysfsDevicePath);
+    VIR_FORCE_FCLOSE(fp);
+    return rc;
+}
 
 #else /* defined(__linux__) && defined(WITH_LIBNL)  && defined(IFLA_VF_MAX) */
 
@@ -2305,6 +2432,16 @@ virNetDevSetNetConfig(const char *linkdev G_GNUC_UNUSED,
 {
     virReportSystemError(ENOSYS, "%s",
                          _("Unable to set net device config on this platform"));
+    return -1;
+}
+
+
+int
+virNetDevVFInterfaceStats(virMacAddrPtr mac G_GNUC_UNUSED,
+                     virDomainInterfaceStatsPtr stats G_GNUC_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Unable to get VF net device stats on this platform"));
     return -1;
 }
 
