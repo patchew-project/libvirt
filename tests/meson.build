@@ -355,8 +355,9 @@ if conf.has('WITH_BHYVE')
 endif
 
 if conf.has('WITH_ESX')
+  esxutilstest_sources = [ 'esxutilstest.c', esx_gen_headers ]
   tests += [
-    { 'name': 'esxutilstest', 'include': [ esx_inc_dir ] },
+    { 'name': 'esxutilstest', 'sources': esxutilstest_sources, 'include': [ esx_inc_dir ] },
   ]
 endif
 
