@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     const char *set_outputs = NULL;
     const char *set_filters = NULL;
 
-    ret = c = -1;
+    ret = -1;
     opterr = 0;
 
     while ((c = getopt(argc, argv, ":hpo:f:")) > 0) {

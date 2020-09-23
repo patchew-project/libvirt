@@ -4618,7 +4618,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    rc = gVBoxAPI.UIMachine.SaveSettings(machine);
+    gVBoxAPI.UIMachine.SaveSettings(machine);
     /* It may failed when the machine is not mutable. */
     rc = gVBoxAPI.UIMachine.GetSettingsFilePath(machine, &settingsFilePath);
     if (NS_FAILED(rc)) {

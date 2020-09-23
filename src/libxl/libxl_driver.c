@@ -5429,7 +5429,7 @@ libxlDiskSectorSize(int domid, int devno)
         return ret;
     }
 
-    path = val = NULL;
+    val = NULL;
     path = g_strdup_printf("/local/domain/%d/device/vbd/%d/backend", domid, devno);
 
     if ((val = xs_read(handle, XBT_NULL, path, &len)) == NULL)
