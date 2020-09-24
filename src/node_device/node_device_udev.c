@@ -1144,6 +1144,18 @@ udevProcessCSS(struct udev_device *device,
     return 0;
 }
 
+
+static int
+udevProcessVDPA(struct udev_device *device,
+                virNodeDeviceDefPtr def)
+{
+    if (udevGenerateDeviceName(device, def, NULL) != 0)
+        return -1;
+
+    return 0;
+}
+
+
 static int
 udevGetDeviceNodes(struct udev_device *device,
                    virNodeDeviceDefPtr def)
@@ -1224,6 +1236,8 @@ udevGetDeviceType(struct udev_device *device,
             *type = VIR_NODE_DEV_CAP_CCW_DEV;
         else if (STREQ_NULLABLE(subsystem, "css"))
             *type = VIR_NODE_DEV_CAP_CSS_DEV;
+        else if (STREQ_NULLABLE(subsystem, "vdpa"))
+            *type = VIR_NODE_DEV_CAP_VDPA;
 
         VIR_FREE(subsystem);
     }
@@ -1270,6 +1284,8 @@ udevGetDeviceDetails(struct udev_device *device,
         return udevProcessCCW(device, def);
     case VIR_NODE_DEV_CAP_CSS_DEV:
         return udevProcessCSS(device, def);
+    case VIR_NODE_DEV_CAP_VDPA:
+        return udevProcessVDPA(device, def);
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:

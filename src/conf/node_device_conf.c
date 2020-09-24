@@ -66,6 +66,7 @@ VIR_ENUM_IMPL(virNodeDevCap,
               "mdev",
               "ccw",
               "css",
+              "vdpa",
 );
 
 VIR_ENUM_IMPL(virNodeDevNetCap,
@@ -614,6 +615,7 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
         case VIR_NODE_DEV_CAP_MDEV_TYPES:
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
+        case VIR_NODE_DEV_CAP_VDPA:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -1913,6 +1915,7 @@ virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
     case VIR_NODE_DEV_CAP_SCSI_GENERIC:
+    case VIR_NODE_DEV_CAP_VDPA:
     case VIR_NODE_DEV_CAP_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unknown capability type '%d' for '%s'"),
@@ -2232,6 +2235,7 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
     case VIR_NODE_DEV_CAP_VPORTS:
     case VIR_NODE_DEV_CAP_CCW_DEV:
     case VIR_NODE_DEV_CAP_CSS_DEV:
+    case VIR_NODE_DEV_CAP_VDPA:
     case VIR_NODE_DEV_CAP_LAST:
         /* This case is here to shutup the compiler */
         break;
@@ -2286,6 +2290,7 @@ virNodeDeviceUpdateCaps(virNodeDeviceDefPtr def)
         case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_CCW_DEV:
         case VIR_NODE_DEV_CAP_CSS_DEV:
+        case VIR_NODE_DEV_CAP_VDPA:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
