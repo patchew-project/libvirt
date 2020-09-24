@@ -71,7 +71,7 @@ virStorageBackendZFSVolModeNeeded(void)
         return ret;
     }
 
-    if (strstr(error, " volmode "))
+    if (strstr(error, "volmode "))
         return 1;
     else
         return 0;
