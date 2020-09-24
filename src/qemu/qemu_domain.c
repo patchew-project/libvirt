@@ -5129,7 +5129,8 @@ qemuDomainDeviceNetDefPostParse(virDomainNetDefPtr net,
                                 const virDomainDef *def,
                                 virQEMUCapsPtr qemuCaps)
 {
-    if (net->type != VIR_DOMAIN_NET_TYPE_HOSTDEV &&
+    if (net->type != VIR_DOMAIN_NET_TYPE_VDPA &&
+        net->type != VIR_DOMAIN_NET_TYPE_HOSTDEV &&
         !virDomainNetGetModelString(net) &&
         virDomainNetResolveActualType(net) != VIR_DOMAIN_NET_TYPE_HOSTDEV)
         net->model = qemuDomainDefaultNetModel(def, qemuCaps);
@@ -9323,6 +9324,7 @@ qemuDomainNetSupportsMTU(virDomainNetType type)
     case VIR_DOMAIN_NET_TYPE_DIRECT:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VDPA:
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }
