@@ -20,31 +20,12 @@
 
 %define with_qemu_tcg      %{with_qemu}
 
-%define qemu_kvm_arches %{ix86} x86_64
-
-%if 0%{?fedora}
-    %define qemu_kvm_arches %{ix86} x86_64 %{power64} s390x %{arm} aarch64
-%endif
-
-%if 0%{?rhel}
-    %define with_qemu_tcg 0
-    %define qemu_kvm_arches x86_64 %{power64} aarch64 s390x
-%endif
-
 # On RHEL 7 and older macro _vpath_builddir is not defined.
 %if 0%{?rhel} && 0%{?rhel} <= 7
     %define _vpath_builddir %{_target_platform}
 %endif
 
-%ifarch %{qemu_kvm_arches}
-    %define with_qemu_kvm      %{with_qemu}
-%else
-    %define with_qemu_kvm      0
-%endif
-
-%if ! %{with_qemu_tcg} && ! %{with_qemu_kvm}
-    %define with_qemu 0
-%endif
+%define with_qemu_kvm      %{with_qemu}
 
 # Then the hypervisor drivers that run outside libvirtd, in libvirt.so
 %define with_openvz        0%{!?_without_openvz:1}
@@ -61,12 +42,6 @@
 %endif
 
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
-%ifnarch %{qemu_kvm_arches}
-    # gluster is only built where qemu driver is enabled on RHEL 8
-    %if 0%{?rhel} >= 8
-        %define with_storage_gluster 0
-    %endif
-%endif
 
 %define with_numactl          0%{!?_without_numactl:1}
 
@@ -97,6 +72,11 @@
 
 # Finally set the OS / architecture specific special cases
 
+# KVM is available on most architectures
+%ifnarch %{ix86} x86_64 %{power64} s390x %{arm} aarch64
+    %define with_qemu_kvm 0
+%endif
+
 # Xen is available only on i386 x86_64 ia64
 %ifnarch %{ix86} x86_64 ia64
     %define with_libxl 0
@@ -120,6 +100,23 @@
 # Ceph dropped support for 32-bit hosts
 %ifarch %{arm} %{ix86}
     %define with_storage_rbd 0
+%endif
+
+# RHEL does not ship qemu-tcg
+%if 0%{?rhel}
+    %define with_qemu_tcg 0
+%endif
+
+# In the event that qemu-tcg and qemu-kvm are unavailable, don't ship qemu
+%if ! %{with_qemu_tcg} && ! %{with_qemu_kvm}
+    %define with_qemu 0
+%endif
+
+%if ! %{with_qemu_kvm}
+    # gluster is only built where qemu driver is enabled on RHEL 8
+    %if 0%{?rhel} >= 8
+        %define with_storage_gluster 0
+    %endif
 %endif
 
 # RHEL doesn't ship OpenVZ, VBox, PowerHypervisor,
