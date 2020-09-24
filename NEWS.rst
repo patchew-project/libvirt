@@ -32,6 +32,13 @@ v6.8.0 (unreleased)
     can now be passed using the ``passwd`` attribute on
     the ``<graphics>`` element.
 
+  * esx: implement few APIs
+
+    The ``virConnectListAllNetworks()``, ``virDomainGetHostname()``, and
+    ``virDomainInterfaceAddresses()`` (only for
+    ``VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT`` source) APIs were implemented
+    in the esx driver.
+
 * **Improvements**
 
   * qemu: Allow migration over UNIX sockets
