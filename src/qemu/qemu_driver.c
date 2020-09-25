@@ -12453,12 +12453,13 @@ qemuConnectCPUModelBaseline(virQEMUCapsPtr qemuCaps,
                             gid_t runGid,
                             bool expand_features,
                             virCPUDefPtr *cpus,
-                            int ncpus)
+                            int ncpus,
+                            virDomainCapsCPUModelsPtr cpuModels)
 {
     g_autoptr(qemuProcessQMP) proc = NULL;
     g_autoptr(virCPUDef) baseline = NULL;
     qemuMonitorCPUModelInfoPtr result = NULL;
-    size_t i;
+    size_t i, j;
 
     for (i = 0; i < ncpus; i++) {
         if (!cpus[i]) {
@@ -12469,6 +12470,16 @@ qemuConnectCPUModelBaseline(virQEMUCapsPtr qemuCaps,
         if (!cpus[i]->model) {
             virReportError(VIR_ERR_INVALID_ARG,
                            _("no CPU model specified at index %zu"), i);
+            return NULL;
+        }
+        for (j = 0; j < cpuModels->nmodels; j++) {
+            if (STREQ(cpus[i]->model, cpuModels->models[j].name))
+                break;
+        }
+        if (j == cpuModels->nmodels) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("CPU model '%s' not supported by hypervisor"),
+                           cpus[i]->model);
             return NULL;
         }
     }
@@ -12582,7 +12593,8 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
 
         if (!(cpu = qemuConnectCPUModelBaseline(qemuCaps, cfg->libDir,
                                                 cfg->user, cfg->group,
-                                                expand_features, cpus, ncpus)))
+                                                expand_features, cpus, ncpus,
+                                                cpuModels)))
             goto cleanup;
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
