@@ -121,14 +121,14 @@ EXAMPLES
 
 To retrieve the version of ``virtlogd``:
 
-.. code-block::
+.. code-block:: shell
 
   # virtlogd --version
   virtlogd (libvirt) 1.1.1
 
 To start ``virtlogd``, instructing it to daemonize and create a PID file:
 
-.. code-block::
+.. code-block:: shell
 
   # virtlogd -d
   # ls -la @RUNSTATEDIR@/virtlogd.pid
