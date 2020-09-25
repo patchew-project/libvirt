@@ -106,6 +106,7 @@ WEiJKtQrZDJloqtyi/mmRa1VsV7RYR0VPJjhK/R8EQ7Ysshy\n\
         python3-setuptools \
         python3-wheel \
         python36-docutils \
+        python36-pygments \
         qemu-img \
         radvd \
         readline-devel \

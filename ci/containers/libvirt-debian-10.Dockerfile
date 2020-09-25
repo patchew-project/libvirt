@@ -82,6 +82,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             python3 \
             python3-docutils \
             python3-pip \
+            python3-pygments \
             python3-setuptools \
             python3-wheel \
             qemu-utils \
