@@ -6,6 +6,7 @@
   <feature policy='require' name='hypervisor'/>
   <feature policy='require' name='tsc_adjust'/>
   <feature policy='require' name='umip'/>
+  <feature policy='require' name='spec-ctrl'/>
   <feature policy='require' name='stibp'/>
   <feature policy='require' name='arch-capabilities'/>
   <feature policy='require' name='ssbd'/>
