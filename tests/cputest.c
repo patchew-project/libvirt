@@ -81,7 +81,7 @@ cpuTestLoadXML(virArch arch, const char *name)
     if (!(doc = virXMLParseFileCtxt(xml, &ctxt)))
         goto cleanup;
 
-    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, false);
+    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, true);
 
  cleanup:
     xmlXPathFreeContext(ctxt);
@@ -205,12 +205,18 @@ cpuTestCompare(const void *arg)
     virCPUDefPtr host = NULL;
     virCPUDefPtr cpu = NULL;
     virCPUCompareResult result;
+    bool validate = !!(data->flags & VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
-    if (!(host = cpuTestLoadXML(data->arch, data->host)) ||
-        !(cpu = cpuTestLoadXML(data->arch, data->name)))
+    host = cpuTestLoadXML(data->arch, data->host);
+    cpu = cpuTestLoadXML(data->arch, data->name);
+
+    if (host && cpu)
+        result = virCPUCompare(host->arch, host, cpu, false);
+    else if (validate)
+        result = VIR_CPU_COMPARE_ERROR;
+    else
         goto cleanup;
 
-    result = virCPUCompare(host->arch, host, cpu, false);
     if (data->result == VIR_CPU_COMPARE_ERROR)
         virResetLastError();
 
@@ -1020,10 +1026,13 @@ mymain(void)
         VIR_FREE(testLabel); \
     } while (0)
 
-#define DO_TEST_COMPARE(arch, host, cpu, result) \
+#define DO_TEST_COMPARE_FLAGS(arch, host, cpu, result, flags) \
     DO_TEST(arch, cpuTestCompare, \
             host "/" cpu " (" #result ")", \
-            host, cpu, NULL, 0, result)
+            host, cpu, NULL, flags, result)
+
+#define DO_TEST_COMPARE(arch, host, cpu, result) \
+    DO_TEST_COMPARE_FLAGS(arch, host, cpu, result, 0)
 
 #define DO_TEST_UPDATE_ONLY(arch, host, cpu) \
     DO_TEST(arch, cpuTestUpdate, \
@@ -1092,6 +1101,10 @@ mymain(void)
                     NULL, NULL, json, 0); \
         } \
     } while (0)
+
+    /* invalid xml */
+    DO_TEST_COMPARE_FLAGS(VIR_ARCH_X86_64, "host", "bogus-element", VIR_CPU_COMPARE_ERROR, VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
+    DO_TEST_COMPARE_FLAGS(VIR_ARCH_X86_64, "host", "bogus-attribute", VIR_CPU_COMPARE_ERROR, VIR_CONNECT_COMPARE_CPU_VALIDATE_XML);
 
     /* host to host comparison */
     DO_TEST_COMPARE(VIR_ARCH_X86_64, "host", "host", VIR_CPU_COMPARE_IDENTICAL);
