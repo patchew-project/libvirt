@@ -3135,7 +3135,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     qemuDomainSetPrivatePathsOld(driver, vm);
 
-    if (virCPUDefParseXML(ctxt, "./cpu", VIR_CPU_TYPE_GUEST, &priv->origCPU) < 0)
+    if (virCPUDefParseXML(ctxt, "./cpu", VIR_CPU_TYPE_GUEST, &priv->origCPU,
+                          false) < 0)
         goto error;
 
     priv->chardevStdioLogd = virXPathBoolean("boolean(./chardevStdioLogd)",
@@ -10009,7 +10010,7 @@ qemuDomainSaveCookieParse(xmlXPathContextPtr ctxt G_GNUC_UNUSED,
         return -1;
 
     if (virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST,
-                          &cookie->cpu) < 0)
+                          &cookie->cpu, false) < 0)
         return -1;
 
     cookie->slirpHelper = virXPathBoolean("boolean(./slirpHelper)", ctxt) > 0;
