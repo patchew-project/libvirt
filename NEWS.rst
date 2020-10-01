@@ -13,6 +13,12 @@ v6.9.0 (unreleased)
 
 * **New features**
 
+  * qemu: Implement support for ``<transient/>`` disks
+
+    VM's based on the QEMU hypervisor now can use ``<transient/>`` option for
+    local file-backed disks to configure a disk which discards changes to the
+    disk which happened while it was active.
+
 * **Improvements**
 
 * **Bug fixes**
