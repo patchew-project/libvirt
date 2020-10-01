@@ -3530,6 +3530,22 @@ qemuValidateDomainDeviceDefFS(virDomainFSDefPtr fs,
         return -1;
     }
 
+    if (fs->fmode &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_FSDEV_FMODE))
+    {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("fmode is not supported with this QEMU binary"));
+        return -1;
+    }
+
+    if (fs->dmode &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_FSDEV_DMODE))
+    {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("dmode is not supported with this QEMU binary"));
+        return -1;
+    }
+
     switch ((virDomainFSDriverType) fs->fsdriver) {
     case VIR_DOMAIN_FS_DRIVER_TYPE_DEFAULT:
     case VIR_DOMAIN_FS_DRIVER_TYPE_PATH:
@@ -3589,6 +3605,16 @@ qemuValidateDomainDeviceDefFS(virDomainFSDefPtr fs,
         if (fs->multidevs != VIR_DOMAIN_FS_MULTIDEVS_DEFAULT) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("virtiofs does not support multidevs"));
+            return -1;
+        }
+        if (fs->fmode) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs does not support fmode"));
+            return -1;
+        }
+        if (fs->dmode) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtiofs does not support dmode"));
             return -1;
         }
         if (qemuValidateDomainDefVirtioFSSharedMemory(def) < 0)

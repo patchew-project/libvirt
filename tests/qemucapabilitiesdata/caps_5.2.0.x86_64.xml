@@ -243,6 +243,8 @@
   <flag name='numa.hmat'/>
   <flag name='blockdev-hostdev-scsi'/>
   <flag name='usb-host.hostdevice'/>
+  <flag name='fsdev.fmode'/>
+  <flag name='fsdev.dmode'/>
   <version>5001050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100243</microcodeVersion>

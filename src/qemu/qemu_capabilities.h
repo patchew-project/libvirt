@@ -580,6 +580,8 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
 
     /* 380 */
     QEMU_CAPS_USB_HOST_HOSTDEVICE, /* -device usb-host.hostdevice */
+    QEMU_CAPS_FSDEV_FMODE, /* fsdev.fmode */
+    QEMU_CAPS_FSDEV_DMODE, /* fsdev.dmode */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

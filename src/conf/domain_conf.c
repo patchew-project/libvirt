@@ -11507,6 +11507,8 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *units = NULL;
     g_autofree char *model = NULL;
     g_autofree char *multidevs = NULL;
+    g_autofree char *fmode = NULL;
+    g_autofree char *dmode = NULL;
 
     ctxt->node = node;
 
@@ -11533,6 +11535,40 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     } else {
         def->accessmode = VIR_DOMAIN_FS_ACCESSMODE_PASSTHROUGH;
+    }
+
+    fmode = virXMLPropString(node, "fmode");
+    if (fmode) {
+        if (def->accessmode != VIR_DOMAIN_FS_ACCESSMODE_MAPPED) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("fmode must be used with accessmode=mapped"));
+            goto error;
+        }
+
+        if (virStrToLong_uip(fmode, NULL, 10, &def->fmode) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("invalid fmode: '%s'"), fmode);
+            goto error;
+        }
+    } else {
+        def->fmode = 0;
+    }
+
+    dmode = virXMLPropString(node, "dmode");
+    if (dmode) {
+        if (def->accessmode != VIR_DOMAIN_FS_ACCESSMODE_MAPPED) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("dmode must be used with accessmode=mapped"));
+            goto error;
+        }
+
+        if (virStrToLong_uip(dmode, NULL, 10, &def->dmode) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("invalid dmode: '%s'"), dmode);
+            goto error;
+        }
+    } else {
+        def->dmode = 0;
     }
 
     model = virXMLPropString(node, "model");
@@ -26123,6 +26159,13 @@ virDomainFSDefFormat(virBufferPtr buf,
     }
     if (def->multidevs)
         virBufferAsprintf(buf, " multidevs='%s'", multidevs);
+
+    if (def->fmode)
+        virBufferAsprintf(buf, " fmode='%03d'", def->fmode);
+
+    if (def->dmode)
+        virBufferAsprintf(buf, " dmode='%03d'", def->dmode);
+
     virBufferAddLit(buf, ">\n");
 
     virBufferAdjustIndent(buf, 2);
