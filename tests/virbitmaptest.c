@@ -605,7 +605,7 @@ test12(const void *opaque G_GNUC_UNUSED)
 static int
 test13(const void *opaque G_GNUC_UNUSED)
 {
-    const char *strings[] = { "1234feebee", "000c0fefe" };
+    const char *strings[] = { "1234feebee", "000c0fefe", "0", "" };
     size_t i = 0;
 
     for (i = 0; i < G_N_ELEMENTS(strings); i++) {
@@ -684,6 +684,36 @@ test15(const void *opaque)
 }
 
 
+/* virBitmapNewEmpty + virBitmapToString */
+static int
+test16(const void *opaque G_GNUC_UNUSED)
+{
+    g_autoptr(virBitmap) map = virBitmapNewEmpty();
+    g_autofree char *res_empty = NULL;
+    g_autofree char *res_set = NULL;
+
+    if (!(res_empty = virBitmapToString(map)) ||
+        STRNEQ_NULLABLE(res_empty, "")) {
+        fprintf(stderr, "\n expected bitmap string '%s' actual string '%s'\n",
+                "", NULLSTR(res_empty));
+        return -1;
+    }
+
+    if (virBitmapSetBitExpand(map, 2) < 0 ||
+        virBitmapSetBitExpand(map, 11) < 0)
+        abort();
+
+    if (!(res_set = virBitmapToString(map)) ||
+        STRNEQ_NULLABLE(res_set, "804")) {
+        fprintf(stderr, "\n expected bitmap string '%s' actual string '%s'\n",
+                "804", NULLSTR(res_set));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 #define TESTBINARYOP(A, B, RES, FUNC) \
     testBinaryOpData.a = A; \
     testBinaryOpData.b = B; \
@@ -750,6 +780,9 @@ mymain(void)
     TESTBINARYOP("0,^0", "12345", "12345", test15);
     TESTBINARYOP("12345", "0,^0", "12345", test15);
     TESTBINARYOP("0,^0", "0,^0", "0,^0", test15);
+
+    if (virTestRun("test16", test16, NULL) < 0)
+        ret = -1;
 
     return ret;
 }
