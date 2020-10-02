@@ -23,6 +23,12 @@ v6.9.0 (unreleased)
 
 * **Bug fixes**
 
+  * lib: Don't unref message passed to virGDBusCallMethod{WithFD}()
+
+    The switch to GLib DBus implementation done in the previous release
+    contained a bug in which a DBus message was unrefed twice causing GLib to
+    abort the daemon.
+
 
 v6.8.0 (2020-10-01)
 ===================
