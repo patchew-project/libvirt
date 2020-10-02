@@ -600,6 +600,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 380 */
               "usb-host.hostdevice",
+              "fsdev.createmode",
     );
 
 
@@ -3334,6 +3335,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "smp-opts", "dies", QEMU_CAPS_SMP_DIES },
     { "fsdev", "multidevs", QEMU_CAPS_FSDEV_MULTIDEVS },
     { "fw_cfg", "file", QEMU_CAPS_FW_CFG },
+    { "fsdev", "fmode", QEMU_CAPS_FSDEV_CREATEMODE }, /* Could have also checked fsdev->dmode */
 };
 
 static int
