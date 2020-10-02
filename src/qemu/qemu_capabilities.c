@@ -600,7 +600,8 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 380 */
               "usb-host.hostdevice",
-    );
+              "virtio-balloon-pci.free-page-reporting",
+        );
 
 
 typedef struct _virQEMUCapsMachineType virQEMUCapsMachineType;
@@ -1344,6 +1345,7 @@ static struct virQEMUCapsDevicePropsFlags virQEMUCapsDevicePropsVirtioBalloon[] 
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM, NULL },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS, NULL },
     { "packed", QEMU_CAPS_VIRTIO_PACKED_QUEUES, NULL },
+    { "free-page-reporting", QEMU_CAPS_VIRTIO_BALLOON_FREE_PAGE_REPORTING, NULL },
 };
 
 
