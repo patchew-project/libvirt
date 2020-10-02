@@ -205,23 +205,26 @@ virGDBusCallMethod(GDBusConnection *conn,
                    const char *objectPath,
                    const char *ifaceName,
                    const char *method,
-                   GVariant *data)
+                   GVariant **data)
 {
     g_autoptr(GVariant) ret = NULL;
     g_autoptr(GError) gerror = NULL;
+    GVariant *parameters = NULL;
 
     if (error)
         memset(error, 0, sizeof(*error));
 
-    if (data)
-        g_variant_ref_sink(data);
+    if (data && *data) {
+        parameters = g_variant_ref_sink(*data);
+        *data = NULL;
+    }
 
     ret = g_dbus_connection_call_sync(conn,
                                       busName,
                                       objectPath,
                                       ifaceName,
                                       method,
-                                      data,
+                                      parameters,
                                       replyType,
                                       G_DBUS_CALL_FLAGS_NONE,
                                       VIR_DBUS_METHOD_CALL_TIMEOUT_MILIS,
@@ -259,24 +262,27 @@ virGDBusCallMethodWithFD(GDBusConnection *conn,
                          const char *objectPath,
                          const char *ifaceName,
                          const char *method,
-                         GVariant *data,
+                         GVariant **data,
                          GUnixFDList *dataFD)
 {
     g_autoptr(GVariant) ret = NULL;
     g_autoptr(GError) gerror = NULL;
+    GVariant *parameters = NULL;
 
     if (error)
         memset(error, 0, sizeof(*error));
 
-    if (data)
-        g_variant_ref_sink(data);
+    if (data && *data) {
+        parameters = g_variant_ref_sink(*data);
+        *data = NULL;
+    }
 
     ret = g_dbus_connection_call_with_unix_fd_list_sync(conn,
                                                         busName,
                                                         objectPath,
                                                         ifaceName,
                                                         method,
-                                                        data,
+                                                        parameters,
                                                         replyType,
                                                         G_DBUS_CALL_FLAGS_NONE,
                                                         VIR_DBUS_METHOD_CALL_TIMEOUT_MILIS,
@@ -317,9 +323,14 @@ virGDBusCallMethodWithFD(GDBusConnection *conn G_GNUC_UNUSED,
                          const char *objectPath G_GNUC_UNUSED,
                          const char *ifaceName G_GNUC_UNUSED,
                          const char *method G_GNUC_UNUSED,
-                         GVariant *data G_GNUC_UNUSED,
+                         GVariant **data,
                          GUnixFDList *dataFD G_GNUC_UNUSED)
 {
+    if (data && *data) {
+        g_variant_unref(*data);
+        *data = NULL;
+    }
+
     virReportSystemError(ENOSYS, "%s",
                          _("Unix file descriptors not supported on this platform"));
     return -1;

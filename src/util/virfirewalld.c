@@ -83,7 +83,7 @@ int
 virFirewallDGetVersion(unsigned long *version)
 {
     GDBusConnection *sysbus = virGDBusGetSystemBus();
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(GVariant) gvar = NULL;
     char *versionStr;
@@ -101,7 +101,7 @@ virFirewallDGetVersion(unsigned long *version)
                            "/org/fedoraproject/FirewallD1",
                            "org.freedesktop.DBus.Properties",
                            "Get",
-                           message) < 0)
+                           &message) < 0)
         return -1;
 
     g_variant_get(reply, "(v)", &gvar);
@@ -129,7 +129,7 @@ int
 virFirewallDGetBackend(void)
 {
     GDBusConnection *sysbus = virGDBusGetSystemBus();
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(GVariant) gvar = NULL;
     g_autoptr(virError) error = NULL;
@@ -154,7 +154,7 @@ virFirewallDGetBackend(void)
                            "/org/fedoraproject/FirewallD1/config",
                            "org.freedesktop.DBus.Properties",
                            "Get",
-                           message) < 0)
+                           &message) < 0)
         return -1;
 
     if (error->level == VIR_ERR_ERROR) {
@@ -273,7 +273,7 @@ virFirewallDApplyRule(virFirewallLayer layer,
 {
     const char *ipv = virFirewallLayerFirewallDTypeToString(layer);
     GDBusConnection *sysbus = virGDBusGetSystemBus();
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(virError) error = NULL;
 
@@ -304,7 +304,7 @@ virFirewallDApplyRule(virFirewallLayer layer,
                            "/org/fedoraproject/FirewallD1",
                            "org.fedoraproject.FirewallD1.direct",
                            "passthrough",
-                           message) < 0)
+                           &message) < 0)
         return -1;
 
     if (error->level == VIR_ERR_ERROR) {
@@ -353,7 +353,7 @@ virFirewallDInterfaceSetZone(const char *iface,
                              const char *zone)
 {
     GDBusConnection *sysbus = virGDBusGetSystemBus();
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
 
     if (!sysbus)
         return -1;
@@ -368,5 +368,5 @@ virFirewallDInterfaceSetZone(const char *iface,
                              "/org/fedoraproject/FirewallD1",
                              "org.fedoraproject.FirewallD1.zone",
                              "changeZoneOfInterface",
-                             message);
+                             &message);
 }

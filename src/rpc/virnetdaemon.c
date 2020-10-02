@@ -469,7 +469,7 @@ virNetDaemonCallInhibit(virNetDaemonPtr dmn,
 {
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(GUnixFDList) replyFD = NULL;
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     GDBusConnection *systemBus;
     int fd;
     int rc;
@@ -494,7 +494,7 @@ virNetDaemonCallInhibit(virNetDaemonPtr dmn,
                                   "/org/freedesktop/login1",
                                   "org.freedesktop.login1.Manager",
                                   "Inhibit",
-                                  message,
+                                  &message,
                                   NULL);
 
     if (rc < 0)

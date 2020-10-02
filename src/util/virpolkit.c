@@ -67,7 +67,7 @@ int virPolkitCheckAuth(const char *actionid,
     GVariantBuilder builder;
     GVariant *gprocess = NULL;
     GVariant *gdetails = NULL;
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(GVariantIter) iter = NULL;
     char *retkey;
@@ -110,7 +110,7 @@ int virPolkitCheckAuth(const char *actionid,
                            "/org/freedesktop/PolicyKit1/Authority",
                            "org.freedesktop.PolicyKit1.Authority",
                            "CheckAuthorization",
-                           message) < 0)
+                           &message) < 0)
         return -1;
 
     g_variant_get(reply, "((bba{ss}))", &is_authorized, &is_challenge, &iter);

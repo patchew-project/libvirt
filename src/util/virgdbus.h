@@ -51,7 +51,7 @@ virGDBusCallMethod(GDBusConnection *conn,
                    const char *objectPath,
                    const char *ifaceName,
                    const char *method,
-                   GVariant *data);
+                   GVariant **data);
 
 int
 virGDBusCallMethodWithFD(GDBusConnection *conn,
@@ -63,7 +63,7 @@ virGDBusCallMethodWithFD(GDBusConnection *conn,
                          const char *objectPath,
                          const char *ifaceName,
                          const char *method,
-                         GVariant *data,
+                         GVariant **data,
                          GUnixFDList *dataFD);
 
 int

@@ -198,7 +198,7 @@ char *
 virSystemdGetMachineNameByPID(pid_t pid)
 {
     GDBusConnection *conn;
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(GVariant) reply = NULL;
     g_autoptr(GVariant) gvar = NULL;
     g_autofree char *object = NULL;
@@ -220,7 +220,7 @@ virSystemdGetMachineNameByPID(pid_t pid)
                            "/org/freedesktop/machine1",
                            "org.freedesktop.machine1.Manager",
                            "GetMachineByPID",
-                           message) < 0)
+                           &message) < 0)
         return NULL;
 
     g_variant_get(reply, "(o)", &object);
@@ -231,7 +231,6 @@ virSystemdGetMachineNameByPID(pid_t pid)
     VIR_DEBUG("Domain with pid %lld has object path '%s'",
               (long long) pid, object);
 
-    g_variant_unref(message);
     message = g_variant_new("(ss)",
                             "org.freedesktop.machine1.Machine", "Name");
 
@@ -243,7 +242,7 @@ virSystemdGetMachineNameByPID(pid_t pid)
                            object,
                            "org.freedesktop.DBus.Properties",
                            "Get",
-                           message) < 0)
+                           &message) < 0)
         return NULL;
 
     g_variant_get(reply, "(v)", &gvar);
@@ -393,9 +392,7 @@ int virSystemdCreateMachine(const char *name,
                                 "/org/freedesktop/machine1",
                                 "org.freedesktop.machine1.Manager",
                                 "CreateMachineWithNetwork",
-                                message);
-
-        g_variant_unref(message);
+                                &message);
 
         if (rc < 0)
             return -1;
@@ -440,9 +437,7 @@ int virSystemdCreateMachine(const char *name,
                                 "/org/freedesktop/machine1",
                                 "org.freedesktop.machine1.Manager",
                                 "CreateMachine",
-                                message);
-
-        g_variant_unref(message);
+                                &message);
 
         if (rc < 0)
             return -1;
@@ -468,9 +463,7 @@ int virSystemdCreateMachine(const char *name,
                                 "/org/freedesktop/systemd1",
                                 "org.freedesktop.systemd1.Manager",
                                 "SetUnitProperties",
-                                message);
-
-        g_variant_unref(message);
+                                &message);
 
         if (rc < 0)
             return -1;
@@ -483,7 +476,7 @@ int virSystemdTerminateMachine(const char *name)
 {
     int rc;
     GDBusConnection *conn;
-    g_autoptr(GVariant) message = NULL;
+    GVariant *message = NULL;
     g_autoptr(virError) error = NULL;
 
     if (!name)
@@ -519,7 +512,7 @@ int virSystemdTerminateMachine(const char *name)
                            "/org/freedesktop/machine1",
                            "org.freedesktop.machine1.Manager",
                            "TerminateMachine",
-                           message) < 0)
+                           &message) < 0)
         return -1;
 
     if (error->level == VIR_ERR_ERROR &&
