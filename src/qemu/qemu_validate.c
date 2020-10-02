@@ -3475,36 +3475,36 @@ qemuValidateDomainDefVirtioFSSharedMemory(const virDomainDef *def)
     size_t numa_nodes = virDomainNumaGetNodeCount(def->numa);
     size_t i;
 
-    if (numa_nodes == 0) {
+    if ((!numa_nodes) && (def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_SHARED)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("virtiofs requires one or more NUMA nodes"));
+                       _("virtiofs requires shared memory"));
         return -1;
-    }
+    } else {
+        for (i = 0; i < numa_nodes; i++) {
+            virDomainMemoryAccess node_access =
+                virDomainNumaGetNodeMemoryAccessMode(def->numa, i);
 
-    for (i = 0; i < numa_nodes; i++) {
-        virDomainMemoryAccess node_access =
-            virDomainNumaGetNodeMemoryAccessMode(def->numa, i);
-
-        switch (node_access) {
-        case VIR_DOMAIN_MEMORY_ACCESS_DEFAULT:
-            if (def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+            switch (node_access) {
+            case VIR_DOMAIN_MEMORY_ACCESS_DEFAULT:
+                if (def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("virtiofs requires shared memory"));
+                    return -1;
+                }
+                break;
+            case VIR_DOMAIN_MEMORY_ACCESS_SHARED:
+                break;
+            case VIR_DOMAIN_MEMORY_ACCESS_PRIVATE:
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("virtiofs requires shared memory"));
                 return -1;
+
+            case VIR_DOMAIN_MEMORY_ACCESS_LAST:
+            default:
+                virReportEnumRangeError(virDomainMemoryAccess, node_access);
+                return -1;
+
             }
-            break;
-        case VIR_DOMAIN_MEMORY_ACCESS_SHARED:
-            break;
-        case VIR_DOMAIN_MEMORY_ACCESS_PRIVATE:
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("virtiofs requires shared memory"));
-            return -1;
-
-        case VIR_DOMAIN_MEMORY_ACCESS_LAST:
-        default:
-            virReportEnumRangeError(virDomainMemoryAccess, node_access);
-            return -1;
-
         }
     }
     return 0;
