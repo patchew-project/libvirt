@@ -97,8 +97,8 @@
 
 # Finally set the OS / architecture specific special cases
 
-# Xen is available only on i386 x86_64 ia64
-%ifnarch %{ix86} x86_64 ia64
+# Xen is available only on i386 x86_64 ia64 aarch64
+%ifnarch %{ix86} x86_64 ia64 aarch64
     %define with_libxl 0
 %endif
 
