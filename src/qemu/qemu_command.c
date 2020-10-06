@@ -7049,7 +7049,8 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
     defaultRAMid = virQEMUCapsGetMachineDefaultRAMid(qemuCaps,
                                                      def->virtType,
                                                      def->os.machine);
-    if (defaultRAMid)
+    if (defaultRAMid &&
+        !virDomainNumaGetNodeCount(def->numa))
         virBufferAsprintf(&buf, ",memory-backend=%s", defaultRAMid);
 
     virCommandAddArgBuffer(cmd, &buf);
@@ -7216,7 +7217,8 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
                                                      def->os.machine);
 
     if (defaultRAMid) {
-        qemuBuildMemCommandLineMemoryDefaultBackend(cmd, def, priv, defaultRAMid);
+        if (!virDomainNumaGetNodeCount(def->numa))
+            qemuBuildMemCommandLineMemoryDefaultBackend(cmd, def, priv, defaultRAMid);
     } else {
         if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE) {
             virCommandAddArgList(cmd, "-mem-prealloc", NULL);
@@ -7427,6 +7429,11 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
         needBackend = true;
         hmat = true;
     }
+
+    if (virQEMUCapsGetMachineDefaultRAMid(qemuCaps,
+                                          def->virtType,
+                                          def->os.machine))
+        needBackend = true;
 
     nodeBackends = g_new0(virBuffer, ncells);
 
