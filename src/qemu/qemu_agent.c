@@ -2195,7 +2195,6 @@ int
 qemuAgentGetInterfaces(qemuAgentPtr agent,
                        virDomainInterfacePtr **ifaces)
 {
-    int ret = -1;
     size_t i;
     g_autoptr(virJSONValue) cmd = NULL;
     g_autoptr(virJSONValue) reply = NULL;
@@ -2208,15 +2207,15 @@ qemuAgentGetInterfaces(qemuAgentPtr agent,
     ifaces_store = virHashNew(NULL);
 
     if (!(cmd = qemuAgentMakeCommand("guest-network-get-interfaces", NULL)))
-        goto cleanup;
+        return -1;
 
     if (qemuAgentCommand(agent, cmd, &reply, agent->timeout) < 0)
-        goto cleanup;
+        return -1;
 
     if (!(ret_array = virJSONValueObjectGetArray(reply, "return"))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("qemu agent didn't return an array of interfaces"));
-        goto cleanup;
+        return -1;
     }
 
     for (i = 0; i < virJSONValueArraySize(ret_array); i++) {
@@ -2229,10 +2228,7 @@ qemuAgentGetInterfaces(qemuAgentPtr agent,
     }
 
     *ifaces = g_steal_pointer(&ifaces_ret);
-    ret = ifaces_count;
-
- cleanup:
-    return ret;
+    return ifaces_count;
 
  error:
     if (ifaces_ret) {
@@ -2240,7 +2236,7 @@ qemuAgentGetInterfaces(qemuAgentPtr agent,
             virDomainInterfaceFree(ifaces_ret[i]);
     }
     VIR_FREE(ifaces_ret);
-    goto cleanup;
+    return -1;
 }
 
 
