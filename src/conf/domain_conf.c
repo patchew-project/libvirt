@@ -7587,6 +7587,10 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
             virBufferAsprintf(&attrBuf, " multifunction='%s'",
                               virTristateSwitchTypeToString(info->addr.pci.multi));
         }
+        if (info->addr.pci.vga) {
+            virBufferAsprintf(&attrBuf, " vga='%s'",
+                              virTristateSwitchTypeToString(info->addr.pci.vga));
+        }
 
         if (virZPCIDeviceAddressIsPresent(&info->addr.pci.zpci)) {
             virBufferAsprintf(&childBuf,

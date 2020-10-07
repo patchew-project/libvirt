@@ -61,6 +61,7 @@ struct _virPCIDeviceAddress {
     unsigned int slot;
     unsigned int function;
     int multi; /* virTristateSwitch */
+    int vga; /* virTristateSwitch */
     int extFlags; /* enum virPCIDeviceAddressExtensionFlags */
     virZPCIDeviceAddress zpci;
     /* Don't forget to update virPCIDeviceAddressCopy if needed. */

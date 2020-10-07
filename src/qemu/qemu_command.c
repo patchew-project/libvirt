@@ -350,6 +350,10 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
             virBufferAddLit(buf, ",multifunction=on");
         else if (info->addr.pci.multi == VIR_TRISTATE_SWITCH_OFF)
             virBufferAddLit(buf, ",multifunction=off");
+        if (info->addr.pci.vga == VIR_TRISTATE_SWITCH_ON)
+            virBufferAddLit(buf, ",x-vga=on");
+        else if (info->addr.pci.vga == VIR_TRISTATE_SWITCH_OFF)
+            virBufferAddLit(buf, ",x-vga=off");
         virBufferAsprintf(buf, ",addr=0x%x", info->addr.pci.slot);
         if (info->addr.pci.function != 0)
            virBufferAsprintf(buf, ".0x%x", info->addr.pci.function);

@@ -600,6 +600,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 380 */
               "usb-host.hostdevice",
+              "pci-vga",
     );
 
 

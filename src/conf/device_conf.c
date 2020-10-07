@@ -215,6 +215,7 @@ virPCIDeviceAddressParseXML(xmlNodePtr node,
     g_autofree char *slot     = virXMLPropString(node, "slot");
     g_autofree char *function = virXMLPropString(node, "function");
     g_autofree char *multi    = virXMLPropString(node, "multifunction");
+    g_autofree char *vga      = virXMLPropString(node, "vga");
 
     memset(addr, 0, sizeof(*addr));
 
@@ -251,6 +252,14 @@ virPCIDeviceAddressParseXML(xmlNodePtr node,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unknown value '%s' for <address> 'multifunction' attribute"),
                        multi);
+        return -1;
+
+    }
+    if (vga &&
+        ((addr->vga = virTristateSwitchTypeFromString(vga)) <= 0)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unknown value '%s' for <address> 'vga' attribute"),
+                       vga);
         return -1;
 
     }

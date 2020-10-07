@@ -294,6 +294,10 @@ static const vshCmdOptDef opts_attach_disk[] = {
      .type = VSH_OT_BOOL,
      .help = N_("use multifunction pci under specified address")
     },
+    {.name = "vga",
+     .type = VSH_OT_BOOL,
+     .help = N_("enable legacy VGA")
+    },
     {.name = "print-xml",
      .type = VSH_OT_BOOL,
      .help = N_("print XML document rather than attach the disk")
@@ -694,6 +698,8 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
                                   diskAddr.addr.pci.slot, diskAddr.addr.pci.function);
                 if (vshCommandOptBool(cmd, "multifunction"))
                     virBufferAddLit(&buf, " multifunction='on'");
+                if (vshCommandOptBool(cmd, "vga"))
+                    virBufferAddLit(&buf, " vga='on'");
                 virBufferAddLit(&buf, "/>\n");
             } else if (diskAddr.type == DISK_ADDR_TYPE_CCW) {
                 virBufferAsprintf(&buf,
