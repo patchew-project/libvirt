@@ -101,6 +101,8 @@ VIR_ENUM_IMPL(qemuVideo,
               "" /* 'none' doesn't make sense here */,
               "bochs-display",
               "", /* ramfb can't be used with -vga */
+              "rage128p",
+              "rv100",
 );
 
 VIR_ENUM_DECL(qemuDeviceVideo);
@@ -120,6 +122,8 @@ VIR_ENUM_IMPL(qemuDeviceVideo,
               "" /* 'none' doesn't make sense here */,
               "bochs-display",
               "ramfb",
+              "ati-vga" /* (rage128p) */,
+              "ati-vga" /* (rv100) */,
 );
 
 VIR_ENUM_DECL(qemuDeviceVideoSecondary);
@@ -139,6 +143,8 @@ VIR_ENUM_IMPL(qemuDeviceVideoSecondary,
               "" /* 'none' doesn't make sense here */,
               "" /* no secondary device for bochs */,
               "" /* no secondary device for ramfb */,
+              "" /* no secondary device for ati-vga? (rage128p) */,
+              "" /* no secondary device for ati-vga? (rv100) */,
 );
 
 VIR_ENUM_IMPL(qemuSoundCodec,
