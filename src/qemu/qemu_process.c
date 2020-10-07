@@ -3111,6 +3111,8 @@ qemuProcessUpdateVideoRamSize(virQEMUDriverPtr driver,
         case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
         case VIR_DOMAIN_VIDEO_TYPE_XEN:
         case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+        case VIR_DOMAIN_VIDEO_TYPE_RAGE128P:
+        case VIR_DOMAIN_VIDEO_TYPE_RV100:
         case VIR_DOMAIN_VIDEO_TYPE_LAST:
             break;
         }

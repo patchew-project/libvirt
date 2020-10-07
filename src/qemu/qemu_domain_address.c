@@ -964,6 +964,8 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_VIDEO_TYPE_VBOX:
         case VIR_DOMAIN_VIDEO_TYPE_QXL:
         case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+        case VIR_DOMAIN_VIDEO_TYPE_RAGE128P:
+        case VIR_DOMAIN_VIDEO_TYPE_RV100:
             return pciFlags;
 
         case VIR_DOMAIN_VIDEO_TYPE_BOCHS:

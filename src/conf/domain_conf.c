@@ -811,6 +811,8 @@ VIR_ENUM_IMPL(virDomainVideo,
               "none",
               "bochs",
               "ramfb",
+              "rage128p",
+              "rv100",
 );
 
 VIR_ENUM_IMPL(virDomainVideoVGAConf,
@@ -16015,6 +16017,11 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
     case VIR_DOMAIN_VIDEO_TYPE_QXL:
         /* QEMU use 64M as the minimal video memory for qxl device */
         return 64 * 1024;
+
+    case VIR_DOMAIN_VIDEO_TYPE_RAGE128P:
+    case VIR_DOMAIN_VIDEO_TYPE_RV100:
+        /* The real world devices started at 16M */
+        return 16 * 1024;
 
     case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
     case VIR_DOMAIN_VIDEO_TYPE_VBOX:

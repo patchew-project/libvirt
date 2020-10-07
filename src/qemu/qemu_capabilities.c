@@ -600,6 +600,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
 
               /* 380 */
               "usb-host.hostdevice",
+              "ati-vga",
     );
 
 
@@ -1325,6 +1326,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "tcg-accel", QEMU_CAPS_TCG },
     { "pvscsi", QEMU_CAPS_SCSI_PVSCSI },
     { "spapr-tpm-proxy", QEMU_CAPS_DEVICE_SPAPR_TPM_PROXY },
+    { "ati-vga", QEMU_CAPS_DEVICE_ATI_VGA },
 };
 
 
@@ -6127,6 +6129,10 @@ virQEMUCapsFillDomainDeviceVideoCaps(virQEMUCapsPtr qemuCaps,
         VIR_DOMAIN_CAPS_ENUM_SET(dev->modelType, VIR_DOMAIN_VIDEO_TYPE_BOCHS);
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_RAMFB))
         VIR_DOMAIN_CAPS_ENUM_SET(dev->modelType, VIR_DOMAIN_VIDEO_TYPE_RAMFB);
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ATI_VGA)) {
+        VIR_DOMAIN_CAPS_ENUM_SET(dev->modelType, VIR_DOMAIN_VIDEO_TYPE_RAGE128P);
+        VIR_DOMAIN_CAPS_ENUM_SET(dev->modelType, VIR_DOMAIN_VIDEO_TYPE_RV100);
+    }
 }
 
 

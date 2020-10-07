@@ -3915,6 +3915,8 @@
                 <value>none</value>
                 <value>bochs</value>
                 <value>ramfb</value>
+                <value>rage128p</value>
+                <value>rv100</value>
               </choice>
             </attribute>
             <group>
