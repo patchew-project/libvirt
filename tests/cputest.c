@@ -81,7 +81,7 @@ cpuTestLoadXML(virArch arch, const char *name)
     if (!(doc = virXMLParseFileCtxt(xml, &ctxt)))
         goto cleanup;
 
-    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, false);
+    virCPUDefParseXML(ctxt, NULL, VIR_CPU_TYPE_AUTO, &cpu, true);
 
  cleanup:
     xmlXPathFreeContext(ctxt);

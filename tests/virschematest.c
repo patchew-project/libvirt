@@ -198,6 +198,7 @@ mymain(void)
     } while (0)
 
     DO_TEST_DIR("capability.rng", "capabilityschemadata", "vircaps2xmldata");
+    DO_TEST_DIR("cpu_test.rng", "cputestdata");
     DO_TEST_DIR("domain.rng", "domainschemadata",
                 "qemuxml2argvdata", "xmconfigdata",
                 "qemuxml2xmloutdata", "lxcxml2xmldata",

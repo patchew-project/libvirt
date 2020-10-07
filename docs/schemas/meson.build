@@ -2,6 +2,7 @@ docs_schema_files = [
   'basictypes.rng',
   'capability.rng',
   'cpu.rng',
+  'cpu_test.rng',
   'cputypes.rng',
   'domainbackup.rng',
   'domaincaps.rng',
