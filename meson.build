@@ -1228,17 +1228,25 @@ else
   pkcheck_prog = dependency('', required: false)
 endif
 
-rbd_dep = cc.find_library('rbd', required: false)
-rados_dep = cc.find_library('rados', required: false)
-if rbd_dep.found() and not cc.has_function('rbd_get_features', dependencies: rbd_dep)
-  rbd_dep = dependency('', required: false)
-endif
-if rbd_dep.found() and rados_dep.found()
-  if cc.has_function('rbd_list2', dependencies: rbd_dep)
-    conf.set('WITH_RBD_LIST2', 1)
+if not get_option('rbd').disabled()
+  rbd_dep = cc.find_library('rbd', required: get_option('rbd'))
+  rados_dep = cc.find_library('rados', required: get_option('rbd'))
+
+  if rbd_dep.found() and not cc.has_function('rbd_get_features', dependencies: rbd_dep)
+    if get_option('rbd').enabled()
+      error('rbd is missing rbd_get_features')
+    else
+      rbd_dep = dependency('', required: false)
+    endif
   endif
 
-  rbd_dep = declare_dependency(dependencies: [ rbd_dep, rados_dep ])
+  if rbd_dep.found() and rados_dep.found()
+    if cc.has_function('rbd_list2', dependencies: rbd_dep)
+      conf.set('WITH_RBD_LIST2', 1)
+    endif
+
+    rbd_dep = declare_dependency(dependencies: [ rbd_dep, rados_dep ])
+  endif
 else
   rbd_dep = dependency('', required: false)
 endif
