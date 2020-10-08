@@ -3593,7 +3593,6 @@ remoteDispatchAuthList(virNetServerPtr server,
                        virNetMessageErrorPtr rerr,
                        remote_auth_list_ret *ret)
 {
-    int rv = -1;
     int auth = virNetServerClientGetAuth(client);
     uid_t callerUid;
     gid_t callerGid;
@@ -3636,11 +3635,7 @@ remoteDispatchAuthList(virNetServerPtr server,
         break;
     }
 
-    rv = 0;
-
-    if (rv < 0)
-        virNetMessageSaveError(rerr);
-    return rv;
+    return 0;
 }
 
 
