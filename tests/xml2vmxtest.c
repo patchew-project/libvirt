@@ -148,12 +148,12 @@ testFormatVMXFileName(const char *src, void *opaque G_GNUC_UNUSED)
     char *directoryAndFileName = NULL;
     char *absolutePath = NULL;
 
-    if (STRPREFIX(src, "[")) {
+    if (STRPREFIX(src, "/[")) {
         /* Found potential datastore path */
         copyOfDatastorePath = g_strdup(src);
 
         /* Expected format: '[<datastore>] <path>' where <path> is optional */
-        if ((tmp = STRSKIP(copyOfDatastorePath, "[")) == NULL || *tmp == ']' ||
+        if ((tmp = STRSKIP(copyOfDatastorePath, "/[")) == NULL || *tmp == ']' ||
             (datastoreName = strtok_r(tmp, "]", &saveptr)) == NULL) {
             goto cleanup;
         }

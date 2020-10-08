@@ -19,18 +19,18 @@
   <on_crash>destroy</on_crash>
   <devices>
     <disk type='file' device='disk'>
-      <source file='[datastore] directory/RHEL7_6.vmdk'/>
+      <source file='/[datastore] directory/RHEL7_6.vmdk'/>
       <target dev='sda' bus='scsi'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
     <disk type='file' device='disk'>
-      <source file='[datastore] directory/RHEL7_6_1.vmdk'/>
+      <source file='/[datastore] directory/RHEL7_6_1.vmdk'/>
       <target dev='sdb' bus='scsi'/>
       <transient/>
       <address type='drive' controller='0' bus='0' target='0' unit='1'/>
     </disk>
     <disk type='file' device='disk'>
-      <source file='[5669422e-699d77db-c144-00e0815e303e] block4/block4.vmdk'/>
+      <source file='/[5669422e-699d77db-c144-00e0815e303e] block4/block4.vmdk'/>
       <target dev='sdc' bus='scsi'/>
       <address type='drive' controller='0' bus='0' target='0' unit='2'/>
     </disk>

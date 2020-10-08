@@ -20,12 +20,12 @@
   <on_crash>destroy</on_crash>
   <devices>
     <disk type='file' device='disk'>
-      <source file='[datastore] directory/vmtest-000001.vmdk'/>
+      <source file='/[datastore] directory/vmtest-000001.vmdk'/>
       <target dev='sda' bus='scsi'/>
       <address type='drive' controller='0' bus='0' unit='0'/>
     </disk>
     <disk type='file' device='cdrom'>
-      <source file='[4af0231d-1eff559a-6369-0024e84773b6] isos/CentOS-5.5-x86_64-bin-DVD-1of2.iso'/>
+      <source file='/[4af0231d-1eff559a-6369-0024e84773b6] isos/CentOS-5.5-x86_64-bin-DVD-1of2.iso'/>
       <target dev='hda' bus='ide'/>
       <address type='drive' controller='0' bus='0' unit='0'/>
     </disk>

@@ -14,12 +14,12 @@
   <devices>
     <disk type='file' device='disk'>
       <driver cache='writethrough'/>
-      <source file='[datastore] directory/Debian1.vmdk'/>
+      <source file='/[datastore] directory/Debian1.vmdk'/>
       <target dev='sda' bus='scsi'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
     <disk type='file' device='cdrom'>
-      <source file='[datastore] directory/Debian1-cdrom.iso'/>
+      <source file='/[datastore] directory/Debian1-cdrom.iso'/>
       <target dev='sdp' bus='scsi'/>
       <address type='drive' controller='1' bus='0' target='0' unit='0'/>
     </disk>
@@ -34,7 +34,7 @@
       <address type='drive' controller='0' bus='0' target='0' unit='1'/>
     </disk>
     <disk type='file' device='disk'>
-      <source file='[datastore] directory/Debian1-IDE.vmdk'/>
+      <source file='/[datastore] directory/Debian1-IDE.vmdk'/>
       <target dev='hdd' bus='ide'/>
       <address type='drive' controller='0' bus='1' target='0' unit='1'/>
     </disk>

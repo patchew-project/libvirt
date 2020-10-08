@@ -148,7 +148,7 @@ testParseVMXFileName(const char *fileName, void *opaque G_GNUC_UNUSED)
             goto cleanup;
         }
 
-        src = g_strdup_printf("[%s] %s", datastoreName, directoryAndFileName);
+        src = g_strdup_printf("/[%s] %s", datastoreName, directoryAndFileName);
     } else if (STRPREFIX(fileName, "/")) {
         /* Found absolute path referencing a file outside a datastore */
         src = g_strdup(fileName);
@@ -157,7 +157,7 @@ testParseVMXFileName(const char *fileName, void *opaque G_GNUC_UNUSED)
         src = NULL;
     } else {
         /* Found single file name referencing a file inside a datastore */
-        src = g_strdup_printf("[datastore] directory/%s", fileName);
+        src = g_strdup_printf("/[datastore] directory/%s", fileName);
     }
 
  cleanup:

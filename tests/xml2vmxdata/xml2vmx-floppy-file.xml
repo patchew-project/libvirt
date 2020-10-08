@@ -7,11 +7,11 @@
   </os>
   <devices>
     <disk type='file' device='floppy'>
-      <source file='[testing] floppy.flp'/>
+      <source file='/[testing] floppy.flp'/>
       <target dev='fda' bus='fdc'/>
     </disk>
     <disk type='file' device='floppy'>
-      <source file='[testing] floppy1'/>
+      <source file='/[testing] floppy1'/>
       <target dev='fdb' bus='fdc'/>
     </disk>
   </devices>

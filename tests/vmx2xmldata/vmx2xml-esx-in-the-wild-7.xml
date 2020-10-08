@@ -13,7 +13,7 @@
   <on_crash>destroy</on_crash>
   <devices>
     <disk type='file' device='disk'>
-      <source file='[datastore] directory/esx-rhel6-mini.vmdk'/>
+      <source file='/[datastore] directory/esx-rhel6-mini.vmdk'/>
       <target dev='sda' bus='scsi'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
