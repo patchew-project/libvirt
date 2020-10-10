@@ -3469,6 +3469,19 @@ struct remote_domain_event_callback_metadata_change_msg {
     remote_string nsuri;
 };
 
+struct remote_domain_event_memory_failure_flags {
+    int action_required;
+    int recursive;
+};
+
+struct remote_domain_event_memory_failure_msg {
+    int callbackID;
+    remote_nonnull_domain dom;
+    int recipient;
+    int action;
+    remote_domain_event_memory_failure_flags flags;
+};
+
 struct remote_connect_secret_event_register_any_args {
     int eventID;
     remote_secret secret;
@@ -6668,5 +6681,11 @@ enum remote_procedure {
      * @priority: high
      * @acl: domain:read
      */
-    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422
+    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422,
+
+    /**
+     * @generate: both
+     * @acl: none
+     */
+    REMOTE_PROC_DOMAIN_EVENT_MEMORY_FAILURE = 423
 };

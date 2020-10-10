@@ -964,6 +964,22 @@ myDomainEventBlockThresholdCallback(virConnectPtr conn G_GNUC_UNUSED,
 
 
 static int
+myDomainEventMemoryFailureCallback(virConnectPtr conn G_GNUC_UNUSED,
+                                   virDomainPtr dom,
+                                   virDomainMemoryFailureRecipientType recipient,
+                                   virDomainMemoryFailureActionType action,
+                                   virDomainMemoryFailureFlagsPtr flags,
+                                   void *opaque G_GNUC_UNUSED)
+{
+    printf("%s EVENT: Domain %s(%d) memory failure: recipient '%d', "
+           "aciont '%d', action_required '%d', recursive '%d'",
+           __func__, virDomainGetName(dom), virDomainGetID(dom), recipient,
+           action, flags->action_required, flags->recursive);
+    return 0;
+}
+
+
+static int
 myDomainEventMigrationIterationCallback(virConnectPtr conn G_GNUC_UNUSED,
                                         virDomainPtr dom,
                                         int iteration,
@@ -1093,6 +1109,7 @@ struct domainEventData domainEvents[] = {
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED, myDomainEventDeviceRemovalFailedCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_METADATA_CHANGE, myDomainEventMetadataChangeCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD, myDomainEventBlockThresholdCallback),
+    DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_MEMORY_FAILURE, myDomainEventMemoryFailureCallback),
 };
 
 struct storagePoolEventData {

@@ -4292,6 +4292,59 @@ processGuestCrashloadedEvent(virQEMUDriverPtr driver,
 }
 
 
+static void
+processMemoryFailureEvent(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          qemuMonitorEventMemoryFailurePtr mfp)
+{
+    virObjectEventPtr event = NULL;
+    virDomainMemoryFailureRecipientType recipient;
+    virDomainMemoryFailureActionType action;
+    virDomainMemoryFailureFlags flags;
+
+    switch (mfp->recipient) {
+    case QEMU_MONITOR_MEMORY_FAILURE_RECIPIENT_HYPERVISOR:
+        recipient = VIR_DOMAIN_EVENT_MEMORY_FAILURE_RECIPIENT_HYPERVISOR;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_RECIPIENT_GUEST:
+        recipient = VIR_DOMAIN_EVENT_MEMORY_FAILURE_RECIPIENT_GUEST;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_RECIPIENT_LAST:
+    default:
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("requested unknown memory failure recipient"));
+        return;
+    }
+
+    switch (mfp->action) {
+    case QEMU_MONITOR_MEMORY_FAILURE_ACTION_IGNORE:
+        action = VIR_DOMAIN_EVENT_MEMORY_FAILURE_ACTION_IGNORE;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_ACTION_INJECT:
+        action = VIR_DOMAIN_EVENT_MEMORY_FAILURE_ACTION_INJECT;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_ACTION_FATAL:
+        action = VIR_DOMAIN_EVENT_MEMORY_FAILURE_ACTION_FATAL;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_ACTION_RESET:
+        action = VIR_DOMAIN_EVENT_MEMORY_FAILURE_ACTION_RESET;
+        break;
+    case QEMU_MONITOR_MEMORY_FAILURE_ACTION_LAST:
+    default:
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("requested unknown memory failure action"));
+        return;
+    }
+
+    flags.action_required = mfp->action_required;
+    flags.recursive = mfp->recursive;
+    event = virDomainEventMemoryFailureNewFromObj(vm, recipient, action,
+                                                  &flags);
+
+    virObjectEventStateQueue(driver->domainEventState, event);
+}
+
+
 static void qemuProcessEventHandler(void *data, void *opaque)
 {
     struct qemuProcessEvent *processEvent = data;
@@ -4341,6 +4394,10 @@ static void qemuProcessEventHandler(void *data, void *opaque)
     case QEMU_PROCESS_EVENT_GUEST_CRASHLOADED:
         processGuestCrashloadedEvent(driver, vm);
         break;
+    case QEMU_PROCESS_EVENT_MEMORY_FAILURE:
+        processMemoryFailureEvent(driver, vm, processEvent->data);
+        break;
+
     case QEMU_PROCESS_EVENT_LAST:
         break;
     }

@@ -255,6 +255,18 @@ virDomainEventBlockThresholdNewFromDom(virDomainPtr dom,
                                        unsigned long long threshold,
                                        unsigned long long excess);
 
+virObjectEventPtr
+virDomainEventMemoryFailureNewFromObj(virDomainObjPtr obj,
+                                      virDomainMemoryFailureRecipientType recipient,
+                                      virDomainMemoryFailureActionType action,
+                                      virDomainMemoryFailureFlagsPtr flags);
+
+virObjectEventPtr
+virDomainEventMemoryFailureNewFromDom(virDomainPtr dom,
+                                      virDomainMemoryFailureRecipientType recipient,
+                                      virDomainMemoryFailureActionType action,
+                                      virDomainMemoryFailureFlagsPtr flags);
+
 int
 virDomainEventStateRegister(virConnectPtr conn,
                             virObjectEventStatePtr state,

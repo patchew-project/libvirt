@@ -57,6 +57,7 @@ static virClassPtr virDomainEventJobCompletedClass;
 static virClassPtr virDomainEventDeviceRemovalFailedClass;
 static virClassPtr virDomainEventMetadataChangeClass;
 static virClassPtr virDomainEventBlockThresholdClass;
+static virClassPtr virDomainEventMemoryFailureClass;
 
 static void virDomainEventDispose(void *obj);
 static void virDomainEventLifecycleDispose(void *obj);
@@ -79,6 +80,7 @@ static void virDomainEventJobCompletedDispose(void *obj);
 static void virDomainEventDeviceRemovalFailedDispose(void *obj);
 static void virDomainEventMetadataChangeDispose(void *obj);
 static void virDomainEventBlockThresholdDispose(void *obj);
+static void virDomainEventMemoryFailureDispose(void *obj);
 
 static void
 virDomainEventDispatchDefaultFunc(virConnectPtr conn,
@@ -287,6 +289,16 @@ struct _virDomainEventBlockThreshold {
 typedef struct _virDomainEventBlockThreshold virDomainEventBlockThreshold;
 typedef virDomainEventBlockThreshold *virDomainEventBlockThresholdPtr;
 
+struct _virDomainEventMemoryFailure {
+    virDomainEvent parent;
+
+    virDomainMemoryFailureRecipientType recipient;
+    virDomainMemoryFailureActionType action;
+    virDomainMemoryFailureFlags flags;
+};
+typedef struct _virDomainEventMemoryFailure virDomainEventMemoryFailure;
+typedef virDomainEventMemoryFailure *virDomainEventMemoryFailurePtr;
+
 
 static int
 virDomainEventsOnceInit(void)
@@ -332,6 +344,8 @@ virDomainEventsOnceInit(void)
     if (!VIR_CLASS_NEW(virDomainEventMetadataChange, virDomainEventClass))
         return -1;
     if (!VIR_CLASS_NEW(virDomainEventBlockThreshold, virDomainEventClass))
+        return -1;
+    if (!VIR_CLASS_NEW(virDomainEventMemoryFailure, virDomainEventClass))
         return -1;
     return 0;
 }
@@ -539,6 +553,14 @@ virDomainEventBlockThresholdDispose(void *obj)
 
     VIR_FREE(event->dev);
     VIR_FREE(event->path);
+}
+
+
+static void
+virDomainEventMemoryFailureDispose(void *obj)
+{
+    virDomainEventMemoryFailurePtr event = obj;
+    VIR_DEBUG("obj=%p", event);
 }
 
 
@@ -1619,6 +1641,53 @@ virDomainEventBlockThresholdNewFromDom(virDomainPtr dom,
 }
 
 
+static virObjectEventPtr
+virDomainEventMemoryFailureNew(int id,
+                               const char *name,
+                               unsigned char *uuid,
+                               virDomainMemoryFailureRecipientType recipient,
+                               virDomainMemoryFailureActionType action,
+                               virDomainMemoryFailureFlagsPtr flags)
+{
+    virDomainEventMemoryFailurePtr ev;
+
+    if (virDomainEventsInitialize() < 0)
+        return NULL;
+
+    if (!(ev = virDomainEventNew(virDomainEventMemoryFailureClass,
+                                 VIR_DOMAIN_EVENT_ID_MEMORY_FAILURE,
+                                 id, name, uuid)))
+        return NULL;
+
+    ev->recipient = recipient;
+    ev->action = action;
+    ev->flags.action_required = flags->action_required;
+    ev->flags.recursive = flags->recursive;
+
+    return (virObjectEventPtr)ev;
+}
+
+virObjectEventPtr
+virDomainEventMemoryFailureNewFromObj(virDomainObjPtr obj,
+                                      virDomainMemoryFailureRecipientType recipient,
+                                      virDomainMemoryFailureActionType action,
+                                      virDomainMemoryFailureFlagsPtr flags)
+{
+    return virDomainEventMemoryFailureNew(obj->def->id, obj->def->name,
+                                          obj->def->uuid, recipient, action,
+                                          flags);
+}
+
+virObjectEventPtr
+virDomainEventMemoryFailureNewFromDom(virDomainPtr dom,
+                                      virDomainMemoryFailureRecipientType recipient,
+                                      virDomainMemoryFailureActionType action,
+                                      virDomainMemoryFailureFlagsPtr flags)
+{
+    return virDomainEventMemoryFailureNew(dom->id, dom->name, dom->uuid,
+                                          recipient, action, flags);
+}
+
 static void
 virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                   virObjectEventPtr event,
@@ -1902,6 +1971,19 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               cbopaque);
             goto cleanup;
         }
+    case VIR_DOMAIN_EVENT_ID_MEMORY_FAILURE:
+        {
+            virDomainEventMemoryFailurePtr memoryFailureEvent;
+
+            memoryFailureEvent = (virDomainEventMemoryFailurePtr)event;
+            ((virConnectDomainEventMemoryFailureCallback)cb)(conn, dom,
+                                                             memoryFailureEvent->recipient,
+                                                             memoryFailureEvent->action,
+                                                             &memoryFailureEvent->flags,
+                                                             cbopaque);
+            goto cleanup;
+        }
+
     case VIR_DOMAIN_EVENT_ID_LAST:
         break;
     }
