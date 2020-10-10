@@ -9550,6 +9550,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
     g_autofree char *tlsCfg = NULL;
     g_autofree char *sslverifystr = NULL;
     xmlNodePtr tmpnode;
+    char **tmp_split_paths;
 
     if (!(protocol = virXMLPropString(node, "protocol"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -9591,8 +9592,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
     /* for historical reasons we store the volume and image name in one XML
      * element although it complicates thing when attempting to access them. */
     if (src->path &&
-        (src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER ||
-         src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD)) {
+        src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
         char *tmp;
         if (!(tmp = strchr(src->path, '/')) ||
             tmp == src->path) {
@@ -9607,6 +9607,41 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
         src->path = g_strdup(tmp + 1);
 
         tmp[0] = '\0';
+    }
+
+    /* the name of rbd could be <pool>/<image> or <pool>/<namespace>/<image> */
+    if (src->path &&
+        src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD &&
+        (tmp_split_paths = virStringSplit(src->path, "/", 3))) {
+        if (virStringIsEmpty(tmp_split_paths[0]) ||
+            !tmp_split_paths[1] ||
+            STREQ_NULLABLE(tmp_split_paths[2], "") ||
+            (virStringIsEmpty(tmp_split_paths[1]) &&
+             !tmp_split_paths[2])) {
+            virStringListFreeCount(tmp_split_paths, 3);
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("can't split path '%s' into pool name, pool "
+                             "namespace, image name OR pool name, image name"),
+                             src->path);
+            return -1;
+        }
+
+        VIR_FREE(src->path);
+        src->volume = g_strdup(tmp_split_paths[0]);
+        /* the format of <pool>/<image> */
+        if (!tmp_split_paths[2])
+            src->path = g_strdup(tmp_split_paths[1]);
+
+        if (tmp_split_paths[2]) {
+            /* the format of <pool>/<ns>/<image> */
+            if (STRNEQ_NULLABLE(tmp_split_paths[1], ""))
+                src->ns = g_strdup(tmp_split_paths[1]);
+
+            /* the format of <pool>//<image> */
+            src->path = g_strdup(tmp_split_paths[2]);
+        }
+
+        virStringListFreeCount(tmp_split_paths, 3);
     }
 
     /* snapshot currently works only for remote disks */
@@ -25282,8 +25317,12 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferAsprintf(attrBuf, " protocol='%s'",
                       virStorageNetProtocolTypeToString(src->protocol));
 
-    if (src->volume)
-        path = g_strdup_printf("%s/%s", src->volume, src->path);
+    if (src->volume) {
+        if (src->ns)
+            path = g_strdup_printf("%s/%s/%s", src->volume, src->ns, src->path);
+        else
+            path = g_strdup_printf("%s/%s", src->volume, src->path);
+    }
 
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
     virBufferEscapeString(attrBuf, " query='%s'", src->query);
