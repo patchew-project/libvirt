@@ -169,8 +169,7 @@ qemuMigrationSrcRestoreDomainState(virQEMUDriverPtr driver, virDomainObjPtr vm)
 
 
 static int
-qemuMigrationDstPrecreateDisk(virConnectPtr conn,
-                              virDomainDiskDefPtr disk,
+qemuMigrationDstPrecreateDisk(virDomainDiskDefPtr disk,
                               unsigned long long capacity)
 {
     int ret = -1;
@@ -181,6 +180,7 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     const char *format = NULL;
     unsigned int flags = 0;
+    virConnectPtr conn = NULL;
 
     VIR_DEBUG("Precreate disk type=%s", virStorageTypeToString(disk->src->type));
 
@@ -204,6 +204,9 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
         *volName = '\0';
         volName++;
 
+        if (!(conn = virGetConnectStorage()))
+            goto cleanup;
+
         if (!(pool = virStoragePoolLookupByTargetPath(conn, basePath)))
             goto cleanup;
         format = virStorageFileFormatTypeToString(disk->src->format);
@@ -212,6 +215,9 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
         break;
 
     case VIR_STORAGE_TYPE_VOLUME:
+        if (!(conn = virGetConnectStorage()))
+            goto cleanup;
+
         if (!(pool = virStoragePoolLookupByName(conn, disk->src->srcpool->pool)))
             goto cleanup;
         format = virStorageFileFormatTypeToString(disk->src->format);
@@ -270,6 +276,7 @@ qemuMigrationDstPrecreateDisk(virConnectPtr conn,
     VIR_FREE(volStr);
     virObjectUnref(vol);
     virObjectUnref(pool);
+    virObjectUnref(conn);
     return ret;
 }
 
@@ -304,13 +311,10 @@ qemuMigrationDstPrecreateStorage(virDomainObjPtr vm,
 {
     int ret = -1;
     size_t i = 0;
-    virConnectPtr conn;
 
     if (!nbd || !nbd->ndisks)
         return 0;
 
-    if (!(conn = virGetConnectStorage()))
-        return -1;
 
     for (i = 0; i < nbd->ndisks; i++) {
         virDomainDiskDefPtr disk;
@@ -349,13 +353,12 @@ qemuMigrationDstPrecreateStorage(virDomainObjPtr vm,
 
         VIR_DEBUG("Proceeding with disk source %s", NULLSTR(diskSrcPath));
 
-        if (qemuMigrationDstPrecreateDisk(conn, disk, nbd->disks[i].capacity) < 0)
+        if (qemuMigrationDstPrecreateDisk(disk, nbd->disks[i].capacity) < 0)
             goto cleanup;
     }
 
     ret = 0;
  cleanup:
-    virObjectUnref(conn);
     return ret;
 }
 
