@@ -253,33 +253,44 @@ docs_html_in_gen += {
 }
 
 foreach data : docs_html_in_gen
-  html_file = '@0@.html'.format(data['name'])
+  xslout_filename = '@0@.xslout.html'.format(data['name'])
+  html_filename = '@0@.html'.format(data['name'])
 
-  out_file = custom_target(
-    html_file,
+  xslout_file = custom_target(
+    xslout_filename,
     input: data['file'],
-    output: html_file,
+    output: xslout_filename,
     command: [
-      meson_python_prog,
-      python3_prog.path(),
-      meson_html_gen_prog.path(),
       xsltproc_prog.path(),
-      xmllint_prog.path(),
-      meson.build_root(),
-      docs_timestamp,
+      '--stringparam', 'pagesrc', data.get('source', ''),
+      '--stringparam', 'builddir', meson.build_root(),
+      '--stringparam', 'timestamp', docs_timestamp,
+      '--nonet',
       site_xsl,
       '@INPUT@',
-      '@OUTPUT@',
-      data.get('source', []),
     ],
     depends: [ aclperms_gen ],
     depend_files: [ page_xsl ],
-    install: true,
-    install_dir: docs_html_dir,
+    capture: true,
   )
 
-  install_web_deps += out_file
-  install_web_files += '@0@:@1@'.format(out_file.full_path(), docs_html_dir)
+  html_file = custom_target(
+    html_filename,
+    input: xslout_file,
+    output: html_filename,
+    command: [
+      xmllint_prog.path(),
+      '--nonet',
+      '--format',
+      '@INPUT@',
+    ],
+    install: true,
+    install_dir: docs_html_dir,
+    capture: true
+  )
+
+  install_web_deps += html_file
+  install_web_files += '@0@:@1@'.format(html_file.full_path(), docs_html_dir)
 endforeach
 
 subdir('fonts')
