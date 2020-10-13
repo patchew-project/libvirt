@@ -101,7 +101,8 @@ qemuSlirpNewForHelper(const char *helper)
     virJSONValuePtr featuresJSON;
     size_t i, nfeatures;
 
-    if (!helper)
+    if (!helper ||
+        !virFileIsExecutable(helper))
         return NULL;
 
     slirp = qemuSlirpNew();
