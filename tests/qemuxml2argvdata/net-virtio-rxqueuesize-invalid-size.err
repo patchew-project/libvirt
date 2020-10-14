@@ -1,1 +1,1 @@
-unsupported configuration: rx_queue_size has to be a power of two
+unsupported configuration: virtio rx_queue_size option is not supported with this QEMU binary
