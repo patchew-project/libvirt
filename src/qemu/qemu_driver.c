@@ -12856,6 +12856,11 @@ static int qemuDomainAbortJob(virDomainPtr dom)
         ret = 0;
         break;
 
+    case QEMU_ASYNC_JOB_DIRTYRATE:
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("cannot abort get dirty rate"));
+        break;
+
     case QEMU_ASYNC_JOB_LAST:
     default:
         virReportEnumRangeError(qemuDomainAsyncJob, priv->job.asyncJob);

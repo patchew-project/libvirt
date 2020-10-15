@@ -3687,6 +3687,9 @@ qemuProcessRecoverJob(virQEMUDriverPtr driver,
         priv->job.current->started = now;
         break;
 
+    case QEMU_ASYNC_JOB_DIRTYRATE:
+        break;
+
     case QEMU_ASYNC_JOB_NONE:
     case QEMU_ASYNC_JOB_LAST:
         break;
