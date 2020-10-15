@@ -1034,6 +1034,14 @@ qemuValidateDomainDef(const virDomainDef *def,
             return -1;
     }
 
+    if (def->sev &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEV_GUEST)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("SEV launch security is not supported with "
+                         "this QEMU binary"));
+        return -1;
+    }
+
     return 0;
 }
 
