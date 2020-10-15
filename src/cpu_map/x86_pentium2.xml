@@ -1,6 +1,15 @@
+<!-- extra info from qemu:
+  "model.level": "2"
+  "model.stepping": "2"
+  "model.xlevel": "0"
+  "model.model_id": ""
+-->
 <cpus>
   <model name="pentium2">
     <decode host="on" guest="on"/>
+    <signature family="6" model="5"/>
+    <vendor name="Intel"/>
+    <feature name="apic"/>
     <feature name="cmov"/>
     <feature name="cx8"/>
     <feature name="de"/>

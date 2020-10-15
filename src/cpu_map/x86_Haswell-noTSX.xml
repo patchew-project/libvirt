@@ -1,13 +1,21 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "4"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel Core Processor (Haswell)"
+  "version.version": "2"
+  "property.stepping": "1"
+  "property.model-id": "Intel Core Processor (Haswell, no TSX)"
+-->
 <cpus>
   <model name="Haswell-noTSX">
     <decode host="on" guest="on"/>
-    <signature family="6" model="60"/> <!-- 0306c0 -->
-    <signature family="6" model="63"/> <!-- 0306f0 -->
-    <signature family="6" model="69"/> <!-- 040650 -->
-    <signature family="6" model="70"/> <!-- 040660 -->
+    <signature family="6" model="60"/>
     <vendor name="Intel"/>
+    <feature name="abm"/>
     <feature name="aes"/>
     <feature name="apic"/>
+    <feature name="arat"/>
     <feature name="avx"/>
     <feature name="avx2"/>
     <feature name="bmi1"/>
@@ -18,6 +26,7 @@
     <feature name="cx8"/>
     <feature name="de"/>
     <feature name="erms"/>
+    <feature name="f16c"/>
     <feature name="fma"/>
     <feature name="fpu"/>
     <feature name="fsgsbase"/>
@@ -41,6 +50,7 @@
     <feature name="popcnt"/>
     <feature name="pse"/>
     <feature name="pse36"/>
+    <feature name="rdrand"/>
     <feature name="rdtscp"/>
     <feature name="sep"/>
     <feature name="smep"/>
@@ -52,7 +62,9 @@
     <feature name="syscall"/>
     <feature name="tsc"/>
     <feature name="tsc-deadline"/>
+    <feature name="vme"/>
     <feature name="x2apic"/>
     <feature name="xsave"/>
+    <feature name="xsaveopt"/>
   </model>
 </cpus>

@@ -1,10 +1,19 @@
+<!-- extra info from qemu:
+  "model.level": "11"
+  "model.stepping": "1"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Westmere E56xx/L56xx/X56xx (Nehalem-C)"
+  "version.version": "2"
+  "property.model-id": "Westmere E56xx/L56xx/X56xx (IBRS update)"
+-->
 <cpus>
   <model name="Westmere-IBRS">
     <decode host="on" guest="on"/>
-    <signature family="6" model="44"/> <!-- 0206c0 -->
+    <signature family="6" model="44"/>
     <vendor name="Intel"/>
     <feature name="aes"/>
     <feature name="apic"/>
+    <feature name="arat"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
     <feature name="cx16"/>
@@ -22,6 +31,7 @@
     <feature name="nx"/>
     <feature name="pae"/>
     <feature name="pat"/>
+    <feature name="pclmuldq"/>
     <feature name="pge"/>
     <feature name="pni"/>
     <feature name="popcnt"/>
@@ -36,5 +46,6 @@
     <feature name="ssse3"/>
     <feature name="syscall"/>
     <feature name="tsc"/>
+    <feature name="vme"/>
   </model>
 </cpus>

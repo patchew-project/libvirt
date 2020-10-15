@@ -1,7 +1,17 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "2"
+  "model.xlevel": "0x8000001E"
+  "model.model_id": "AMD EPYC Processor"
+  "model.cache_info": "&epyc_cache_info"
+  "model.use_epyc_apic_id_encoding": "1"
+  "version.version": "3"
+  "property.model-id": "AMD EPYC Processor"
+-->
 <cpus>
   <model name="EPYC-IBPB">
     <decode host="on" guest="on"/>
-    <signature family="23" model="1"/> <!-- 800f10 -->
+    <signature family="23" model="1"/>
     <vendor name="AMD"/>
     <feature name="3dnowprefetch"/>
     <feature name="abm"/>
@@ -15,6 +25,7 @@
     <feature name="bmi2"/>
     <feature name="clflush"/>
     <feature name="clflushopt"/>
+    <feature name="clzero"/>
     <feature name="cmov"/>
     <feature name="cr8legacy"/>
     <feature name="cx16"/>
@@ -34,16 +45,18 @@
     <feature name="misalignsse"/>
     <feature name="mmx"/>
     <feature name="mmxext"/>
-    <feature name="monitor"/>
     <feature name="movbe"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
+    <feature name="npt"/>
+    <feature name="nrip-save"/>
     <feature name="nx"/>
     <feature name="osvw"/>
     <feature name="pae"/>
     <feature name="pat"/>
     <feature name="pclmuldq"/>
     <feature name="pdpe1gb"/>
+    <feature name="perfctr-core"/>
     <feature name="pge"/>
     <feature name="pni"/>
     <feature name="popcnt"/>
@@ -69,6 +82,8 @@
     <feature name="xgetbv1"/>
     <feature name="xsave"/>
     <feature name="xsavec"/>
+    <feature name="xsaveerptr"/>
     <feature name="xsaveopt"/>
+    <feature name="xsaves"/>
   </model>
 </cpus>

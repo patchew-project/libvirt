@@ -1,10 +1,15 @@
+<!-- extra info from qemu:
+  "model.level": "11"
+  "model.stepping": "3"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel Core i7 9xx (Nehalem Class Core i7)"
+  "version.version": "2"
+  "property.model-id": "Intel Core i7 9xx (Nehalem Core i7, IBRS update)"
+-->
 <cpus>
   <model name="Nehalem-IBRS">
     <decode host="on" guest="on"/>
-    <signature family="6" model="26"/> <!-- 0106a0 -->
-    <signature family="6" model="30"/> <!-- 0106e0 -->
-    <signature family="6" model="31"/> <!-- 0106f0 -->
-    <signature family="6" model="46"/> <!-- 0206e0 -->
+    <signature family="6" model="26"/>
     <vendor name="Intel"/>
     <feature name="apic"/>
     <feature name="clflush"/>
@@ -38,5 +43,6 @@
     <feature name="ssse3"/>
     <feature name="syscall"/>
     <feature name="tsc"/>
+    <feature name="vme"/>
   </model>
 </cpus>

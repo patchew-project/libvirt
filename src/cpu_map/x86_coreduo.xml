@@ -1,7 +1,15 @@
+<!-- extra info from qemu:
+  "model.level": "10"
+  "model.stepping": "8"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Genuine Intel(R) CPU           T2600  @ 2.16GHz"
+-->
 <cpus>
   <model name="coreduo">
     <decode host="on" guest="on"/>
+    <signature family="6" model="14"/>
     <vendor name="Intel"/>
+    <feature name="acpi"/>
     <feature name="apic"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
@@ -12,7 +20,6 @@
     <feature name="mca"/>
     <feature name="mce"/>
     <feature name="mmx"/>
-    <feature name="monitor"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
     <feature name="nx"/>
@@ -22,6 +29,7 @@
     <feature name="pni"/>
     <feature name="pse"/>
     <feature name="sep"/>
+    <feature name="ss"/>
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="tsc"/>

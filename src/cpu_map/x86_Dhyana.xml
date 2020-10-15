@@ -1,7 +1,14 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "1"
+  "model.xlevel": "0x8000001E"
+  "model.model_id": "Hygon Dhyana Processor"
+  "model.cache_info": "&epyc_cache_info"
+-->
 <cpus>
   <model name="Dhyana">
     <decode host="on" guest="on"/>
-    <signature family="24" model="0"/> <!-- 900f00 -->
+    <signature family="24" model="0"/>
     <vendor name="Hygon"/>
     <feature name="3dnowprefetch"/>
     <feature name="abm"/>
@@ -33,10 +40,11 @@
     <feature name="misalignsse"/>
     <feature name="mmx"/>
     <feature name="mmxext"/>
-    <feature name="monitor"/>
     <feature name="movbe"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
+    <feature name="npt"/>
+    <feature name="nrip-save"/>
     <feature name="nx"/>
     <feature name="osvw"/>
     <feature name="pae"/>

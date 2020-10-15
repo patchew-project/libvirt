@@ -1,6 +1,14 @@
+<!-- extra info from qemu:
+  "model.level": "5"
+  "model.stepping": "1"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Common 32-bit KVM processor"
+-->
 <cpus>
   <model name="kvm32">
     <decode host="on" guest="on"/>
+    <signature family="15" model="6"/>
+    <vendor name="Intel"/>
     <feature name="apic"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
@@ -23,5 +31,6 @@
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="tsc"/>
+    <feature name="vme"/>
   </model>
 </cpus>

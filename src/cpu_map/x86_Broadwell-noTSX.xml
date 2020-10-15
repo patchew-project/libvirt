@@ -1,15 +1,22 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "2"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel Core Processor (Broadwell)"
+  "version.version": "2"
+  "property.model-id": "Intel Core Processor (Broadwell, no TSX)"
+-->
 <cpus>
   <model name="Broadwell-noTSX">
     <decode host="on" guest="on"/>
-    <signature family="6" model="61"/> <!-- 0306d0 -->
-    <signature family="6" model="71"/> <!-- 040670 -->
-    <signature family="6" model="79"/> <!-- 0406f0 -->
-    <signature family="6" model="86"/> <!-- 050660 -->
+    <signature family="6" model="61"/>
     <vendor name="Intel"/>
     <feature name="3dnowprefetch"/>
+    <feature name="abm"/>
     <feature name="adx"/>
     <feature name="aes"/>
     <feature name="apic"/>
+    <feature name="arat"/>
     <feature name="avx"/>
     <feature name="avx2"/>
     <feature name="bmi1"/>
@@ -20,6 +27,7 @@
     <feature name="cx8"/>
     <feature name="de"/>
     <feature name="erms"/>
+    <feature name="f16c"/>
     <feature name="fma"/>
     <feature name="fpu"/>
     <feature name="fsgsbase"/>
@@ -43,6 +51,7 @@
     <feature name="popcnt"/>
     <feature name="pse"/>
     <feature name="pse36"/>
+    <feature name="rdrand"/>
     <feature name="rdseed"/>
     <feature name="rdtscp"/>
     <feature name="sep"/>
@@ -56,7 +65,9 @@
     <feature name="syscall"/>
     <feature name="tsc"/>
     <feature name="tsc-deadline"/>
+    <feature name="vme"/>
     <feature name="x2apic"/>
     <feature name="xsave"/>
+    <feature name="xsaveopt"/>
   </model>
 </cpus>

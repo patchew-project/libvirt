@@ -1,6 +1,13 @@
+<!-- extra info from qemu:
+  "model.level": "2"
+  "model.stepping": "3"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "QEMU Virtual CPU version  QEMU_HW_VERSION"
+-->
 <cpus>
   <model name="athlon">
     <decode host="on" guest="on"/>
+    <signature family="6" model="2"/>
     <vendor name="AMD"/>
     <feature name="3dnow"/>
     <feature name="3dnowext"/>
@@ -10,6 +17,7 @@
     <feature name="de"/>
     <feature name="fpu"/>
     <feature name="fxsr"/>
+    <feature name="mca"/>
     <feature name="mce"/>
     <feature name="mmx"/>
     <feature name="mmxext"/>

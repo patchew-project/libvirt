@@ -1,7 +1,15 @@
+<!-- extra info from qemu:
+  "model.level": "10"
+  "model.stepping": "2"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel(R) Atom(TM) CPU N270   @ 1.60GHz"
+-->
 <cpus>
   <model name="n270">
     <decode host="on" guest="on"/>
+    <signature family="6" model="28"/>
     <vendor name="Intel"/>
+    <feature name="acpi"/>
     <feature name="apic"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
@@ -9,10 +17,11 @@
     <feature name="de"/>
     <feature name="fpu"/>
     <feature name="fxsr"/>
+    <feature name="lahf_lm"/>
     <feature name="mca"/>
     <feature name="mce"/>
     <feature name="mmx"/>
-    <feature name="monitor"/>
+    <feature name="movbe"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
     <feature name="nx"/>
@@ -22,6 +31,7 @@
     <feature name="pni"/>
     <feature name="pse"/>
     <feature name="sep"/>
+    <feature name="ss"/>
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="ssse3"/>

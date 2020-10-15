@@ -1,7 +1,13 @@
+<!-- extra info from qemu:
+  "model.level": "5"
+  "model.stepping": "1"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "AMD Opteron 22xx (Gen 2 Class Opteron)"
+-->
 <cpus>
   <model name="Opteron_G2">
     <decode host="on" guest="on"/>
-    <signature family="15" model="6"/> <!-- 100e60 -->
+    <signature family="15" model="6"/>
     <vendor name="AMD"/>
     <feature name="apic"/>
     <feature name="clflush"/>
@@ -25,12 +31,12 @@
     <feature name="pni"/>
     <feature name="pse"/>
     <feature name="pse36"/>
-    <feature name="rdtscp"/>
     <feature name="sep"/>
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="svm"/>
     <feature name="syscall"/>
     <feature name="tsc"/>
+    <feature name="vme"/>
   </model>
 </cpus>

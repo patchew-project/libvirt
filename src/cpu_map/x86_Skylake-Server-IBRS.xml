@@ -1,7 +1,15 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "4"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel Xeon Processor (Skylake)"
+  "version.version": "2"
+  "property.model-id": "Intel Xeon Processor (Skylake, IBRS)"
+-->
 <cpus>
   <model name="Skylake-Server-IBRS">
     <decode host="on" guest="on"/>
-    <signature family="6" model="85" stepping="0-4"/> <!-- 050654 -->
+    <signature family="6" model="85"/>
     <vendor name="Intel"/>
     <feature name="3dnowprefetch"/>
     <feature name="abm"/>
@@ -38,7 +46,6 @@
     <feature name="mce"/>
     <feature name="mmx"/>
     <feature name="movbe"/>
-    <feature name="mpx"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
     <feature name="nx"/>
@@ -48,6 +55,7 @@
     <feature name="pclmuldq"/>
     <feature name="pdpe1gb"/>
     <feature name="pge"/>
+    <feature name="pku"/>
     <feature name="pni"/>
     <feature name="popcnt"/>
     <feature name="pse"/>

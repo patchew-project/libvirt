@@ -1,14 +1,14 @@
+<!-- extra info from qemu:
+  "model.level": "0xd"
+  "model.stepping": "3"
+  "model.xlevel": "0x8000000A"
+  "model.model_id": "QEMU Virtual CPU version  QEMU_HW_VERSION"
+-->
 <cpus>
   <model name="qemu64">
     <decode host="on" guest="on"/>
-    <!-- These are supported only by TCG.  KVM supports them only if the
-         host does.  So we leave them out:
-
-    <feature name="abm"/>
-    <feature name="lahf_lm"/>
-    <feature name="popcnt"/>
-    <feature name="sse4a"/>
-    -->
+    <signature family="6" model="6"/>
+    <vendor name="AMD"/>
     <feature name="apic"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
@@ -17,6 +17,7 @@
     <feature name="de"/>
     <feature name="fpu"/>
     <feature name="fxsr"/>
+    <feature name="lahf_lm"/>
     <feature name="lm"/>
     <feature name="mca"/>
     <feature name="mce"/>

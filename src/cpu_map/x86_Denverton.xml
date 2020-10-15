@@ -1,46 +1,61 @@
 <!-- extra info from qemu:
-  "model.level": "0xd"
+  "model.level": "21"
   "model.stepping": "1"
   "model.xlevel": "0x80000008"
-  "model.model_id": "Intel Xeon E312xx (Sandy Bridge)"
+  "model.model_id": "Intel Atom Processor (Denverton)"
   "version.version": "2"
-  "property.model-id": "Intel Xeon E312xx (Sandy Bridge, IBRS update)"
+  "property.monitor": "off"
+  "version.note": "no MPX, no MONITOR"
 -->
 <cpus>
-  <model name="SandyBridge-IBRS">
+  <model name="Denverton">
     <decode host="on" guest="on"/>
-    <signature family="6" model="42"/>
+    <signature family="6" model="95"/>
     <vendor name="Intel"/>
+    <feature name="3dnowprefetch"/>
     <feature name="aes"/>
     <feature name="apic"/>
     <feature name="arat"/>
-    <feature name="avx"/>
+    <feature name="arch-capabilities"/>
     <feature name="clflush"/>
+    <feature name="clflushopt"/>
     <feature name="cmov"/>
     <feature name="cx16"/>
     <feature name="cx8"/>
     <feature name="de"/>
+    <feature name="erms"/>
     <feature name="fpu"/>
+    <feature name="fsgsbase"/>
     <feature name="fxsr"/>
     <feature name="lahf_lm"/>
     <feature name="lm"/>
     <feature name="mca"/>
     <feature name="mce"/>
     <feature name="mmx"/>
+    <feature name="movbe"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
     <feature name="nx"/>
     <feature name="pae"/>
     <feature name="pat"/>
     <feature name="pclmuldq"/>
+    <feature name="pdpe1gb"/>
     <feature name="pge"/>
     <feature name="pni"/>
     <feature name="popcnt"/>
     <feature name="pse"/>
     <feature name="pse36"/>
+    <feature name="rdctl-no"/>
+    <feature name="rdrand"/>
+    <feature name="rdseed"/>
     <feature name="rdtscp"/>
     <feature name="sep"/>
+    <feature name="sha-ni"/>
+    <feature name="skip-l1dfl-vmentry"/>
+    <feature name="smap"/>
+    <feature name="smep"/>
     <feature name="spec-ctrl"/>
+    <feature name="ssbd"/>
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="sse4.1"/>
@@ -51,7 +66,9 @@
     <feature name="tsc-deadline"/>
     <feature name="vme"/>
     <feature name="x2apic"/>
+    <feature name="xgetbv1"/>
     <feature name="xsave"/>
+    <feature name="xsavec"/>
     <feature name="xsaveopt"/>
   </model>
 </cpus>

@@ -1,6 +1,14 @@
+<!-- extra info from qemu:
+  "model.level": "1"
+  "model.stepping": "0"
+  "model.xlevel": "0"
+  "model.model_id": ""
+-->
 <cpus>
   <model name="486">
     <decode host="on" guest="on"/>
+    <signature family="4" model="8"/>
+    <vendor name="Intel"/>
     <feature name="fpu"/>
     <feature name="pse"/>
     <feature name="vme"/>

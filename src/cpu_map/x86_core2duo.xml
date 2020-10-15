@@ -1,19 +1,28 @@
+<!-- extra info from qemu:
+  "model.level": "10"
+  "model.stepping": "11"
+  "model.xlevel": "0x80000008"
+  "model.model_id": "Intel(R) Core(TM)2 Duo CPU     T7700  @ 2.40GHz"
+-->
 <cpus>
   <model name="core2duo">
     <decode host="on" guest="on"/>
+    <signature family="6" model="15"/>
     <vendor name="Intel"/>
+    <feature name="acpi"/>
     <feature name="apic"/>
     <feature name="clflush"/>
     <feature name="cmov"/>
+    <feature name="cx16"/>
     <feature name="cx8"/>
     <feature name="de"/>
     <feature name="fpu"/>
     <feature name="fxsr"/>
+    <feature name="lahf_lm"/>
     <feature name="lm"/>
     <feature name="mca"/>
     <feature name="mce"/>
     <feature name="mmx"/>
-    <feature name="monitor"/>
     <feature name="msr"/>
     <feature name="mtrr"/>
     <feature name="nx"/>
@@ -24,6 +33,7 @@
     <feature name="pse"/>
     <feature name="pse36"/>
     <feature name="sep"/>
+    <feature name="ss"/>
     <feature name="sse"/>
     <feature name="sse2"/>
     <feature name="ssse3"/>
