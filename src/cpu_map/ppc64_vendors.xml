@@ -1,4 +1,4 @@
 <cpus>
-  <vendor name='IBM'/>
-  <vendor name='Freescale'/>
+  <vendor name="IBM"/>
+  <vendor name="Freescale"/>
 </cpus>

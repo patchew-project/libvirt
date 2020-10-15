@@ -1,5 +1,5 @@
 <cpus>
-  <arch name='x86'>
+  <arch name="x86">
     <include filename="x86_vendors.xml"/>
     <include filename="x86_features.xml"/>
 
@@ -72,7 +72,7 @@
     <include filename="x86_Dhyana.xml"/>
   </arch>
 
-  <arch name='ppc64'>
+  <arch name="ppc64">
     <include filename="ppc64_vendors.xml"/>
 
     <!-- IBM-based CPU models -->
@@ -86,9 +86,9 @@
     <include filename="ppc64_POWERPC_e6500.xml"/>
   </arch>
 
-  <arch name='arm'>
+  <arch name="arm">
     <include filename="arm_vendors.xml"/>
-    <include filename='arm_features.xml'/>
+    <include filename="arm_features.xml"/>
 
     <!-- ARM-based CPU models -->
     <include filename="arm_cortex-a53.xml"/>
@@ -96,10 +96,10 @@
     <include filename="arm_cortex-a72.xml"/>
 
     <!-- Qualcomm-based CPU models -->
-    <include filename='arm_Falkor.xml'/>
+    <include filename="arm_Falkor.xml"/>
 
     <!-- Cavium-based CPU models -->
-    <include filename='arm_ThunderX299xx.xml'/>
+    <include filename="arm_ThunderX299xx.xml"/>
 
     <!-- Hisilicon-based CPU models -->
     <include filename="arm_Kunpeng-920.xml"/>

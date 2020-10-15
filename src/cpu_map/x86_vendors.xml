@@ -1,5 +1,5 @@
 <cpus>
-  <vendor name='Intel' string='GenuineIntel'/>
-  <vendor name='AMD' string='AuthenticAMD'/>
-  <vendor name='Hygon' string='HygonGenuine'/>
+  <vendor name="Intel" string="GenuineIntel"/>
+  <vendor name="AMD" string="AuthenticAMD"/>
+  <vendor name="Hygon" string="HygonGenuine"/>
 </cpus>

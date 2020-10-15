@@ -1,8 +1,8 @@
 <cpus>
-  <model name='Cooperlake'>
-    <decode host='on' guest='on'/>
-    <signature family='6' model='85' stepping='10-11'/> <!-- 05065b -->
-    <vendor name='Intel'/>
+  <model name="Cooperlake">
+    <decode host="on" guest="on"/>
+    <signature family="6" model="85" stepping="10-11"/> <!-- 05065b -->
+    <vendor name="Intel"/>
     <feature name="3dnowprefetch"/>
     <feature name="abm"/>
     <feature name="adx"/>
