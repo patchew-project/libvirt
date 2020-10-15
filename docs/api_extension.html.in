@@ -111,6 +111,12 @@
     </code></p>
 
     <p>
+      Please note that single word names for attributes and elements is
+      preferred. But if you have to use two ore more words please join them in
+      camelCase style.
+    </p>
+
+    <p>
       This task is in many ways the most important to get right, since once
       the API has been committed to the repository, it's libvirt's policy
       never to change it.  Mistakes in the implementation are bugs that you
