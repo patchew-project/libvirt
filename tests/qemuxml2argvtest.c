@@ -419,7 +419,12 @@ testCompareXMLToArgvCreateArgs(virQEMUDriverPtr drv,
 
             switch ((virDomainHostdevSCSIProtocolType) scsisrc->protocol) {
             case VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_NONE:
-                scsisrc->u.host.src->path = g_strdup("/dev/sg0");
+                if (STREQ(scsisrc->u.host.adapter, "cdrom")) {
+                    scsisrc->u.host.src->path = g_strdup("/dev/sr0");
+                    scsisrc->u.host.src->hostcdrom = true;
+                } else {
+                    scsisrc->u.host.src->path = g_strdup("/dev/sg0");
+                }
                 break;
 
             case VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI:

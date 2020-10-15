@@ -6233,6 +6233,10 @@ qemuProcessPrepareHostHostdev(virDomainHostdevDefPtr hostdev)
                 return -1;
 
             src->path = g_strdup_printf("/dev/%s", devstr);
+
+            if (virFileIsCDROM(src->path) == 1)
+                src->hostcdrom = true;
+
             break;
         }
 

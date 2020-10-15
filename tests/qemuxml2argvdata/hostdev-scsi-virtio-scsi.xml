@@ -82,6 +82,14 @@
       </source>
       <address type='drive' controller='0' bus='0' target='3' unit='5'/>
     </hostdev>
+    <hostdev mode='subsystem' type='scsi' managed='yes'>
+      <source>
+        <adapter name='cdrom'/>
+        <address bus='0' target='0' unit='0'/>
+      </source>
+      <readonly/>
+      <address type='drive' controller='0' bus='0' target='4' unit='5'/>
+    </hostdev>
     <memballoon model='virtio'/>
   </devices>
 </domain>

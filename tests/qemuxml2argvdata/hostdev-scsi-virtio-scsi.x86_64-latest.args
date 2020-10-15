@@ -76,6 +76,10 @@ keyid=masterKey0,iv=AAECAwQFBgcICQoLDA0ODw==,format=base64 \
 "node-name":"libvirt-8-backend","read-only":false}' \
 -device scsi-generic,bus=scsi0.0,channel=0,scsi-id=3,lun=5,\
 drive=libvirt-8-backend,id=hostdev5 \
+-blockdev '{"driver":"host_cdrom","filename":"/dev/sr0",\
+"node-name":"libvirt-9-backend","read-only":true}' \
+-device scsi-generic,bus=scsi0.0,channel=0,scsi-id=4,lun=5,\
+drive=libvirt-9-backend,id=hostdev6 \
 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x3 \
 -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,\
 resourcecontrol=deny \
