@@ -392,10 +392,11 @@ qemuMonitorJSONCheckErrorFull(virJSONValuePtr cmd,
                               virJSONValuePtr reply,
                               bool report)
 {
+    g_autofree char *cmdstr = virJSONValueToString(cmd, false);
+    g_autofree char *replystr = virJSONValueToString(reply, false);
+
     if (virJSONValueObjectHasKey(reply, "error")) {
         virJSONValuePtr error = virJSONValueObjectGet(reply, "error");
-        g_autofree char *cmdstr = virJSONValueToString(cmd, false);
-        g_autofree char *replystr = virJSONValueToString(reply, false);
 
         /* Log the full JSON formatted command & error */
         VIR_DEBUG("unable to execute QEMU command %s: %s",
@@ -417,8 +418,6 @@ qemuMonitorJSONCheckErrorFull(virJSONValuePtr cmd,
 
         return -1;
     } else if (!virJSONValueObjectHasKey(reply, "return")) {
-        g_autofree char *cmdstr = virJSONValueToString(cmd, false);
-        g_autofree char *replystr = virJSONValueToString(reply, false);
 
         VIR_DEBUG("Neither 'return' nor 'error' is set in the JSON reply %s: %s",
                   NULLSTR(cmdstr), NULLSTR(replystr));
@@ -455,8 +454,8 @@ qemuMonitorJSONCheckReply(virJSONValuePtr cmd,
 
     data = virJSONValueObjectGet(reply, "return");
     if (virJSONValueGetType(data) != type) {
-        char *cmdstr = virJSONValueToString(cmd, false);
-        char *retstr = virJSONValueToString(data, false);
+        g_autofree char *cmdstr = virJSONValueToString(cmd, false);
+        g_autofree char *retstr = virJSONValueToString(data, false);
 
         VIR_DEBUG("Unexpected return type %d (expecting %d) for command %s: %s",
                   virJSONValueGetType(data), type, cmdstr, retstr);
@@ -464,8 +463,6 @@ qemuMonitorJSONCheckReply(virJSONValuePtr cmd,
                        _("unexpected type returned by QEMU command '%s'"),
                        qemuMonitorJSONCommandName(cmd));
 
-        VIR_FREE(cmdstr);
-        VIR_FREE(retstr);
         return -1;
     }
 
