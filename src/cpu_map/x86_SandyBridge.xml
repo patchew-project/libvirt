@@ -1,11 +1,18 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '1'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Xeon E312xx (Sandy Bridge)'
+  'version.version': '1'
+-->
 <cpus>
   <model name='SandyBridge'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='42'/> <!-- 0206a0 -->
-    <signature family='6' model='45'/> <!-- 0206d0 -->
+    <signature family='6' model='42'/>
     <vendor name='Intel'/>
     <feature name='aes'/>
     <feature name='apic'/>
+    <feature name='arat'/>
     <feature name='avx'/>
     <feature name='clflush'/>
     <feature name='cmov'/>
@@ -40,7 +47,9 @@
     <feature name='syscall'/>
     <feature name='tsc'/>
     <feature name='tsc-deadline'/>
+    <feature name='vme'/>
     <feature name='x2apic'/>
     <feature name='xsave'/>
+    <feature name='xsaveopt'/>
   </model>
 </cpus>

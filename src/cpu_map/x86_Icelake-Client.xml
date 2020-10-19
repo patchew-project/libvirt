@@ -1,7 +1,14 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '0'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Core Processor (Icelake)'
+  'version.version': '1'
+-->
 <cpus>
   <model name='Icelake-Client'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='126'/> <!-- 0706e0 -->
+    <signature family='6' model='126'/>
     <vendor name='Intel'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>
@@ -31,7 +38,6 @@
     <feature name='fxsr'/>
     <feature name='gfni'/>
     <feature name='hle'/>
-    <feature name='intel-pt'/>
     <feature name='invpcid'/>
     <feature name='lahf_lm'/>
     <feature name='lm'/>
@@ -39,7 +45,6 @@
     <feature name='mce'/>
     <feature name='mmx'/>
     <feature name='movbe'/>
-    <feature name='mpx'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
     <feature name='nx'/>

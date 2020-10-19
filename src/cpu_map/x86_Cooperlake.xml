@@ -1,7 +1,13 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '10'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Xeon Processor (Cooperlake)'
+-->
 <cpus>
   <model name='Cooperlake'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='85' stepping='10-11'/> <!-- 05065b -->
+    <signature family='6' model='85'/>
     <vendor name='Intel'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>

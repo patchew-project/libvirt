@@ -1,7 +1,14 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '0'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Xeon Processor (Icelake)'
+  'version.version': '1'
+-->
 <cpus>
   <model name='Icelake-Server'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='134'/> <!-- 080660 -->
+    <signature family='6' model='134'/>
     <vendor name='Intel'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>
@@ -38,7 +45,6 @@
     <feature name='fxsr'/>
     <feature name='gfni'/>
     <feature name='hle'/>
-    <feature name='intel-pt'/>
     <feature name='invpcid'/>
     <feature name='la57'/>
     <feature name='lahf_lm'/>
@@ -47,7 +53,6 @@
     <feature name='mce'/>
     <feature name='mmx'/>
     <feature name='movbe'/>
-    <feature name='mpx'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
     <feature name='nx'/>

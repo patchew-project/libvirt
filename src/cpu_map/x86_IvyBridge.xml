@@ -1,11 +1,18 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '9'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Xeon E3-12xx v2 (Ivy Bridge)'
+  'version.version': '1'
+-->
 <cpus>
   <model name='IvyBridge'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='58'/> <!-- 0306a0 -->
-    <signature family='6' model='62'/> <!-- 0306e0 -->
+    <signature family='6' model='58'/>
     <vendor name='Intel'/>
     <feature name='aes'/>
     <feature name='apic'/>
+    <feature name='arat'/>
     <feature name='avx'/>
     <feature name='clflush'/>
     <feature name='cmov'/>
@@ -48,5 +55,6 @@
     <feature name='vme'/>
     <feature name='x2apic'/>
     <feature name='xsave'/>
+    <feature name='xsaveopt'/>
   </model>
 </cpus>

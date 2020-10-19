@@ -1,7 +1,15 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '6'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'Intel Xeon Processor (Cascadelake)'
+  'version.version': '2'
+  'version.note': 'ARCH_CAPABILITIES'
+-->
 <cpus>
   <model name='Cascadelake-Server'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='85' stepping='5-7'/> <!-- 050654 -->
+    <signature family='6' model='85'/>
     <vendor name='Intel'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>
@@ -9,6 +17,7 @@
     <feature name='aes'/>
     <feature name='apic'/>
     <feature name='arat'/>
+    <feature name='arch-capabilities'/>
     <feature name='avx'/>
     <feature name='avx2'/>
     <feature name='avx512bw'/>
@@ -33,14 +42,15 @@
     <feature name='fsgsbase'/>
     <feature name='fxsr'/>
     <feature name='hle'/>
+    <feature name='ibrs-all'/>
     <feature name='invpcid'/>
     <feature name='lahf_lm'/>
     <feature name='lm'/>
     <feature name='mca'/>
     <feature name='mce'/>
+    <feature name='mds-no'/>
     <feature name='mmx'/>
     <feature name='movbe'/>
-    <feature name='mpx'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
     <feature name='nx'/>
@@ -50,15 +60,18 @@
     <feature name='pclmuldq'/>
     <feature name='pdpe1gb'/>
     <feature name='pge'/>
+    <feature name='pku'/>
     <feature name='pni'/>
     <feature name='popcnt'/>
     <feature name='pse'/>
     <feature name='pse36'/>
+    <feature name='rdctl-no'/>
     <feature name='rdrand'/>
     <feature name='rdseed'/>
     <feature name='rdtscp'/>
     <feature name='rtm'/>
     <feature name='sep'/>
+    <feature name='skip-l1dfl-vmentry'/>
     <feature name='smap'/>
     <feature name='smep'/>
     <feature name='spec-ctrl'/>

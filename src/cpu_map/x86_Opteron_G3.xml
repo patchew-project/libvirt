@@ -1,7 +1,13 @@
+<!-- extra info from qemu:
+  'model.level': '5'
+  'model.stepping': '3'
+  'model.xlevel': '0x80000008'
+  'model.model_id': 'AMD Opteron 23xx (Gen 3 Class Opteron)'
+-->
 <cpus>
   <model name='Opteron_G3'>
     <decode host='on' guest='on'/>
-    <signature family='15' model='6'/> <!-- 100e60 -->
+    <signature family='16' model='2'/>
     <vendor name='AMD'/>
     <feature name='abm'/>
     <feature name='apic'/>
@@ -18,7 +24,6 @@
     <feature name='mce'/>
     <feature name='misalignsse'/>
     <feature name='mmx'/>
-    <feature name='monitor'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
     <feature name='nx'/>
@@ -37,5 +42,6 @@
     <feature name='svm'/>
     <feature name='syscall'/>
     <feature name='tsc'/>
+    <feature name='vme'/>
   </model>
 </cpus>
