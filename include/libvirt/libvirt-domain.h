@@ -5012,4 +5012,28 @@ int virDomainBackupBegin(virDomainPtr domain,
 char *virDomainBackupGetXMLDesc(virDomainPtr domain,
                                 unsigned int flags);
 
+/**
+ * virDomainDirtyRateInfo:
+ *
+ * a virDomainDirtyRateInfo is a structure filled by virDomainGetDirtyRate() and
+ * extracting dirty rate infomation for a given active Domain.
+ */
+
+typedef struct _virDomainDirtyRateInfo virDomainDirtyRateInfo;
+
+struct _virDomainDirtyRateInfo {
+    int status;             /* the status of dirtyrate calculation */
+    long long dirtyRate;    /* the dirtyrate in MB/s */
+    long long startTime;    /* the start time of dirtyrate calculation */
+    long long calcTime;     /* the period of dirtyrate calculation */
+};
+
+/**
+ * virDomainDirtyRateInfoPtr:
+ *
+ * a virDomainDirtyRateInfoPtr is a pointer to a virDomainDirtyRateInfo structure.
+ */
+
+typedef virDomainDirtyRateInfo *virDomainDirtyRateInfoPtr;
+
 #endif /* LIBVIRT_DOMAIN_H */
