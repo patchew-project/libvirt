@@ -9489,3 +9489,25 @@ qemuMonitorJSONQueryDirtyRate(qemuMonitorPtr mon,
 
     return qemuMonitorJSONExtractDirtyRateInfo(data, info);
 }
+
+
+int
+qemuMonitorJSONCalculateDirtyRate(qemuMonitorPtr mon,
+                                  long long sec)
+{
+    g_autoptr(virJSONValue) cmd = NULL;
+    g_autoptr(virJSONValue) reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("calc-dirty-rate",
+                                           "I:calc-time", (long)sec,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        return -1;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        return -1;
+
+    return 0;
+}

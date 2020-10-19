@@ -702,3 +702,7 @@ qemuMonitorJSONGetCPUMigratable(qemuMonitorPtr mon,
 int
 qemuMonitorJSONQueryDirtyRate(qemuMonitorPtr mon,
                               virDomainDirtyRateInfoPtr info);
+
+int
+qemuMonitorJSONCalculateDirtyRate(qemuMonitorPtr mon,
+                                  long long sec);

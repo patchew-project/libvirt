@@ -263,3 +263,8 @@ int
 qemuDomainQueryDirtyRate(virDomainPtr dom,
                          virDomainObjPtr vm,
                          virDomainDirtyRateInfoPtr info);
+
+int
+qemuDomainCalculateDirtyRate(virDomainPtr dom,
+                             virDomainObjPtr vm,
+                             long long sec);

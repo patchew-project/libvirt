@@ -5857,3 +5857,31 @@ qemuDomainQueryDirtyRate(virDomainPtr dom,
 
     return ret;
 }
+
+
+int
+qemuDomainCalculateDirtyRate(virDomainPtr dom,
+                             virDomainObjPtr vm,
+                             long long sec)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    qemuDomainObjPrivatePtr priv;
+    int ret = -1;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is not running"));
+        return ret;
+    }
+
+    priv = vm->privateData;
+
+    VIR_DEBUG("Calculate dirty rate during %lld seconds", sec);
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    ret = qemuMonitorCalculateDirtyRate(priv->mon, sec);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    return ret;
+}

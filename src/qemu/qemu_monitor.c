@@ -4668,3 +4668,15 @@ qemuMonitorQueryDirtyRate(qemuMonitorPtr mon,
 
     return qemuMonitorJSONQueryDirtyRate(mon, info);
 }
+
+
+int
+qemuMonitorCalculateDirtyRate(qemuMonitorPtr mon,
+                              long long sec)
+{
+    VIR_DEBUG("seconds=%lld", sec);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONCalculateDirtyRate(mon, sec);
+}
