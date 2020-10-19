@@ -9462,3 +9462,30 @@ qemuMonitorJSONExtractDirtyRateInfo(virJSONValuePtr data,
 
     return 0;
 }
+
+
+int
+qemuMonitorJSONQueryDirtyRate(qemuMonitorPtr mon,
+                              virDomainDirtyRateInfoPtr info)
+{
+    g_autoptr(virJSONValue) cmd = NULL;
+    g_autoptr(virJSONValue) reply = NULL;
+    virJSONValuePtr data = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-dirty-rate", NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        return -1;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        return -1;
+
+    if (!(data = virJSONValueObjectGetObject(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-dirty-rate reply was missing 'return' data"));
+        return -1;
+    }
+
+    return qemuMonitorJSONExtractDirtyRateInfo(data, info);
+}
