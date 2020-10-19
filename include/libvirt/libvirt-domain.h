@@ -5013,6 +5013,17 @@ char *virDomainBackupGetXMLDesc(virDomainPtr domain,
                                 unsigned int flags);
 
 /**
+ * virDomainDirtyRateFlags:
+ *
+ * Details on the flags used by getdirtyrate api.
+ */
+
+typedef enum {
+    VIR_DOMAIN_DIRTYRATE_CALC = 1 << 0,  /* calculate domain's dirtyrate */
+    VIR_DOMAIN_DIRTYRATE_QUERY = 1 << 1, /* query domain's dirtyrate */
+} virDomainDirtyRateFlags;
+
+/**
  * virDomainDirtyRateStatus:
  *
  * Details on the cause of a dirtyrate calculation status.
