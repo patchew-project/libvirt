@@ -3771,6 +3771,19 @@ struct remote_domain_backup_get_xml_desc_ret {
     remote_nonnull_string xml;
 };
 
+struct remote_domain_get_dirty_rate_info_args {
+    remote_nonnull_domain dom;
+    hyper sec;
+    int flags;
+};
+
+struct remote_domain_get_dirty_rate_info_ret { /* insert@1 */
+    int status;
+    hyper dirtyRate;
+    hyper startTime;
+    hyper calcTime;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6668,5 +6681,11 @@ enum remote_procedure {
      * @priority: high
      * @acl: domain:read
      */
-    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422
+    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 422,
+
+    /**
+     * @generate: both
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_GET_DIRTY_RATE_INFO = 423
 };

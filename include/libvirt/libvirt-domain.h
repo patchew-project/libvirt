@@ -5063,4 +5063,17 @@ struct _virDomainDirtyRateInfo {
 
 typedef virDomainDirtyRateInfo *virDomainDirtyRateInfoPtr;
 
+/**
+ * virDomainDirtyRateInfoPtr:
+ *
+ * a virDomainDirtyRateInfoPtr is a pointer to a virDomainDirtyRateInfo structure.
+ */
+
+typedef virDomainDirtyRateInfo *virDomainDirtyRateInfoPtr;
+
+int virDomainGetDirtyRateInfo(virDomainPtr domain,
+                              virDomainDirtyRateInfoPtr info,
+                              long long sec,
+                              int flags);
+
 #endif /* LIBVIRT_DOMAIN_H */

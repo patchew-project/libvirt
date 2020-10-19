@@ -12758,3 +12758,49 @@ virDomainBackupGetXMLDesc(virDomainPtr domain,
     virDispatchError(conn);
     return NULL;
 }
+
+
+/**
+ * virDomainGetDirtyRateInfo:
+ * @domain: a domain object.
+ * @info: return value of current domain's memory dirty rate info.
+ * @sec: show dirty rate within specified seconds.
+ * @flags: the flags of getdirtyrate action -- calculate and/or query.
+ *
+ * Get the current domain's memory dirty rate (in MB/s).
+ *
+ * Returns 0 in case of success, -1 otherwise.
+ */
+int
+virDomainGetDirtyRateInfo(virDomainPtr domain,
+                          virDomainDirtyRateInfoPtr info,
+                          long long sec,
+                          int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "info = %p, seconds=%lld", info, sec);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(info, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (info)
+        memset(info, 0, sizeof(*info));
+
+    if (conn->driver->domainGetDirtyRateInfo) {
+        if (conn->driver->domainGetDirtyRateInfo(domain, info, sec, flags) < 0)
+            goto error;
+        VIR_DOMAIN_DEBUG(domain, "info = %p, seconds=%lld", info, sec);
+        return 0;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}

@@ -20050,6 +20050,75 @@ qemuDomainAgentSetResponseTimeout(virDomainPtr dom,
 }
 
 
+#define MIN_DIRTYRATE_CALCULATION_PERIOD    1    /* 1s */
+#define MAX_DIRTYRATE_CALCULATION_PERIOD    60   /* 60s */
+
+static int
+qemuDomainGetDirtyRateInfo(virDomainPtr dom,
+                           virDomainDirtyRateInfoPtr info,
+                           long long sec,
+                           int flags)
+{
+    virDomainObjPtr vm = NULL;
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    int ret = -1;
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        return ret;
+
+    if (virDomainGetDirtyRateInfoEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
+        goto cleanup;
+
+    qemuDomainObjSetAsyncJobMask(vm, (QEMU_JOB_DEFAULT_MASK |
+                                 JOB_MASK(QEMU_JOB_SUSPEND)));
+
+    if (!qemuMigrationSrcIsAllowed(driver, vm, false, 0))
+        goto endjob;
+
+    if (flags & VIR_DOMAIN_DIRTYRATE_CALC) {
+        if (sec < MIN_DIRTYRATE_CALCULATION_PERIOD || sec > MAX_DIRTYRATE_CALCULATION_PERIOD) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           "seconds=%lld is invalid, please choose value within [1, 60].", sec);
+            goto endjob;
+        }
+
+        if (qemuDomainCalculateDirtyRate(dom, vm, sec) < 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                           _("can't calculate domain's dirty rate"));
+            goto endjob;
+        }
+    }
+
+    if (flags & VIR_DOMAIN_DIRTYRATE_QUERY) {
+        if (flags & VIR_DOMAIN_DIRTYRATE_CALC) {
+            struct timespec ts = { .tv_sec = sec, .tv_nsec = 50 * 1000 * 1000ull };
+
+            virObjectUnlock(vm);
+            nanosleep(&ts, NULL);
+            virObjectLock(vm);
+        }
+
+        if (qemuDomainQueryDirtyRate(dom, vm, info) < 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                           _("can't query domain's dirty rate"));
+            goto endjob;
+        }
+    }
+
+    ret = 0;
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -20289,6 +20358,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainAgentSetResponseTimeout = qemuDomainAgentSetResponseTimeout, /* 5.10.0 */
     .domainBackupBegin = qemuDomainBackupBegin, /* 6.0.0 */
     .domainBackupGetXMLDesc = qemuDomainBackupGetXMLDesc, /* 6.0.0 */
+    .domainGetDirtyRateInfo = qemuDomainGetDirtyRateInfo, /* 6.9.0 */
 };
 
 
