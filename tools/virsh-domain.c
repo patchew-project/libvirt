@@ -14333,6 +14333,112 @@ cmdGuestInfo(vshControl *ctl, const vshCmd *cmd)
     return ret;
 }
 
+/*
+ * "querydirtyrate" command
+ */
+static const vshCmdInfo info_getdirtyrate[] = {
+    {.name = "help",
+     .data = N_("Get a vm's memory dirty rate")
+    },
+    {.name = "desc",
+     .data = N_("Get memory dirty rate of a domain in order to decide"
+                " whether it's proper to be migrated out or not.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_getdirtyrate[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "seconds",
+     .type = VSH_OT_INT,
+     .help = N_("calculate memory dirty rate within specified seconds,"
+                " a valid range of values is [1, 60], and would default to 1s.")
+    },
+    {.name = "calculate",
+     .type = VSH_OT_BOOL,
+     .help = N_("calculate dirty rate only, can be used together with --query,"
+                " either or both is expected, otherwise would default to both.")
+    },
+    {.name = "query",
+     .type = VSH_OT_BOOL,
+     .help = N_("query dirty rate only, can be used together with --calculate,"
+                " either or both is expected, otherwise would default to both.")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdGetDirtyRateInfo(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    virDomainDirtyRateInfo info;
+    long long sec = 0;
+    const char *status = NULL;
+    unsigned int flags = 0;
+    int rc;
+    bool ret = false;
+    bool calc = vshCommandOptBool(cmd, "calculate");
+    bool query = vshCommandOptBool(cmd, "query");
+
+    if (calc)
+        flags |= VIR_DOMAIN_DIRTYRATE_CALC;
+    if (query)
+        flags |= VIR_DOMAIN_DIRTYRATE_QUERY;
+
+    /* if flag option is missing, default to both --calculate and --query */
+    if (!calc && !query)
+        flags |= VIR_DOMAIN_DIRTYRATE_CALC | VIR_DOMAIN_DIRTYRATE_QUERY;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    rc = vshCommandOptLongLong(ctl, cmd, "seconds", &sec);
+    if (rc < 0)
+        goto done;
+
+    /* if --seconds option is missing, default to 1s */
+    if (!rc)
+        sec = 1;
+
+    if (virDomainGetDirtyRateInfo(dom, &info, sec, flags) < 0) {
+        vshError(ctl, "%s", _("Get memory dirty-rate failed."));
+        goto done;
+    }
+
+    if (flags & VIR_DOMAIN_DIRTYRATE_QUERY) {
+        switch (info.status) {
+        case VIR_DOMAIN_DIRTYRATE_UNSTARTED:
+            status = _("unstarted");
+            break;
+        case VIR_DOMAIN_DIRTYRATE_MEASURING:
+            status = _("measuring");
+            break;
+        case VIR_DOMAIN_DIRTYRATE_MEASURED:
+            status = _("measured");
+            break;
+        default:
+            status = _("unknown");
+        }
+
+        vshPrint(ctl, _("status:        %s\n"), status);
+        vshPrint(ctl, _("startTime:     %lld\n"), info.startTime);
+        vshPrint(ctl, _("calcTime:      %lld s\n"), info.calcTime);
+
+        if (info.status == VIR_DOMAIN_DIRTYRATE_MEASURED)
+            vshPrint(ctl, _("dirtyRate:     %lld MB/s\n"), info.dirtyRate);
+        else
+            vshPrint(ctl, _("dirtyRate:     the calculation is %s, please query results later\n"),
+                     status);
+    } else {
+        vshPrint(ctl, _("Memory dirty rate is calculating, use --query option to display results.\n"));
+    }
+
+    ret = true;
+ done:
+    virDomainFree(dom);
+    return ret;
+}
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -14958,6 +15064,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdGuestInfo,
      .opts = opts_guestinfo,
      .info = info_guestinfo,
+     .flags = 0
+    },
+    {.name = "getdirtyrate",
+     .handler = cmdGetDirtyRateInfo,
+     .opts = opts_getdirtyrate,
+     .info = info_getdirtyrate,
      .flags = 0
     },
     {.name = NULL}
