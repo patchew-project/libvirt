@@ -5013,6 +5013,22 @@ char *virDomainBackupGetXMLDesc(virDomainPtr domain,
                                 unsigned int flags);
 
 /**
+ * virDomainDirtyRateStatus:
+ *
+ * Details on the cause of a dirtyrate calculation status.
+ */
+
+typedef enum {
+    VIR_DOMAIN_DIRTYRATE_UNSTARTED = 0, /* the dirtyrate calculation has not been started */
+    VIR_DOMAIN_DIRTYRATE_MEASURING = 1, /* the dirtyrate calculation is measuring */
+    VIR_DOMAIN_DIRTYRATE_MEASURED  = 2, /* the dirtyrate calculation is completed */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_DIRTYRATE_LAST
+# endif
+} virDomainDirtyRateStatus;
+
+/**
  * virDomainDirtyRateInfo:
  *
  * a virDomainDirtyRateInfo is a structure filled by virDomainGetDirtyRate() and

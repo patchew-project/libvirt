@@ -9414,3 +9414,51 @@ qemuMonitorJSONGetCPUMigratable(qemuMonitorPtr mon,
     return virJSONValueGetBoolean(virJSONValueObjectGet(reply, "return"),
                                   migratable);
 }
+
+
+VIR_ENUM_DECL(qemuDomainDirtyRateStatus);
+VIR_ENUM_IMPL(qemuDomainDirtyRateStatus,
+              VIR_DOMAIN_DIRTYRATE_LAST,
+              "unstarted",
+              "measuring",
+              "measured");
+
+static int
+qemuMonitorJSONExtractDirtyRateInfo(virJSONValuePtr data,
+                                    virDomainDirtyRateInfoPtr info)
+{
+    const char *status;
+    int statusID;
+
+    if (!(status = virJSONValueObjectGetString(data, "status"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-dirty-rate reply was missing 'status' data"));
+        return -1;
+    }
+
+    if ((statusID = qemuDomainDirtyRateStatusTypeFromString(status)) < 0) {
+        return -1;
+    }
+    info->status = statusID;
+
+    if ((info->status == VIR_DOMAIN_DIRTYRATE_MEASURED) &&
+        (virJSONValueObjectGetNumberLong(data, "dirty-rate", &(info->dirtyRate)) < 0)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-dirty-rate reply was missing 'dirty-rate' data"));
+        return -1;
+    }
+
+    if (virJSONValueObjectGetNumberLong(data, "start-time", &(info->startTime)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-dirty-rate reply was missing 'start-time' data"));
+        return -1;
+    }
+
+    if (virJSONValueObjectGetNumberLong(data, "calc-time", &(info->calcTime)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-dirty-rate reply was missing 'calc-time' data"));
+        return -1;
+    }
+
+    return 0;
+}
