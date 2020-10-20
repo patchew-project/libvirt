@@ -14731,8 +14731,15 @@ qemuDomainGetBlockJobInfo(virDomainPtr dom,
     ret = qemuMonitorGetBlockJobInfo(qemuDomainGetMonitor(vm), job->name, &rawInfo);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
-    if (ret <= 0)
+    if (ret < 0)
         goto endjob;
+    if (ret == 0) {
+        qemuDomainObjPrivatePtr priv = vm->privateData;
+
+        if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV))
+            qemuBlockJobUpdate(vm, job, QEMU_ASYNC_JOB_NONE);
+        goto endjob;
+    }
 
     if (qemuBlockJobInfoTranslate(&rawInfo, info, disk,
                                   flags & VIR_DOMAIN_BLOCK_JOB_INFO_BANDWIDTH_BYTES) < 0) {
