@@ -4118,9 +4118,7 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
 static void
 processBlockJobEvent(virQEMUDriverPtr driver,
                      virDomainObjPtr vm,
-                     const char *diskAlias,
-                     int type,
-                     int status)
+                     const char *diskAlias)
 {
     virDomainDiskDefPtr disk;
     g_autoptr(qemuBlockJobData) job = NULL;
@@ -4139,13 +4137,9 @@ processBlockJobEvent(virQEMUDriverPtr driver,
     }
 
     if (!(job = qemuBlockJobDiskGetJob(disk))) {
-        VIR_DEBUG("creating new block job object for '%s'", diskAlias);
-        if (!(job = qemuBlockJobDiskNew(vm, disk, type, diskAlias)))
-            goto endjob;
-        job->state = QEMU_BLOCKJOB_STATE_RUNNING;
+        VIR_DEBUG("disk %s job not found", diskAlias);
+        goto endjob;
     }
-
-    job->newstate = status;
 
     qemuBlockJobUpdate(vm, job, QEMU_ASYNC_JOB_NONE);
 
@@ -4321,10 +4315,7 @@ static void qemuProcessEventHandler(void *data, void *opaque)
                                   processEvent->action);
         break;
     case QEMU_PROCESS_EVENT_BLOCK_JOB:
-        processBlockJobEvent(driver, vm,
-                             processEvent->data,
-                             processEvent->action,
-                             processEvent->status);
+        processBlockJobEvent(driver, vm, processEvent->data);
         break;
     case QEMU_PROCESS_EVENT_JOB_STATUS_CHANGE:
         processJobStatusChangeEvent(driver, vm, processEvent->data);

@@ -953,13 +953,19 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon G_GNUC_UNUSED,
     if (!(disk = qemuProcessFindDomainDiskByAliasOrQOM(vm, diskAlias, NULL)))
         goto cleanup;
 
-    job = qemuBlockJobDiskGetJob(disk);
+    if (!(job = qemuBlockJobDiskGetJob(disk))) {
+        VIR_DEBUG("creating new block job object for '%s'", diskAlias);
+        if (!(job = qemuBlockJobDiskNew(vm, disk, type, diskAlias)))
+            goto cleanup;
+        job->state = QEMU_BLOCKJOB_STATE_RUNNING;
+    }
 
-    if (job && job->synchronous) {
-        /* We have a SYNC API waiting for this event, dispatch it back */
-        job->newstate = status;
-        VIR_FREE(job->errmsg);
-        job->errmsg = g_strdup(error);
+    job->newstate = status;
+    VIR_FREE(job->errmsg);
+    job->errmsg = g_strdup(error);
+
+    /* We have a SYNC API waiting for this event, dispatch it back */
+    if (job->synchronous) {
         virDomainObjBroadcast(vm);
     } else {
         /* there is no waiting SYNC API, dispatch the update to a thread */
@@ -969,8 +975,6 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon G_GNUC_UNUSED,
         data = g_strdup(diskAlias);
         processEvent->data = data;
         processEvent->vm = virObjectRef(vm);
-        processEvent->action = type;
-        processEvent->status = status;
 
         if (virThreadPoolSendJob(driver->workerPool, 0, processEvent) < 0) {
             virObjectUnref(vm);
