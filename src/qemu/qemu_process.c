@@ -8089,7 +8089,9 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
         disk->mirrorJob == VIR_DOMAIN_BLOCK_JOB_TYPE_ACTIVE_COMMIT)
         jobtype = disk->mirrorJob;
 
-    if (!(job = qemuBlockJobDiskNew(vm, disk, jobtype, jobname)))
+    /* Job can be created by block job event handler */
+    if (!(job = qemuBlockJobDiskGetJob(disk)) &&
+        !(job = qemuBlockJobDiskNew(vm, disk, jobtype, jobname)))
         return -1;
 
     if (disk->mirror) {
@@ -8097,6 +8099,10 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
             (info->ready == -1 && info->end == info->cur)) {
             disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_READY;
             job->state = VIR_DOMAIN_BLOCK_JOB_READY;
+
+            /* Reset pending event if we already in the state of event */
+            if (job->newstate == VIR_DOMAIN_BLOCK_JOB_READY)
+                job->newstate = -1;
         }
 
         /* Pre-blockdev block copy labelled the chain of the mirrored device
