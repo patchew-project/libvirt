@@ -11588,12 +11588,21 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
         g_autofree char *cache = virXPathString("string(./binary/cache/@mode)", ctxt);
         g_autofree char *posix_lock = virXPathString("string(./binary/lock/@posix)", ctxt);
         g_autofree char *flock = virXPathString("string(./binary/lock/@flock)", ctxt);
+        g_autofree char *thread_pool_size = virXPathString("string(./binary/@pool)", ctxt);
         int val;
 
         if (queue_size && virStrToLong_ull(queue_size, NULL, 10, &def->queue_size) < 0) {
             virReportError(VIR_ERR_XML_ERROR,
                            _("cannot parse queue size '%s' for virtiofs"),
                            queue_size);
+            goto error;
+        }
+
+        if (thread_pool_size &&
+            virStrToLong_ull(thread_pool_size, NULL, 10, &def->thread_pool_size) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("cannot parse thread pool size '%s' for virtiofs"),
+                           thread_pool_size);
             goto error;
         }
 
@@ -26190,6 +26199,9 @@ virDomainFSDefFormat(virBufferPtr buf,
             virBufferAsprintf(&binaryAttrBuf, " xattr='%s'",
                               virTristateSwitchTypeToString(def->xattr));
         }
+
+        if (def->thread_pool_size)
+            virBufferAsprintf(&binaryAttrBuf, " pool='%llu'", def->thread_pool_size);
 
         if (def->cache != VIR_DOMAIN_FS_CACHE_MODE_DEFAULT) {
             virBufferAsprintf(&binaryBuf, "<cache mode='%s'/>\n",

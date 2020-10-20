@@ -126,6 +126,9 @@ qemuVirtioFSBuildCommandLine(virQEMUDriverConfigPtr cfg,
     virCommandPassFD(cmd, *fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
     *fd = -1;
 
+    if (fs->thread_pool_size)
+        virCommandAddArgFormat(cmd, "--thread-pool-size=%llu", fs->thread_pool_size);
+
     virCommandAddArg(cmd, "-o");
     virBufferAddLit(&opts, "source=");
     virQEMUBuildBufferEscapeComma(&opts, fs->src->path);

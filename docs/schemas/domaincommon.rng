@@ -2840,6 +2840,11 @@
         </attribute>
       </optional>
       <optional>
+        <attribute name="pool">
+          <ref name="unsignedInt"/>
+        </attribute>
+      </optional>
+      <optional>
         <element name="cache">
           <optional>
             <attribute name="mode">

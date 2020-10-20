@@ -3070,7 +3070,7 @@ A directory on the host that can be accessed directly from the guest.
      </filesystem>
      <filesystem type='mount' accessmode='passthrough'>
          <driver type='virtiofs' queue='1024'/>
-         <binary path='/usr/libexec/virtiofsd' xattr='on'>
+         <binary path='/usr/libexec/virtiofsd' xattr='on' pool='32'>
             <cache mode='always'/>
             <lock posix='on' flock='on'/>
          </binary>
@@ -3188,7 +3188,9 @@ A directory on the host that can be accessed directly from the guest.
    the use of filesystem extended attributes. Caching can be tuned via the
    ``cache`` element, possible ``mode`` values being ``none`` and ``always``.
    Locking can be controlled via the ``lock`` element - attributes ``posix`` and
-   ``flock`` both accepting values ``on`` or ``off``. ( :since:`Since 6.2.0` )
+   ``flock`` both accepting values ``on`` or ``off``. ( :since:`Since 6.2.0` ).
+   Thread pool size limit can be tuned via the ``pool`` element.
+   ( :since:`Since 6.9.0` )
 ``source``
    The resource on the host that is being accessed in the guest. The ``name``
    attribute must be used with ``type='template'``, and the ``dir`` attribute
