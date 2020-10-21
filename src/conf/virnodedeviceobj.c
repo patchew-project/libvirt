@@ -867,7 +867,8 @@ virNodeDeviceObjMatch(virNodeDeviceObjPtr obj,
               MATCH(CCW_DEV)       ||
               MATCH(CSS_DEV)       ||
               MATCH(AP_CARD)       ||
-              MATCH(AP_QUEUE)))
+              MATCH(AP_QUEUE)      ||
+              MATCH(AP_MATRIX)))
             return false;
     }
 
