@@ -8135,6 +8135,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         addfdarg = g_strdup_printf("%s,opaque=%s", fdset,
                                    net->data.vdpa.devicepath);
         virCommandAddArgList(cmd, "-add-fd", addfdarg, NULL);
+        vdpafd = -1;
     }
 
     if (chardev)
@@ -8204,6 +8205,8 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     VIR_FREE(tapfdName);
     VIR_FREE(vhostfd);
     VIR_FREE(tapfd);
+    if (vdpafd >= 0)
+        VIR_FORCE_CLOSE(vdpafd);
     return ret;
 }
 
