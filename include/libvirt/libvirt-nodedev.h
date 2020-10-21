@@ -82,6 +82,8 @@ typedef enum {
     VIR_CONNECT_LIST_NODE_DEVICES_CAP_MDEV          = 1 << 14, /* Mediated device */
     VIR_CONNECT_LIST_NODE_DEVICES_CAP_CCW_DEV       = 1 << 15, /* CCW device */
     VIR_CONNECT_LIST_NODE_DEVICES_CAP_CSS_DEV       = 1 << 16, /* CSS device */
+    VIR_CONNECT_LIST_NODE_DEVICES_CAP_AP_CARD       = 1 << 17, /* s390 AP Card device */
+    VIR_CONNECT_LIST_NODE_DEVICES_CAP_AP_QUEUE      = 1 << 18, /* s390 AP Queue */
 } virConnectListAllNodeDeviceFlags;
 
 int                     virConnectListAllNodeDevices (virConnectPtr conn,
