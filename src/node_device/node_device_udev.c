@@ -1169,6 +1169,29 @@ udevProcessAPCard(struct udev_device *device,
 
 
 static int
+udevProcessAPQueue(struct udev_device *device,
+                   virNodeDeviceDefPtr def)
+{
+    char *c;
+    virNodeDevCapDataPtr data = &def->caps->data;
+
+    if ((c = strrchr(def->sysfs_path, '/')) == NULL ||
+        virStrToLong_ui(c + 1, &c, 16, &data->ap_queue.ap_adapter) < 0 ||
+        virStrToLong_ui(c + 1, &c, 16, &data->ap_queue.ap_domain) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to parse the AP Queue from sysfs path: '%s'"),
+                       def->sysfs_path);
+        return -1;
+    }
+
+    if (udevGenerateDeviceName(device, def, NULL) != 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
 udevGetDeviceNodes(struct udev_device *device,
                    virNodeDeviceDefPtr def)
 {
@@ -1224,6 +1247,8 @@ udevGetDeviceType(struct udev_device *device,
             *type = VIR_NODE_DEV_CAP_DRM;
         else if (STREQ(devtype, "ap_card"))
             *type = VIR_NODE_DEV_CAP_AP_CARD;
+        else if (STREQ(devtype, "ap_queue"))
+            *type = VIR_NODE_DEV_CAP_AP_QUEUE;
     } else {
         /* PCI devices don't set the DEVTYPE property. */
         if (udevHasDeviceProperty(device, "PCI_CLASS"))
@@ -1297,6 +1322,8 @@ udevGetDeviceDetails(struct udev_device *device,
         return udevProcessCSS(device, def);
     case VIR_NODE_DEV_CAP_AP_CARD:
         return udevProcessAPCard(device, def);
+    case VIR_NODE_DEV_CAP_AP_QUEUE:
+        return udevProcessAPQueue(device, def);
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:

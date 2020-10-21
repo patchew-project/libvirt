@@ -66,6 +66,7 @@ typedef enum {
     VIR_NODE_DEV_CAP_CCW_DEV,           /* s390 CCW device */
     VIR_NODE_DEV_CAP_CSS_DEV,           /* s390 channel subsystem device */
     VIR_NODE_DEV_CAP_AP_CARD,           /* s390 AP Card device */
+    VIR_NODE_DEV_CAP_AP_QUEUE,          /* s390 AP Queue */
 
     VIR_NODE_DEV_CAP_LAST
 } virNodeDevCapType;
@@ -282,6 +283,13 @@ struct _virNodeDevCapAPCard {
     unsigned int ap_adapter;
 };
 
+typedef struct _virNodeDevCapAPQueue virNodeDevCapAPQueue;
+typedef virNodeDevCapAPQueue *virNodeDevCapAPQueuePtr;
+struct _virNodeDevCapAPQueue {
+    unsigned int ap_adapter;
+    unsigned int ap_domain;
+};
+
 typedef struct _virNodeDevCapData virNodeDevCapData;
 typedef virNodeDevCapData *virNodeDevCapDataPtr;
 struct _virNodeDevCapData {
@@ -301,6 +309,7 @@ struct _virNodeDevCapData {
         virNodeDevCapMdev mdev;
         virNodeDevCapCCW ccw_dev;
         virNodeDevCapAPCard ap_card;
+        virNodeDevCapAPQueue ap_queue;
     };
 };
 
