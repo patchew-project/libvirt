@@ -126,6 +126,8 @@ mymain(void)
     DO_TEST("css_0_0_ffff");
     DO_TEST("ap_card07");
     DO_TEST("ap_07_0038");
+    DO_TEST("ap_matrix");
+    DO_TEST("mdev_ee0b88c4_f554_4dc1_809d_b2a01e8e48ad");
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
