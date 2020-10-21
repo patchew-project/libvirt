@@ -662,6 +662,10 @@ nodeDeviceFindAddressByName(const char *name)
             break;
             }
 
+        case VIR_NODE_DEV_CAP_AP_MATRIX:
+            addr = g_strdup(caps->data.ap_matrix.addr);
+            break;
+
         case VIR_NODE_DEV_CAP_SYSTEM:
         case VIR_NODE_DEV_CAP_USB_DEV:
         case VIR_NODE_DEV_CAP_USB_INTERFACE:
@@ -679,7 +683,6 @@ nodeDeviceFindAddressByName(const char *name)
         case VIR_NODE_DEV_CAP_CCW_DEV:
         case VIR_NODE_DEV_CAP_AP_CARD:
         case VIR_NODE_DEV_CAP_AP_QUEUE:
-        case VIR_NODE_DEV_CAP_AP_MATRIX:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
