@@ -430,6 +430,45 @@
               <dd>The subchannel-set identifier.</dd>
               <dt><code>devno</code></dt>
               <dd>The device number.</dd>
+              <dt><code>capability</code></dt>
+              <dd>
+                This optional element can occur multiple times. If it
+                exists, it has a mandatory <code>type</code> attribute
+                which will be set to:
+                <dl>
+                  <dt><code><a id="MDEVCapCSS">mdev_types</a></code></dt>
+                  <dd>
+                    This device is capable of creating mediated devices, and
+                    the capability will contain a list of <code>type</code>
+                    elements, which list all mdev types supported on the
+                    physical device. <span class="since">Since 6.9.0</span>
+                    Each <code>type</code> element has a single <code>id</code>
+                    attribute that holds an official vendor-supplied identifier
+                    for the type. It supports the following sub-elements:
+                    <dl>
+                      <dt><code>name</code></dt>
+                      <dd>
+                        The <code>name</code> element holds a vendor-supplied
+                        code name for the given mediated device type. This is
+                        an optional element.
+                      </dd>
+                      <dt><code>deviceAPI</code></dt>
+                      <dd>
+                        The value of this element describes how an instance of
+                        the given type will be presented to the guest by the
+                        VFIO framework.
+                      </dd>
+                      <dt><code>availableInstances</code></dt>
+                      <dd>
+                        This element reports the current state of resource
+                        allocation. In other words, how many instances of the
+                        given type can still be successfully created on the
+                        physical device.
+                      </dd>
+                    </dl>
+                  </dd>
+                </dl>
+              </dd>
             </dl>
           </dd>
         </dl>
