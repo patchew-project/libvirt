@@ -2528,57 +2528,6 @@ virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path,
     return 0;
 }
 
-
-ssize_t
-virPCIGetMdevTypes(const char *sysfspath,
-                   virMediatedDeviceTypePtr **types)
-{
-    ssize_t ret = -1;
-    int dirret = -1;
-    DIR *dir = NULL;
-    struct dirent *entry;
-    g_autofree char *types_path = NULL;
-    g_autoptr(virMediatedDeviceType) mdev_type = NULL;
-    virMediatedDeviceTypePtr *mdev_types = NULL;
-    size_t ntypes = 0;
-    size_t i;
-
-    types_path = g_strdup_printf("%s/mdev_supported_types", sysfspath);
-
-    if ((dirret = virDirOpenIfExists(&dir, types_path)) < 0)
-        goto cleanup;
-
-    if (dirret == 0) {
-        ret = 0;
-        goto cleanup;
-    }
-
-    while ((dirret = virDirRead(dir, &entry, types_path)) > 0) {
-        g_autofree char *tmppath = NULL;
-        /* append the type id to the path and read the attributes from there */
-        tmppath = g_strdup_printf("%s/%s", types_path, entry->d_name);
-
-        if (virMediatedDeviceTypeReadAttrs(tmppath, &mdev_type) < 0)
-            goto cleanup;
-
-        if (VIR_APPEND_ELEMENT(mdev_types, ntypes, mdev_type) < 0)
-            goto cleanup;
-    }
-
-    if (dirret < 0)
-        goto cleanup;
-
-    *types = g_steal_pointer(&mdev_types);
-    ret = ntypes;
-    ntypes = 0;
- cleanup:
-    for (i = 0; i < ntypes; i++)
-        virMediatedDeviceTypeFree(mdev_types[i]);
-    VIR_FREE(mdev_types);
-    VIR_DIR_CLOSE(dir);
-    return ret;
-}
-
 #else
 static const char *unsupported = N_("not supported on non-linux platforms");
 
@@ -2649,15 +2598,6 @@ virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path G_GNUC_UNUSED,
                              int pfNetDevIdx G_GNUC_UNUSED,
                              char **pfname G_GNUC_UNUSED,
                              int *vf_index G_GNUC_UNUSED)
-{
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _(unsupported));
-    return -1;
-}
-
-
-ssize_t
-virPCIGetMdevTypes(const char *sysfspath G_GNUC_UNUSED,
-                   virMediatedDeviceTypePtr **types G_GNUC_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _(unsupported));
     return -1;
