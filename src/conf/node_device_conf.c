@@ -533,6 +533,20 @@ virNodeDeviceCapMdevDefFormat(virBufferPtr buf,
     }
 }
 
+
+static void
+virNodeDeviceCapCCWDefFormat(virBufferPtr buf,
+                             const virNodeDevCapData *data)
+{
+    virBufferAsprintf(buf, "<cssid>0x%x</cssid>\n",
+                      data->ccw_dev.cssid);
+    virBufferAsprintf(buf, "<ssid>0x%x</ssid>\n",
+                      data->ccw_dev.ssid);
+    virBufferAsprintf(buf, "<devno>0x%04x</devno>\n",
+                      data->ccw_dev.devno);
+}
+
+
 char *
 virNodeDeviceDefFormat(const virNodeDeviceDef *def)
 {
@@ -619,12 +633,7 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
             break;
         case VIR_NODE_DEV_CAP_CCW_DEV:
         case VIR_NODE_DEV_CAP_CSS_DEV:
-            virBufferAsprintf(&buf, "<cssid>0x%x</cssid>\n",
-                              data->ccw_dev.cssid);
-            virBufferAsprintf(&buf, "<ssid>0x%x</ssid>\n",
-                              data->ccw_dev.ssid);
-            virBufferAsprintf(&buf, "<devno>0x%04x</devno>\n",
-                              data->ccw_dev.devno);
+            virNodeDeviceCapCCWDefFormat(&buf, data);
             break;
         case VIR_NODE_DEV_CAP_MDEV_TYPES:
         case VIR_NODE_DEV_CAP_FC_HOST:
