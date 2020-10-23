@@ -13,6 +13,11 @@ v6.9.0 (unreleased)
 
 * **New features**
 
+  * Introduce memory failure event
+
+    Libvirt could handle domain's memory failure event. Drivers need to
+    implement their own method. Currently, only QEMU supports this feature.
+
   * qemu: Implement support for ``<transient/>`` disks
 
     VMs based on the QEMU hypervisor now can use ``<transient/>`` option for
