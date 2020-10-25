@@ -126,6 +126,8 @@ mymain(void)
     const char *platform = "-linux";
 #elif defined(__FreeBSD__)
     const char *platform = "-freebsd";
+#elif defined(__APPLE__)
+    const char *platform = "-darwin";
 #else
     const char *platform = "";
 #endif
