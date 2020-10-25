@@ -56,6 +56,8 @@ VIR_LOG_INIT("security.security_util");
 # define XATTR_NAMESPACE "trusted"
 #elif defined(__FreeBSD__)
 # define XATTR_NAMESPACE "system"
+#elif defined(__APPLE__)
+# define XATTR_NAMESPACE "org"
 #endif
 
 static char *
