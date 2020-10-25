@@ -18,7 +18,7 @@
 
 #include <config.h>
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 # include "virmock.h"
 # include <unistd.h>
 # include <fcntl.h>
@@ -1123,6 +1123,8 @@ opendir(const char *path)
 int
 close(int fd)
 {
+    init_syms();
+
     if (remove_fd(fd) < 0)
         return -1;
     return real_close(fd);
