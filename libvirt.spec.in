@@ -1128,7 +1128,16 @@ exit 1
 
 # place macros above and build commands below this comment
 
-export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
+if [ -z "${SOURCE_DATE_EPOCH}" ]; then
+# If SOURCE_DATE_EPOCH is not defined, set it based on spec file
+    if [ ! -f "%{_specdir}/%{name}.spec" ]; then
+        # OBS does not install the spec file into the specdir
+        SPECFILE_PATH="%{_sourcedir}/%{name}.spec"
+    else
+        SPECFILE_PATH="%{_specdir}/%{name}.spec"
+    fi
+    export SOURCE_DATE_EPOCH=$(stat --printf='%Y' ${SPECFILE_PATH})
+fi
 
 %meson \
            -Drunstatedir=%{_rundir} \
