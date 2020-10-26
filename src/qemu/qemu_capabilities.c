@@ -652,7 +652,7 @@ typedef virQEMUDomainCapsCache *virQEMUDomainCapsCachePtr;
 struct _virQEMUDomainCapsCache {
     virObjectLockable parent;
 
-    virHashTablePtr cache;
+    GHashTable *cache;
 };
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virQEMUDomainCapsCache, virObjectUnref);
@@ -2686,7 +2686,7 @@ virQEMUCapsProbeQMPDeviceProperties(virQEMUCapsPtr qemuCaps,
 
     for (i = 0; i < G_N_ELEMENTS(virQEMUCapsDeviceProps); i++) {
         virQEMUCapsDeviceTypeProps *device = virQEMUCapsDeviceProps + i;
-        g_autoptr(virHashTable) qemuprops = NULL;
+        g_autoptr(GHashTable) qemuprops = NULL;
         size_t j;
 
         if (device->capsCondition >= 0 &&
@@ -3065,7 +3065,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     const char *model = virtType == VIR_DOMAIN_VIRT_KVM ? "host" : "max";
     qemuMonitorCPUModelInfoPtr modelInfo = NULL;
     qemuMonitorCPUModelInfoPtr nonMigratable = NULL;
-    virHashTablePtr hash = NULL;
+    GHashTable *hash = NULL;
     virCPUDefPtr cpu;
     qemuMonitorCPUModelExpansionType type;
     bool fail_no_props = true;
@@ -5258,7 +5258,7 @@ virQEMUCapsProbeQMPSchemaCapabilities(virQEMUCapsPtr qemuCaps,
 {
     struct virQEMUCapsStringFlags *entry;
     virJSONValuePtr schemareply;
-    virHashTablePtr schema = NULL;
+    GHashTable *schema = NULL;
     size_t i;
 
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_QMP_SCHEMA))

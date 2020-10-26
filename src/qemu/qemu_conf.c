@@ -1479,7 +1479,7 @@ qemuGetSharedDeviceKey(const char *device_path)
  *      being used and in the future the hostdev information.
  */
 static int
-qemuCheckUnprivSGIO(virHashTablePtr sharedDevices,
+qemuCheckUnprivSGIO(GHashTable *sharedDevices,
                     const char *device_path,
                     int sgio)
 {
@@ -1527,7 +1527,7 @@ qemuCheckUnprivSGIO(virHashTablePtr sharedDevices,
  * Returns 0 if no conflicts, otherwise returns -1.
  */
 static int
-qemuCheckSharedDisk(virHashTablePtr sharedDevices,
+qemuCheckSharedDisk(GHashTable *sharedDevices,
                     virDomainDiskDefPtr disk)
 {
     int ret;

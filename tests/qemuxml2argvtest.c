@@ -510,7 +510,7 @@ testCompareXMLToArgvValidateSchema(virQEMUDriverPtr drv,
     g_autoptr(virDomainObj) vm = NULL;
     size_t nargs = 0;
     size_t i;
-    g_autoptr(virHashTable) schema = NULL;
+    g_autoptr(GHashTable) schema = NULL;
     g_autoptr(virCommand) cmd = NULL;
     unsigned int parseFlags = info->parseFlags;
 
@@ -756,7 +756,7 @@ mymain(void)
 {
     int ret = 0;
     g_autofree char *fakerootdir = NULL;
-    g_autoptr(virHashTable) capslatest = NULL;
+    g_autoptr(GHashTable) capslatest = NULL;
 
     fakerootdir = g_strdup(FAKEROOTDIRTEMPLATE);
 

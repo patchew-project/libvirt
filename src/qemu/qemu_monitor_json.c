@@ -2477,7 +2477,7 @@ qemuMonitorJSONGetBlockDevDevice(virJSONValuePtr dev)
 
 
 static int
-qemuMonitorJSONBlockInfoAdd(virHashTablePtr table,
+qemuMonitorJSONBlockInfoAdd(GHashTable *table,
                             struct qemuDomainDiskInfo *info,
                             const char *entryname)
 {
@@ -2507,7 +2507,7 @@ qemuMonitorJSONBlockInfoAdd(virHashTablePtr table,
 
 
 int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
-                                virHashTablePtr table)
+                                GHashTable *table)
 {
     int ret = -1;
     size_t i;
@@ -2635,7 +2635,7 @@ qemuMonitorJSONBlockStatsCollectData(virJSONValuePtr dev,
 static int
 qemuMonitorJSONAddOneBlockStatsInfo(qemuBlockStatsPtr bstats,
                                     const char *name,
-                                    virHashTablePtr stats)
+                                    GHashTable *stats)
 {
     qemuBlockStatsPtr copy = NULL;
 
@@ -2657,7 +2657,7 @@ static int
 qemuMonitorJSONGetOneBlockStatsInfo(virJSONValuePtr dev,
                                     const char *dev_name,
                                     int depth,
-                                    virHashTablePtr hash,
+                                    GHashTable *hash,
                                     bool backingChain)
 {
     g_autofree qemuBlockStatsPtr bstats = NULL;
@@ -2732,7 +2732,7 @@ qemuMonitorJSONQueryBlockstats(qemuMonitorPtr mon)
 
 int
 qemuMonitorJSONGetAllBlockStatsInfo(qemuMonitorPtr mon,
-                                    virHashTablePtr hash,
+                                    GHashTable *hash,
                                     bool backingChain)
 {
     int nstats = 0;
@@ -2781,7 +2781,7 @@ qemuMonitorJSONGetAllBlockStatsInfo(qemuMonitorPtr mon,
 static int
 qemuMonitorJSONBlockStatsUpdateCapacityData(virJSONValuePtr image,
                                             const char *name,
-                                            virHashTablePtr stats,
+                                            GHashTable *stats,
                                             qemuBlockStatsPtr *entry)
 {
     qemuBlockStatsPtr bstats;
@@ -2816,7 +2816,7 @@ static int
 qemuMonitorJSONBlockStatsUpdateCapacityOne(virJSONValuePtr image,
                                            const char *dev_name,
                                            int depth,
-                                           virHashTablePtr stats,
+                                           GHashTable *stats,
                                            bool backingChain)
 {
     int ret = -1;
@@ -2845,7 +2845,7 @@ qemuMonitorJSONBlockStatsUpdateCapacityOne(virJSONValuePtr image,
 
 int
 qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
-                                        virHashTablePtr stats,
+                                        GHashTable *stats,
                                         bool backingChain)
 {
     int ret = -1;
@@ -2891,7 +2891,7 @@ qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker(size_t pos G_GNUC_UNUSED,
                                                       virJSONValuePtr val,
                                                       void *opaque)
 {
-    virHashTablePtr stats = opaque;
+    GHashTable *stats = opaque;
     virJSONValuePtr image;
     const char *nodename;
     qemuBlockStatsPtr entry;
@@ -2916,7 +2916,7 @@ qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker(size_t pos G_GNUC_UNUSED,
 
 int
 qemuMonitorJSONBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
-                                                virHashTablePtr stats)
+                                                GHashTable *stats)
 {
     virJSONValuePtr nodes;
     int ret = -1;
@@ -3020,7 +3020,7 @@ qemuMonitorJSONBlockGetNamedNodeDataWorker(size_t pos G_GNUC_UNUSED,
                                            virJSONValuePtr val,
                                            void *opaque)
 {
-    virHashTablePtr nodes = opaque;
+    GHashTable *nodes = opaque;
     virJSONValuePtr img;
     virJSONValuePtr bitmaps;
     const char *nodename;
@@ -3059,10 +3059,10 @@ qemuMonitorJSONBlockGetNamedNodeDataWorker(size_t pos G_GNUC_UNUSED,
 }
 
 
-virHashTablePtr
+GHashTable *
 qemuMonitorJSONBlockGetNamedNodeDataJSON(virJSONValuePtr nodes)
 {
-    g_autoptr(virHashTable) ret = NULL;
+    g_autoptr(GHashTable) ret = NULL;
 
     ret = virHashNew((virHashDataFree) qemuMonitorJSONBlockNamedNodeDataFree);
 
@@ -3075,7 +3075,7 @@ qemuMonitorJSONBlockGetNamedNodeDataJSON(virJSONValuePtr nodes)
 }
 
 
-virHashTablePtr
+GHashTable *
 qemuMonitorJSONBlockGetNamedNodeData(qemuMonitorPtr mon,
                                      bool supports_flat)
 {
@@ -4464,7 +4464,7 @@ qemuMonitorJSONQueryRxFilter(qemuMonitorPtr mon, const char *alias,
  */
 static int
 qemuMonitorJSONExtractChardevInfo(virJSONValuePtr reply,
-                                  virHashTablePtr info)
+                                  GHashTable *info)
 {
     virJSONValuePtr data;
     int ret = -1;
@@ -4532,7 +4532,7 @@ qemuMonitorJSONExtractChardevInfo(virJSONValuePtr reply,
 
 int
 qemuMonitorJSONGetChardevInfo(qemuMonitorPtr mon,
-                              virHashTablePtr info)
+                              GHashTable *info)
 
 {
     int ret = -1;
@@ -5084,7 +5084,7 @@ int qemuMonitorJSONScreendump(qemuMonitorPtr mon,
 
 
 static int
-qemuMonitorJSONParseBlockJobInfo(virHashTablePtr blockJobs,
+qemuMonitorJSONParseBlockJobInfo(GHashTable *blockJobs,
                                  virJSONValuePtr entry,
                                  bool rawjobname)
 {
@@ -5152,7 +5152,7 @@ qemuMonitorJSONParseBlockJobInfo(virHashTablePtr blockJobs,
     return 0;
 }
 
-virHashTablePtr
+GHashTable *
 qemuMonitorJSONGetAllBlockJobInfo(qemuMonitorPtr mon,
                                   bool rawjobname)
 {
@@ -5161,7 +5161,7 @@ qemuMonitorJSONGetAllBlockJobInfo(qemuMonitorPtr mon,
     virJSONValuePtr data;
     size_t nr_results;
     size_t i;
-    virHashTablePtr blockJobs = NULL;
+    GHashTable *blockJobs = NULL;
 
     cmd = qemuMonitorJSONMakeCommand("query-block-jobs", NULL);
     if (!cmd)
@@ -6951,7 +6951,7 @@ qemuMonitorJSONGetDevicePropsWorker(size_t pos G_GNUC_UNUSED,
                                     void *opaque)
 {
     const char *name = virJSONValueObjectGetString(item, "name");
-    virHashTablePtr devices = opaque;
+    GHashTable *devices = opaque;
 
     if (!name) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -6966,11 +6966,11 @@ qemuMonitorJSONGetDevicePropsWorker(size_t pos G_GNUC_UNUSED,
 }
 
 
-virHashTablePtr
+GHashTable *
 qemuMonitorJSONGetDeviceProps(qemuMonitorPtr mon,
                               const char *device)
 {
-    g_autoptr(virHashTable) props = virHashNew(virJSONValueHashFree);
+    g_autoptr(GHashTable) props = virHashNew(virJSONValueHashFree);
     g_autoptr(virJSONValue) cmd = NULL;
     g_autoptr(virJSONValue) reply = NULL;
 
@@ -8381,7 +8381,7 @@ qemuMonitorJSONSetIOThread(qemuMonitorPtr mon,
 
 int
 qemuMonitorJSONGetMemoryDeviceInfo(qemuMonitorPtr mon,
-                                   virHashTablePtr info)
+                                   GHashTable *info)
 {
     int ret = -1;
     virJSONValuePtr cmd;
@@ -9265,7 +9265,7 @@ qemuMonitorJSONGetSEVMeasurement(qemuMonitorPtr mon)
  */
 static int
 qemuMonitorJSONExtractPRManagerInfo(virJSONValuePtr reply,
-                                    virHashTablePtr info)
+                                    GHashTable *info)
 {
     qemuMonitorPRManagerInfoPtr entry = NULL;
     virJSONValuePtr data;
@@ -9309,7 +9309,7 @@ qemuMonitorJSONExtractPRManagerInfo(virJSONValuePtr reply,
 
 int
 qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
-                                virHashTablePtr info)
+                                GHashTable *info)
 {
     int ret = -1;
     virJSONValuePtr cmd;

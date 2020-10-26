@@ -1091,7 +1091,7 @@ struct _virDomainNetDef {
     virNetDevIPInfo guestIP;
     virDomainDeviceInfo info;
     char *filter;
-    virHashTablePtr filterparams;
+    GHashTable *filterparams;
     virNetDevBandwidthPtr bandwidth;
     virNetDevVlan vlan;
     int trustGuestRxFilters; /* enum virTristateBool */

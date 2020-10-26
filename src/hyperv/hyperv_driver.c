@@ -1422,7 +1422,7 @@ hypervDomainSetAutostart(virDomainPtr domain, int autostart)
     Msvm_VirtualSystemSettingData *vssd = NULL;
     g_autoptr(hypervInvokeParamsList) params = NULL;
     g_auto(virBuffer) eprQuery = VIR_BUFFER_INITIALIZER;
-    g_autoptr(virHashTable) autostartParam = NULL;
+    g_autoptr(GHashTable) autostartParam = NULL;
     const char *methodName = NULL;
     hypervWmiClassInfoListPtr embeddedParamClass = NULL;
     const char *enabledValue = NULL, *disabledValue = NULL;
@@ -1938,7 +1938,7 @@ hypervDomainSetMemoryFlags(virDomainPtr domain, unsigned long memory,
     Msvm_VirtualSystemSettingData *vssd = NULL;
     Msvm_MemorySettingData *memsd = NULL;
     g_auto(virBuffer) eprQuery = VIR_BUFFER_INITIALIZER;
-    g_autoptr(virHashTable) memResource = NULL;
+    g_autoptr(GHashTable) memResource = NULL;
 
     virCheckFlags(0, -1);
 

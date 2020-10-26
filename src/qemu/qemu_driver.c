@@ -9939,7 +9939,7 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     bool blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
     virDomainDiskDefPtr disk = NULL;
-    virHashTablePtr blockstats = NULL;
+    GHashTable *blockstats = NULL;
     qemuBlockStatsPtr stats;
     size_t i;
     int nstats;
@@ -14982,7 +14982,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     g_autoptr(qemuBlockStorageSourceChainData) crdata = NULL;
     virStorageSourcePtr n;
     virStorageSourcePtr mirrorBacking = NULL;
-    g_autoptr(virHashTable) blockNamedNodeData = NULL;
+    g_autoptr(GHashTable) blockNamedNodeData = NULL;
     int rc = 0;
 
     /* Preliminaries: find the disk we are editing, sanity checks */
@@ -16545,7 +16545,7 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm = NULL;
     qemuDomainObjPrivatePtr priv;
-    virHashTablePtr table = NULL;
+    GHashTable *table = NULL;
     bool blockdev = false;
     int ret = -1;
     size_t i;
@@ -18229,8 +18229,8 @@ qemuDomainGetStatsOneBlockFallback(virQEMUDriverPtr driver,
 static void
 qemuDomainGetStatsOneBlockRefreshNamed(virStorageSourcePtr src,
                                        const char *alias,
-                                       virHashTablePtr stats,
-                                       virHashTablePtr nodedata)
+                                       GHashTable *stats,
+                                       GHashTable *nodedata)
 {
     qemuBlockStatsPtr entry;
 
@@ -18259,7 +18259,7 @@ qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
                            const char *entryname,
                            virStorageSourcePtr src,
                            size_t block_idx,
-                           virHashTablePtr stats)
+                           GHashTable *stats)
 {
     qemuBlockStats *entry;
 
@@ -18303,7 +18303,7 @@ qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
 
 static int
 qemuDomainGetStatsBlockExportBackendStorage(const char *entryname,
-                                            virHashTablePtr stats,
+                                            GHashTable *stats,
                                             size_t recordnr,
                                             virTypedParamListPtr params)
 {
@@ -18323,7 +18323,7 @@ qemuDomainGetStatsBlockExportBackendStorage(const char *entryname,
 
 static int
 qemuDomainGetStatsBlockExportFrontend(const char *frontendname,
-                                      virHashTablePtr stats,
+                                      GHashTable *stats,
                                       size_t idx,
                                       virTypedParamListPtr par)
 {
@@ -18372,8 +18372,8 @@ qemuDomainGetStatsBlockExportHeader(virDomainDiskDefPtr disk,
 
 static int
 qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
-                                  virHashTablePtr stats,
-                                  virHashTablePtr nodestats,
+                                  GHashTable *stats,
+                                  GHashTable *nodestats,
                                   virTypedParamListPtr params,
                                   size_t *recordnr,
                                   bool visitBacking,
@@ -18463,8 +18463,8 @@ qemuDomainGetStatsBlock(virQEMUDriverPtr driver,
     size_t i;
     int ret = -1;
     int rc;
-    virHashTablePtr stats = NULL;
-    virHashTablePtr nodestats = NULL;
+    GHashTable *stats = NULL;
+    GHashTable *nodestats = NULL;
     virJSONValuePtr nodedata = NULL;
     qemuDomainObjPrivatePtr priv = dom->privateData;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
