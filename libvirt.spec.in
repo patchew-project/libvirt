@@ -1438,7 +1438,18 @@ fi
 rm -rf %{_localstatedir}/lib/rpm-state/libvirt || :
 
 %post daemon-config-nwfilter
-cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
+# keep existing filters uuid on update
+for dfile in %{_datadir}/libvirt/nwfilter/*.xml; do
+    sfile=%{_sysconfdir}/libvirt/nwfilter/`basename $dfile`
+    if [ -f "$sfile" ]; then
+      uuidstr=`sed -n '/<uuid>.*<\/uuid>/p' "$sfile"`
+      if [ ! -z "$uuidstr" ]; then
+        sed -e "s,<filter .*>,&\n$uuidstr," "$dfile" > "$sfile"
+        continue
+      fi
+    fi
+    cp "$dfile" "$sfile"
+done
 # libvirt saves these files with mode 600
 chmod 600 %{_sysconfdir}/libvirt/nwfilter/*.xml
 # Make sure libvirt picks up the new nwfilter defininitons
