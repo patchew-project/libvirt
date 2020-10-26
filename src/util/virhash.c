@@ -52,7 +52,7 @@ VIR_ONCE_GLOBAL_INIT(virHashAtomic);
  * virHashNew:
  * @dataFree: callback to free data
  *
- * Create a new GHashTable *.
+ * Create a new GHashTable * for use with string-based keys.
  *
  * Returns the newly created object.
  */
@@ -97,6 +97,8 @@ virHashAtomicDispose(void *obj)
  *
  * Free the hash @table and its contents. The userdata is
  * deallocated with function provided at creation time.
+ *
+ * Deprecated: consider using g_hash_table_unref instead
  */
 void
 virHashFree(GHashTable *table)
@@ -116,6 +118,10 @@ virHashFree(GHashTable *table)
  *
  * Add the @userdata to the hash @table. This can later be retrieved
  * by using @name. Duplicate entries generate errors.
+ *
+ * Deprecated: Consider using g_hash_table_insert insert. Note that
+ * g_hash_table_instead doesn't fail if entry exists. Also note that
+ * g_hash_table_insert doesn't copy the key.
  *
  * Returns 0 the addition succeeded and -1 in case of error.
  */
@@ -145,6 +151,9 @@ virHashAddEntry(GHashTable *table, const char *name, void *userdata)
  * Add the @userdata to the hash @table. This can later be retrieved
  * by using @name. Existing entry for this tuple
  * will be removed and freed with @f if found.
+ *
+ * Deprecated: consider using g_hash_table_insert insert. Note that
+ * g_hash_table_insert doesn't copy the key.
  *
  * Returns 0 the addition succeeded and -1 in case of error.
  */
@@ -182,6 +191,8 @@ virHashAtomicUpdate(virHashAtomicPtr table,
  *
  * Find the userdata specified by @name
  *
+ * Deprecated: consider using g_hash_table_lookup instead
+ *
  * Returns a pointer to the userdata
  */
 void *
@@ -201,6 +212,8 @@ virHashLookup(GHashTable *table,
  * @name: the name of the userdata
  *
  * Find whether entry specified by @name exists.
+ *
+ * Deprecated: consider using g_hash_table_contains instead
  *
  * Returns true if the entry exists and false otherwise
  */
@@ -222,6 +235,9 @@ virHashHasEntry(GHashTable *table,
  *
  * Find the userdata specified by @name
  * and remove it from the hash without freeing it.
+ *
+ * Deprecated: consider using g_hash_table_steal_extended once we upgrade to
+ * glib 2.58
  *
  * Returns a pointer to the userdata
  */
@@ -262,6 +278,8 @@ virHashAtomicSteal(virHashAtomicPtr table,
  *
  * Query the number of elements installed in the hash @table.
  *
+ * Deprecated: consider using g_hash_table_size instead
+ *
  * Returns the number of elements in the hash table or
  * -1 in case of error
  */
@@ -283,6 +301,8 @@ virHashSize(GHashTable *table)
  * Find the userdata specified by the @name and remove
  * it from the hash @table. Existing userdata for this tuple will be removed
  * and freed with @f.
+ *
+ * Deprecated: consider using g_hash_table_remove
  *
  * Returns 0 if the removal succeeded and -1 in case of error or not found.
  */
@@ -324,6 +344,9 @@ virHashRemoveEntry(GHashTable *table,
  *
  * If @iter fails and returns a negative value, the evaluation is stopped and -1
  * is returned.
+ *
+ * Deprecated: Consider using g_hash_table_foreach as replacement for
+ * virHashForEach, rewrite your code if it would require virHashForEachSafe.
  *
  * Returns 0 on success or -1 on failure.
  */
@@ -417,6 +440,8 @@ virHashSearcherWrapFunc(gpointer key,
  * will be removed from the hash table & its payload passed to the
  * data freer callback registered at creation.
  *
+ * Deprecated: consider using g_hash_table_foreach_remove instead
+ *
  * Returns number of items removed on success, -1 on failure
  */
 ssize_t
@@ -438,6 +463,8 @@ virHashRemoveSet(GHashTable *table,
  *
  * Free the hash @table's contents. The userdata is
  * deallocated with the function provided at creation time.
+ *
+ * Deprecated: consider using g_hash_table_remove_all instead
  */
 void
 virHashRemoveAll(GHashTable *table)
@@ -460,6 +487,8 @@ virHashRemoveAll(GHashTable *table)
  * returns non-zero will be returned by this function.
  * The elements are processed in a undefined order. Caller is
  * responsible for freeing the @name.
+ *
+ * Deprecated: consider using g_hash_table_find instead
  */
 void *virHashSearch(GHashTable *table,
                     virHashSearcher iter,
