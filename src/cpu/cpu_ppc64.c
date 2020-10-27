@@ -517,7 +517,7 @@ virCPUppc64Compare(virCPUDefPtr host,
                    virCPUDefPtr cpu,
                    bool failIncompatible)
 {
-    virCPUCompareResult ret;
+    virCPUCompareResult ret = -1;
     g_autofree char *message = NULL;
 
     if (!host || !host->model) {
@@ -528,7 +528,7 @@ virCPUppc64Compare(virCPUDefPtr host,
             VIR_WARN("unknown host CPU");
             ret = VIR_CPU_COMPARE_INCOMPATIBLE;
         }
-        return -1;
+        return ret;
     }
 
     ret = ppc64Compute(host, cpu, NULL, &message);
