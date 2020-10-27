@@ -8,6 +8,12 @@
 .#*
 *~
 
+# cscope related ignores
+cscope.files
+cscope.in.out
+cscope.out
+cscope.po.out
+
 # git related ignores
 *.rej
 *.orig
