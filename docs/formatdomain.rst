@@ -1207,6 +1207,7 @@ following collection of elements. :since:`Since 0.7.5`
      <vendor>Intel</vendor>
      <topology sockets='1' dies='1' cores='2' threads='1'/>
      <cache level='3' mode='emulate'/>
+     <maxphysaddr mode='emulate' bits='42'>
      <feature policy='disable' name='lahf_lm'/>
    </cpu>
    ...
@@ -1223,6 +1224,7 @@ following collection of elements. :since:`Since 0.7.5`
 
    <cpu mode='host-passthrough' migratable='off'>
      <cache mode='passthrough'/>
+     <maxphysaddr mode='passthrough'>
      <feature policy='disable' name='lahf_lm'/>
    ...
 
@@ -1445,6 +1447,25 @@ In case no restrictions need to be put on CPU model and its features, a simpler
       ``disable``
          The virtual CPU will report no CPU cache of the specified level (or no
          cache at all if the ``level`` attribute is missing).
+
+``maxphysaddress``
+   :since:`Since 6.10.0` the ``maxphysaddr`` element specifies the size in bits
+   of the physical addresses. The default behavior is that the vCPUs will see
+   what it is configured by default in the hypervisor itself.
+
+   ``mode``
+      The following values are supported:
+
+      ``passthrough``
+         The number of physical address bits reported by the host CPU will be
+         passed through to the virtual CPUs
+      ``emulate``
+         The hypervisor will define a specific value for the number of bits
+         of physical addresses via the ``bits`` arrtibute, which is mandatory.
+
+   ``bits``
+      The number of bits of the physical addresses that the vCPUs should see,
+      if the ``mode`` attribute is set to ``emulate``.
 
 Guest NUMA topology can be specified using the ``numa`` element. :since:`Since
 0.9.8`

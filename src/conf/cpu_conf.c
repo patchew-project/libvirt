@@ -83,6 +83,11 @@ VIR_ENUM_IMPL(virCPUCacheMode,
               "disable",
 );
 
+VIR_ENUM_IMPL(virCPUMaxPhysAddrMode,
+              VIR_CPU_MAX_PHYS_ADDR_MODE_LAST,
+              "emulate",
+              "passthrough",
+);
 
 virCPUDefPtr virCPUDefNew(void)
 {
@@ -128,6 +133,7 @@ virCPUDefFree(virCPUDefPtr def)
     if (g_atomic_int_dec_and_test(&def->refs)) {
         virCPUDefFreeModel(def);
         VIR_FREE(def->cache);
+        VIR_FREE(def->addr);
         VIR_FREE(def->tsc);
         VIR_FREE(def);
     }
@@ -248,6 +254,11 @@ virCPUDefCopyWithoutModel(const virCPUDef *cpu)
     if (cpu->cache) {
         copy->cache = g_new0(virCPUCacheDef, 1);
         *copy->cache = *cpu->cache;
+    }
+
+    if (cpu->addr) {
+        copy->addr = g_new0(virCPUMaxPhysAddrDef, 1);
+        *copy->addr = *cpu->addr;
     }
 
     if (cpu->tsc) {
@@ -670,6 +681,38 @@ virCPUDefParseXML(xmlXPathContextPtr ctxt,
         def->cache->mode = mode;
     }
 
+    if (virXPathInt("count(./maxphysaddr)", ctxt, &n) < 0) {
+        return -1;
+    } else if (n > 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("at most one CPU maximum physical address bits "
+                         "element may be specified"));
+        return -1;
+    } else if (n == 1) {
+        int bits = -1;
+        g_autofree char *strmode = NULL;
+        int mode;
+
+        if (virXPathBoolean("boolean(./maxphysaddr[1]/@bits)", ctxt) == 1 &&
+            (virXPathInt("string(./maxphysaddr[1]/@bits)", ctxt, &bits) < 0 ||
+             bits < 0)) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("CPU maximum physical address bits < 0"));
+            return -1;
+        }
+
+        if (!(strmode = virXPathString("string(./maxphysaddr[1]/@mode)", ctxt)) ||
+            (mode = virCPUMaxPhysAddrModeTypeFromString(strmode)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("missing or invalid CPU maximum physical "
+                             "address bits mode"));
+            return -1;
+        }
+
+        def->addr = g_new0(virCPUMaxPhysAddrDef, 1);
+        def->addr->bits = bits;
+        def->addr->mode = mode;
+    }
     *cpu = g_steal_pointer(&def);
     return 0;
 }
@@ -838,6 +881,15 @@ virCPUDefFormatBuf(virBufferPtr buf,
             virBufferAsprintf(buf, "level='%d' ", def->cache->level);
         virBufferAsprintf(buf, "mode='%s'",
                           virCPUCacheModeTypeToString(def->cache->mode));
+        virBufferAddLit(buf, "/>\n");
+    }
+
+    if (def->addr) {
+        virBufferAddLit(buf, "<maxphysaddr ");
+        if (def->addr->bits != -1)
+            virBufferAsprintf(buf, "bits='%d' ", def->addr->bits);
+        virBufferAsprintf(buf, "mode='%s'",
+                          virCPUMaxPhysAddrModeTypeToString(def->addr->mode));
         virBufferAddLit(buf, "/>\n");
     }
 
