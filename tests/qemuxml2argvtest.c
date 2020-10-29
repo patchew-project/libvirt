@@ -3409,6 +3409,13 @@ mymain(void)
 
     DO_TEST_CAPS_LATEST("virtio-9p-multidevs");
 
+    DO_TEST("cpu-phys-bits-passthrough", QEMU_CAPS_KVM, QEMU_CAPS_CPU_PHYS_BITS);
+    DO_TEST("cpu-phys-bits-emulate", QEMU_CAPS_KVM, QEMU_CAPS_CPU_PHYS_BITS);
+    DO_TEST("cpu-phys-bits-emulate2", QEMU_CAPS_KVM, QEMU_CAPS_CPU_PHYS_BITS);
+    DO_TEST_PARSE_ERROR("cpu-phys-bits-emulate3", QEMU_CAPS_KVM);
+    DO_TEST_PARSE_ERROR("cpu-phys-bits-passthrough2", QEMU_CAPS_KVM);
+    DO_TEST_PARSE_ERROR("cpu-phys-bits-passthrough3", QEMU_CAPS_KVM);
+
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
 

@@ -6507,6 +6507,34 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
             virBufferAddLit(&buf, ",l3-cache=off");
     }
 
+    if (def->cpu && def->cpu->addr) {
+        virCPUMaxPhysAddrDefPtr addr = def->cpu->addr;
+
+        switch (addr->mode) {
+        case VIR_CPU_MAX_PHYS_ADDR_MODE_PASSTHROUGH:
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_CPU_PHYS_BITS))
+               virBufferAddLit(&buf, ",host-phys-bits=on");
+            else
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Setting host physical address bits is "
+                                 "not supported by this QEMU"));
+            break;
+
+        case VIR_CPU_MAX_PHYS_ADDR_MODE_EMULATE:
+            if (addr->bits != -1 &&
+                virQEMUCapsGet(qemuCaps, QEMU_CAPS_CPU_PHYS_BITS))
+                virBufferAsprintf(&buf, ",phys-bits=%d", addr->bits);
+            else
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Physical address bits unspecified or "
+                                 "setting it not supported by this QEMU"));
+            break;
+
+        case VIR_CPU_MAX_PHYS_ADDR_MODE_LAST:
+            break;
+        }
+    }
+
     cpu = virBufferContentAndReset(&cpu_buf);
     cpu_flags = virBufferContentAndReset(&buf);
 

@@ -603,6 +603,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "virtio-balloon.free-page-reporting",
               "block-export-add",
               "netdev.vhost-vdpa",
+              "host-phys-bits",
     );
 
 
@@ -1679,6 +1680,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMaxCPU[] = {
     { "unavailable-features", QEMU_CAPS_CPU_UNAVAILABLE_FEATURES },
     { "kvm-no-adjvtime", QEMU_CAPS_CPU_KVM_NO_ADJVTIME },
     { "migratable", QEMU_CAPS_CPU_MIGRATABLE },
+    { "host-phys-bits", QEMU_CAPS_CPU_PHYS_BITS },
 };
 
 static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
