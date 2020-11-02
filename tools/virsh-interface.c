@@ -440,11 +440,7 @@ static const vshCmdInfo info_interface_mac[] = {
 };
 
 static const vshCmdOptDef opts_interface_mac[] = {
-    {.name = "interface",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
-     .help = N_("interface name")
-    },
+    VIRSH_COMMON_OPT_INTERFACE(N_("interface name"), 0),
     {.name = NULL}
 };
 
