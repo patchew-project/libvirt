@@ -785,11 +785,7 @@ static const vshCmdInfo info_interface_bridge[] = {
 };
 
 static const vshCmdOptDef opts_interface_bridge[] = {
-    {.name = "interface",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
-     .help = N_("existing interface name")
-    },
+    VIRSH_COMMON_OPT_INTERFACE(N_("existing interface name"), 0),
     {.name = "bridge",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
