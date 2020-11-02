@@ -22,6 +22,10 @@
 
 #include "vsh.h"
 
+enum {
+    VIRSH_INTERFACE_COMPLETER_MAC = 1 << 0,
+};
+
 char ** virshInterfaceCompleter(vshControl *ctl,
                                 const vshCmd *cmd,
                                 unsigned int flags);

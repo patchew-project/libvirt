@@ -38,7 +38,8 @@ virshInterfaceCompleter(vshControl *ctl,
     VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIR_CONNECT_LIST_INTERFACES_ACTIVE |
-                  VIR_CONNECT_LIST_INTERFACES_INACTIVE,
+                  VIR_CONNECT_LIST_INTERFACES_INACTIVE |
+                  VIRSH_INTERFACE_COMPLETER_MAC,
                   NULL);
 
     if (!priv->conn || virConnectIsAlive(priv->conn) <= 0)
@@ -50,9 +51,13 @@ virshInterfaceCompleter(vshControl *ctl,
     tmp = g_new0(char *, nifaces + 1);
 
     for (i = 0; i < nifaces; i++) {
-        const char *name = virInterfaceGetName(ifaces[i]);
-
-        tmp[i] = g_strdup(name);
+        if (!(flags & VIRSH_INTERFACE_COMPLETER_MAC)) {
+            const char *name = virInterfaceGetName(ifaces[i]);
+            tmp[i] = g_strdup(name);
+        } else {
+            const char *mac = virInterfaceGetMACString(ifaces[i]);
+            tmp[i] = g_strdup(mac);
+        }
     }
 
     ret = g_steal_pointer(&tmp);

@@ -404,11 +404,9 @@ static const vshCmdInfo info_interface_name[] = {
 };
 
 static const vshCmdOptDef opts_interface_name[] = {
-    {.name = "interface",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
-     .help = N_("interface mac")
-    },
+    VIRSH_COMMON_OPT_INTERFACE(N_("interface mac"),
+                               VIR_CONNECT_LIST_INTERFACES_ACTIVE |
+                               VIRSH_INTERFACE_COMPLETER_MAC),
     {.name = NULL}
 };
 
