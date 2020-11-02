@@ -61,6 +61,15 @@
      .completer_flags = cflags, \
     }
 
+#define VIRSH_COMMON_OPT_NETWORK_DHCP_MAC(_helpstr, cflags) \
+    {.name = "mac", \
+     .type = VSH_OT_STRING, \
+     .flags = VSH_OFLAG_NONE, \
+     .help = _helpstr, \
+     .completer = virshNetworkDhcpMacCompleter, \
+     .completer_flags = cflags, \
+    }
+
 
 virNetworkPtr
 virshCommandOptNetworkBy(vshControl *ctl, const vshCmd *cmd,
@@ -1373,11 +1382,7 @@ static const vshCmdInfo info_network_dhcp_leases[] = {
 
 static const vshCmdOptDef opts_network_dhcp_leases[] = {
     VIRSH_COMMON_OPT_NETWORK_FULL(VIR_CONNECT_LIST_NETWORKS_ACTIVE),
-    {.name = "mac",
-     .type = VSH_OT_STRING,
-     .flags = VSH_OFLAG_NONE,
-     .help = N_("MAC address")
-    },
+    VIRSH_COMMON_OPT_NETWORK_DHCP_MAC(N_("MAC address"), 0),
     {.name = NULL}
 };
 
