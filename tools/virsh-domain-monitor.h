@@ -21,6 +21,7 @@
 #pragma once
 
 #include "virsh.h"
+#include "virsh-domain.h"
 
 char *virshGetDomainDescription(vshControl *ctl, virDomainPtr dom,
                                 bool title, unsigned int flags)

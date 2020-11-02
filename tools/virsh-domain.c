@@ -3053,12 +3053,7 @@ static const vshCmdInfo info_domif_setlink[] = {
 
 static const vshCmdOptDef opts_domif_setlink[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(0),
-    {.name = "interface",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
-     .completer = virshDomainInterfaceCompleter,
-     .help = N_("interface device (MAC Address)")
-    },
+    VIRSH_DOMAIN_OPT_INTERFACE(N_("interface device (MAC Address)"), VSH_OFLAG_REQ, 0),
     {.name = "state",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
@@ -3225,12 +3220,7 @@ static const vshCmdInfo info_domiftune[] = {
 
 static const vshCmdOptDef opts_domiftune[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(0),
-    {.name = "interface",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
-     .completer = virshDomainInterfaceCompleter,
-     .help = N_("interface device (MAC Address)")
-    },
+    VIRSH_DOMAIN_OPT_INTERFACE(N_("interface device (MAC Address)"), VSH_OFLAG_REQ, 0),
     {.name = "inbound",
      .type = VSH_OT_STRING,
      .help = N_("control domain's incoming traffics")
