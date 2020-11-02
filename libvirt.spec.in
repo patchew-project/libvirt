@@ -1056,9 +1056,9 @@ exit 1
 %endif
 
 %if %{with_storage_gluster}
-    %define arg_storage_gluster -Dstorage_gluster=enabled
+    %define arg_storage_gluster -Dstorage_glusterfs=enabled
 %else
-    %define arg_storage_gluster -Dstorage_gluster=disabled
+    %define arg_storage_gluster -Dstorage_glusterfs=disabled
 %endif
 
 %if %{with_storage_zfs}
