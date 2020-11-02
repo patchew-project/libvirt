@@ -1877,6 +1877,9 @@ typedef enum {
 
     VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT = 1 << 14,
     VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT  = 1 << 15,
+
+    VIR_CONNECT_LIST_DOMAINS_HAS_VNC        = 1 << 16,
+    VIR_CONNECT_LIST_DOMAINS_NO_VNC         = 1 << 17,
 } virConnectListAllDomainsFlags;
 
 int                     virConnectListAllDomains (virConnectPtr conn,

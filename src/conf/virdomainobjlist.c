@@ -912,6 +912,21 @@ virDomainObjMatchFilter(virDomainObjPtr vm,
             return false;
     }
 
+    /* filter by vnc existence */
+    if (MATCH(VIR_CONNECT_LIST_DOMAINS_FILTERS_VNC)) {
+        int i;
+        bool hasVnc = false;
+        for (i = 0; i < vm->def->ngraphics; ++i) {
+            if (vm->def->graphics[i]->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC) {
+                hasVnc = true;
+                break;
+            }
+        }
+        if (!((MATCH(VIR_CONNECT_LIST_DOMAINS_HAS_VNC) && hasVnc) ||
+              (MATCH(VIR_CONNECT_LIST_DOMAINS_NO_VNC) && !hasVnc)))
+            return false;
+    }
+
     return true;
 }
 #undef MATCH
