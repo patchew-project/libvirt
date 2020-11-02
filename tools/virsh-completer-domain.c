@@ -581,3 +581,39 @@ virshDomainCpulistCompleter(vshControl *ctl,
 
     return virshCommaStringListComplete(cpuid, (const char **)cpulist);
 }
+
+char **
+virshDomainVcpulistViaAgentCompleter(vshControl *ctl,
+                                     const vshCmd *cmd,
+                                     unsigned int flags)
+{
+    virDomainPtr dom = NULL;
+    int nvcpus;
+    unsigned int id;
+    VIR_AUTOSTRINGLIST cpulist = NULL;
+    const char *vcpuid = NULL;
+    char **ret = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return NULL;
+
+    if (vshCommandOptStringQuiet(ctl, cmd, "cpulist", &vcpuid) < 0)
+        goto cleanup;
+
+    /* retrieve vcpu count from the guest instead of the hypervisor */
+    if ((nvcpus = virDomainGetVcpusFlags(dom, VIR_DOMAIN_VCPU_GUEST)) < 0)
+        goto cleanup;
+
+    cpulist = g_new0(char *, nvcpus + 1);
+
+    for (id = 0; id < nvcpus; id++)
+        cpulist[id] = g_strdup_printf("%u", id);
+
+    ret = virshCommaStringListComplete(vcpuid, (const char **)cpulist);
+
+ cleanup:
+    virshDomainFree(dom);
+    return ret;
+}
