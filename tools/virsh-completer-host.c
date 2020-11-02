@@ -136,3 +136,38 @@ virshCellnoCompleter(vshControl *ctl,
 
     return g_steal_pointer(&tmp);
 }
+
+
+char **
+virshCpuCompleter(vshControl *ctl,
+                  const vshCmd *cmd G_GNUC_UNUSED,
+                  unsigned int flags)
+{
+    int i, cpuid = 0, cpunum, offset = 0;
+    unsigned int online;
+    g_autofree unsigned char *cpumap = NULL;
+    char **ret = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
+    virshControlPtr priv = ctl->privData;
+
+    virCheckFlags(0, NULL);
+
+    if ((cpunum = virNodeGetCPUMap(priv->conn, &cpumap, &online, 0)) < 0)
+        return NULL;
+
+    tmp = g_new0(char *, online + 1);
+
+    for (i = 0; i < cpunum; i++) {
+        if (VIR_CPU_USED(cpumap, cpuid) == 0) {
+            offset += 1;
+            cpuid += 1;
+            continue;
+        } else {
+            tmp[i - offset] = g_strdup_printf("%u", cpuid++);
+        }
+    }
+
+    ret = g_steal_pointer(&tmp);
+
+    return ret;
+}
