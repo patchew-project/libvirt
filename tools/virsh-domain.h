@@ -57,3 +57,7 @@ extern const vshCmdDef domManagementCmds[];
      .completer = virshDomainInterfaceCompleter, \
      .completer_flags = VIRSH_DOMAIN_INTERFACE_COMPLETER_MAC, \
     }
+
+VIR_ENUM_DECL(virDomainProcessSignal);
+VIR_ENUM_DECL(virDomainLifecycle);
+VIR_ENUM_DECL(virDomainLifecycleAction);
