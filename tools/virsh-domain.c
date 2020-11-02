@@ -12291,12 +12291,7 @@ static const vshCmdOptDef opts_detach_interface[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("network interface type")
     },
-    {.name = "mac",
-     .type = VSH_OT_STRING,
-     .completer = virshDomainInterfaceCompleter,
-     .completer_flags = VIRSH_DOMAIN_INTERFACE_COMPLETER_MAC,
-     .help = N_("MAC address")
-    },
+    VIRSH_DOMAIN_OPT_MAC(N_("MAC address"), VSH_OFLAG_REQ_OPT),
     VIRSH_COMMON_OPT_DOMAIN_PERSISTENT,
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
     VIRSH_COMMON_OPT_DOMAIN_LIVE,
