@@ -18,14 +18,17 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#define VIRSH_COMMON_OPT_INTERFACE(cflags) \
+#define VIRSH_COMMON_OPT_INTERFACE(_helpstr, cflags) \
     {.name = "interface", \
      .type = VSH_OT_DATA, \
      .flags = VSH_OFLAG_REQ, \
-     .help = N_("interface name or MAC address"), \
+     .help = _helpstr, \
      .completer = virshInterfaceCompleter, \
      .completer_flags = cflags, \
     }
+
+#define VIRSH_COMMON_OPT_INTERFACE_FULL(cflags) \
+    VIRSH_COMMON_OPT_INTERFACE(N_("interface name or MAC address"), cflags)
 
 #include <config.h>
 #include "virsh-interface.h"
@@ -101,7 +104,7 @@ static const vshCmdInfo info_interface_edit[] = {
 };
 
 static const vshCmdOptDef opts_interface_edit[] = {
-    VIRSH_COMMON_OPT_INTERFACE(0),
+    VIRSH_COMMON_OPT_INTERFACE_FULL(0),
     {.name = NULL}
 };
 
@@ -473,7 +476,7 @@ static const vshCmdInfo info_interface_dumpxml[] = {
 };
 
 static const vshCmdOptDef opts_interface_dumpxml[] = {
-    VIRSH_COMMON_OPT_INTERFACE(0),
+    VIRSH_COMMON_OPT_INTERFACE_FULL(0),
     {.name = "inactive",
      .type = VSH_OT_BOOL,
      .help = N_("show inactive defined XML")
@@ -570,7 +573,7 @@ static const vshCmdInfo info_interface_undefine[] = {
 };
 
 static const vshCmdOptDef opts_interface_undefine[] = {
-    VIRSH_COMMON_OPT_INTERFACE(0),
+    VIRSH_COMMON_OPT_INTERFACE_FULL(0),
     {.name = NULL}
 };
 
@@ -609,7 +612,7 @@ static const vshCmdInfo info_interface_start[] = {
 };
 
 static const vshCmdOptDef opts_interface_start[] = {
-    VIRSH_COMMON_OPT_INTERFACE(VIR_CONNECT_LIST_INTERFACES_INACTIVE),
+    VIRSH_COMMON_OPT_INTERFACE_FULL(VIR_CONNECT_LIST_INTERFACES_INACTIVE),
     {.name = NULL}
 };
 
@@ -648,7 +651,7 @@ static const vshCmdInfo info_interface_destroy[] = {
 };
 
 static const vshCmdOptDef opts_interface_destroy[] = {
-    VIRSH_COMMON_OPT_INTERFACE(VIR_CONNECT_LIST_INTERFACES_ACTIVE),
+    VIRSH_COMMON_OPT_INTERFACE_FULL(VIR_CONNECT_LIST_INTERFACES_ACTIVE),
     {.name = NULL}
 };
 
