@@ -39,3 +39,21 @@ typedef enum {
 VIR_ENUM_DECL(virshDomainHostnameSource);
 
 extern const vshCmdDef domManagementCmds[];
+
+#define VIRSH_DOMAIN_OPT_INTERFACE(_helpstr, oflags, cflags) \
+    {.name = "interface", \
+     .type = VSH_OT_STRING, \
+     .flags = oflags, \
+     .help = _helpstr, \
+     .completer = virshDomainInterfaceCompleter, \
+     .completer_flags = cflags, \
+    }
+
+#define VIRSH_DOMAIN_OPT_MAC(_helpstr, oflags) \
+    {.name = "mac", \
+     .type = VSH_OT_STRING, \
+     .flags = oflags, \
+     .help = _helpstr, \
+     .completer = virshDomainInterfaceCompleter, \
+     .completer_flags = VIRSH_DOMAIN_INTERFACE_COMPLETER_MAC, \
+    }
