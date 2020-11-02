@@ -23,7 +23,7 @@
      .type = VSH_OT_DATA, \
      .flags = VSH_OFLAG_REQ, \
      .help = N_("interface name or MAC address"), \
-     .completer = virshInterfaceNameCompleter, \
+     .completer = virshInterfaceCompleter, \
      .completer_flags = cflags, \
     }
 

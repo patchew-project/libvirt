@@ -26,9 +26,9 @@
 #include "virstring.h"
 
 char **
-virshInterfaceNameCompleter(vshControl *ctl,
-                            const vshCmd *cmd G_GNUC_UNUSED,
-                            unsigned int flags)
+virshInterfaceCompleter(vshControl *ctl,
+                        const vshCmd *cmd G_GNUC_UNUSED,
+                        unsigned int flags)
 {
     virshControlPtr priv = ctl->privData;
     virInterfacePtr *ifaces = NULL;

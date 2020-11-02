@@ -22,6 +22,6 @@
 
 #include "vsh.h"
 
-char ** virshInterfaceNameCompleter(vshControl *ctl,
-                                    const vshCmd *cmd,
-                                    unsigned int flags);
+char ** virshInterfaceCompleter(vshControl *ctl,
+                                const vshCmd *cmd,
+                                unsigned int flags);
