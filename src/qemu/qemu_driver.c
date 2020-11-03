@@ -19126,6 +19126,24 @@ qemuDomainSnapshotWriteMetadataIter(void *payload,
 
 
 static int
+qemuDomainCheckpointWriteMetadataIter(void *payload,
+                                      const char *name G_GNUC_UNUSED,
+                                      void *opaque)
+{
+    struct qemuDomainMomentWriteMetadataData *data = opaque;
+    virQEMUDriverConfigPtr cfg =  virQEMUDriverGetConfig(data->driver);
+    int ret;
+
+    ret = qemuCheckpointWriteMetadata(data->vm, payload,
+                                      data->driver->xmlopt,
+                                      cfg->snapshotDir);
+
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
+static int
 qemuDomainRenameCallback(virDomainObjPtr vm,
                          const char *new_name,
                          unsigned int flags,
@@ -19189,6 +19207,11 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     if (virDomainSnapshotForEach(vm->snapshots,
                                  qemuDomainSnapshotWriteMetadataIter,
                                  &data) < 0)
+        goto cleanup;
+
+    if (virDomainCheckpointForEach(vm->checkpoints,
+                                   qemuDomainCheckpointWriteMetadataIter,
+                                   &data) < 0)
         goto cleanup;
 
     if (virDomainDefSave(vm->def, driver->xmlopt, cfg->configDir) < 0)
