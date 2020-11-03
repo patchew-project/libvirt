@@ -19152,10 +19152,6 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
         }
     }
 
-    event_old = virDomainEventLifecycleNewFromObj(vm,
-                                            VIR_DOMAIN_EVENT_UNDEFINED,
-                                            VIR_DOMAIN_EVENT_UNDEFINED_RENAMED);
-
     /* Switch name in domain definition. */
     old_dom_name = vm->def->name;
     vm->def->name = new_dom_name;
@@ -19182,6 +19178,9 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
         }
     }
 
+    event_old = virDomainEventLifecycleNew(vm->def->id, old_dom_name, vm->def->uuid,
+                                           VIR_DOMAIN_EVENT_UNDEFINED,
+                                           VIR_DOMAIN_EVENT_UNDEFINED_RENAMED);
     event_new = virDomainEventLifecycleNewFromObj(vm,
                                               VIR_DOMAIN_EVENT_DEFINED,
                                               VIR_DOMAIN_EVENT_DEFINED_RENAMED);
