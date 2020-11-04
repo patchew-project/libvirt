@@ -1,38 +1,32 @@
 <!-- extra info from qemu:
-  'model.level': '0xd'
-  'model.stepping': '4'
+  'model.level': '21'
+  'model.stepping': '1'
   'model.xlevel': '0x80000008'
-  'model.model_id': 'Intel Core Processor (Haswell)'
-  'version.version': '3'
-  'property.stepping': '4'
-  'property.model-id': 'Intel Core Processor (Haswell, IBRS)'
+  'model.model_id': 'Intel Atom Processor (Denverton)'
+  'version.version': '2'
+  'property.monitor': 'off'
+  'version.note': 'no MPX, no MONITOR'
 -->
 <cpus>
-  <model name='Haswell-IBRS'>
+  <model name='Denverton'>
     <decode host='on' guest='on'/>
-    <signature family='6' model='60'/>
+    <signature family='6' model='95'/>
     <vendor name='Intel'/>
-    <feature name='abm'/>
+    <feature name='3dnowprefetch'/>
     <feature name='aes'/>
     <feature name='apic'/>
     <feature name='arat'/>
-    <feature name='avx'/>
-    <feature name='avx2'/>
-    <feature name='bmi1'/>
-    <feature name='bmi2'/>
+    <feature name='arch-capabilities'/>
     <feature name='clflush'/>
+    <feature name='clflushopt'/>
     <feature name='cmov'/>
     <feature name='cx16'/>
     <feature name='cx8'/>
     <feature name='de'/>
     <feature name='erms'/>
-    <feature name='f16c'/>
-    <feature name='fma'/>
     <feature name='fpu'/>
     <feature name='fsgsbase'/>
     <feature name='fxsr'/>
-    <feature name='hle'/>
-    <feature name='invpcid'/>
     <feature name='lahf_lm'/>
     <feature name='lm'/>
     <feature name='mca'/>
@@ -44,19 +38,24 @@
     <feature name='nx'/>
     <feature name='pae'/>
     <feature name='pat'/>
-    <feature name='pcid'/>
     <feature name='pclmuldq'/>
+    <feature name='pdpe1gb'/>
     <feature name='pge'/>
     <feature name='pni'/>
     <feature name='popcnt'/>
     <feature name='pse'/>
     <feature name='pse36'/>
+    <feature name='rdctl-no'/>
     <feature name='rdrand'/>
+    <feature name='rdseed'/>
     <feature name='rdtscp'/>
-    <feature name='rtm'/>
     <feature name='sep'/>
+    <feature name='sha-ni'/>
+    <feature name='skip-l1dfl-vmentry'/>
+    <feature name='smap'/>
     <feature name='smep'/>
     <feature name='spec-ctrl'/>
+    <feature name='ssbd'/>
     <feature name='sse'/>
     <feature name='sse2'/>
     <feature name='sse4.1'/>
@@ -67,7 +66,9 @@
     <feature name='tsc-deadline'/>
     <feature name='vme'/>
     <feature name='x2apic'/>
+    <feature name='xgetbv1'/>
     <feature name='xsave'/>
+    <feature name='xsavec'/>
     <feature name='xsaveopt'/>
   </model>
 </cpus>

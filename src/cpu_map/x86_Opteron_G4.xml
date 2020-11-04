@@ -1,7 +1,13 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '2'
+  'model.xlevel': '0x8000001A'
+  'model.model_id': 'AMD Opteron 62xx class CPU'
+-->
 <cpus>
   <model name='Opteron_G4'>
     <decode host='on' guest='on'/>
-    <signature family='21' model='1'/> <!-- 600f10 -->
+    <signature family='21' model='1'/>
     <vendor name='AMD'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>
@@ -24,6 +30,8 @@
     <feature name='mmx'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
+    <feature name='npt'/>
+    <feature name='nrip-save'/>
     <feature name='nx'/>
     <feature name='pae'/>
     <feature name='pat'/>
@@ -45,6 +53,7 @@
     <feature name='svm'/>
     <feature name='syscall'/>
     <feature name='tsc'/>
+    <feature name='vme'/>
     <feature name='xop'/>
     <feature name='xsave'/>
   </model>

@@ -1,7 +1,16 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '2'
+  'model.xlevel': '0x8000001E'
+  'model.model_id': 'AMD EPYC Processor'
+  'model.cache_info': '&epyc_cache_info'
+  'model.use_epyc_apic_id_encoding': '1'
+  'version.version': '1'
+-->
 <cpus>
   <model name='EPYC'>
     <decode host='on' guest='on'/>
-    <signature family='23' model='1'/> <!-- 800f10 -->
+    <signature family='23' model='1'/>
     <vendor name='AMD'/>
     <feature name='3dnowprefetch'/>
     <feature name='abm'/>
@@ -33,10 +42,11 @@
     <feature name='misalignsse'/>
     <feature name='mmx'/>
     <feature name='mmxext'/>
-    <feature name='monitor'/>
     <feature name='movbe'/>
     <feature name='msr'/>
     <feature name='mtrr'/>
+    <feature name='npt'/>
+    <feature name='nrip-save'/>
     <feature name='nx'/>
     <feature name='osvw'/>
     <feature name='pae'/>

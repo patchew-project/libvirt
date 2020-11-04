@@ -1,3 +1,11 @@
+<!-- extra info from qemu:
+  'model.level': '0xd'
+  'model.stepping': '0'
+  'model.xlevel': '0x8000001E'
+  'model.model_id': 'AMD EPYC-Rome Processor'
+  'model.cache_info': '&epyc_rome_cache_info'
+  'model.use_epyc_apic_id_encoding': '1'
+-->
 <cpus>
   <model name='EPYC-Rome'>
     <decode host='on' guest='on'/>
@@ -79,5 +87,6 @@
     <feature name='xsavec'/>
     <feature name='xsaveerptr'/>
     <feature name='xsaveopt'/>
+    <feature name='xsaves'/>
   </model>
 </cpus>

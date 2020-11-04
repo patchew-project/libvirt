@@ -1,6 +1,15 @@
+<!-- extra info from qemu:
+  'model.level': '1'
+  'model.stepping': '3'
+  'model.xlevel': '0'
+  'model.model_id': ''
+-->
 <cpus>
   <model name='pentium'>
     <decode host='on' guest='on'/>
+    <signature family='5' model='4'/>
+    <vendor name='Intel'/>
+    <feature name='apic'/>
     <feature name='cx8'/>
     <feature name='de'/>
     <feature name='fpu'/>
