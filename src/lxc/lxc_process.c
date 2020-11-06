@@ -855,7 +855,7 @@ int virLXCProcessStop(virLXCDriverPtr driver,
               vm->def->name, (int)vm->pid, (int)reason);
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("VM '%s' not active", vm->def->name);
-        return 0;
+        goto cleanup;
     }
 
     priv = vm->privateData;
