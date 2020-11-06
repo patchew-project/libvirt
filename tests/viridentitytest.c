@@ -85,14 +85,6 @@ static int testIdentityGetSystem(const void *data)
     const char *val;
     int rc;
 
-#if !WITH_SELINUX
-    if (context) {
-        VIR_DEBUG("libvirt not compiled with SELinux, skipping this test");
-        ret = EXIT_AM_SKIP;
-        return -1;
-    }
-#endif
-
     if (!(ident = virIdentityGetSystem())) {
         VIR_DEBUG("Unable to get system identity");
         return -1;
