@@ -36,6 +36,85 @@ virQEMUDriver driver;
 
 
 static int
+testQemuAgentSSHKeys(const void *data)
+{
+    virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
+    qemuMonitorTestPtr test = qemuMonitorTestNewAgent(xmlopt);
+    qemuAgentSSHAuthorizedKeyPtr *keys = NULL;
+    int nkeys = 0, i;
+    int ret = -1;
+
+    if (!test)
+        return -1;
+
+    if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItem(test, "guest-ssh-get-authorized-keys",
+                               "{ \"return\" : [\"algo1 key1 comments1\","
+                               " \"algo2 key2 comments2\"] }") < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItem(test, "guest-ssh-add-authorized-keys",
+                               "{ \"return\" : {} }") < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItem(test, "guest-ssh-remove-authorized-keys",
+                               "{ \"return\" : {} }") < 0)
+        goto cleanup;
+
+    if ((nkeys = qemuAgentSSHGetAuthorizedKeys(qemuMonitorTestGetAgent(test),
+                                               "user",
+                                               &keys,
+                                               true)) < 0)
+        goto cleanup;
+
+    if (nkeys != 2) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "expected 2 keys, got %d", nkeys);
+        ret = -1;
+        goto cleanup;
+    }
+
+    if (STRNEQ(keys[1]->key, "algo2 key2 comments2")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "Unexpected key returned: %s", keys[1]->key);
+        ret = -1;
+        goto cleanup;
+    }
+
+    if ((ret = qemuAgentSSHAddAuthorizedKeys(qemuMonitorTestGetAgent(test),
+                                             "user",
+                                             keys,
+                                             nkeys,
+                                             true,
+                                             true)) < 0)
+        goto cleanup;
+
+    if ((ret = qemuAgentSSHRemoveAuthorizedKeys(qemuMonitorTestGetAgent(test),
+                                                "user",
+                                                keys,
+                                                nkeys,
+                                                true)) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    for (i = 0; i < nkeys; i++)
+        qemuAgentSSHAuthorizedKeyFree(keys[i]);
+    VIR_FREE(keys);
+    qemuMonitorTestFree(test);
+    return ret;
+}
+
+
+static int
 testQemuAgentFSFreeze(const void *data)
 {
     virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
@@ -1315,6 +1394,7 @@ mymain(void)
     DO_TEST(Users);
     DO_TEST(OSInfo);
     DO_TEST(Timezone);
+    DO_TEST(SSHKeys);
 
     DO_TEST(Timeout); /* Timeout should always be called last */
 

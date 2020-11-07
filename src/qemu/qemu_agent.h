@@ -67,6 +67,12 @@ typedef enum {
     QEMU_AGENT_SHUTDOWN_LAST,
 } qemuAgentShutdownMode;
 
+typedef struct _qemuAgentSSHAuthorizedKey qemuAgentSSHAuthorizedKey;
+typedef qemuAgentSSHAuthorizedKey *qemuAgentSSHAuthorizedKeyPtr;
+struct _qemuAgentSSHAuthorizedKey {
+    char *key;
+};
+
 typedef struct _qemuAgentDiskInfo qemuAgentDiskInfo;
 typedef qemuAgentDiskInfo *qemuAgentDiskInfoPtr;
 struct _qemuAgentDiskInfo {
@@ -170,3 +176,23 @@ int qemuAgentGetTimezone(qemuAgentPtr mon,
 
 void qemuAgentSetResponseTimeout(qemuAgentPtr mon,
                                  int timeout);
+
+void qemuAgentSSHAuthorizedKeyFree(qemuAgentSSHAuthorizedKeyPtr key);
+
+int qemuAgentSSHGetAuthorizedKeys(qemuAgentPtr agent,
+                                  const char *user,
+                                  qemuAgentSSHAuthorizedKeyPtr **keys,
+                                  bool report_unsupported);
+
+int qemuAgentSSHAddAuthorizedKeys(qemuAgentPtr agent,
+                                  const char *user,
+                                  qemuAgentSSHAuthorizedKeyPtr *keys,
+                                  size_t nkeys,
+                                  bool reset,
+                                  bool report_unsupported);
+
+int qemuAgentSSHRemoveAuthorizedKeys(qemuAgentPtr agent,
+                                     const char *user,
+                                     qemuAgentSSHAuthorizedKeyPtr *keys,
+                                     size_t nkeys,
+                                     bool report_unsupported);

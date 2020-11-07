@@ -2496,3 +2496,161 @@ qemuAgentSetResponseTimeout(qemuAgentPtr agent,
 {
     agent->timeout = timeout;
 }
+
+void qemuAgentSSHAuthorizedKeyFree(qemuAgentSSHAuthorizedKeyPtr key)
+{
+    if (!key)
+        return;
+
+    g_free(key->key);
+    g_free(key);
+}
+
+/* Returns: 0 on success
+ *          -2 when agent command is not supported by the agent and
+ *             'report_unsupported' is false (libvirt error is not reported)
+ *          -1 otherwise (libvirt error is reported)
+ */
+int qemuAgentSSHGetAuthorizedKeys(qemuAgentPtr agent,
+                                  const char *user,
+                                  qemuAgentSSHAuthorizedKeyPtr **keys,
+                                  bool report_unsupported)
+{
+    g_autoptr(virJSONValue) cmd = NULL;
+    g_autoptr(virJSONValue) reply = NULL;
+    virJSONValuePtr data = NULL;
+    size_t ndata;
+    size_t i;
+    int rc;
+    qemuAgentSSHAuthorizedKeyPtr *keys_ret = NULL;
+
+    if (!(cmd = qemuAgentMakeCommand("guest-ssh-get-authorized-keys",
+                                     "s:username", user,
+                                      NULL)))
+        return -1;
+
+    if ((rc = qemuAgentCommandFull(agent, cmd, &reply, agent->timeout,
+                                   report_unsupported)) < 0)
+        return rc;
+
+    if (!(data = virJSONValueObjectGetArray(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("qemu agent didn't return an array of keys"));
+        return -1;
+    }
+    ndata = virJSONValueArraySize(data);
+
+    keys_ret = g_new0(qemuAgentSSHAuthorizedKeyPtr, ndata);
+
+    for (i = 0; i < ndata; i++) {
+        virJSONValuePtr entry = virJSONValueArrayGet(data, i);
+
+        if (!entry) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("array element missing in guest-ssh-get-authorized-keys return "
+                             "value"));
+            goto cleanup;
+        }
+
+        keys_ret[i] = g_new0(qemuAgentSSHAuthorizedKey, 1);
+        keys_ret[i]->key = g_strdup(virJSONValueGetString(entry));
+    }
+
+    *keys = g_steal_pointer(&keys_ret);
+    return ndata;
+
+ cleanup:
+    if (keys_ret) {
+        for (i = 0; i < ndata; i++)
+            qemuAgentSSHAuthorizedKeyFree(keys_ret[i]);
+        g_free(keys_ret);
+    }
+    return -1;
+}
+
+static virJSONValuePtr
+makeJSONArrayFromKeys(qemuAgentSSHAuthorizedKeyPtr *keys,
+                      size_t nkeys)
+{
+    g_autoptr(virJSONValue) jkeys = NULL;
+    size_t i;
+
+    jkeys = virJSONValueNewArray();
+
+    for (i = 0; i < nkeys; i++) {
+        qemuAgentSSHAuthorizedKeyPtr k = keys[i];
+
+        if (virJSONValueArrayAppendString(jkeys, k->key) < 0)
+            return NULL;
+    }
+
+    return g_steal_pointer(&jkeys);
+}
+
+/* Returns: 0 on success
+ *          -2 when agent command is not supported by the agent and
+ *             'report_unsupported' is false (libvirt error is not reported)
+ *          -1 otherwise (libvirt error is reported)
+ */
+int qemuAgentSSHAddAuthorizedKeys(qemuAgentPtr agent,
+                                  const char *user,
+                                  qemuAgentSSHAuthorizedKeyPtr *keys,
+                                  size_t nkeys,
+                                  bool reset,
+                                  bool report_unsupported)
+{
+    g_autoptr(virJSONValue) cmd = NULL;
+    g_autoptr(virJSONValue) reply = NULL;
+    g_autoptr(virJSONValue) jkeys = NULL;
+    int rc;
+
+    jkeys = makeJSONArrayFromKeys(keys, nkeys);
+    if (jkeys == NULL)
+        return -1;
+
+    if (!(cmd = qemuAgentMakeCommand("guest-ssh-add-authorized-keys",
+                                     "s:username", user,
+                                     "a:keys", &jkeys,
+                                     "b:reset", reset,
+                                      NULL)))
+        return -1;
+
+    if ((rc = qemuAgentCommandFull(agent, cmd, &reply, agent->timeout,
+                                   report_unsupported)) < 0)
+        return rc;
+
+    return 0;
+}
+
+/* Returns: 0 on success
+ *          -2 when agent command is not supported by the agent and
+ *             'report_unsupported' is false (libvirt error is not reported)
+ *          -1 otherwise (libvirt error is reported)
+ */
+int qemuAgentSSHRemoveAuthorizedKeys(qemuAgentPtr agent,
+                                     const char *user,
+                                     qemuAgentSSHAuthorizedKeyPtr *keys,
+                                     size_t nkeys,
+                                     bool report_unsupported)
+{
+    g_autoptr(virJSONValue) cmd = NULL;
+    g_autoptr(virJSONValue) reply = NULL;
+    g_autoptr(virJSONValue) jkeys = NULL;
+    int rc;
+
+    jkeys = makeJSONArrayFromKeys(keys, nkeys);
+    if (jkeys == NULL)
+        return -1;
+
+    if (!(cmd = qemuAgentMakeCommand("guest-ssh-remove-authorized-keys",
+                                     "s:username", user,
+                                     "a:keys", &jkeys,
+                                      NULL)))
+        return -1;
+
+    if ((rc = qemuAgentCommandFull(agent, cmd, &reply, agent->timeout,
+                                   report_unsupported)) < 0)
+        return rc;
+
+    return 0;
+}
