@@ -532,9 +532,9 @@ static int
 virSysinfoParseS390Processor(const char *base, virSysinfoDefPtr ret)
 {
     const char *tmp_base;
-    char *manufacturer = NULL;
-    char *procline = NULL;
-    char *ncpu = NULL;
+    g_autofree char *manufacturer = NULL;
+    g_autofree char *procline = NULL;
+    g_autofree char *ncpu = NULL;
     int result = -1;
     virSysinfoProcessorDefPtr processor;
 
@@ -593,9 +593,6 @@ virSysinfoParseS390Processor(const char *base, virSysinfoDefPtr ret)
     result = 0;
 
  error:
-    VIR_FREE(manufacturer);
-    VIR_FREE(procline);
-    VIR_FREE(ncpu);
     return result;
 }
 
