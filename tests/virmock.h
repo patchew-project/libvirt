@@ -284,8 +284,19 @@
     static void (*real_##name)(void); \
     void wrap_##name(void)
 
+#ifdef __APPLE__
+# define VIR_MOCK_REAL_INIT_MAIN(name, alias) \
+    do { \
+        if (real_##name == NULL) { \
+            real_##name = dlsym(RTLD_MAIN_ONLY, alias); \
+        } \
+    } while (0)
+#else
+# define VIR_MOCK_REAL_INIT_MAIN(name, alias) \
+    do {} while (0)
+#endif
 
-#define VIR_MOCK_REAL_INIT(name) \
+#define VIR_MOCK_REAL_INIT_NEXT(name) \
     do { \
         if (real_##name == NULL && \
             !(real_##name = dlsym(RTLD_NEXT, \
@@ -295,7 +306,7 @@
         } \
     } while (0)
 
-#define VIR_MOCK_REAL_INIT_ALIASED(name, alias) \
+#define VIR_MOCK_REAL_INIT_ALIASED_NEXT(name, alias) \
     do { \
         if (real_##name == NULL && \
             !(real_##name = dlsym(RTLD_NEXT, \
@@ -304,3 +315,25 @@
             abort(); \
         } \
     } while (0)
+
+#ifdef VIR_MOCK_LOOKUP_MAIN
+# define VIR_MOCK_REAL_INIT(name) \
+    do { \
+        VIR_MOCK_REAL_INIT_MAIN(name, #name); \
+        VIR_MOCK_REAL_INIT_NEXT(name); \
+    } while (0)
+# define VIR_MOCK_REAL_INIT_ALIASED(name, alias) \
+    do { \
+        VIR_MOCK_REAL_INIT_MAIN(name, alias); \
+        VIR_MOCK_REAL_INIT_ALIASED_NEXT(name, alias); \
+    } while (0)
+#else
+# define VIR_MOCK_REAL_INIT(name) \
+    do { \
+        VIR_MOCK_REAL_INIT_NEXT(name); \
+    } while (0)
+# define VIR_MOCK_REAL_INIT_ALIASED(name, alias) \
+    do { \
+        VIR_MOCK_REAL_INIT_ALIASED_NEXT(name, alias); \
+    } while (0)
+#endif
