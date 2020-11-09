@@ -20,29 +20,8 @@ CI_HOST_SRCDIR = $(CI_SCRATCHDIR)/src
 # the $(CI_HOST_SRCDIR) directory from the host
 CI_CONT_SRCDIR = $(CI_USER_HOME)/libvirt
 
-# Relative directory to perform the build in. This
-# defaults to using a separate build dir, but can be
-# set to empty string for an in-source tree build.
-CI_VPATH = build
-
-# The directory holding the build output inside the
-# container.
-CI_CONT_BUILDDIR = $(CI_CONT_SRCDIR)/$(CI_VPATH)
-
-# Can be overridden with mingw{32,64}-configure if desired
-CI_CONFIGURE = $(CI_CONT_SRCDIR)/configure
-
-# Default to using all possible CPUs
-CI_SMP = $(shell getconf _NPROCESSORS_ONLN)
-
 # Any extra arguments to pass to ninja
 CI_NINJA_ARGS =
-
-# Any extra arguments to pass to make
-CI_MAKE_ARGS =
-
-# Any extra arguments to pass to configure
-CI_CONFIGURE_ARGS =
 
 # Script containing environment preparation steps
 CI_PREPARE_SCRIPT = $(CI_ROOTDIR)/prepare.sh
@@ -223,13 +202,7 @@ ci-run-command@%: ci-prepare-tree
 		  --login \
 		  --user="#$(CI_UID)" \
 		  --group="#$(CI_GID)" \
-		  CONFIGURE_OPTS="$$CONFIGURE_OPTS" \
 		  CI_CONT_SRCDIR="$(CI_CONT_SRCDIR)" \
-		  CI_CONT_BUILDDIR="$(CI_CONT_BUILDDIR)" \
-		  CI_SMP="$(CI_SMP)" \
-		  CI_CONFIGURE="$(CI_CONFIGURE)" \
-		  CI_CONFIGURE_ARGS="$(CI_CONFIGURE_ARGS)" \
-		  CI_MAKE_ARGS="$(CI_MAKE_ARGS)" \
 		  MESON_OPTS="$$MESON_OPTS" \
 		  CI_NINJA_ARGS="$(CI_NINJA_ARGS)" \
 		  $(CI_COMMAND) || exit 1'
@@ -271,7 +244,5 @@ ci-help:
 	@echo "    CI_CLEAN=0          - do not delete '$(CI_SCRATCHDIR)' after completion"
 	@echo "    CI_REUSE=1          - re-use existing '$(CI_SCRATCHDIR)' content"
 	@echo "    CI_ENGINE=auto      - container engine to use (podman, docker)"
-	@echo "    CI_CONFIGURE_ARGS=  - extra arguments passed to configure"
-	@echo "    CI_MAKE_ARGS=       - extra arguments passed to make, e.g. space delimited list of targets"
 	@echo "    CI_NINJA_ARGS=      - extra arguments passed to ninja"
 	@echo
