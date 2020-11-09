@@ -35,6 +35,9 @@ CI_CONFIGURE = $(CI_CONT_SRCDIR)/configure
 # Default to using all possible CPUs
 CI_SMP = $(shell getconf _NPROCESSORS_ONLN)
 
+# Any extra arguments to pass to ninja
+CI_NINJA_ARGS =
+
 # Any extra arguments to pass to make
 CI_MAKE_ARGS =
 
@@ -227,6 +230,8 @@ ci-run-command@%: ci-prepare-tree
 		  CI_CONFIGURE="$(CI_CONFIGURE)" \
 		  CI_CONFIGURE_ARGS="$(CI_CONFIGURE_ARGS)" \
 		  CI_MAKE_ARGS="$(CI_MAKE_ARGS)" \
+		  MESON_OPTS="$$MESON_OPTS" \
+		  CI_NINJA_ARGS="$(CI_NINJA_ARGS)" \
 		  $(CI_COMMAND) || exit 1'
 	@test "$(CI_CLEAN)" = "1" && rm -rf $(CI_SCRATCHDIR) || :
 
@@ -236,8 +241,8 @@ ci-shell@%:
 ci-build@%:
 	$(MAKE) -C $(CI_ROOTDIR) ci-run-command@$* CI_COMMAND="$(CI_USER_HOME)/build"
 
-ci-check@%:
-	$(MAKE) -C $(CI_ROOTDIR) ci-build@$* CI_MAKE_ARGS="check"
+ci-test@%:
+	$(MAKE) -C $(CI_ROOTDIR) ci-build@$* CI_NINJA_ARGS=test
 
 ci-list-images:
 	@echo
@@ -268,4 +273,5 @@ ci-help:
 	@echo "    CI_ENGINE=auto      - container engine to use (podman, docker)"
 	@echo "    CI_CONFIGURE_ARGS=  - extra arguments passed to configure"
 	@echo "    CI_MAKE_ARGS=       - extra arguments passed to make, e.g. space delimited list of targets"
+	@echo "    CI_NINJA_ARGS=      - extra arguments passed to ninja"
 	@echo
