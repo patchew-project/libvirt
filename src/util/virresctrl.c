@@ -709,7 +709,7 @@ virResctrlGetMonitorInfo(virResctrlInfoPtr resctrl)
 {
     int ret = -1;
     int rv = -1;
-    char *featurestr = NULL;
+    g_autofree char *featurestr = NULL;
     char **features = NULL;
     size_t nfeatures = 0;
     virResctrlInfoMongrpPtr info_monitor = NULL;
@@ -771,7 +771,6 @@ virResctrlGetMonitorInfo(virResctrlInfoPtr resctrl)
 
     ret = 0;
  cleanup:
-    VIR_FREE(featurestr);
     g_strfreev(features);
     VIR_FREE(info_monitor);
     return ret;
@@ -1736,7 +1735,7 @@ virResctrlAllocGetGroup(virResctrlInfoPtr resctrl,
                         const char *groupname,
                         virResctrlAllocPtr *alloc)
 {
-    char *schemata = NULL;
+    g_autofree char *schemata = NULL;
     int rv = virFileReadValueString(&schemata,
                                     SYSFS_RESCTRL_PATH "/%s/schemata",
                                     groupname);
@@ -1753,11 +1752,9 @@ virResctrlAllocGetGroup(virResctrlInfoPtr resctrl,
     if (virResctrlAllocParse(resctrl, *alloc, schemata) < 0)
         goto error;
 
-    VIR_FREE(schemata);
     return 0;
 
  error:
-    VIR_FREE(schemata);
     virObjectUnref(*alloc);
     *alloc = NULL;
     return -1;
@@ -2354,8 +2351,8 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
                       virResctrlAllocPtr alloc,
                       const char *machinename)
 {
-    char *schemata_path = NULL;
-    char *alloc_str = NULL;
+    g_autofree char *schemata_path = NULL;
+    g_autofree char *alloc_str = NULL;
     int ret = -1;
     int lockfd = -1;
 
@@ -2403,8 +2400,6 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     ret = 0;
  cleanup:
     virResctrlUnlock(lockfd);
-    VIR_FREE(alloc_str);
-    VIR_FREE(schemata_path);
     return ret;
 }
 
@@ -2413,8 +2408,8 @@ static int
 virResctrlAddPID(const char *path,
                  pid_t pid)
 {
-    char *tasks = NULL;
-    char *pidstr = NULL;
+    g_autofree char *tasks = NULL;
+    g_autofree char *pidstr = NULL;
     int ret = 0;
 
     if (!path) {
@@ -2436,8 +2431,6 @@ virResctrlAddPID(const char *path,
 
     ret = 0;
  cleanup:
-    VIR_FREE(tasks);
-    VIR_FREE(pidstr);
     return ret;
 }
 
@@ -2657,8 +2650,8 @@ virResctrlMonitorGetStats(virResctrlMonitorPtr monitor,
     size_t i = 0;
     unsigned long long val = 0;
     g_autoptr(DIR) dirp = NULL;
-    char *datapath = NULL;
-    char *filepath = NULL;
+    g_autofree char *datapath = NULL;
+    g_autofree char *filepath = NULL;
     struct dirent *ent = NULL;
     virResctrlMonitorStatsPtr stat = NULL;
 
@@ -2737,8 +2730,6 @@ virResctrlMonitorGetStats(virResctrlMonitorPtr monitor,
 
     ret = 0;
  cleanup:
-    VIR_FREE(datapath);
-    VIR_FREE(filepath);
     virResctrlMonitorStatsFree(stat);
     return ret;
 }
