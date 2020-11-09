@@ -154,6 +154,11 @@ v6.8.0 (2020-10-01)
    taking an external snapshot now preserves the cluser size of the original
    top image to preserve any performance tuning done on the original image.
 
+  * apparmor: Several improvements
+
+   Add support for virtiofs filesystem,allowing qemu load old shared objects after
+   upgrades.
+
 * **Bug fixes**
 
   * qemu: Various (i)SCSI backed hostdev fixes
