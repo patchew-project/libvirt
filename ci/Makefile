@@ -20,15 +20,6 @@ CI_HOST_SRCDIR = $(CI_SCRATCHDIR)/src
 # the $(CI_HOST_SRCDIR) directory from the host
 CI_CONT_SRCDIR = $(CI_USER_HOME)/libvirt
 
-# Relative directory to perform the build in. This
-# defaults to using a separate build dir, but can be
-# set to empty string for an in-source tree build.
-CI_VPATH = build
-
-# The directory holding the build output inside the
-# container.
-CI_CONT_BUILDDIR = $(CI_CONT_SRCDIR)/$(CI_VPATH)
-
 # Can be overridden with mingw{32,64}-configure if desired
 CI_CONFIGURE = $(CI_CONT_SRCDIR)/configure
 
@@ -217,9 +208,7 @@ ci-run-command@%: ci-prepare-tree
 		  --login \
 		  --user="#$(CI_UID)" \
 		  --group="#$(CI_GID)" \
-		  CONFIGURE_OPTS="$$CONFIGURE_OPTS" \
 		  CI_CONT_SRCDIR="$(CI_CONT_SRCDIR)" \
-		  CI_CONT_BUILDDIR="$(CI_CONT_BUILDDIR)" \
 		  CI_SMP="$(CI_SMP)" \
 		  CI_NINJA_ARGS="$(CI_NINJA_ARGS" \
 		  $(CI_COMMAND) || exit 1'
