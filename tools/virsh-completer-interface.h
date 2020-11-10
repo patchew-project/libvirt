@@ -28,3 +28,7 @@ typedef const char *
 char ** virshInterfaceNameCompleter(vshControl *ctl,
                                     const vshCmd *cmd,
                                     unsigned int flags);
+
+char ** virshInterfaceMacCompleter(vshControl *ctl,
+                                   const vshCmd *cmd,
+                                   unsigned int flags);

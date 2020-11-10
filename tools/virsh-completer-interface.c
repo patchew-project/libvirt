@@ -69,3 +69,12 @@ virshInterfaceNameCompleter(vshControl *ctl,
 {
     return virshInterfaceStringHelper(ctl, cmd, flags, virInterfaceGetName);
 }
+
+char **
+virshInterfaceMacCompleter(vshControl *ctl,
+                           const vshCmd *cmd,
+                           unsigned int flags)
+{
+    return virshInterfaceStringHelper(ctl, cmd, flags,
+                                      virInterfaceGetMACString);
+}
