@@ -22,6 +22,9 @@
 
 #include "vsh.h"
 
+typedef const char *
+(*virInterfaceStringCallback)(virInterfacePtr iface);
+
 char ** virshInterfaceNameCompleter(vshControl *ctl,
                                     const vshCmd *cmd,
                                     unsigned int flags);
