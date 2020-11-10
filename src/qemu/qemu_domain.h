@@ -426,6 +426,7 @@ struct _qemuDomainFSPrivate {
     virObject parent;
 
     char *vhostuser_fs_sock;
+    pid_t virtiofsd_pid;
 };
 
 

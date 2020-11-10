@@ -250,6 +250,7 @@ qemuVirtioFSStart(virLogManagerPtr logManager,
     }
 
     QEMU_DOMAIN_FS_PRIVATE(fs)->vhostuser_fs_sock = g_steal_pointer(&socket_path);
+    QEMU_DOMAIN_FS_PRIVATE(fs)->virtiofsd_pid = pid;
     ret = 0;
 
  cleanup:
@@ -273,6 +274,7 @@ qemuVirtioFSStop(virQEMUDriverPtr driver G_GNUC_UNUSED,
 {
     g_autofree char *pidfile = NULL;
     virErrorPtr orig_err;
+    pid_t pid = QEMU_DOMAIN_FS_PRIVATE(fs)->virtiofsd_pid;
 
     virErrorPreserveLast(&orig_err);
 
@@ -285,6 +287,9 @@ qemuVirtioFSStop(virQEMUDriverPtr driver G_GNUC_UNUSED,
         if (QEMU_DOMAIN_FS_PRIVATE(fs)->vhostuser_fs_sock)
             unlink(QEMU_DOMAIN_FS_PRIVATE(fs)->vhostuser_fs_sock);
     }
+
+    if (virProcessKill(pid, 0) == 0)
+        virProcessKillPainfully(pid, true);
 
  cleanup:
     virErrorRestore(&orig_err);
