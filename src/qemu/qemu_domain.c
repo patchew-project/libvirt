@@ -8105,7 +8105,7 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
     for (i = 0; i < def->nmems; i++) {
         if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
             ARCH_IS_PPC64(def->os.arch)) {
-            if (virDomainNVDimmAlignSizePseries(def->mems[i]) < 0)
+            if (virDomainMemoryDeviceAlignSizePseries(def->mems[i]) < 0)
                 return -1;
         } else {
             align = qemuDomainGetMemoryModuleSizeAlignment(def, def->mems[i]);
@@ -8142,7 +8142,7 @@ qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
 {
     if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
         ARCH_IS_PPC64(def->os.arch)) {
-        return virDomainNVDimmAlignSizePseries(mem);
+        return virDomainMemoryDeviceAlignSizePseries(mem);
     } else {
         mem->size = VIR_ROUND_UP(mem->size,
                                  qemuDomainGetMemorySizeAlignment(def));

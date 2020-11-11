@@ -5361,7 +5361,7 @@ virDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
      */
     if (ARCH_IS_PPC64(def->os.arch) &&
         mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-        virDomainNVDimmAlignSizePseries(mem) < 0)
+        virDomainMemoryDeviceAlignSizePseries(mem) < 0)
         return -1;
 
     return 0;
@@ -16851,8 +16851,16 @@ virDomainSEVDefParseXML(xmlNodePtr sevNode,
 }
 
 int
-virDomainNVDimmAlignSizePseries(virDomainMemoryDefPtr mem)
+virDomainMemoryDeviceAlignSizePseries(virDomainMemoryDefPtr mem)
 {
+    unsigned long long ppc64AlignSize =  256 * 1024;
+    unsigned long long guestArea;
+
+    if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+        mem->size = VIR_ROUND_UP(mem->size, ppc64AlignSize);
+        return 0;
+    }
+
     /* For NVDIMMs in ppc64 in we want to align down the guest
      * visible space, instead of align up, to avoid writing
      * beyond the end of file by adding a potential 256MiB
@@ -16867,8 +16875,7 @@ virDomainNVDimmAlignSizePseries(virDomainMemoryDefPtr mem)
      *
      * target_size = AlignDown(target_size - label_size) + label_size
      */
-    unsigned long long ppc64AlignSize =  256 * 1024;
-    unsigned long long guestArea = mem->size - mem->labelsize;
+    guestArea = mem->size - mem->labelsize;
 
     /* Align down guest_area. 256MiB is the minimum size. Error
      * out if target_size is smaller than 256MiB + label_size,

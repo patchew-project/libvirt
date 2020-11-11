@@ -3905,7 +3905,7 @@ virDomainBlockIoTuneInfoEqual(const virDomainBlockIoTuneInfo *a,
                               const virDomainBlockIoTuneInfo *b);
 
 int
-virDomainNVDimmAlignSizePseries(virDomainMemoryDefPtr mem);
+virDomainMemoryDeviceAlignSizePseries(virDomainMemoryDefPtr mem);
 
 bool
 virHostdevIsSCSIDevice(const virDomainHostdevDef *hostdev)
