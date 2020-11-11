@@ -297,6 +297,7 @@ mymain(void)
             QEMU_CAPS_SCSI_BLOCK);
     DO_TEST("disk-network-gluster", NONE);
     DO_TEST("disk-network-rbd", NONE);
+    DO_TEST_CAPS_ARCH_LATEST("disk-network-rbd-namespace", "x86_64");
     DO_TEST("disk-network-source-auth", NONE);
     DO_TEST("disk-network-sheepdog", NONE);
     DO_TEST("disk-network-vxhs", NONE);
