@@ -5350,11 +5350,19 @@ qemuDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
     /* For x86, dimm memory modules require 2MiB alignment rather than
      * the 1MiB we are using elsewhere. */
     unsigned int x86MemoryModuleSizeAlignment = 2048;
+    unsigned long long maxmemkb = virMemoryMaxValue(false) >> 10;
 
     /* ppc64 memory module alignment is done in
      * virDomainMemoryDefPostParse(). */
-    if (!ARCH_IS_PPC64(arch))
+    if (!ARCH_IS_PPC64(arch)) {
         mem->size = VIR_ROUND_UP(mem->size, x86MemoryModuleSizeAlignment);
+        if (mem->size > maxmemkb) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("size of memory module overflowed after "
+                             "alignment"));
+            return -1;
+        }
+    }
 
     return 0;
 }
@@ -8093,16 +8101,8 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
      *
      * - ppc64 mem modules are being aligned by virDomainMemoryDefPostParse();
      * - x86 mem modules are being aligned by qemuDomainMemoryDefPostParse(). */
-    for (i = 0; i < def->nmems; i++) {
+    for (i = 0; i < def->nmems; i++)
         hotplugmem += def->mems[i]->size;
-
-        if (def->mems[i]->size > maxmemkb) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("size of memory module '%zu' overflowed after "
-                             "alignment"), i);
-            return -1;
-        }
-    }
 
     /* Align initial memory size, if NUMA is present calculate it as total of
      * individual aligned NUMA node sizes. */

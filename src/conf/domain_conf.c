@@ -16852,11 +16852,20 @@ virDomainSEVDefParseXML(xmlNodePtr sevNode,
 int
 virDomainMemoryDeviceAlignSizePseries(virDomainMemoryDefPtr mem)
 {
+    unsigned long long maxmemkb = virMemoryMaxValue(false) >> 10;
     unsigned long long ppc64AlignSize =  256 * 1024;
     unsigned long long guestArea;
 
     if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
         mem->size = VIR_ROUND_UP(mem->size, ppc64AlignSize);
+
+        if (mem->size > maxmemkb) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("size of memory module overflowed after "
+                             "alignment"));
+            return -1;
+        }
+
         return 0;
     }
 
