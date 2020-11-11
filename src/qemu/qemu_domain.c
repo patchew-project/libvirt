@@ -8087,11 +8087,8 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
      * calculation because virDomainDefGetMemoryInitial() uses the size
      * of the modules in the math. */
     for (i = 0; i < def->nmems; i++) {
-        if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-            ARCH_IS_PPC64(def->os.arch)) {
-            if (virDomainMemoryDeviceAlignSizePseries(def->mems[i]) < 0)
-                return -1;
-        } else {
+        /* ppc64 memory modules are aligned by virDomainMemoryDefPostParse(). */
+        if (!ARCH_IS_PPC64(def->os.arch)) {
             align = qemuDomainGetMemoryModuleSizeAlignment(def, def->mems[i]);
             def->mems[i]->size = VIR_ROUND_UP(def->mems[i]->size, align);
         }
@@ -8144,13 +8141,9 @@ int
 qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
                                 virDomainMemoryDefPtr mem)
 {
-    if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-        ARCH_IS_PPC64(def->os.arch)) {
-        return virDomainMemoryDeviceAlignSizePseries(mem);
-    } else {
+    if (!ARCH_IS_PPC64(def->os.arch))
         mem->size = VIR_ROUND_UP(mem->size,
                                  qemuDomainGetMemorySizeAlignment(def));
-    }
 
     return 0;
 }

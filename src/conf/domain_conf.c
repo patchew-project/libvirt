@@ -5360,7 +5360,6 @@ virDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
      * will have the same restriction.
      */
     if (ARCH_IS_PPC64(def->os.arch) &&
-        mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
         virDomainMemoryDeviceAlignSizePseries(mem) < 0)
         return -1;
 
