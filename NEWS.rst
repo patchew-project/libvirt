@@ -22,7 +22,21 @@ v6.10.0 (unreleased)
 
 * **Improvements**
 
+  * qemu: reflect the actual memory being used in live XML
+
+    Memory modules are aligned internally to fit platform and
+    architecture constraints. The aligned value is used by QEMU but
+    the live XML reflected just the original values. Libvirt will
+    now inform the actual memory value passed to QEMU in the live
+    XML.
+
 * **Bug fixes**
+
+  * qemu: pSeries guests booting with extra memory
+
+    In certain conditions, a pSeries guest would start with an extra
+    256MiB of memory aside from what was determined in the ``<memory>``
+    and ``<currentMemory>`` values. This issue has been fixed.
 
 * **Removed features**
 
