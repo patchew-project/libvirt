@@ -5683,9 +5683,9 @@ qemuDomainDetachPrepMemory(virDomainObjPtr vm,
 {
     int idx;
 
-    if (qemuDomainMemoryDeviceAlignSize(vm->def, match) < 0)
-        return -1;
-
+    /* 'match' is granted to be aligned at this point, either
+     * by PostParse callbacks when parsing it or by fetching it
+     * from the domain definition. */
     if ((idx = virDomainMemoryFindByDef(vm->def, match)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' memory device not present "
