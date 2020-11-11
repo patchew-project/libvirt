@@ -8083,25 +8083,9 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
         virDomainNumaSetNodeMemorySize(def->numa, i, mem);
     }
 
-    /* align initial memory size, if NUMA is present calculate it as total of
-     * individual aligned NUMA node sizes */
-    if (initialmem == 0)
-        initialmem = VIR_ROUND_UP(virDomainDefGetMemoryInitial(def), align);
-
-    if (initialmem > maxmemcapped) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("initial memory size overflowed after alignment"));
-        return -1;
-    }
-
-    def->mem.max_memory = VIR_ROUND_UP(def->mem.max_memory, align);
-    if (def->mem.max_memory > maxmemkb) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("maximum memory size overflowed after alignment"));
-        return -1;
-    }
-
-    /* Align memory module sizes */
+    /* Align memory module sizes. This needs to occur before 'initialmem'
+     * calculation because virDomainDefGetMemoryInitial() uses the size
+     * of the modules in the math. */
     for (i = 0; i < def->nmems; i++) {
         if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
             ARCH_IS_PPC64(def->os.arch)) {
@@ -8120,6 +8104,26 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
                              "alignment"), i);
             return -1;
         }
+    }
+
+    /* Align initial memory size, if NUMA is present calculate it as total of
+     * individual aligned NUMA node sizes. */
+    if (initialmem == 0) {
+        align = qemuDomainGetMemorySizeAlignment(def);
+        initialmem = VIR_ROUND_UP(virDomainDefGetMemoryInitial(def), align);
+    }
+
+    if (initialmem > maxmemcapped) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("initial memory size overflowed after alignment"));
+        return -1;
+    }
+
+    def->mem.max_memory = VIR_ROUND_UP(def->mem.max_memory, align);
+    if (def->mem.max_memory > maxmemkb) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("maximum memory size overflowed after alignment"));
+        return -1;
     }
 
     virDomainDefSetMemoryTotal(def, initialmem + hotplugmem);
