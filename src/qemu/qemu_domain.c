@@ -8043,16 +8043,10 @@ qemuDomainGetMemorySizeAlignment(const virDomainDef *def)
 
 
 static unsigned long long
-qemuDomainGetMemoryModuleSizeAlignment(const virDomainDef *def,
-                                       const virDomainMemoryDef *mem G_GNUC_UNUSED)
+qemuDomainGetMemoryModuleSizeAlignment(void)
 {
-    /* PPC requires the memory sizes to be rounded to 256MiB increments, so
-     * round them to the size always. */
-    if (ARCH_IS_PPC64(def->os.arch))
-        return 256 * 1024;
-
-    /* dimm memory modules require 2MiB alignment rather than the 1MiB we are
-     * using elsewhere. */
+    /* For x86, dimm memory modules require 2MiB alignment rather than
+     * the 1MiB we are using elsewhere. */
     return 2048;
 }
 
@@ -8089,7 +8083,7 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
     for (i = 0; i < def->nmems; i++) {
         /* ppc64 memory modules are aligned by virDomainMemoryDefPostParse(). */
         if (!ARCH_IS_PPC64(def->os.arch)) {
-            align = qemuDomainGetMemoryModuleSizeAlignment(def, def->mems[i]);
+            align = qemuDomainGetMemoryModuleSizeAlignment();
             def->mems[i]->size = VIR_ROUND_UP(def->mems[i]->size, align);
         }
 
