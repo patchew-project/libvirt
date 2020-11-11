@@ -249,6 +249,7 @@
   <flag name='block-export-add'/>
   <flag name='netdev.vhost-vdpa'/>
   <flag name='fsdev.createmode'/>
+  <flag name='rbd.namespace'/>
   <version>5001050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100243</microcodeVersion>

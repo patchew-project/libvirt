@@ -604,6 +604,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "block-export-add",
               "netdev.vhost-vdpa",
               "fsdev.createmode",
+
+              /* 385 */
+              "rbd.namespace",
     );
 
 
@@ -1538,6 +1541,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "migrate-set-parameters/arg-type/xbzrle-cache-size", QEMU_CAPS_MIGRATION_PARAM_XBZRLE_CACHE_SIZE },
     { "set-numa-node/arg-type/+hmat-lb", QEMU_CAPS_NUMA_HMAT },
     { "netdev_add/arg-type/+vhost-vdpa", QEMU_CAPS_NETDEV_VHOST_VDPA },
+    { "blockdev-add/arg-type/+rbd/namespace", QEMU_CAPS_RBD_NAMESPACE },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;

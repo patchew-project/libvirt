@@ -245,6 +245,7 @@
   <flag name='numa.hmat'/>
   <flag name='blockdev-hostdev-scsi'/>
   <flag name='fsdev.createmode'/>
+  <flag name='rbd.namespace'/>
   <version>5000000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100241</microcodeVersion>
