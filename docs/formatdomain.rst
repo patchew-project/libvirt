@@ -2409,6 +2409,16 @@ paravirtualized driver is specified via the ``disk`` element.
        </source>
        <target dev='vde' bus='virtio'/>
      </disk>
+     <disk type='network'>
+       <driver name="qemu" type="raw"/>
+       <source protocol="rbd" name="pool/namespace/image">
+         <host name="hostname" port="7000"/>
+         <auth username='myuser'>
+           <secret type='ceph' usage='mypassid'/>
+         </auth>
+       </source>
+       <target dev="vdf" bus="virtio"/>
+     </disk>
    </devices>
    ...
 
@@ -2499,6 +2509,12 @@ paravirtualized driver is specified via the ``disk`` element.
       hypervisor, usage of a TLS environment can also be globally controlled on
       the host by the ``nbd_tls`` and ``nbd_tls_x509_cert_dir`` in
       /etc/libvirt/qemu.conf. ('tls' :since:`Since 4.5.0` )
+
+      For "rbd", the ``name`` attribute could be two formats: the format of
+      ``pool_name/image_name`` includes the rbd pool name and image name with
+      default rbd pool namespace; for the customized namespace, the format is
+      ``pool_name/namespace/image_name`` ( :since:`Since 6.9.0 and QEMU 5.0` ).
+      The pool name, namespace and image are separated by slash.
 
       For protocols ``http`` and ``https`` an optional attribute ``query``
       specifies the query string. ( :since:`Since 6.2.0` )
