@@ -224,6 +224,26 @@ static const vshCmdOptDef opts_attach_disk[] = {
      .flags = VSH_OFLAG_REQ | VSH_OFLAG_EMPTY_OK,
      .help = N_("source of disk device")
     },
+    {.name = "source-protocol",
+     .type = VSH_OT_STRING,
+     .help = N_("protocol used by disk device source")
+    },
+    {.name = "source-name",
+     .type = VSH_OT_STRING,
+     .help = N_("name of disk device source")
+    },
+    {.name = "source-host-name",
+     .type = VSH_OT_STRING,
+     .help = N_("host name for source of disk device")
+    },
+    {.name = "source-host-transport",
+     .type = VSH_OT_STRING,
+     .help = N_("host transport for source of disk device")
+    },
+    {.name = "source-host-socket",
+     .type = VSH_OT_STRING,
+     .help = N_("host socket for source of disk device")
+    },
     {.name = "target",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
@@ -558,15 +578,68 @@ static int str2DiskAddress(const char *str, struct DiskAddress *diskAddr)
     return -1;
 }
 
+static void attachDiskHostGen(virBufferPtr buf, const vshCmd *cmd)
+{
+    // Can be multiple hosts so we have to scan
+    // the cmd options to find all the host params
+    // <source tag in XML not yet closed
+    vshCmdOpt *candidate = cmd->opts;
+    char *host_name = NULL, *host_port = NULL;
+    int close_tag = 0, seen_socket = 0, seen_transport = 0;
+
+    while (candidate) {
+        // Iterate candidates to find each host-name
+        if (STREQ(candidate->def->name, "source-host-name")) {
+            // After the first host-name, we need to terminate
+            // the <host ... tag
+            // It's left open so socket and transport can be added later
+
+            // Only include the first example of socket or transport per host
+            // When a socket or transport is seen, these are set to true
+            // until the next name is encountered.
+            seen_socket = 0;
+            seen_transport = 0;
+
+            if (close_tag)
+                virBufferAddLit(buf, "/>\n");
+            else
+                close_tag = 1;
+
+            host_name = candidate->data;
+            host_port = strchr(host_name, ':');
+
+            if (!host_port) {
+                // If port isn't provided, only print name
+                virBufferAsprintf(buf, "<host name='%s'", host_name);
+            } else {
+                // If port is provided, manipulate strings and print both
+                host_name[(int)(host_port - host_name)] = '\0';
+                virBufferAsprintf(buf, "<host name='%s' port='%s'", host_name, host_port + 1);
+            }
+        } else if (!seen_socket && STREQ(candidate->def->name, "source-host-socket")) {
+            seen_socket = 1;
+            virBufferAsprintf(buf, " socket='%s'", candidate->data);
+        } else if (!seen_transport && STREQ(candidate->def->name, "source-host-transport")) {
+            seen_transport = 1;
+            virBufferAsprintf(buf, " transport='%s'", candidate->data);
+        }
+
+        candidate = candidate->next;
+    }
+    // Close final <host tag
+    virBufferAddLit(buf, "/>\n");
+}
+
 static bool
 cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
 {
     virDomainPtr dom = NULL;
-    const char *source = NULL, *target = NULL, *driver = NULL,
-                *subdriver = NULL, *type = NULL, *mode = NULL,
-                *iothread = NULL, *cache = NULL, *io = NULL,
-                *serial = NULL, *straddr = NULL, *wwn = NULL,
-                *targetbus = NULL, *alias = NULL;
+    const char *source = NULL, *source_name = NULL, *source_protocol = NULL,
+                *target = NULL, *driver = NULL, *subdriver = NULL, *type = NULL,
+                *mode = NULL, *iothread = NULL, *cache = NULL,
+                *io = NULL, *serial = NULL, *straddr = NULL,
+                *wwn = NULL, *targetbus = NULL, *alias = NULL,
+                *host_transport = NULL, *host_name = NULL, *host_socket = NULL;
     struct DiskAddress diskAddr;
     bool isFile = false, functionReturn = false;
     int ret;
@@ -591,6 +664,8 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_AFFECT_LIVE;
 
     if (vshCommandOptStringReq(ctl, cmd, "source", &source) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-name", &source_name) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-protocol", &source_protocol) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "target", &target) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "driver", &driver) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "subdriver", &subdriver) < 0 ||
@@ -604,7 +679,10 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
         vshCommandOptStringReq(ctl, cmd, "address", &straddr) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "targetbus", &targetbus) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "alias", &alias) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "sourcetype", &stype) < 0)
+        vshCommandOptStringReq(ctl, cmd, "sourcetype", &stype) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-name", (const char **) &host_name) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-transport", &host_transport) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-socket", &host_socket) < 0)
         goto cleanup;
 
     if (!stype) {
@@ -659,9 +737,40 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
         virBufferAddLit(&buf, "/>\n");
     }
 
-    if (source)
-        virBufferAsprintf(&buf, "<source %s='%s'/>\n",
+    if (source || source_protocol || source_name ||
+        host_name || host_transport || host_socket) {
+        virBufferAddLit(&buf, "<source");
+
+        if (source)
+            virBufferAsprintf(&buf, " %s='%s'",
                           isFile ? "file" : "dev", source);
+        if (source_protocol)
+            virBufferAsprintf(&buf, " protocol='%s'", source_protocol);
+        if (source_name)
+            virBufferAsprintf(&buf, " name='%s'", source_name);
+
+        if (!(host_name || host_transport || host_socket)) {
+            // Close source if no host is provided
+            virBufferAddLit(&buf, "/>\n");
+        } else if (!host_name) {
+            // If no host name is provided but there is a host,
+            // we have a single host with params
+            virBufferAddLit(&buf, ">\n<host");
+
+            if (host_transport)
+                virBufferAsprintf(&buf, " transport='%s'", host_transport);
+            if (host_socket)
+                virBufferAsprintf(&buf, " socket='%s'", host_socket);
+
+            virBufferAddLit(&buf, "/>\n</source>\n");
+        } else {
+            // May have multiple hosts, use helper method
+            virBufferAddLit(&buf, ">\n");
+            attachDiskHostGen(&buf, cmd);
+            virBufferAddLit(&buf, "</source>\n");
+        }
+    }
+
     virBufferAsprintf(&buf, "<target dev='%s'", target);
     if (targetbus)
         virBufferAsprintf(&buf, " bus='%s'", targetbus);

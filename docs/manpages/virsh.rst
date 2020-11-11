@@ -4500,9 +4500,11 @@ attach-disk
       [--current]] | [--persistent]] [--targetbus bus]
       [--driver driver] [--subdriver subdriver] [--iothread iothread]
       [--cache cache] [--io io] [--type type] [--alias alias]
-      [--mode mode] [--sourcetype sourcetype] [--serial serial]
-      [--wwn wwn] [--rawio] [--address address] [--multifunction]
-      [--print-xml]
+      [--mode mode] [--sourcetype sourcetype] [--source-name name]
+      [--source-protocol protocol] [--source-host-name hostname:port]
+      [--source-host-transport transport] [--source-host-socket socket]
+      [--serial serial] [--wwn wwn] [--rawio] [--address address]
+      [--multifunction] [--print-xml]
 
 Attach a new disk device to the domain.
 *source* is path for the files and devices. *target* controls the bus or
@@ -4540,6 +4542,22 @@ ide:controller.bus.unit, usb:bus.port, sata:controller.bus.unit or
 ccw:cssid.ssid.devno. Virtio-ccw devices must have their cssid set to 0xfe.
 *multifunction* indicates specified pci address is a multifunction pci device
 address.
+
+If *--source-protocol* or *--source-name* is specified, then the parameters
+will be inserted into the XML that is generated for the source.
+If any of *--source-host-name*, *--source-host-transport*, or
+*--source-host-socket* are specified, then a ``<host>`` tag
+will be generated under the ``<source>`` tag containing whichever
+parameters were provided. If needed, the user can provide multiple hosts
+by providing each host with a *--source-host-name*. Each host will
+receive the host parameters which come between it and the next instance
+of *--source-host-name* or between it and the end of the command.
+If a user tries to provide multiple of the same host parameter
+for any single host, only the first one will be generated as
+part of the XML output.
+
+--source-host-name me --source-host-transport t1 --source-host-transport t2 --source-host-transport t3 --soure-host-name you
+<host transport='t1' transport='t2' transport='t3'>
 
 If *--print-xml* is specified, then the XML of the disk that would be attached
 is printed instead.
