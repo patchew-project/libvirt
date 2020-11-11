@@ -48,7 +48,7 @@
         <path>/tmp/nvdimm</path>
       </source>
       <target>
-        <size unit='KiB'>523264</size>
+        <size unit='KiB'>524288</size>
         <node>0</node>
         <readonly/>
       </target>

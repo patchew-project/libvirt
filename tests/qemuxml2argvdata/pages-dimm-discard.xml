@@ -40,7 +40,7 @@
     </memory>
     <memory model='dimm' access='private' discard='yes'>
       <target>
-        <size unit='KiB'>524287</size>
+        <size unit='KiB'>524288</size>
         <node>0</node>
       </target>
       <address type='dimm' slot='1'/>

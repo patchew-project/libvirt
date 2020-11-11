@@ -5344,6 +5344,23 @@ qemuDomainTPMDefPostParse(virDomainTPMDefPtr tpm,
 
 
 static int
+qemuDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
+                             virArch arch)
+{
+    /* For x86, dimm memory modules require 2MiB alignment rather than
+     * the 1MiB we are using elsewhere. */
+    unsigned int x86MemoryModuleSizeAlignment = 2048;
+
+    /* ppc64 memory module alignment is done in
+     * virDomainMemoryDefPostParse(). */
+    if (!ARCH_IS_PPC64(arch))
+        mem->size = VIR_ROUND_UP(mem->size, x86MemoryModuleSizeAlignment);
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                              const virDomainDef *def,
                              unsigned int parseFlags,
@@ -5400,6 +5417,10 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         ret = qemuDomainTPMDefPostParse(dev->data.tpm, def->os.arch);
         break;
 
+    case VIR_DOMAIN_DEVICE_MEMORY:
+        ret = qemuDomainMemoryDefPostParse(dev->data.memory, def->os.arch);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -5412,7 +5433,6 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_RNG:
-    case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_AUDIO:
         ret = 0;
@@ -8042,15 +8062,6 @@ qemuDomainGetMemorySizeAlignment(const virDomainDef *def)
 }
 
 
-static unsigned long long
-qemuDomainGetMemoryModuleSizeAlignment(void)
-{
-    /* For x86, dimm memory modules require 2MiB alignment rather than
-     * the 1MiB we are using elsewhere. */
-    return 2048;
-}
-
-
 int
 qemuDomainAlignMemorySizes(virDomainDefPtr def)
 {
@@ -8077,16 +8088,12 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
         virDomainNumaSetNodeMemorySize(def->numa, i, mem);
     }
 
-    /* Align memory module sizes. This needs to occur before 'initialmem'
-     * calculation because virDomainDefGetMemoryInitial() uses the size
-     * of the modules in the math. */
+    /* Calculate hotplugmem. The memory modules are already aligned at this
+     * point:
+     *
+     * - ppc64 mem modules are being aligned by virDomainMemoryDefPostParse();
+     * - x86 mem modules are being aligned by qemuDomainMemoryDefPostParse(). */
     for (i = 0; i < def->nmems; i++) {
-        /* ppc64 memory modules are aligned by virDomainMemoryDefPostParse(). */
-        if (!ARCH_IS_PPC64(def->os.arch)) {
-            align = qemuDomainGetMemoryModuleSizeAlignment();
-            def->mems[i]->size = VIR_ROUND_UP(def->mems[i]->size, align);
-        }
-
         hotplugmem += def->mems[i]->size;
 
         if (def->mems[i]->size > maxmemkb) {
