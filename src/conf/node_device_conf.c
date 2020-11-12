@@ -69,6 +69,7 @@ VIR_ENUM_IMPL(virNodeDevCap,
               "vdpa",
               "ap_card",
               "ap_queue",
+              "ap_matrix",
 );
 
 VIR_ENUM_IMPL(virNodeDevNetCap,
@@ -665,6 +666,7 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
         case VIR_NODE_DEV_CAP_MDEV_TYPES:
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
+        case VIR_NODE_DEV_CAP_AP_MATRIX:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -2075,6 +2077,9 @@ virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
         ret = virNodeDevCapAPQueueParseXML(ctxt, def, node,
                                            &caps->data.ap_queue);
         break;
+    case VIR_NODE_DEV_CAP_AP_MATRIX:
+        ret = 0;
+        break;
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
@@ -2396,6 +2401,9 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
             virMediatedDeviceTypeFree(data->ccw_dev.mdev_types[i]);
         VIR_FREE(data->ccw_dev.mdev_types);
         break;
+    case VIR_NODE_DEV_CAP_AP_MATRIX:
+        VIR_FREE(data->ap_matrix.addr);
+        break;
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_DRM:
     case VIR_NODE_DEV_CAP_FC_HOST:
@@ -2465,6 +2473,7 @@ virNodeDeviceUpdateCaps(virNodeDeviceDefPtr def)
         case VIR_NODE_DEV_CAP_VDPA:
         case VIR_NODE_DEV_CAP_AP_CARD:
         case VIR_NODE_DEV_CAP_AP_QUEUE:
+        case VIR_NODE_DEV_CAP_AP_MATRIX:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -2806,6 +2815,7 @@ virNodeDeviceGetPCIDynamicCaps(const char *sysfsPath,
                                       &pci_dev->mdev_types,
                                       &pci_dev->nmdev_types) < 0)
         return -1;
+
     if (pci_dev->nmdev_types > 0)
         pci_dev->flags |= VIR_NODE_DEV_CAP_FLAG_PCI_MDEV;
 
@@ -2848,7 +2858,6 @@ virNodeDeviceGetPCIDynamicCaps(const char *sysfsPath G_GNUC_UNUSED,
 {
     return -1;
 }
-
 
 int virNodeDeviceGetSCSITargetCaps(const char *sysfsPath G_GNUC_UNUSED,
                                    virNodeDevCapSCSITargetPtr scsi_target G_GNUC_UNUSED)
