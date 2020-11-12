@@ -1737,7 +1737,7 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
                                         unsigned int flags)
 {
     virQEMUDriverPtr driver = conn->privateData;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     virDomainObjPtr vm = NULL;
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
@@ -1810,7 +1810,6 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
     qemuProcessEndJob(driver, vm);
 
  cleanup:
-    virDomainDefFree(def);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectEventStateQueue(driver->domainEventState, event2);
@@ -5997,7 +5996,7 @@ qemuDomainRestoreFlags(virConnectPtr conn,
 {
     virQEMUDriverPtr driver = conn->privateData;
     qemuDomainObjPrivatePtr priv = NULL;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     virDomainObjPtr vm = NULL;
     g_autofree char *xmlout = NULL;
     const char *newxml = dxml;
@@ -6078,7 +6077,6 @@ qemuDomainRestoreFlags(virConnectPtr conn,
     qemuProcessEndJob(driver, vm);
 
  cleanup:
-    virDomainDefFree(def);
     VIR_FORCE_CLOSE(fd);
     if (virFileWrapperFdClose(wrapperFd) < 0)
         ret = -1;
@@ -6104,7 +6102,7 @@ qemuDomainSaveImageGetXMLDesc(virConnectPtr conn, const char *path,
 {
     virQEMUDriverPtr driver = conn->privateData;
     char *ret = NULL;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     int fd = -1;
     virQEMUSaveDataPtr data = NULL;
 
@@ -6123,7 +6121,6 @@ qemuDomainSaveImageGetXMLDesc(virConnectPtr conn, const char *path,
 
  cleanup:
     virQEMUSaveDataFree(data);
-    virDomainDefFree(def);
     VIR_FORCE_CLOSE(fd);
     return ret;
 }
@@ -6134,8 +6131,8 @@ qemuDomainSaveImageDefineXML(virConnectPtr conn, const char *path,
 {
     virQEMUDriverPtr driver = conn->privateData;
     int ret = -1;
-    virDomainDefPtr def = NULL;
-    virDomainDefPtr newdef = NULL;
+    g_autoptr(virDomainDef) def = NULL;
+    g_autoptr(virDomainDef) newdef = NULL;
     int fd = -1;
     virQEMUSaveDataPtr data = NULL;
     int state = -1;
@@ -6194,8 +6191,6 @@ qemuDomainSaveImageDefineXML(virConnectPtr conn, const char *path,
     ret = 0;
 
  cleanup:
-    virDomainDefFree(def);
-    virDomainDefFree(newdef);
     VIR_FORCE_CLOSE(fd);
     virQEMUSaveDataFree(data);
     return ret;
@@ -6208,7 +6203,7 @@ qemuDomainManagedSaveGetXMLDesc(virDomainPtr dom, unsigned int flags)
     virDomainObjPtr vm;
     g_autofree char *path = NULL;
     char *ret = NULL;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     int fd = -1;
     virQEMUSaveDataPtr data = NULL;
     qemuDomainObjPrivatePtr priv;
@@ -6240,7 +6235,6 @@ qemuDomainManagedSaveGetXMLDesc(virDomainPtr dom, unsigned int flags)
 
  cleanup:
     virQEMUSaveDataFree(data);
-    virDomainDefFree(def);
     VIR_FORCE_CLOSE(fd);
     virDomainObjEndAPI(&vm);
     return ret;
@@ -6289,7 +6283,7 @@ qemuDomainObjRestore(virConnectPtr conn,
                      bool bypass_cache,
                      qemuDomainAsyncJob asyncJob)
 {
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int fd = -1;
     int ret = -1;
@@ -6350,7 +6344,6 @@ qemuDomainObjRestore(virConnectPtr conn,
 
  cleanup:
     virQEMUSaveDataFree(data);
-    virDomainDefFree(def);
     VIR_FORCE_CLOSE(fd);
     if (virFileWrapperFdClose(wrapperFd) < 0)
         ret = -1;
@@ -6689,8 +6682,8 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
                          unsigned int flags)
 {
     virQEMUDriverPtr driver = conn->privateData;
-    virDomainDefPtr def = NULL;
-    virDomainDefPtr oldDef = NULL;
+    g_autoptr(virDomainDef) def = NULL;
+    g_autoptr(virDomainDef) oldDef = NULL;
     virDomainObjPtr vm = NULL;
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
@@ -6751,8 +6744,6 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
-    virDomainDefFree(oldDef);
-    virDomainDefFree(def);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     return dom;
@@ -7755,7 +7746,7 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
                                     unsigned int flags)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virDomainDefPtr vmdef = NULL;
+    g_autoptr(virDomainDef) vmdef = NULL;
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
     virDomainDeviceDefPtr devConf = NULL;
     virDomainDeviceDef devConfSave = { 0 };
@@ -7845,7 +7836,6 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
-    virDomainDefFree(vmdef);
     virDomainDeviceDefFree(devConf);
     virDomainDeviceDefFree(devLive);
 
@@ -7903,7 +7893,7 @@ static int qemuDomainUpdateDeviceFlags(virDomainPtr dom,
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm = NULL;
     qemuDomainObjPrivatePtr priv;
-    virDomainDefPtr vmdef = NULL;
+    g_autoptr(virDomainDef) vmdef = NULL;
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     bool force = (flags & VIR_DOMAIN_DEVICE_MODIFY_FORCE) != 0;
     int ret = -1;
@@ -7998,7 +7988,6 @@ static int qemuDomainUpdateDeviceFlags(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    virDomainDefFree(vmdef);
     if (dev != dev_copy)
         virDomainDeviceDefFree(dev_copy);
     virDomainDeviceDefFree(dev);
@@ -8017,7 +8006,7 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
     virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
-    virDomainDefPtr vmdef = NULL;
+    g_autoptr(virDomainDef) vmdef = NULL;
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -8092,7 +8081,6 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     if (dev != dev_copy)
         virDomainDeviceDefFree(dev_copy);
     virDomainDeviceDefFree(dev);
-    virDomainDefFree(vmdef);
     return ret;
 }
 
@@ -8107,7 +8095,7 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
-    virDomainDefPtr vmdef = NULL;
+    g_autoptr(virDomainDef) vmdef = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
     int ret = -1;
 
@@ -8161,7 +8149,6 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
 
     ret = 0;
  cleanup:
-    virDomainDefFree(vmdef);
     return ret;
 }
 
@@ -9281,7 +9268,7 @@ qemuDomainSetSchedulerParametersFlags(virDomainPtr dom,
     virDomainObjPtr vm = NULL;
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
-    virDomainDefPtr persistentDefCopy = NULL;
+    g_autoptr(virDomainDef) persistentDefCopy = NULL;
     unsigned long long value_ul;
     long long value_l;
     int ret = -1;
@@ -9569,7 +9556,6 @@ qemuDomainSetSchedulerParametersFlags(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    virDomainDefFree(persistentDefCopy);
     virDomainObjEndAPI(&vm);
     if (eventNparams)
         virTypedParamsFree(eventParams, eventNparams);
@@ -11168,7 +11154,7 @@ qemuDomainMigratePrepareTunnel(virConnectPtr dconn,
                                const char *dom_xml)
 {
     virQEMUDriverPtr driver = dconn->privateData;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     g_autofree char *origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
@@ -11204,7 +11190,6 @@ qemuDomainMigratePrepareTunnel(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    virDomainDefFree(def);
     return ret;
 }
 
@@ -11224,7 +11209,7 @@ qemuDomainMigratePrepare2(virConnectPtr dconn,
                           const char *dom_xml)
 {
     virQEMUDriverPtr driver = dconn->privateData;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     g_autofree char *origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
@@ -11270,7 +11255,6 @@ qemuDomainMigratePrepare2(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    virDomainDefFree(def);
     return ret;
 }
 
@@ -11612,7 +11596,7 @@ qemuDomainMigratePrepareTunnel3(virConnectPtr dconn,
                                 const char *dom_xml)
 {
     virQEMUDriverPtr driver = dconn->privateData;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     g_autofree char *origname = NULL;
     qemuMigrationParamsPtr migParams = NULL;
     int ret = -1;
@@ -11642,7 +11626,6 @@ qemuDomainMigratePrepareTunnel3(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    virDomainDefFree(def);
     return ret;
 }
 
@@ -11658,7 +11641,7 @@ qemuDomainMigratePrepareTunnel3Params(virConnectPtr dconn,
                                       unsigned int flags)
 {
     virQEMUDriverPtr driver = dconn->privateData;
-    virDomainDefPtr def = NULL;
+    g_autoptr(virDomainDef) def = NULL;
     const char *dom_xml = NULL;
     const char *dname = NULL;
     g_autofree char *origname = NULL;
@@ -11700,7 +11683,6 @@ qemuDomainMigratePrepareTunnel3Params(virConnectPtr dconn,
 
  cleanup:
     qemuMigrationParamsFree(migParams);
-    virDomainDefFree(def);
     return ret;
 }
 
