@@ -51,16 +51,24 @@ qemuSecuritySetAllLabel(virQEMUDriverPtr driver,
                                       incomingPath,
                                       priv->chardevStdioLogd,
                                       migrated) < 0)
-        goto cleanup;
+        goto restorelabel;
 
     if (virSecurityManagerTransactionCommit(driver->securityManager,
                                             pid, priv->rememberOwner) < 0)
-        goto cleanup;
+        goto restorelabel;
 
     ret = 0;
+
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
     return ret;
+
+ restorelabel:
+    virSecurityManagerRestoreAllLabel(driver->securityManager,
+                                      vm->def,
+                                      migrated,
+                                      priv->chardevStdioLogd);
+    goto cleanup;
 }
 
 
