@@ -1046,7 +1046,12 @@ qemuStateStop(void)
     int state;
     virDomainPtr *domains = NULL;
     g_autofree unsigned int *flags = NULL;
-    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(qemu_driver);
+    g_autoptr(virQEMUDriverConfig) cfg = NULL;
+
+    if (!qemu_driver)
+        return -1;
+
+    cfg = virQEMUDriverGetConfig(qemu_driver);
 
     if (!(conn = virConnectOpen(cfg->uri)))
         goto cleanup;
