@@ -87,6 +87,7 @@
         <ref name="capccwdev"/>
         <ref name="capcssdev"/>
         <ref name="capvdpa"/>
+        <ref name="capapcard"/>
       </choice>
     </element>
   </define>
@@ -668,12 +669,21 @@
     </element>
   </define>
 
-  <define name="address">
-    <element name="address">
-      <attribute name="domain"><ref name="hexuint"/></attribute>
-      <attribute name="bus"><ref name="hexuint"/></attribute>
-      <attribute name="slot"><ref name="hexuint"/></attribute>
-      <attribute name="function"><ref name="hexuint"/></attribute>
+  <define name='capapcard'>
+    <attribute name='type'>
+      <value>ap_card</value>
+    </attribute>
+    <element name='ap-adapter'>
+      <ref name='apAdapterRange'/>
+    </element>
+  </define>
+
+  <define name='address'>
+    <element name='address'>
+      <attribute name='domain'><ref name='hexuint'/></attribute>
+      <attribute name='bus'><ref name='hexuint'/></attribute>
+      <attribute name='slot'><ref name='hexuint'/></attribute>
+      <attribute name='function'><ref name='hexuint'/></attribute>
     </element>
   </define>
 
@@ -714,6 +724,18 @@
         </element>
       </oneOrMore>
     </element>
+  </define>
+
+  <define name="apAdapterRange">
+    <choice>
+      <data type="string">
+        <param name="pattern">(0x)?[0-9a-fA-F]{1,2}</param>
+      </data>
+      <data type="int">
+        <param name="minInclusive">0</param>
+        <param name="maxInclusive">255</param>
+      </data>
+    </choice>
   </define>
 
 </grammar>

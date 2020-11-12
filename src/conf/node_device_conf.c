@@ -67,6 +67,7 @@ VIR_ENUM_IMPL(virNodeDevCap,
               "ccw",
               "css",
               "vdpa",
+              "ap_card",
 );
 
 VIR_ENUM_IMPL(virNodeDevNetCap,
@@ -650,6 +651,10 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
         case VIR_NODE_DEV_CAP_VDPA:
             virNodeDeviceCapVDPADefFormat(&buf, data);
             break;
+        case VIR_NODE_DEV_CAP_AP_CARD:
+            virBufferAsprintf(&buf, "<ap-adapter>0x%02x</ap-adapter>\n",
+                              data->ap_card.ap_adapter);
+            break;
         case VIR_NODE_DEV_CAP_MDEV_TYPES:
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
@@ -937,6 +942,36 @@ virNodeDevCapCCWParseXML(xmlXPathContextPtr ctxt,
             return -1;
     }
 
+    return 0;
+}
+
+
+static int
+virNodeDevCapAPCardParseXML(xmlXPathContextPtr ctxt,
+                            virNodeDeviceDefPtr def,
+                            xmlNodePtr node,
+                            virNodeDevCapAPCardPtr ap_card)
+{
+    xmlNodePtr orig;
+    g_autofree char *adapter = NULL;
+
+    orig = ctxt->node;
+    ctxt->node = node;
+
+    if (!(adapter = virXPathString("string(./ap-adapter[1])", ctxt))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("missing ap-adapter value for '%s'"), def->name);
+        return -1;
+    }
+
+    if (virStrToLong_uip(adapter, NULL, 0, &ap_card->ap_adapter) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("invalid ap-adapter value '%s' for '%s'"),
+                       adapter, def->name);
+        return -1;
+    }
+
+    ctxt->node = orig;
     return 0;
 }
 
@@ -1979,6 +2014,10 @@ virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
     case VIR_NODE_DEV_CAP_CSS_DEV:
         ret = virNodeDevCapCCWParseXML(ctxt, def, node, &caps->data.ccw_dev);
         break;
+    case VIR_NODE_DEV_CAP_AP_CARD:
+        ret = virNodeDevCapAPCardParseXML(ctxt, def, node,
+                                          &caps->data.ap_card);
+        break;
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
@@ -2306,6 +2345,7 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
     case VIR_NODE_DEV_CAP_VPORTS:
     case VIR_NODE_DEV_CAP_CCW_DEV:
     case VIR_NODE_DEV_CAP_VDPA:
+    case VIR_NODE_DEV_CAP_AP_CARD:
     case VIR_NODE_DEV_CAP_LAST:
         /* This case is here to shutup the compiler */
         break;
@@ -2365,6 +2405,7 @@ virNodeDeviceUpdateCaps(virNodeDeviceDefPtr def)
         case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_CCW_DEV:
         case VIR_NODE_DEV_CAP_VDPA:
+        case VIR_NODE_DEV_CAP_AP_CARD:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
