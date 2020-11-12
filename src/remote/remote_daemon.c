@@ -483,6 +483,37 @@ static void daemonReloadHandler(virNetDaemonPtr dmn G_GNUC_UNUSED,
     }
 }
 
+
+static void daemonStopWorker(void *opaque)
+{
+    virNetDaemonPtr dmn = opaque;
+
+    sleep(10);
+
+    VIR_DEBUG("Begin stop dmn=%p", dmn);
+
+    ignore_value(virStateStop());
+
+    VIR_DEBUG("Completed stop dmn=%p", dmn);
+
+    /* Exit daemon cleanly */
+    virNetDaemonQuit(dmn);
+}
+
+
+/* We do this in a thread to not block the main loop */
+static void daemonStop(virNetDaemonPtr dmn,
+                       siginfo_t *sig G_GNUC_UNUSED,
+                       void *opaque G_GNUC_UNUSED)
+{
+    virThread thr;
+    virObjectRef(dmn);
+    if (virThreadCreateFull(&thr, false, daemonStopWorker,
+                            "daemon-stop", false, dmn) < 0)
+        virObjectUnref(dmn);
+}
+
+
 static int daemonSetupSignals(virNetDaemonPtr dmn)
 {
     if (virNetDaemonAddSignalHandler(dmn, SIGINT, daemonShutdownHandler, NULL) < 0)
@@ -492,6 +523,8 @@ static int daemonSetupSignals(virNetDaemonPtr dmn)
     if (virNetDaemonAddSignalHandler(dmn, SIGTERM, daemonShutdownHandler, NULL) < 0)
         return -1;
     if (virNetDaemonAddSignalHandler(dmn, SIGHUP, daemonReloadHandler, NULL) < 0)
+        return -1;
+    if (virNetDaemonAddSignalHandler(dmn, SIGUSR1, daemonStop, NULL) < 0)
         return -1;
     return 0;
 }
@@ -511,32 +544,6 @@ static void daemonInhibitCallback(bool inhibit, void *opaque)
 static GDBusConnection *sessionBus;
 static GDBusConnection *systemBus;
 
-static void daemonStopWorker(void *opaque)
-{
-    virNetDaemonPtr dmn = opaque;
-
-    VIR_DEBUG("Begin stop dmn=%p", dmn);
-
-    ignore_value(virStateStop());
-
-    VIR_DEBUG("Completed stop dmn=%p", dmn);
-
-    /* Exit daemon cleanly */
-    virNetDaemonQuit(dmn);
-}
-
-
-/* We do this in a thread to not block the main loop */
-static void daemonStop(virNetDaemonPtr dmn)
-{
-    virThread thr;
-    virObjectRef(dmn);
-    if (virThreadCreateFull(&thr, false, daemonStopWorker,
-                            "daemon-stop", false, dmn) < 0)
-        virObjectUnref(dmn);
-}
-
-
 static GDBusMessage *
 handleSessionMessageFunc(GDBusConnection *connection G_GNUC_UNUSED,
                          GDBusMessage *message,
@@ -550,7 +557,7 @@ handleSessionMessageFunc(GDBusConnection *connection G_GNUC_UNUSED,
     if (virGDBusMessageIsSignal(message,
                                 "org.freedesktop.DBus.Local",
                                 "Disconnected"))
-        daemonStop(dmn);
+        daemonStop(dmn, NULL, NULL);
 
     return message;
 }
@@ -569,7 +576,7 @@ handleSystemMessageFunc(GDBusConnection *connection G_GNUC_UNUSED,
 
     VIR_DEBUG("dmn=%p", dmn);
 
-    daemonStop(dmn);
+    daemonStop(dmn, NULL, NULL);
 }
 
 
@@ -1247,5 +1254,6 @@ int main(int argc, char **argv) {
     VIR_FREE(remote_config_file);
     daemonConfigFree(config);
 
+    sleep(10);
     return ret;
 }
