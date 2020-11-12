@@ -18874,6 +18874,30 @@ qemuDomainGetFSInfoAgent(virQEMUDriverPtr driver,
     return ret;
 }
 
+/* Turn device node string like "/dev/vda1" into a target name like "vda" */
+static char *
+qemuAgentDevNodeToTarget(const char *devnode)
+{
+    char *str = g_strdup(devnode);
+    size_t len = strlen(str);
+
+    /* Remove the "/dev/" prefix from the string */
+    if (g_str_has_prefix(str, "/dev/")) {
+        len -= 5;
+        memmove(str, str + 5, len + 1);
+    }
+
+    /* Remove the partition number from the end of the string */
+    while (len > 0) {
+        len--;
+        if (!g_ascii_isdigit(str[len]))
+            break;
+        str[len] = 0;
+    }
+
+    return str;
+}
+
 static virDomainFSInfoPtr
 qemuAgentFSInfoToPublic(qemuAgentFSInfoPtr agent,
                         virDomainDefPtr vmdef)
@@ -18903,7 +18927,7 @@ qemuAgentFSInfoToPublic(qemuAgentFSInfoPtr agent,
         if (diskDef != NULL)
             ret->devAlias[i] = g_strdup(diskDef->dst);
         else if (agentdisk->devnode != NULL)
-            ret->devAlias[i] = g_strdup(agentdisk->devnode);
+            ret->devAlias[i] = qemuAgentDevNodeToTarget(agentdisk->devnode);
         else
             VIR_DEBUG("Missing devnode name for '%s'.", ret->mountpoint);
     }
