@@ -506,11 +506,20 @@ static void daemonStop(virNetDaemonPtr dmn,
                        siginfo_t *sig G_GNUC_UNUSED,
                        void *opaque G_GNUC_UNUSED)
 {
-    virThread thr;
+    virThreadPtr thr;
     virObjectRef(dmn);
-    if (virThreadCreateFull(&thr, false, daemonStopWorker,
-                            "daemon-stop", false, dmn) < 0)
+
+    thr = g_new0(virThread, 1);
+
+    if (virThreadCreateFull(thr, true,
+                            daemonStopWorker,
+                            "daemon-stop", false, dmn) < 0) {
         virObjectUnref(dmn);
+        g_free(thr);
+        return;
+    }
+
+    virNetDaemonSetStateStopWorkerThread(dmn, &thr);
 }
 
 
