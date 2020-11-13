@@ -222,7 +222,7 @@ static const vshCmdOptDef opts_attach_disk[] = {
     {.name = "source",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ | VSH_OFLAG_EMPTY_OK,
-     .help = N_("source of disk device")
+     .help = N_("source of disk device or name of network disk")
     },
     {.name = "target",
      .type = VSH_OT_DATA,
@@ -297,6 +297,22 @@ static const vshCmdOptDef opts_attach_disk[] = {
     {.name = "print-xml",
      .type = VSH_OT_BOOL,
      .help = N_("print XML document rather than attach the disk")
+    },
+    {.name = "source-protocol",
+     .type = VSH_OT_STRING,
+     .help = N_("protocol used by disk device source")
+    },
+    {.name = "source-host-name",
+     .type = VSH_OT_STRING,
+     .help = N_("host name for source of disk device")
+    },
+    {.name = "source-host-transport",
+     .type = VSH_OT_STRING,
+     .help = N_("host transport for source of disk device")
+    },
+    {.name = "source-host-socket",
+     .type = VSH_OT_STRING,
+     .help = N_("host socket for source of disk device")
     },
     VIRSH_COMMON_OPT_DOMAIN_PERSISTENT,
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
@@ -567,6 +583,12 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
                 *iothread = NULL, *cache = NULL, *io = NULL,
                 *serial = NULL, *straddr = NULL, *wwn = NULL,
                 *targetbus = NULL, *alias = NULL;
+    const char *source_protocol = NULL;
+    const char *host_name = NULL;
+    const char *host_transport = NULL;
+    const char *host_socket = NULL;
+    char *host_name_copy = NULL;
+    char *host_port = NULL;
     struct DiskAddress diskAddr;
     bool isFile = false, functionReturn = false;
     int ret;
@@ -604,7 +626,11 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
         vshCommandOptStringReq(ctl, cmd, "address", &straddr) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "targetbus", &targetbus) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "alias", &alias) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "sourcetype", &stype) < 0)
+        vshCommandOptStringReq(ctl, cmd, "sourcetype", &stype) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-protocol", &source_protocol) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-name", &host_name) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-transport", &host_transport) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-host-socket", &host_socket) < 0)
         goto cleanup;
 
     if (!stype) {
@@ -631,6 +657,13 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
 
     if (wwn && !virValidateWWN(wwn))
         goto cleanup;
+
+    if (!source_protocol && (host_name || host_socket || host_transport)) {
+        /* Error: cannot use network host without a source protocol */
+        vshError(ctl, "%s",
+                 _("Cannot use --source-host-* parameters without a --source-protocol"));
+        goto cleanup;
+    }
 
     /* Make XML of disk */
     virBufferAsprintf(&buf, "<disk type='%s'",
@@ -659,9 +692,51 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
         virBufferAddLit(&buf, "/>\n");
     }
 
-    if (source)
-        virBufferAsprintf(&buf, "<source %s='%s'/>\n",
-                          isFile ? "file" : "dev", source);
+    if (source || source_protocol) {
+        virBufferAddLit(&buf, "<source");
+        if (source_protocol) {
+            /* Using a network disk; source is --source-name */
+            virBufferAsprintf(&buf, " protocol='%s'", source_protocol);
+            if (source)
+                virBufferAsprintf(&buf, " name='%s'", source);
+
+            if (host_name || host_socket || host_transport) {
+                /* Host information provided, add a <host> tag */
+                virBufferAddLit(&buf, ">\n");
+                virBufferAdjustIndent(&buf, 2);
+                virBufferAddLit(&buf, "<host");
+
+                if (host_name) {
+                    /* Logic for host:port syntax */
+                    host_name_copy = g_strdup(host_name);
+                    host_port = strchr(host_name_copy, ':');
+
+                    if (host_port) {
+                        host_name_copy[(int)(host_port - host_name_copy)] = '\0';
+                        virBufferAsprintf(&buf,
+                                          " name='%s' port='%s'",
+                                          host_name_copy, host_port);
+                    } else {
+                        virBufferAsprintf(&buf, " name='%s'", host_name);
+                    }
+                }
+
+                if (host_transport)
+                    virBufferAsprintf(&buf, " transport='%s'", host_transport);
+                if (host_socket)
+                    virBufferAsprintf(&buf, " socket='%s'", host_socket);
+                virBufferAddLit(&buf, "/>\n");
+                virBufferAdjustIndent(&buf, -2);
+                virBufferAddLit(&buf, "</source>\n");
+            }
+        } else {
+            /* Using a local disk; source is file or dev */
+            virBufferAsprintf(&buf, " %s='%s'",
+                        isFile ? "file" : "dev", source);
+            virBufferAddLit(&buf, "/>\n");
+        }
+    }
+
     virBufferAsprintf(&buf, "<target dev='%s'", target);
     if (targetbus)
         virBufferAsprintf(&buf, " bus='%s'", targetbus);
