@@ -53,7 +53,13 @@ struct _virObjectPrivate {
 };
 
 
+#pragma clang diagnostic push
+/* Workaround for glib's issue #600 on clang */
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
+
 G_DEFINE_TYPE_WITH_PRIVATE(virObject, vir_object, G_TYPE_OBJECT)
+
+#pragma clang diagnostic pop
 
 #define VIR_OBJECT_NOTVALID(obj) (!obj || !VIR_IS_OBJECT(obj))
 

@@ -50,7 +50,13 @@ struct _virIdentity {
     virTypedParameterPtr params;
 };
 
+#pragma clang diagnostic push
+/* Workaround for glib's issue #600 on clang */
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
+
 G_DEFINE_TYPE(virIdentity, vir_identity, G_TYPE_OBJECT)
+
+#pragma clang diagnostic pop
 
 static virThreadLocal virIdentityCurrent;
 

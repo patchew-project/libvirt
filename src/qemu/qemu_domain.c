@@ -330,7 +330,14 @@ struct _qemuDomainLogContext {
     virLogManagerPtr manager;
 };
 
+#pragma clang diagnostic push
+/* Workaround for glib's issue #600 on clang */
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
+
 G_DEFINE_TYPE(qemuDomainLogContext, qemu_domain_log_context, G_TYPE_OBJECT);
+
+#pragma clang diagnostic pop
+
 static virClassPtr qemuDomainSaveCookieClass;
 
 static void qemuDomainLogContextFinalize(GObject *obj);
