@@ -1370,8 +1370,8 @@ qemuMonitorJSONHandleMemoryFailure(qemuMonitorPtr mon,
     }
 
     if (flagsjson) {
-        virJSONValueObjectGetBoolean(flagsjson, "action-required", &ar);
-        virJSONValueObjectGetBoolean(flagsjson, "recursive", &recursive);
+        ignore_value(virJSONValueObjectGetBoolean(flagsjson, "action-required", &ar));
+        ignore_value(virJSONValueObjectGetBoolean(flagsjson, "recursive", &recursive));
     }
 
     mf.recipient = recipient;
