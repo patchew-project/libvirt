@@ -2248,7 +2248,6 @@ remoteDomainGetIOThreadInfo(virDomainPtr dom,
     remote_domain_get_iothread_info_args args;
     remote_domain_get_iothread_info_ret ret;
     remote_domain_iothread_info *src;
-    virDomainIOThreadInfoPtr *info_ret = NULL;
 
     remoteDriverLock(priv);
 
@@ -2273,6 +2272,8 @@ remoteDomainGetIOThreadInfo(virDomainPtr dom,
     }
 
     if (info) {
+        virDomainIOThreadInfoPtr *info_ret = NULL;
+
         if (!ret.info.info_len) {
             *info = NULL;
             rv = ret.ret;
@@ -2293,17 +2294,11 @@ remoteDomainGetIOThreadInfo(virDomainPtr dom,
             info_ret[i]->cpumaplen = src->cpumap.cpumap_len;
         }
         *info = info_ret;
-        info_ret = NULL;
     }
 
     rv = ret.ret;
 
  cleanup:
-    if (info_ret) {
-        for (i = 0; i < ret.info.info_len; i++)
-            virDomainIOThreadInfoFree(info_ret[i]);
-        VIR_FREE(info_ret);
-    }
     xdr_free((xdrproc_t)xdr_remote_domain_get_iothread_info_ret,
              (char *) &ret);
 
@@ -7638,7 +7633,6 @@ remoteDomainGetFSInfo(virDomainPtr dom,
     remote_domain_get_fsinfo_args args;
     remote_domain_get_fsinfo_ret ret;
     remote_domain_fsinfo *src;
-    virDomainFSInfoPtr *info_ret = NULL;
 
     remoteDriverLock(priv);
 
@@ -7661,6 +7655,8 @@ remoteDomainGetFSInfo(virDomainPtr dom,
     }
 
     if (info) {
+        virDomainFSInfoPtr *info_ret = NULL;
+
         if (!ret.info.info_len) {
             *info = NULL;
             rv = ret.ret;
@@ -7690,17 +7686,11 @@ remoteDomainGetFSInfo(virDomainPtr dom,
         }
 
         *info = info_ret;
-        info_ret = NULL;
     }
 
     rv = ret.ret;
 
  cleanup:
-    if (info_ret) {
-        for (i = 0; i < ret.info.info_len; i++)
-            virDomainFSInfoFree(info_ret[i]);
-        VIR_FREE(info_ret);
-    }
     xdr_free((xdrproc_t)xdr_remote_domain_get_fsinfo_ret,
              (char *) &ret);
 
