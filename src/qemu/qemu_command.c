@@ -8142,7 +8142,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         g_autofree char *fdset = NULL;
         g_autofree char *addfdarg = NULL;
 
-        virCommandPassFD(cmd, vdpafd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        virCommandPassFD(cmd, vdpafd, 0);
         fdset = qemuVirCommandGetFDSet(cmd, vdpafd);
         if (!fdset)
             goto cleanup;
