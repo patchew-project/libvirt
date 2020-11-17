@@ -1249,6 +1249,10 @@ udevProcessAPMatrix(struct udev_device *device,
             *(def->name + i) = '_';
     }
 
+    if (virNodeDeviceGetAPMatrixDynamicCaps(def->sysfs_path,
+                                            &data->ap_matrix) < 0)
+        return -1;
+
     return 0;
 }
 
