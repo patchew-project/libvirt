@@ -41,6 +41,18 @@ VIR_LOG_INIT("util.netlink");
 #define NETLINK_ACK_TIMEOUT_S  (2*1000)
 
 #if defined(WITH_LIBNL)
+
+/*
+ * VETH_INFO_PEER is defined in libnl, but it isn't exposed.
+ * We include it just like what iproute2 has done.
+ */
+enum {
+    VETH_INFO_UNSPEC,
+    VETH_INFO_PEER,
+
+    __VETH_INFO_MAX
+};
+
 /* State for a single netlink event handle */
 struct virNetlinkEventHandle {
     int watch;
@@ -532,6 +544,19 @@ virNetlinkNewLink(const char *ifname,
         NETLINK_MSG_NEST_START(nl_msg, infodata, IFLA_INFO_DATA);
         NETLINK_MSG_PUT(nl_msg, IFLA_MACVLAN_MODE,
                         sizeof(uint32_t), extra_args->macvlan_mode);
+        NETLINK_MSG_NEST_END(nl_msg, infodata);
+    }
+
+    if (STREQ(type, "veth") && extra_args && extra_args->veth_peer) {
+        struct nlattr *infoveth = NULL;
+
+        NETLINK_MSG_NEST_START(nl_msg, infodata, IFLA_INFO_DATA);
+        NETLINK_MSG_NEST_START(nl_msg, infoveth, VETH_INFO_PEER);
+        nlmsg_reserve(nl_msg, sizeof(struct ifinfomsg), 0);
+        NETLINK_MSG_PUT(nl_msg, IFLA_IFNAME,
+                        (strlen(extra_args->veth_peer) + 1),
+                        extra_args->veth_peer);
+        NETLINK_MSG_NEST_END(nl_msg, infoveth);
         NETLINK_MSG_NEST_END(nl_msg, infodata);
     }
 
