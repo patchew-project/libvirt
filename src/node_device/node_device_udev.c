@@ -1239,8 +1239,10 @@ udevProcessAPMatrix(struct udev_device *device,
                     virNodeDeviceDefPtr def)
 {
     size_t i;
+    virNodeDevCapDataPtr data = &def->caps->data;
 
-    def->name = g_strdup_printf("ap_%s", g_strdup(udev_device_get_sysname(device)));
+    data->ap_matrix.addr =  g_strdup(udev_device_get_sysname(device));
+    def->name = g_strdup_printf("ap_%s", data->ap_matrix.addr);
 
     for (i = 0; i < strlen(def->name); i++) {
         if (!(g_ascii_isalnum(*(def->name + i))))
