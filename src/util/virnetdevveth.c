@@ -27,6 +27,7 @@
 #include "virfile.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virnetlink.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -116,7 +117,6 @@ int virNetDevVethCreate(char** veth1, char** veth2)
     for (i = 0; i < MAX_VETH_RETRIES; i++) {
         g_autofree char *veth1auto = NULL;
         g_autofree char *veth2auto = NULL;
-        g_autoptr(virCommand) cmd = NULL;
 
         int status;
         if (!*veth1) {
@@ -136,15 +136,32 @@ int virNetDevVethCreate(char** veth1, char** veth2)
             vethNum = veth2num + 1;
         }
 
-        cmd = virCommandNew("ip");
-        virCommandAddArgList(cmd, "link", "add",
-                             *veth1 ? *veth1 : veth1auto,
-                             "type", "veth", "peer", "name",
-                             *veth2 ? *veth2 : veth2auto,
-                             NULL);
+#if defined(WITH_LIBNL)
+        {
+            int error = 0;
+            virNetlinkNewLinkData data = {
+                .veth_peer = *veth2 ? *veth2 : veth2auto,
+            };
 
-        if (virCommandRun(cmd, &status) < 0)
-            goto cleanup;
+            status = virNetlinkNewLink(*veth1 ? *veth1 : veth1auto,
+                                       "veth", &data, &error);
+            if (status < 0)
+                goto cleanup;
+        }
+#else
+        {
+            g_autoptr(virCommand) cmd = NULL;
+            cmd = virCommandNew("ip");
+            virCommandAddArgList(cmd, "link", "add",
+                                 *veth1 ? *veth1 : veth1auto,
+                                 "type", "veth", "peer", "name",
+                                 *veth2 ? *veth2 : veth2auto,
+                                 NULL);
+
+            if (virCommandRun(cmd, &status) < 0)
+                goto cleanup;
+        }
+#endif /* WITH_LIBNL */
 
         if (status == 0) {
             if (veth1auto) {
@@ -188,6 +205,9 @@ int virNetDevVethCreate(char** veth1, char** veth2)
  */
 int virNetDevVethDelete(const char *veth)
 {
+#if defined(WITH_LIBNL)
+    return virNetlinkDelLink(veth, NULL);
+#else
     int status;
     g_autoptr(virCommand) cmd = virCommandNewArgList("ip", "link",
                                                        "del", veth, NULL);
@@ -206,4 +226,5 @@ int virNetDevVethDelete(const char *veth)
     }
 
     return 0;
+#endif /* WITH_LIBNL */
 }
