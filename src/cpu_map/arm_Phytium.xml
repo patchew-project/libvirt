@@ -1,0 +1,10 @@
+<cpus>
+  <model name='FT-2000+'>
+    <vendor name='Phytium'/>
+    <pvr value='0x662'/>
+  </model>
+  <model name='Tengyun-S2500'>
+    <vendor name='Phytium'/>
+    <pvr value='0x663'/>
+  </model>
+</cpus>
