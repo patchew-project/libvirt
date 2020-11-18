@@ -3340,7 +3340,14 @@ migrating disks.  This can be *tcp://address:port* to specify a listen address
 UNIX socket with that specified path.  In this case you need to make sure the
 same socket path is accessible to both source and destination hypervisors and
 connecting to the socket on the source (after hypervisor creates it on the
-destination) will actually connect to the destination.
+destination) will actually connect to the destination.  If you are using SELinux
+(at least on the source host) you need to make sure the socket on the source is
+accessible to libvirtd/QEMU for connection.  That is because libvirt cannot
+change the context of the socket because it is different from the file
+representation of the socket and because the context is chosen by its creator
+(usually by using *setsockcreatecon{,_raw}()* functions).  Generally
+*system_r:system_u:svirt_socket_t:s0* should do the trick, but check the SELinux
+rules and settings of your system.
 
 
 migrate-compcache
