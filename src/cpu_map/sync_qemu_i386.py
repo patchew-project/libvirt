@@ -292,6 +292,8 @@ def expand_model(model):
 
         props = version.pop(".props", dict())
         for k, v in props:
+            if k not in ("model-id", "stepping", "model"):
+                k = T.get(k, k)
             if v == "on":
                 result["features"].add(k)
             elif v == "off" and k in result["features"]:
