@@ -158,6 +158,7 @@ def translate_feature(name):
         name == "0",
         name.startswith("VMX_"),
         name.startswith("MSR_VMX_"),
+        name.startswith("vmx-"),
 
         # set to "no auto enable" by qemu
         name == "CPUID_EXT3_TOPOEXT",
@@ -169,6 +170,10 @@ def translate_feature(name):
 
     if name in T:
         return T[name]
+
+    for v in T.values():
+        if name.replace("-", "_") == v.replace("-", "_"):
+            return v
 
     print("warning: Unknown feature '{}'".format(name))
     return name
