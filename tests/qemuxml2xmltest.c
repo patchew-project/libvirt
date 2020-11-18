@@ -1246,6 +1246,13 @@ mymain(void)
                  QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
                  QEMU_CAPS_DEVICE_NVDIMM,
                  QEMU_CAPS_LAST);
+    DO_TEST_FULL("memory-hotplug-ppc64-nonuma-abi-update", WHEN_BOTH,
+                 ARG_PARSEFLAGS, VIR_DOMAIN_DEF_PARSE_ABI_UPDATE,
+                 ARG_QEMU_CAPS,
+                 QEMU_CAPS_KVM, QEMU_CAPS_DEVICE_PC_DIMM,
+                 QEMU_CAPS_NUMA, QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
+                 QEMU_CAPS_OBJECT_MEMORY_RAM,
+                 QEMU_CAPS_OBJECT_MEMORY_FILE, QEMU_CAPS_LAST);
 
     DO_TEST("net-udp", NONE);
 
