@@ -364,6 +364,16 @@ def main():
         with open(name, "wt") as f:
             output_model(f, model)
 
+    features = set()
+    for model in models:
+        features.update(model["features"])
+
+    untranslated = [x for x in features if x not in T.values()]
+    if untranslated:
+        print(
+            "Features not in the translation table:",
+            ", ".join(sorted(untranslated)))
+
 
 if __name__ == "__main__":
     main()
