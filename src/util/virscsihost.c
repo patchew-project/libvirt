@@ -95,12 +95,12 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
     const char *prefix = sysfs_prefix ? sysfs_prefix : SYSFS_SCSI_HOST_PATH;
     struct dirent *entry = NULL;
     g_autoptr(DIR) dir = NULL;
-    char *host_link = NULL;
-    char *host_path = NULL;
+    g_autofree char *host_link = NULL;
+    g_autofree char *host_path = NULL;
     char *p = NULL;
     char *ret = NULL;
-    char *buf = NULL;
-    char *unique_path = NULL;
+    g_autofree char *buf = NULL;
+    g_autofree char *unique_path = NULL;
     unsigned int read_unique_id;
 
     if (virDirOpen(&dir, prefix) < 0)
@@ -113,7 +113,7 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
         host_link = g_strdup_printf("%s/%s", prefix, entry->d_name);
 
         if (virFileResolveLink(host_link, &host_path) < 0)
-            goto cleanup;
+            return ret;
 
         if (!strstr(host_path, parentaddr)) {
             VIR_FREE(host_link);
@@ -131,13 +131,13 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
         }
 
         if (virFileReadAll(unique_path, 1024, &buf) < 0)
-            goto cleanup;
+            return ret;
 
         if ((p = strchr(buf, '\n')))
             *p = '\0';
 
         if (virStrToLong_ui(buf, NULL, 10, &read_unique_id) < 0)
-            goto cleanup;
+            return ret;
 
         VIR_FREE(buf);
 
@@ -150,11 +150,6 @@ virSCSIHostFindByPCI(const char *sysfs_prefix,
         break;
     }
 
- cleanup:
-    VIR_FREE(unique_path);
-    VIR_FREE(host_link);
-    VIR_FREE(host_path);
-    VIR_FREE(buf);
     return ret;
 }
 
@@ -226,7 +221,7 @@ virSCSIHostGetNameByParentaddr(unsigned int domain,
                                unsigned int unique_id)
 {
     char *name = NULL;
-    char *parentaddr = NULL;
+    g_autofree char *parentaddr = NULL;
 
     parentaddr = g_strdup_printf("%04x:%02x:%02x.%01x", domain, bus, slot,
                                  function);
@@ -235,11 +230,9 @@ virSCSIHostGetNameByParentaddr(unsigned int domain,
                        _("Failed to find scsi_host using PCI '%s' "
                          "and unique_id='%u'"),
                        parentaddr, unique_id);
-        goto cleanup;
+        return name;
     }
 
- cleanup:
-    VIR_FREE(parentaddr);
     return name;
 }
 

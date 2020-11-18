@@ -505,8 +505,8 @@ virLogVMessage(virLogSourcePtr source,
                va_list vargs)
 {
     static bool logInitMessageStderr = true;
-    char *str = NULL;
-    char *msg = NULL;
+    g_autofree char *str = NULL;
+    g_autofree char *msg = NULL;
     char timestamp[VIR_TIME_STRING_BUFLEN];
     size_t i;
     int saved_errno = errno;
@@ -528,7 +528,8 @@ virLogVMessage(virLogSourcePtr source,
     if (source->serial < virLogFiltersSerial)
         virLogSourceUpdate(source);
     if (priority < source->priority)
-        goto cleanup;
+        errno = saved_errno;
+        return;
 
     /*
      * serialize the error message, add level and timestamp
@@ -601,11 +602,6 @@ virLogVMessage(virLogSourcePtr source,
                          str, msg, (void *) STDERR_FILENO);
     }
     virLogUnlock();
-
- cleanup:
-    VIR_FREE(str);
-    VIR_FREE(msg);
-    errno = saved_errno;
 }
 
 

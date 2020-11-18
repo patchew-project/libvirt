@@ -49,7 +49,7 @@ bool
 virVHBAPathExists(const char *sysfs_prefix,
                   int host)
 {
-    char *sysfs_path = NULL;
+    g_autofree char *sysfs_path = NULL;
     bool ret = false;
 
     sysfs_path = g_strdup_printf("%s/host%d",
@@ -58,7 +58,6 @@ virVHBAPathExists(const char *sysfs_prefix,
     if (virFileExists(sysfs_path))
         ret = true;
 
-    VIR_FREE(sysfs_path);
     return ret;
 }
 
@@ -79,8 +78,8 @@ bool
 virVHBAIsVportCapable(const char *sysfs_prefix,
                       int host)
 {
-    char *scsi_host_path = NULL;
-    char *fc_host_path = NULL;
+    g_autofree char *scsi_host_path = NULL;
+    g_autofree char *fc_host_path = NULL;
     bool ret = false;
 
     fc_host_path = g_strdup_printf("%s/host%d/%s",
@@ -94,8 +93,6 @@ virVHBAIsVportCapable(const char *sysfs_prefix,
     if (virFileExists(fc_host_path) || virFileExists(scsi_host_path))
         ret = true;
 
-    VIR_FREE(fc_host_path);
-    VIR_FREE(scsi_host_path);
     return ret;
 }
 
@@ -115,19 +112,19 @@ virVHBAGetConfig(const char *sysfs_prefix,
                  int host,
                  const char *entry)
 {
-    char *sysfs_path = NULL;
+    g_autofree char *sysfs_path = NULL;
     char *p = NULL;
-    char *buf = NULL;
+    g_autofree char *buf = NULL;
     char *result = NULL;
 
     sysfs_path = g_strdup_printf("%s/host%d/%s",
                                  sysfs_prefix ? sysfs_prefix : SYSFS_FC_HOST_PATH, host, entry);
 
     if (!virFileExists(sysfs_path))
-        goto cleanup;
+        return result;
 
     if (virFileReadAll(sysfs_path, 1024, &buf) < 0)
-        goto cleanup;
+        return result;
 
     if ((p = strchr(buf, '\n')))
         *p = '\0';
@@ -139,9 +136,6 @@ virVHBAGetConfig(const char *sysfs_prefix,
 
     result = g_strdup(p);
 
- cleanup:
-    VIR_FREE(sysfs_path);
-    VIR_FREE(buf);
     return result;
 }
 
@@ -160,8 +154,8 @@ virVHBAFindVportHost(const char *sysfs_prefix)
     const char *prefix = sysfs_prefix ? sysfs_prefix : SYSFS_FC_HOST_PATH;
     g_autoptr(DIR) dir = NULL;
     struct dirent *entry = NULL;
-    char *max_vports = NULL;
-    char *vports = NULL;
+    g_autofree char *max_vports = NULL;
+    g_autofree char *vports = NULL;
     char *state = NULL;
     char *ret = NULL;
 
@@ -212,16 +206,13 @@ virVHBAFindVportHost(const char *sysfs_prefix)
             ((strlen(max_vports) == strlen(vports)) &&
              strcmp(max_vports, vports) > 0)) {
             ret = g_strdup(entry->d_name);
-            goto cleanup;
+            return ret;
         }
 
         VIR_FREE(max_vports);
         VIR_FREE(vports);
     }
 
- cleanup:
-    VIR_FREE(max_vports);
-    VIR_FREE(vports);
     return ret;
 }
 
@@ -241,7 +232,8 @@ virVHBAManageVport(const int parent_host,
                    int operation)
 {
     int ret = -1;
-    char *operation_path = NULL, *vport_name = NULL;
+    g_autofree char *operation_path = NULL;
+    g_autofree char *vport_name = NULL;
     const char *operation_file = NULL;
 
     switch (operation) {
@@ -254,7 +246,7 @@ virVHBAManageVport(const int parent_host,
     default:
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("Invalid vport operation (%d)"), operation);
-        goto cleanup;
+        return ret;
     }
 
     operation_path = g_strdup_printf("%s/host%d/%s", SYSFS_FC_HOST_PATH,
@@ -270,7 +262,7 @@ virVHBAManageVport(const int parent_host,
                            _("vport operation '%s' is not supported "
                              "for host%d"),
                            operation_file, parent_host);
-            goto cleanup;
+            return ret;
         }
     }
 
@@ -290,9 +282,6 @@ virVHBAManageVport(const int parent_host,
                                "vport create/delete failed"),
                              vport_name, operation_path);
 
- cleanup:
-    VIR_FREE(vport_name);
-    VIR_FREE(operation_path);
     return ret;
 }
 
@@ -315,8 +304,8 @@ vhbaReadCompareWWN(const char *prefix,
                    const char *f_name,
                    const char *wwn)
 {
-    char *path;
-    char *buf = NULL;
+    g_autofree char *path = NULL;
+    g_autofree char *buf = NULL;
     char *p;
     int ret = -1;
 
@@ -324,11 +313,11 @@ vhbaReadCompareWWN(const char *prefix,
 
     if (!virFileExists(path)) {
         ret = 0;
-        goto cleanup;
+        return ret;
     }
 
     if (virFileReadAll(path, 1024, &buf) < 0)
-        goto cleanup;
+        return ret;
 
     if ((p = strchr(buf, '\n')))
         *p = '\0';
@@ -341,10 +330,6 @@ vhbaReadCompareWWN(const char *prefix,
         ret = 0;
     else
         ret = 1;
-
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(buf);
 
     return ret;
 }
@@ -407,7 +392,7 @@ virVHBAGetHostByFabricWWN(const char *sysfs_prefix,
     const char *prefix = sysfs_prefix ? sysfs_prefix : SYSFS_FC_HOST_PATH;
     struct dirent *entry = NULL;
     g_autoptr(DIR) dir = NULL;
-    char *vport_create_path = NULL;
+    g_autofree char *vport_create_path = NULL;
     char *ret = NULL;
 
     if (virDirOpen(&dir, prefix) < 0)
@@ -428,7 +413,7 @@ virVHBAGetHostByFabricWWN(const char *sysfs_prefix,
 
         if ((rc = vhbaReadCompareWWN(prefix, entry->d_name,
                                      "fabric_name", fabric_wwn)) < 0)
-            goto cleanup;
+            return ret;
 
         if (rc == 0)
             continue;
@@ -437,8 +422,6 @@ virVHBAGetHostByFabricWWN(const char *sysfs_prefix,
         break;
     }
 
- cleanup:
-    VIR_FREE(vport_create_path);
     return ret;
 }
 

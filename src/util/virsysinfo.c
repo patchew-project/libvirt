@@ -393,7 +393,7 @@ virSysinfoParseARMProcessor(const char *base, virSysinfoDefPtr ret)
     const char *cur;
     char *eol, *tmp_base;
     virSysinfoProcessorDefPtr processor;
-    char *processor_type = NULL;
+    g_autofree char *processor_type = NULL;
 
     if (!(tmp_base = strstr(base, "model name")) &&
         !(tmp_base = strstr(base, "Processor")))
@@ -411,7 +411,7 @@ virSysinfoParseARMProcessor(const char *base, virSysinfoDefPtr ret)
         cur = strchr(base, ':') + 1;
 
         if (VIR_EXPAND_N(ret->processor, ret->nprocessor, 1) < 0)
-            goto error;
+            return -1;
         processor = &ret->processor[ret->nprocessor - 1];
 
         virSkipSpaces(&cur);
@@ -424,12 +424,7 @@ virSysinfoParseARMProcessor(const char *base, virSysinfoDefPtr ret)
         base = cur;
     }
 
-    VIR_FREE(processor_type);
     return 0;
-
- error:
-    VIR_FREE(processor_type);
-    return -1;
 }
 
 /* virSysinfoRead for ARMv7
@@ -532,9 +527,9 @@ static int
 virSysinfoParseS390Processor(const char *base, virSysinfoDefPtr ret)
 {
     const char *tmp_base;
-    char *manufacturer = NULL;
-    char *procline = NULL;
-    char *ncpu = NULL;
+    g_autofree char *manufacturer = NULL;
+    g_autofree char *procline = NULL;
+    g_autofree char *ncpu = NULL;
     int result = -1;
     virSysinfoProcessorDefPtr processor;
 
@@ -593,9 +588,6 @@ virSysinfoParseS390Processor(const char *base, virSysinfoDefPtr ret)
     result = 0;
 
  error:
-    VIR_FREE(manufacturer);
-    VIR_FREE(procline);
-    VIR_FREE(ncpu);
     return result;
 }
 

@@ -3328,9 +3328,9 @@ virFileIsSharedFixFUSE(const char *path,
     FILE *f = NULL;
     struct mntent mb;
     char mntbuf[1024];
-    char *mntDir = NULL;
-    char *mntType = NULL;
-    char *canonPath = NULL;
+    g_autofree char *mntDir = NULL;
+    g_autofree char *mntType = NULL;
+    g_autofree char *canonPath = NULL;
     size_t maxMatching = 0;
     int ret = -1;
 
@@ -3381,9 +3381,6 @@ virFileIsSharedFixFUSE(const char *path,
 
     ret = 0;
  cleanup:
-    VIR_FREE(canonPath);
-    VIR_FREE(mntType);
-    VIR_FREE(mntDir);
     endmntent(f);
     return ret;
 }

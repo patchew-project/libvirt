@@ -164,7 +164,7 @@ addnhostsWrite(const char *path,
                dnsmasqAddnHost *hosts,
                unsigned int nhosts)
 {
-    char *tmp;
+    g_autofree char *tmp = NULL;
     FILE *f;
     bool istmp = true;
     size_t i, j;
@@ -180,7 +180,7 @@ addnhostsWrite(const char *path,
         istmp = false;
         if (!(f = fopen(path, "w"))) {
             rc = -errno;
-            goto cleanup;
+            return rc;
         }
     }
 
@@ -192,7 +192,7 @@ addnhostsWrite(const char *path,
             if (istmp)
                 unlink(tmp);
 
-            goto cleanup;
+            return rc;
         }
 
         for (j = 0; j < hosts[i].nhostnames; j++) {
@@ -203,7 +203,7 @@ addnhostsWrite(const char *path,
                 if (istmp)
                     unlink(tmp);
 
-                goto cleanup;
+                return rc;
             }
         }
 
@@ -214,23 +214,20 @@ addnhostsWrite(const char *path,
             if (istmp)
                 unlink(tmp);
 
-            goto cleanup;
+            return rc;
         }
     }
 
     if (VIR_FCLOSE(f) == EOF) {
         rc = -errno;
-        goto cleanup;
+        return rc;
     }
 
     if (istmp && rename(tmp, path) < 0) {
         rc = -errno;
         unlink(tmp);
-        goto cleanup;
+        return rc;
     }
-
- cleanup:
-    VIR_FREE(tmp);
 
     return rc;
 }
@@ -364,7 +361,7 @@ hostsfileWrite(const char *path,
                dnsmasqDhcpHost *hosts,
                unsigned int nhosts)
 {
-    char *tmp;
+    g_autofree char *tmp = NULL;
     FILE *f;
     bool istmp = true;
     size_t i;
@@ -380,7 +377,7 @@ hostsfileWrite(const char *path,
         istmp = false;
         if (!(f = fopen(path, "w"))) {
             rc = -errno;
-            goto cleanup;
+            return rc;
         }
     }
 
@@ -392,23 +389,20 @@ hostsfileWrite(const char *path,
             if (istmp)
                 unlink(tmp);
 
-            goto cleanup;
+            return rc;
         }
     }
 
     if (VIR_FCLOSE(f) == EOF) {
         rc = -errno;
-        goto cleanup;
+        return rc;
     }
 
     if (istmp && rename(tmp, path) < 0) {
         rc = -errno;
         unlink(tmp);
-        goto cleanup;
+        return rc;
     }
-
- cleanup:
-    VIR_FREE(tmp);
 
     return rc;
 }
@@ -686,15 +680,13 @@ static int
 dnsmasqCapsSetFromFile(dnsmasqCapsPtr caps, const char *path)
 {
     int ret = -1;
-    char *buf = NULL;
+    g_autofree char *buf = NULL;
 
     if (virFileReadAll(path, 1024 * 1024, &buf) < 0)
-        goto cleanup;
+        return ret;
 
     ret = dnsmasqCapsSetFromBuffer(caps, buf);
 
- cleanup:
-    VIR_FREE(buf);
     return ret;
 }
 
@@ -704,7 +696,9 @@ dnsmasqCapsRefreshInternal(dnsmasqCapsPtr caps, bool force)
     int ret = -1;
     struct stat sb;
     virCommandPtr cmd = NULL;
-    char *help = NULL, *version = NULL, *complete = NULL;
+    g_autofree char *help = NULL;
+    g_autofree char *version = NULL;
+    g_autofree char *complete = NULL;
 
     if (!caps || caps->noRefresh)
         return 0;
@@ -749,9 +743,6 @@ dnsmasqCapsRefreshInternal(dnsmasqCapsPtr caps, bool force)
 
  cleanup:
     virCommandFree(cmd);
-    VIR_FREE(help);
-    VIR_FREE(version);
-    VIR_FREE(complete);
     return ret;
 }
 

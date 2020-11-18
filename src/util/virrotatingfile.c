@@ -362,8 +362,8 @@ static int
 virRotatingFileWriterRollover(virRotatingFileWriterPtr file)
 {
     size_t i;
-    char *nextpath = NULL;
-    char *thispath = NULL;
+    g_autofree char *nextpath = NULL;
+    g_autofree char *thispath = NULL;
     int ret = -1;
 
     VIR_DEBUG("Rollover %s", file->basepath);
@@ -373,7 +373,7 @@ virRotatingFileWriterRollover(virRotatingFileWriterPtr file)
             virReportSystemError(errno,
                                  _("Unable to remove %s"),
                                  file->basepath);
-            goto cleanup;
+            return ret;
         }
     } else {
         nextpath = g_strdup_printf("%s.%zu", file->basepath, file->maxbackup - 1);
@@ -391,7 +391,7 @@ virRotatingFileWriterRollover(virRotatingFileWriterPtr file)
                 virReportSystemError(errno,
                                      _("Unable to rename %s to %s"),
                                      thispath, nextpath);
-                goto cleanup;
+                return ret;
             }
 
             VIR_FREE(nextpath);
@@ -402,9 +402,6 @@ virRotatingFileWriterRollover(virRotatingFileWriterPtr file)
     VIR_DEBUG("Rollover done %s", file->basepath);
 
     ret = 0;
- cleanup:
-    VIR_FREE(nextpath);
-    VIR_FREE(thispath);
     return ret;
 }
 

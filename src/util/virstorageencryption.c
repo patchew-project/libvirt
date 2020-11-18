@@ -142,7 +142,7 @@ virStorageEncryptionSecretParse(xmlXPathContextPtr ctxt,
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt)
     virStorageEncryptionSecretPtr ret;
-    char *type_str = NULL;
+    g_autofree char *type_str = NULL;
 
     ret = g_new0(virStorageEncryptionSecret, 1);
 
@@ -164,12 +164,9 @@ virStorageEncryptionSecretParse(xmlXPathContextPtr ctxt,
     if (virSecretLookupParseSecret(node, &ret->seclookupdef) < 0)
         goto cleanup;
 
-    VIR_FREE(type_str);
-
     return ret;
 
  cleanup:
-    VIR_FREE(type_str);
     virStorageEncryptionSecretFree(ret);
     return NULL;
 }
@@ -180,12 +177,12 @@ virStorageEncryptionInfoParseCipher(xmlNodePtr info_node,
                                     virStorageEncryptionInfoDefPtr info)
 {
     int ret = -1;
-    char *size_str = NULL;
+    g_autofree char *size_str = NULL;
 
     if (!(info->cipher_name = virXMLPropString(info_node, "name"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("cipher info missing 'name' attribute"));
-        goto cleanup;
+        return ret;
     }
 
     if ((size_str = virXMLPropString(info_node, "size")) &&
@@ -193,22 +190,19 @@ virStorageEncryptionInfoParseCipher(xmlNodePtr info_node,
         virReportError(VIR_ERR_XML_ERROR,
                        _("cannot parse cipher size: '%s'"),
                        size_str);
-        goto cleanup;
+        return ret;
     }
 
     if (!size_str) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("cipher info missing 'size' attribute"));
-        goto cleanup;
+        return ret;
     }
 
     info->cipher_mode = virXMLPropString(info_node, "mode");
     info->cipher_hash = virXMLPropString(info_node, "hash");
 
     ret = 0;
-
- cleanup:
-    VIR_FREE(size_str);
     return ret;
 }
 
@@ -237,7 +231,7 @@ virStorageEncryptionParseNode(xmlNodePtr node,
     xmlNodePtr *nodes = NULL;
     virStorageEncryptionPtr encdef = NULL;
     virStorageEncryptionPtr ret = NULL;
-    char *format_str = NULL;
+    g_autofree char *format_str = NULL;
     int n;
     size_t i;
 
@@ -297,7 +291,6 @@ virStorageEncryptionParseNode(xmlNodePtr node,
     ret = g_steal_pointer(&encdef);
 
  cleanup:
-    VIR_FREE(format_str);
     VIR_FREE(nodes);
     virStorageEncryptionFree(encdef);
 

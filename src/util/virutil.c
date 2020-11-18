@@ -598,7 +598,7 @@ char *virGetUserRuntimeDirectory(void)
 static int
 virGetUserEnt(uid_t uid, char **name, gid_t *group, char **dir, char **shell, bool quiet)
 {
-    char *strbuf;
+    g_autofree char *strbuf = NULL;
     struct passwd pwbuf;
     struct passwd *pw = NULL;
     long val = sysconf(_SC_GETPW_R_SIZE_MAX);
@@ -668,13 +668,12 @@ virGetUserEnt(uid_t uid, char **name, gid_t *group, char **dir, char **shell, bo
         if (shell)
             VIR_FREE(*shell);
     }
-    VIR_FREE(strbuf);
     return ret;
 }
 
 static char *virGetGroupEnt(gid_t gid)
 {
-    char *strbuf;
+    g_autofree char *strbuf = NULL;
     char *ret;
     struct group grbuf;
     struct group *gr = NULL;
@@ -717,7 +716,6 @@ static char *virGetGroupEnt(gid_t gid)
     }
 
     ret = g_strdup(gr->gr_name);
-    VIR_FREE(strbuf);
     return ret;
 }
 
@@ -759,7 +757,7 @@ char *virGetGroupName(gid_t gid)
 static int
 virGetUserIDByName(const char *name, uid_t *uid, bool missing_ok)
 {
-    char *strbuf = NULL;
+    g_autofree char *strbuf = NULL;
     struct passwd pwbuf;
     struct passwd *pw = NULL;
     long val = sysconf(_SC_GETPW_R_SIZE_MAX);
@@ -775,7 +773,7 @@ virGetUserIDByName(const char *name, uid_t *uid, bool missing_ok)
 
     while ((rc = getpwnam_r(name, &pwbuf, strbuf, strbuflen, &pw)) == ERANGE) {
         if (VIR_RESIZE_N(strbuf, strbuflen, strbuflen, strbuflen) < 0)
-            goto cleanup;
+            return ret;
     }
 
     if (!pw) {
@@ -788,15 +786,12 @@ virGetUserIDByName(const char *name, uid_t *uid, bool missing_ok)
         }
 
         ret = 1;
-        goto cleanup;
+        return ret;
     }
 
     if (uid)
         *uid = pw->pw_uid;
     ret = 0;
-
- cleanup:
-    VIR_FREE(strbuf);
 
     return ret;
 }
@@ -840,7 +835,7 @@ virGetUserID(const char *user, uid_t *uid)
 static int
 virGetGroupIDByName(const char *name, gid_t *gid, bool missing_ok)
 {
-    char *strbuf = NULL;
+    g_autofree char *strbuf = NULL;
     struct group grbuf;
     struct group *gr = NULL;
     long val = sysconf(_SC_GETGR_R_SIZE_MAX);
@@ -856,7 +851,7 @@ virGetGroupIDByName(const char *name, gid_t *gid, bool missing_ok)
 
     while ((rc = getgrnam_r(name, &grbuf, strbuf, strbuflen, &gr)) == ERANGE) {
         if (VIR_RESIZE_N(strbuf, strbuflen, strbuflen, strbuflen) < 0)
-            goto cleanup;
+            return ret;
     }
 
     if (!gr) {
@@ -869,15 +864,12 @@ virGetGroupIDByName(const char *name, gid_t *gid, bool missing_ok)
         }
 
         ret = 1;
-        goto cleanup;
+        return ret;
     }
 
     if (gid)
         *gid = gr->gr_gid;
     ret = 0;
-
- cleanup:
-    VIR_FREE(strbuf);
 
     return ret;
 }
@@ -949,7 +941,7 @@ int
 virGetGroupList(uid_t uid, gid_t gid, gid_t **list)
 {
     int ret = 0;
-    char *user = NULL;
+    g_autofree char *user = NULL;
     gid_t primary;
 
     *list = NULL;
@@ -987,19 +979,17 @@ virGetGroupList(uid_t uid, gid_t gid, gid_t **list)
 
         for (i = 0; i < ret; i++) {
             if ((*list)[i] == gid)
-                goto cleanup;
+                return ret;
         }
         if (VIR_APPEND_ELEMENT(*list, i, gid) < 0) {
             ret = -1;
             VIR_FREE(*list);
-            goto cleanup;
+            return ret;
         } else {
             ret = i;
         }
     }
 
- cleanup:
-    VIR_FREE(user);
     return ret;
 }
 
@@ -1405,8 +1395,8 @@ virSetDeviceUnprivSGIO(const char *path,
                        const char *sysfs_dir,
                        int unpriv_sgio)
 {
-    char *sysfs_path = NULL;
-    char *val = NULL;
+    g_autofree char *sysfs_path = NULL;
+    g_autofree char *val = NULL;
     int ret = -1;
     int rc;
 
@@ -1416,20 +1406,17 @@ virSetDeviceUnprivSGIO(const char *path,
     if (!virFileExists(sysfs_path)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("unpriv_sgio is not supported by this kernel"));
-        goto cleanup;
+        return ret;
     }
 
     val = g_strdup_printf("%d", unpriv_sgio);
 
     if ((rc = virFileWriteStr(sysfs_path, val, 0)) < 0) {
         virReportSystemError(-rc, _("failed to set %s"), sysfs_path);
-        goto cleanup;
+        return ret;
     }
 
     ret = 0;
- cleanup:
-    VIR_FREE(sysfs_path);
-    VIR_FREE(val);
     return ret;
 }
 
@@ -1438,8 +1425,8 @@ virGetDeviceUnprivSGIO(const char *path,
                        const char *sysfs_dir,
                        int *unpriv_sgio)
 {
-    char *sysfs_path = NULL;
-    char *buf = NULL;
+    g_autofree char *sysfs_path = NULL;
+    g_autofree char *buf = NULL;
     char *tmp = NULL;
     int ret = -1;
 
@@ -1449,11 +1436,11 @@ virGetDeviceUnprivSGIO(const char *path,
     if (!virFileExists(sysfs_path)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("unpriv_sgio is not supported by this kernel"));
-        goto cleanup;
+        return ret;
     }
 
     if (virFileReadAll(sysfs_path, 1024, &buf) < 0)
-        goto cleanup;
+        return ret;
 
     if ((tmp = strchr(buf, '\n')))
         *tmp = '\0';
@@ -1461,13 +1448,10 @@ virGetDeviceUnprivSGIO(const char *path,
     if (virStrToLong_i(buf, NULL, 10, unpriv_sgio) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("failed to parse value of %s"), sysfs_path);
-        goto cleanup;
+        return ret;
     }
 
     ret = 0;
- cleanup:
-    VIR_FREE(sysfs_path);
-    VIR_FREE(buf);
     return ret;
 }
 
@@ -1488,7 +1472,7 @@ virParseOwnershipIds(const char *label, uid_t *uidPtr, gid_t *gidPtr)
     int rc = -1;
     uid_t theuid;
     gid_t thegid;
-    char *tmp_label = NULL;
+    g_autofree char *tmp_label = NULL;
     char *sep = NULL;
     char *owner = NULL;
     char *group = NULL;
@@ -1501,7 +1485,7 @@ virParseOwnershipIds(const char *label, uid_t *uidPtr, gid_t *gidPtr)
         virReportError(VIR_ERR_INVALID_ARG,
                        _("Failed to parse uid and gid from '%s'"),
                        label);
-        goto cleanup;
+        return rc;
     }
     *sep = '\0';
     owner = tmp_label;
@@ -1512,7 +1496,7 @@ virParseOwnershipIds(const char *label, uid_t *uidPtr, gid_t *gidPtr)
      */
     if (virGetUserID(owner, &theuid) < 0 ||
         virGetGroupID(group, &thegid) < 0)
-        goto cleanup;
+        return rc;
 
     if (uidPtr)
         *uidPtr = theuid;
@@ -1520,10 +1504,6 @@ virParseOwnershipIds(const char *label, uid_t *uidPtr, gid_t *gidPtr)
         *gidPtr = thegid;
 
     rc = 0;
-
- cleanup:
-    VIR_FREE(tmp_label);
-
     return rc;
 }
 
