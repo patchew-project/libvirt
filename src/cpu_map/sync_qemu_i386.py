@@ -108,6 +108,7 @@ def translate_feature(name):
         "CPUID_EXT_CX16": "cx16",
         "CPUID_EXT_F16C": "f16c",
         "CPUID_EXT_FMA": "fma",
+        "CPUID_EXT_MONITOR": "monitor",
         "CPUID_EXT_MOVBE": "movbe",
         "CPUID_EXT_PCID": "pcid",
         "CPUID_EXT_PCLMULQDQ": "pclmuldq",
@@ -153,7 +154,6 @@ def translate_feature(name):
         "MSR_CORE_CAP_SPLIT_LOCK_DETECT": "split-lock-detect",
 
         # always disabled features
-        "CPUID_EXT_MONITOR": None,
         "0": None,
 
         # set to "no auto enable" by qemu
