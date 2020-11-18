@@ -5,6 +5,7 @@ import copy
 import lark
 import os
 import re
+import xml.etree.ElementTree
 
 
 T = {
@@ -381,6 +382,15 @@ def main():
         print(
             "Features not in the translation table:",
             ", ".join(sorted(untranslated)))
+
+    filename = os.path.join(args.outdir, "x86_features.xml")
+    DOMTree = xml.etree.ElementTree.parse(filename)
+    known = [x.attrib["name"] for x in DOMTree.getroot().iter("feature")]
+    unknown = [x for x in features if x not in known]
+    if unknown:
+        print(
+            "Features not in libvirt:",
+            ", ".join(sorted(unknown)))
 
 
 if __name__ == "__main__":
