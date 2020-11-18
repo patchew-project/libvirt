@@ -142,6 +142,14 @@ T = {
     "MSR_ARCH_CAP_TAA_NO": "taa-no",
     "MSR_CORE_CAP_SPLIT_LOCK_DETECT": "split-lock-detect",
 
+    # identically named features
+    "avx512ifma": "avx512ifma",
+    "fsrm": "fsrm",
+    "perfctr-core": "perfctr-core",
+    "vmx-eptp-switching": "vmx-eptp-switching",
+    "vmx-pml": "vmx-pml",
+    "vmx-rdseed-exit": "vmx-rdseed-exit",
+
     # always disabled features
     "CPUID_EXT_MONITOR": None,
     "0": None,
