@@ -152,14 +152,20 @@ def translate_feature(name):
         "MSR_ARCH_CAP_SKIP_L1DFL_VMENTRY": "skip-l1dfl-vmentry",
         "MSR_ARCH_CAP_TAA_NO": "taa-no",
         "MSR_CORE_CAP_SPLIT_LOCK_DETECT": "split-lock-detect",
+    }
 
-        # always disabled features
-        "0": None,
+    ignore = (
+        name == "0",
+        name.startswith("VMX_"),
+        name.startswith("MSR_VMX_"),
 
         # set to "no auto enable" by qemu
-        "CPUID_EXT3_TOPOEXT": None,
-        "MSR_VMX_BASIC_DUAL_MONITOR": None,
-    }
+        name == "CPUID_EXT3_TOPOEXT",
+        name == "MSR_VMX_BASIC_DUAL_MONITOR",
+    )
+
+    if any(ignore):
+        return None
 
     if name in T:
         return T[name]
@@ -291,8 +297,6 @@ def expand_model(model):
     for k in [k for k in model if k.startswith(".features")]:
         v = model.pop(k)
         for feature in v.split():
-            if feature.startswith("VMX_") or feature.startswith("MSR_VMX_"):
-                continue
             translated = translate_feature(feature)
             if translated:
                 result["features"].add(translated)
