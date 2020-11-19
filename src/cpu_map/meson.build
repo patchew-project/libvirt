@@ -5,6 +5,8 @@ cpumap_data = [
   'arm_Falkor.xml',
   'arm_features.xml',
   'arm_Kunpeng-920.xml',
+  'arm_FT-2000plus.xml',
+  'arm_Tengyun-S2500.xml',
   'arm_ThunderX299xx.xml',
   'arm_vendors.xml',
   'index.xml',
