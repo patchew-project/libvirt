@@ -11226,7 +11226,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                                xmlXPathContextPtr ctxt,
                                unsigned int flags)
 {
-    virDomainControllerDefPtr def = NULL;
+    g_autoptr(virDomainControllerDef) def = NULL;
     int type = 0;
     xmlNodePtr cur = NULL;
     bool processedModel = false;
@@ -11259,19 +11259,19 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
         if ((type = virDomainControllerTypeFromString(typeStr)) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unknown controller type '%s'"), typeStr);
-            goto error;
+            return NULL;
         }
     }
 
     if (!(def = virDomainControllerDefNew(type)))
-        goto error;
+        return NULL;
 
     model = virXMLPropString(node, "model");
     if (model) {
         if ((def->model = virDomainControllerModelTypeFromString(def, model)) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unknown model type '%s'"), model);
-            goto error;
+            return NULL;
         }
     }
 
@@ -11282,7 +11282,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             idxVal > INT_MAX) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Cannot parse controller index %s"), idx);
-            goto error;
+            return NULL;
         }
         def->idx = idxVal;
     }
@@ -11298,13 +11298,13 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 iothread = virXMLPropString(cur, "iothread");
 
                 if (virDomainVirtioOptionsParseXML(cur, &def->virtio) < 0)
-                    goto error;
+                    return NULL;
             } else if (virXMLNodeNameEqual(cur, "model")) {
                 if (processedModel) {
                     virReportError(VIR_ERR_XML_ERROR, "%s",
                                    _("Multiple <model> elements in "
                                      "controller definition not allowed"));
-                    goto error;
+                    return NULL;
                 }
                 modelName = virXMLPropString(cur, "name");
                 processedModel = true;
@@ -11313,7 +11313,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                     virReportError(VIR_ERR_XML_ERROR, "%s",
                                    _("Multiple <target> elements in "
                                      "controller definition not allowed"));
-                    goto error;
+                    return NULL;
                 }
                 chassisNr = virXMLPropString(cur, "chassisNr");
                 chassis = virXMLPropString(cur, "chassis");
@@ -11334,39 +11334,39 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (rc == -2 || (rc == 0 && numaNode < 0)) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("invalid NUMA node in target"));
-        goto error;
+        return NULL;
     }
 
     if (queues && virStrToLong_ui(queues, NULL, 10, &def->queues) < 0) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Malformed 'queues' value '%s'"), queues);
-        goto error;
+        return NULL;
     }
 
     if (cmd_per_lun && virStrToLong_ui(cmd_per_lun, NULL, 10, &def->cmd_per_lun) < 0) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Malformed 'cmd_per_lun' value '%s'"), cmd_per_lun);
-        goto error;
+        return NULL;
     }
 
     if (max_sectors && virStrToLong_ui(max_sectors, NULL, 10, &def->max_sectors) < 0) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Malformed 'max_sectors' value %s"), max_sectors);
-        goto error;
+        return NULL;
     }
 
     if (ioeventfd &&
         (def->ioeventfd = virTristateSwitchTypeFromString(ioeventfd)) < 0) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Malformed 'ioeventfd' value %s"), ioeventfd);
-        goto error;
+        return NULL;
     }
 
     if (iothread) {
         if (virStrToLong_uip(iothread, NULL, 10, &def->iothread) < 0) {
             virReportError(VIR_ERR_XML_ERROR,
                            _("Invalid 'iothread' value '%s'"), iothread);
-            goto error;
+            return NULL;
         }
     }
 
@@ -11375,7 +11375,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
         VIR_DEBUG("Ignoring device address for none model usb controller");
     } else if (virDomainDeviceInfoParseXML(xmlopt, node,
                                            &def->info, flags) < 0) {
-        goto error;
+        return NULL;
     }
 
     portsStr = virXMLPropString(node, "ports");
@@ -11384,7 +11384,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
         if (r != 0 || ports < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid ports: %s"), portsStr);
-            goto error;
+            return NULL;
         }
     }
 
@@ -11399,7 +11399,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (r != 0 || def->opts.vioserial.vectors < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Invalid vectors: %s"), vectors);
-                goto error;
+                return NULL;
             }
         }
         break;
@@ -11436,7 +11436,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             if ((rc = virParseScaledValue("./pcihole64", NULL,
                                           ctxt, &bytes, 1024,
                                           1024ULL * ULONG_MAX, false)) < 0)
-                goto error;
+                return NULL;
 
             if (rc == 1)
                 def->opts.pciopts.pcihole64 = true;
@@ -11461,7 +11461,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unknown PCI controller model name '%s'"),
                            modelName);
-            goto error;
+            return NULL;
         }
         if (chassisNr) {
             if (virStrToLong_i(chassisNr, NULL, 0,
@@ -11469,7 +11469,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid chassisNr '%s' in PCI controller"),
                                chassisNr);
-                goto error;
+                return NULL;
             }
         }
         if (chassis) {
@@ -11478,7 +11478,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid chassis '%s' in PCI controller"),
                                chassis);
-                goto error;
+                return NULL;
             }
         }
         if (port) {
@@ -11487,7 +11487,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid port '%s' in PCI controller"),
                                port);
-                goto error;
+                return NULL;
             }
         }
         if (busNr) {
@@ -11496,7 +11496,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid busNr '%s' in PCI controller"),
                                busNr);
-                goto error;
+                return NULL;
             }
         }
         if (targetIndex) {
@@ -11506,7 +11506,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid target index '%s' in PCI controller"),
                                targetIndex);
-                goto error;
+                return NULL;
             }
         }
         if (numaNode >= 0) {
@@ -11519,7 +11519,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("PCI controller unrecognized hotplug setting '%s'"),
                                hotplug);
-                goto error;
+                return NULL;
             }
             def->opts.pciopts.hotplug = val;
         }
@@ -11534,7 +11534,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (r != 0 || def->opts.xenbusopts.maxGrantFrames < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Invalid maxGrantFrames: %s"), gntframes);
-                goto error;
+                return NULL;
             }
         }
         if (eventchannels) {
@@ -11543,7 +11543,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (r != 0 || def->opts.xenbusopts.maxEventChannels < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Invalid maxEventChannels: %s"), eventchannels);
-                goto error;
+                return NULL;
             }
         }
         break;
@@ -11553,11 +11553,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
         break;
     }
 
-    return def;
-
- error:
-    virDomainControllerDefFree(def);
-    return NULL;
+    return g_steal_pointer(&def);
 }
 
 
