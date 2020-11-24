@@ -5266,15 +5266,15 @@ virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
     if (virStorageSourceGetActualType(disk->src) != VIR_STORAGE_TYPE_NETWORK &&
         disk->src->protocol != VIR_STORAGE_NET_PROTOCOL_RBD) {
         if (disk->src->snapshot) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("<snapshot> element is currently supported "
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'snapshot' is currently supported "
                              "only with 'rbd' disks"));
             return -1;
         }
 
         if (disk->src->configFile) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("<config> element is currently supported "
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'config' is currently supported "
                              "only with 'rbd' disks"));
             return -1;
         }
@@ -5373,7 +5373,7 @@ virDomainControllerDefPostParse(virDomainControllerDefPtr cdev)
         cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI &&
         cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL &&
         cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("'iothread' attribute only supported for "
                          "virtio scsi controllers"));
         return -1;
