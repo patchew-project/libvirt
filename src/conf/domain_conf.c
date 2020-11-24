@@ -5363,15 +5363,28 @@ static int
 virDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
                             const virDomainDef *def)
 {
-    /* Although only the QEMU driver implements PPC64 support, this
-     * code is related to the platform specification (PAPR), i.e. it
-     * is hypervisor agnostic, and any future PPC64 hypervisor driver
-     * will have the same restriction.
-     */
-    if (ARCH_IS_PPC64(def->os.arch) &&
-        mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-        virDomainNVDimmAlignSizePseries(mem) < 0)
-        return -1;
+    if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+        if (mem->labelsize && mem->labelsize < 128) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("nvdimm label must be at least 128KiB"));
+            return -1;
+        }
+
+        if (mem->labelsize >= mem->size) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("label size must be smaller than NVDIMM size"));
+            return -1;
+        }
+
+        /* Although only the QEMU driver implements PPC64 support, this
+         * code is related to the platform specification (PAPR), i.e. it
+         * is hypervisor agnostic, and any future PPC64 hypervisor driver
+         * will have the same restriction.
+         */
+        if (ARCH_IS_PPC64(def->os.arch) &&
+            virDomainNVDimmAlignSizePseries(mem) < 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -16765,18 +16778,6 @@ virDomainMemoryTargetDefParseXML(xmlNodePtr node,
         if (virDomainParseMemory("./label/size", "./label/size/@unit", ctxt,
                                  &def->labelsize, false, false) < 0)
             return -1;
-
-        if (def->labelsize && def->labelsize < 128) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("nvdimm label must be at least 128KiB"));
-            return -1;
-        }
-
-        if (def->labelsize >= def->size) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("label size must be smaller than NVDIMM size"));
-            return -1;
-        }
 
         if (virXPathBoolean("boolean(./readonly)", ctxt))
             def->readonly = true;
