@@ -5379,6 +5379,57 @@ virDomainControllerDefPostParse(virDomainControllerDefPtr cdev)
         return -1;
     }
 
+    if (cdev->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
+        virDomainPCIControllerOpts pciOpts = cdev->opts.pciopts;
+
+        if (pciOpts.chassisNr != -1) {
+            if (pciOpts.chassisNr < 1 || pciOpts.chassisNr > 255) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("PCI controller chassisNr '%d' out of range "
+                                 "- must be 1-255"),
+                               pciOpts.chassisNr);
+                return -1;
+            }
+        }
+
+        if (pciOpts.chassis != -1) {
+            if (pciOpts.chassis < 0 || pciOpts.chassis > 255) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("PCI controller chassis '%d' out of range "
+                                 "- must be 0-255"),
+                               pciOpts.chassis);
+                return -1;
+            }
+        }
+
+        if (pciOpts.port != -1) {
+            if (pciOpts.port < 0 || pciOpts.port > 255) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("PCI controller port '%d' out of range "
+                                 "- must be 0-255"),
+                               pciOpts.port);
+                return -1;
+            }
+        }
+
+        if (pciOpts.busNr != -1) {
+            if (pciOpts.busNr < 1 || pciOpts.busNr > 254) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("PCI controller busNr '%d' out of range "
+                                 "- must be 1-254"),
+                               pciOpts.busNr);
+                return -1;
+            }
+        }
+
+        if (pciOpts.numaNode >= 0 && cdev->idx == 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("The PCI controller with index=0 can't "
+                             "be associated with a NUMA node"));
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -11416,28 +11467,12 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                                chassisNr);
                 goto error;
             }
-            if (def->opts.pciopts.chassisNr < 1 ||
-                def->opts.pciopts.chassisNr > 255) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("PCI controller chassisNr '%s' out of range "
-                                 "- must be 1-255"),
-                               chassisNr);
-                goto error;
-            }
         }
         if (chassis) {
             if (virStrToLong_i(chassis, NULL, 0,
                                &def->opts.pciopts.chassis) < 0) {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid chassis '%s' in PCI controller"),
-                               chassis);
-                goto error;
-            }
-            if (def->opts.pciopts.chassis < 0 ||
-                def->opts.pciopts.chassis > 255) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("PCI controller chassis '%s' out of range "
-                                 "- must be 0-255"),
                                chassis);
                 goto error;
             }
@@ -11450,28 +11485,12 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                                port);
                 goto error;
             }
-            if (def->opts.pciopts.port < 0 ||
-                def->opts.pciopts.port > 255) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("PCI controller port '%s' out of range "
-                                 "- must be 0-255"),
-                               port);
-                goto error;
-            }
         }
         if (busNr) {
             if (virStrToLong_i(busNr, NULL, 0,
                                &def->opts.pciopts.busNr) < 0) {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("Invalid busNr '%s' in PCI controller"),
-                               busNr);
-                goto error;
-            }
-            if (def->opts.pciopts.busNr < 1 ||
-                def->opts.pciopts.busNr > 254) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("PCI controller busNr '%s' out of range "
-                                 "- must be 1-254"),
                                busNr);
                 goto error;
             }
@@ -11487,12 +11506,6 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         }
         if (numaNode >= 0) {
-            if (def->idx == 0) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("The PCI controller with index=0 can't "
-                                 "be associated with a NUMA node"));
-                goto error;
-            }
             def->opts.pciopts.numaNode = numaNode;
         }
         if (hotplug) {
