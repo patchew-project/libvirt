@@ -5439,6 +5439,20 @@ virDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
 
 
 static int
+virDomainSmartcardDefPostParse(virDomainSmartcardDefPtr smartcard)
+{
+    if (smartcard->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+        smartcard->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Controllers must use the 'ccid' address type"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
                                   const virDomainDef *def,
                                   unsigned int parseFlags G_GNUC_UNUSED,
@@ -5486,6 +5500,10 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
         ret = virDomainMemoryDefPostParse(dev->data.memory, def);
         break;
 
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+        ret = virDomainSmartcardDefPostParse(dev->data.smartcard);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -5494,7 +5512,6 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
-    case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_SHMEM:
@@ -13702,12 +13719,6 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
-    if (def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-        def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Controllers must use the 'ccid' address type"));
-        goto error;
-    }
 
     return def;
 
