@@ -5848,6 +5848,28 @@ virDomainDefBootOrderPostParse(virDomainDefPtr def)
 
 
 static int
+virDomainDefBootPostParse(virDomainDefPtr def)
+{
+    if (def->os.bm_timeout_set && def->os.bm_timeout > 65535) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("invalid value for boot menu timeout, "
+                         "must be in range [0,65535]"));
+        return -1;
+    }
+
+    if (def->os.bios.rt_set &&
+        (def->os.bios.rt_delay < -1 || def->os.bios.rt_delay > 65535)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("invalid value for rebootTimeout, "
+                         "must be in range [-1,65535]"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainDefPostParseVideo(virDomainDefPtr def,
                            void *opaque)
 {
@@ -5915,6 +5937,9 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
         return -1;
 
     if (virDomainDefRejectDuplicatePanics(def) < 0)
+        return -1;
+
+    if (virDomainDefBootPostParse(def) < 0)
         return -1;
 
     if (def->os.type == VIR_DOMAIN_OSTYPE_HVM &&
@@ -18935,11 +18960,9 @@ virDomainDefParseBootXML(xmlXPathContextPtr ctxt,
 
         tmp = virXMLPropString(node, "timeout");
         if (tmp && def->os.bootmenu == VIR_TRISTATE_BOOL_YES) {
-            if (virStrToLong_uip(tmp, NULL, 0, &def->os.bm_timeout) < 0 ||
-                def->os.bm_timeout > 65535) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("invalid value for boot menu timeout, "
-                                 "must be in range [0,65535]"));
+            if (virStrToLong_uip(tmp, NULL, 0, &def->os.bm_timeout) < 0) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("invalid value for boot menu timeout"));
                 return -1;
             }
             def->os.bm_timeout_set = true;
@@ -18960,11 +18983,9 @@ virDomainDefParseBootXML(xmlXPathContextPtr ctxt,
         if (tmp) {
             /* that was really just for the check if it is there */
 
-            if (virStrToLong_i(tmp, NULL, 0, &def->os.bios.rt_delay) < 0 ||
-                def->os.bios.rt_delay < -1 || def->os.bios.rt_delay > 65535) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("invalid value for rebootTimeout, "
-                                 "must be in range [-1,65535]"));
+            if (virStrToLong_i(tmp, NULL, 0, &def->os.bios.rt_delay) < 0) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("invalid value for rebootTimeout"));
                 return -1;
             }
             def->os.bios.rt_set = true;
