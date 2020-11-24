@@ -2148,6 +2148,7 @@ virFileCacheSetPriv;
 # util/virfirewall.h
 virFirewallAddRuleFull;
 virFirewallApply;
+virFirewallBackendSynchronize;
 virFirewallFree;
 virFirewallNew;
 virFirewallRemoveRule;
