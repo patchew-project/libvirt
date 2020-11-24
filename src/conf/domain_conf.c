@@ -5253,6 +5253,9 @@ virDomainDiskExpandGroupIoTune(virDomainDiskDefPtr disk,
 }
 
 
+#define VENDOR_LEN  8
+#define PRODUCT_LEN 16
+
 static int
 virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
                           const virDomainDef *def,
@@ -5275,6 +5278,28 @@ virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
                              "only with 'rbd' disks"));
             return -1;
         }
+    }
+
+    if (disk->tray_status &&
+        disk->device != VIR_DOMAIN_DISK_DEVICE_FLOPPY &&
+        disk->device != VIR_DOMAIN_DISK_DEVICE_CDROM) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("tray is only valid for cdrom and floppy"));
+        return -1;
+    }
+
+    if (disk->vendor && strlen(disk->vendor) > VENDOR_LEN) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("disk vendor is more than %d characters"),
+                       VENDOR_LEN);
+        return -1;
+    }
+
+    if (disk->product && strlen(disk->product) > PRODUCT_LEN) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("disk product is more than %d characters"),
+                       PRODUCT_LEN);
+        return -1;
     }
 
     if (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
@@ -10513,9 +10538,6 @@ virDomainDiskDefParsePrivateData(xmlXPathContextPtr ctxt,
 }
 
 
-#define VENDOR_LEN  8
-#define PRODUCT_LEN 16
-
 static virDomainDiskDefPtr
 virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                          xmlNodePtr node,
@@ -10690,12 +10712,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (!(vendor = virXMLNodeContentString(cur)))
                 return NULL;
 
-            if (strlen(vendor) > VENDOR_LEN) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("disk vendor is more than 8 characters"));
-                return NULL;
-            }
-
             if (!virStringIsPrintable(vendor)) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
                                _("disk vendor is not printable string"));
@@ -10705,12 +10721,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                    virXMLNodeNameEqual(cur, "product")) {
             if (!(product = virXMLNodeContentString(cur)))
                 return NULL;
-
-            if (strlen(product) > PRODUCT_LEN) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("disk product is more than 16 characters"));
-                return NULL;
-            }
 
             if (!virStringIsPrintable(product)) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -10840,13 +10850,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         if ((def->tray_status = virDomainDiskTrayTypeFromString(tray)) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown disk tray status '%s'"), tray);
-            return NULL;
-        }
-
-        if (def->device != VIR_DOMAIN_DISK_DEVICE_FLOPPY &&
-            def->device != VIR_DOMAIN_DISK_DEVICE_CDROM) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("tray is only valid for cdrom and floppy"));
             return NULL;
         }
     }
