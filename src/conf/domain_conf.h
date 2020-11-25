@@ -3342,10 +3342,12 @@ void virDomainRNGDefFree(virDomainRNGDefPtr def);
 
 int virDomainDiskIndexByAddress(virDomainDefPtr def,
                                 virPCIDeviceAddressPtr pci_controller,
+                                virDomainDeviceCCWAddressPtr ccw_addr,
                                 unsigned int bus, unsigned int target,
                                 unsigned int unit);
 virDomainDiskDefPtr virDomainDiskByAddress(virDomainDefPtr def,
                                            virPCIDeviceAddressPtr pci_controller,
+                                           virDomainDeviceCCWAddressPtr ccw_addr,
                                            unsigned int bus,
                                            unsigned int target,
                                            unsigned int unit);
