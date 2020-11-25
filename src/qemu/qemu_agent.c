@@ -1868,6 +1868,7 @@ qemuAgentGetFSInfoFillDisks(virJSONValuePtr jsondisks,
     for (i = 0; i < fsinfo->ndisks; i++) {
         virJSONValuePtr jsondisk = virJSONValueArrayGet(jsondisks, i);
         virJSONValuePtr pci;
+        virJSONValuePtr ccw;
         qemuAgentDiskInfoPtr disk;
         const char *val;
 
@@ -1916,6 +1917,16 @@ qemuAgentGetFSInfoFillDisks(virJSONValuePtr jsondisks,
         GET_DISK_ADDR(pci, &disk->pci_controller.bus, "bus");
         GET_DISK_ADDR(pci, &disk->pci_controller.slot, "slot");
         GET_DISK_ADDR(pci, &disk->pci_controller.function, "function");
+
+        if ((ccw = virJSONValueObjectGet(jsondisk, "ccw-address"))) {
+            disk->has_ccw_address = true;
+            GET_DISK_ADDR(ccw, &disk->ccw_addr.cssid, "cssid");
+            if (disk->ccw_addr.cssid == 0)  /* Guest CSSID 0 is 0xfe on host */
+                disk->ccw_addr.cssid = 0xfe;
+            GET_DISK_ADDR(ccw, &disk->ccw_addr.ssid, "ssid");
+            GET_DISK_ADDR(ccw, &disk->ccw_addr.devno, "devno");
+        }
+
 #undef GET_DISK_ADDR
     }
 

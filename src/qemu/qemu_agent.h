@@ -77,6 +77,8 @@ struct _qemuAgentDiskInfo {
     unsigned int target;
     unsigned int unit;
     char *devnode;
+    bool has_ccw_address;
+    virDomainDeviceCCWAddress ccw_addr;
 };
 
 typedef struct _qemuAgentFSInfo qemuAgentFSInfo;
