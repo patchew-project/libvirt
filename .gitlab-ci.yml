@@ -40,6 +40,36 @@ stages:
   <<: *container_job_definition
   allow_failure: true
 
+# For new enough distros that have Meson 0.55, include the JUnit XML
+# report in the artifacts.  In order to preserve it, we cannot use
+# "meson dist" and need to do the compilation test manually.
+# Fortunately, "meson dist --no-tests" was also added in Meson 0.55.
+.native_meson055_build_job_template: &native_meson055_build_job_definition
+  stage: builds
+  image: $CI_REGISTRY_IMAGE/ci-$NAME:latest
+  cache:
+    paths:
+      - ccache/
+    key: "$CI_JOB_NAME"
+  before_script:
+    - *script_variables
+  script:
+    - meson build --werror || (cat build/meson-logs/meson-log.txt && exit 1)
+    - ninja -C build
+    - ninja -C build test
+    - DESTDIR=$PWD/install/ ninja -C build install
+    - meson dist -C build --no-tests
+    - if test -x /usr/bin/rpmbuild && test "$RPM" != "skip";
+      then
+        rpmbuild --nodeps -ta build/meson-dist/libvirt-*.tar.xz;
+      fi
+  artifacts:
+    when: always
+    paths:
+      - build/meson-logs/
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
+
 .native_build_job_template: &native_build_job_definition
   stage: builds
   image: $CI_REGISTRY_IMAGE/ci-$NAME:latest
@@ -292,7 +322,7 @@ x64-debian-10-clang:
     CC: clang
 
 x64-debian-sid:
-  <<: *native_build_job_definition
+  <<: *native_meson055_build_job_definition
   needs:
     - x64-debian-sid-container
   variables:
@@ -343,21 +373,21 @@ x64-fedora-31:
     RPM: skip
 
 x64-fedora-32:
-  <<: *native_build_job_definition
+  <<: *native_meson055_build_job_definition
   needs:
     - x64-fedora-32-container
   variables:
     NAME: fedora-32
 
 x64-fedora-rawhide:
-  <<: *native_build_job_definition
+  <<: *native_meson055_build_job_definition
   needs:
     - x64-fedora-rawhide-container
   variables:
     NAME: fedora-rawhide
 
 x64-fedora-rawhide-clang:
-  <<: *native_build_job_definition
+  <<: *native_meson055_build_job_definition
   needs:
     - x64-fedora-rawhide-container
   variables:
