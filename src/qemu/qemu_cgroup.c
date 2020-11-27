@@ -500,19 +500,32 @@ qemuSetupMemoryDevicesCgroup(virDomainObjPtr vm,
                              virDomainMemoryDefPtr mem)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    const char *path = NULL;
     int rv;
 
-    if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM)
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        path = mem->s.nvdimm.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+        break;
+    }
+
+    if (!path)
         return 0;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
-    VIR_DEBUG("Setting devices Cgroup for NVDIMM device: %s", mem->s.nvdimm.path);
-    rv = virCgroupAllowDevicePath(priv->cgroup, mem->s.nvdimm.path,
+    VIR_DEBUG("Setting devices Cgroup for memory device: %s", path);
+    rv = virCgroupAllowDevicePath(priv->cgroup, path,
                                   VIR_CGROUP_DEVICE_RW, false);
-    virDomainAuditCgroupPath(vm, priv->cgroup, "allow",
-                             mem->s.nvdimm.path, "rw", rv);
+    virDomainAuditCgroupPath(vm, priv->cgroup, "allow", path, "rw", rv);
 
     return rv;
 }
@@ -523,18 +536,28 @@ qemuTeardownMemoryDevicesCgroup(virDomainObjPtr vm,
                                 virDomainMemoryDefPtr mem)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    const char *path = NULL;
     int rv;
 
-    if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM)
-        return 0;
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        path = mem->s.nvdimm.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+        break;
+    }
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
-    rv = virCgroupDenyDevicePath(priv->cgroup, mem->s.nvdimm.path,
+    rv = virCgroupDenyDevicePath(priv->cgroup, path,
                                  VIR_CGROUP_DEVICE_RWM, false);
-    virDomainAuditCgroupPath(vm, priv->cgroup,
-                             "deny", mem->s.nvdimm.path, "rwm", rv);
+    virDomainAuditCgroupPath(vm, priv->cgroup, "deny", path, "rwm", rv);
     return rv;
 }
 
