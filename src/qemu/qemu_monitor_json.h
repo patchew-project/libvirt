@@ -710,3 +710,8 @@ int qemuMonitorJSONSetDBusVMStateIdList(qemuMonitorPtr mon,
 int
 qemuMonitorJSONGetCPUMigratable(qemuMonitorPtr mon,
                                 bool *migratable);
+
+int
+qemuMonitorJSONChangeMemoryRequestedSize(qemuMonitorPtr mon,
+                                         const char *alias,
+                                         unsigned long long requestedsize);

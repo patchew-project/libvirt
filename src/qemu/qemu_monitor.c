@@ -4769,3 +4769,16 @@ qemuMonitorTransactionBackup(virJSONValuePtr actions,
     return qemuMonitorJSONTransactionBackup(actions, device, jobname, target,
                                             bitmap, syncmode);
 }
+
+
+int
+qemuMonitorChangeMemoryRequestedSize(qemuMonitorPtr mon,
+                                     const char *alias,
+                                     unsigned long long requestedsize)
+{
+    VIR_DEBUG("alias=%s requestedsize=%llu", alias, requestedsize);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONChangeMemoryRequestedSize(mon, alias, requestedsize);
+}
