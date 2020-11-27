@@ -2709,6 +2709,7 @@ qemuProcessSetupPid(virDomainObjPtr vm,
     g_autoptr(virBitmap) hostcpumap = NULL;
     g_autofree char *mem_mask = NULL;
     int ret = -1;
+    size_t i;
 
     if ((period || quota) &&
         !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
@@ -2748,6 +2749,32 @@ qemuProcessSetupPid(virDomainObjPtr vm,
                                                 priv->autoNodeset,
                                                 &mem_mask, -1) < 0)
             goto cleanup;
+
+        /* For vCPU threads, mem_mask is different among cells and mem_mask
+         * is used to set cgroups cpuset.mems for vcpu threads. If we specify
+         * 'restrictive' mode, that means we will set system default memory
+         * policy and only use cgroups to restrict allowed memory nodes. */
+        if (nameval == VIR_CGROUP_THREAD_VCPU) {
+            virDomainNumaPtr numatune = vm->def->numa;
+            virBitmapPtr numanode_cpumask = NULL;
+            for (i = 0; i < virDomainNumaGetNodeCount(numatune); i++) {
+                numanode_cpumask = virDomainNumaGetNodeCpumask(numatune, i);
+                /* 'i' indicates the cell id, if the vCPU id is in this cell
+                 * and mode is 'restrictive', we need get the corresonding
+                 * nodeset. */
+                if (virBitmapIsBitSet(numanode_cpumask, id) &&
+                    virDomainNumatuneGetMode(numatune, i, &mem_mode) == 0 &&
+                    mem_mode == VIR_DOMAIN_NUMATUNE_MEM_RESTRICTIVE) {
+                    if (virDomainNumatuneMaybeFormatNodeset(numatune,
+                                                            priv->autoNodeset,
+                                                            &mem_mask, i) < 0) {
+                        goto cleanup;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
 
         if (virCgroupNewThread(priv->cgroup, nameval, id, true, &cgroup) < 0)
             goto cleanup;
