@@ -6064,6 +6064,11 @@
           </element>
         </optional>
         <optional>
+          <element name="actual">
+            <ref name="scaledInteger"/>
+          </element>
+        </optional>
+        <optional>
           <element name="node">
             <ref name="unsignedInt"/>
           </element>
