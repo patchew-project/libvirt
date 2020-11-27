@@ -508,11 +508,11 @@ qemuSetupMemoryDevicesCgroup(virDomainObjPtr vm,
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
-    VIR_DEBUG("Setting devices Cgroup for NVDIMM device: %s", mem->nvdimmPath);
-    rv = virCgroupAllowDevicePath(priv->cgroup, mem->nvdimmPath,
+    VIR_DEBUG("Setting devices Cgroup for NVDIMM device: %s", mem->s.nvdimm.path);
+    rv = virCgroupAllowDevicePath(priv->cgroup, mem->s.nvdimm.path,
                                   VIR_CGROUP_DEVICE_RW, false);
     virDomainAuditCgroupPath(vm, priv->cgroup, "allow",
-                             mem->nvdimmPath, "rw", rv);
+                             mem->s.nvdimm.path, "rw", rv);
 
     return rv;
 }
@@ -531,10 +531,10 @@ qemuTeardownMemoryDevicesCgroup(virDomainObjPtr vm,
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
-    rv = virCgroupDenyDevicePath(priv->cgroup, mem->nvdimmPath,
+    rv = virCgroupDenyDevicePath(priv->cgroup, mem->s.nvdimm.path,
                                  VIR_CGROUP_DEVICE_RWM, false);
     virDomainAuditCgroupPath(vm, priv->cgroup,
-                             "deny", mem->nvdimmPath, "rwm", rv);
+                             "deny", mem->s.nvdimm.path, "rwm", rv);
     return rv;
 }
 

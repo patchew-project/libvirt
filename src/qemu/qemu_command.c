@@ -2958,10 +2958,13 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     int rc;
     g_autoptr(virJSONValue) props = NULL;
     bool nodeSpecified = virDomainNumatuneNodeSpecified(def->numa, mem->targetNode);
-    unsigned long long pagesize = mem->pagesize;
-    bool needHugepage = !!pagesize;
-    bool useHugepage = !!pagesize;
+    unsigned long long pagesize = 0;
+    bool needHugepage = false;
+    bool useHugepage = false;
     int discard = mem->discard;
+    const char *nvdimmPath = NULL;
+    unsigned long long alignsize = 0;
+    bool nvdimmPmem = false;
 
     /* The difference between @needHugepage and @useHugepage is that the latter
      * is true whenever huge page is defined for the current memory cell.
@@ -2970,6 +2973,23 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
      * @useHugepage. */
 
     *backendProps = NULL;
+
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+        pagesize = mem->s.dimm.pagesize;
+        needHugepage = !!pagesize;
+        useHugepage = !!pagesize;
+        nodemask = mem->s.dimm.sourceNodes;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        nvdimmPath = mem->s.nvdimm.path;
+        alignsize = mem->s.nvdimm.alignsize;
+        nvdimmPmem = mem->s.nvdimm.pmem;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
+    }
 
     if (mem->targetNode >= 0) {
         /* memory devices could provide a invalid guest node */
@@ -3076,11 +3096,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         if (qemuBuildMemoryBackendPropsShare(props, memAccess) < 0)
             return -1;
 
-    } else if (useHugepage || mem->nvdimmPath || memAccess ||
-        def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
+    } else if (useHugepage || nvdimmPath || memAccess ||
+               def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
 
-        if (mem->nvdimmPath) {
-            memPath = g_strdup(mem->nvdimmPath);
+        if (nvdimmPath) {
+            memPath = g_strdup(nvdimmPath);
             prealloc = true;
         } else if (useHugepage) {
             if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &memPath) < 0)
@@ -3098,7 +3118,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
                                   NULL) < 0)
             return -1;
 
-        if (!mem->nvdimmPath &&
+        if (!nvdimmPath &&
             discard == VIR_TRISTATE_BOOL_YES) {
             if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -3125,18 +3145,18 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     if (virJSONValueObjectAdd(props, "U:size", mem->size * 1024, NULL) < 0)
         return -1;
 
-    if (mem->alignsize) {
+    if (alignsize) {
         if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE_ALIGN)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("nvdimm align property is not available "
                              "with this QEMU binary"));
             return -1;
         }
-        if (virJSONValueObjectAdd(props, "U:align", mem->alignsize * 1024, NULL) < 0)
+        if (virJSONValueObjectAdd(props, "U:align", alignsize * 1024, NULL) < 0)
             return -1;
     }
 
-    if (mem->nvdimmPmem) {
+    if (nvdimmPmem) {
         if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE_PMEM)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("nvdimm pmem property is not available "
@@ -3147,13 +3167,10 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
             return -1;
     }
 
-    if (mem->sourceNodes) {
-        nodemask = mem->sourceNodes;
-    } else {
-        if (virDomainNumatuneMaybeGetNodeset(def->numa, priv->autoNodeset,
-                                             &nodemask, mem->targetNode) < 0)
-            return -1;
-    }
+    if (!nodemask &&
+        virDomainNumatuneMaybeGetNodeset(def->numa, priv->autoNodeset,
+                                         &nodemask, mem->targetNode) < 0)
+        return -1;
 
     if (nodemask) {
         if (!virNumaNodesetIsAvailable(nodemask))
@@ -3166,8 +3183,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     }
 
     /* If none of the following is requested... */
-    if (!needHugepage && !mem->sourceNodes && !nodeSpecified &&
-        !mem->nvdimmPath &&
+    if (!needHugepage &&
+        !(mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM &&
+          mem->s.dimm.sourceNodes) &&
+        !nodeSpecified &&
+        !nvdimmPath &&
         memAccess == VIR_DOMAIN_MEMORY_ACCESS_DEFAULT &&
         def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_FILE &&
         def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_MEMFD &&

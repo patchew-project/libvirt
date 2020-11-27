@@ -1889,7 +1889,7 @@ virSecurityDACRestoreMemoryLabel(virSecurityManagerPtr mgr,
 
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        ret = virSecurityDACRestoreFileLabel(mgr, mem->nvdimmPath);
+        ret = virSecurityDACRestoreFileLabel(mgr, mem->s.nvdimm.path);
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
@@ -2070,7 +2070,7 @@ virSecurityDACSetMemoryLabel(virSecurityManagerPtr mgr,
             return -1;
 
         ret = virSecurityDACSetOwnership(mgr, NULL,
-                                         mem->nvdimmPath,
+                                         mem->s.nvdimm.path,
                                          user, group, true);
         break;
 

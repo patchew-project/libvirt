@@ -354,7 +354,7 @@ qemuDomainSetupMemory(virDomainMemoryDefPtr mem,
     if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM)
         return 0;
 
-    return virStringListAdd(paths, mem->nvdimmPath);
+    return virStringListAdd(paths, mem->s.nvdimm.path);
 }
 
 

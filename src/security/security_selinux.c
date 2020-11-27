@@ -1577,7 +1577,7 @@ virSecuritySELinuxSetMemoryLabel(virSecurityManagerPtr mgr,
         if (!seclabel || !seclabel->relabel)
             return 0;
 
-        if (virSecuritySELinuxSetFilecon(mgr, mem->nvdimmPath,
+        if (virSecuritySELinuxSetFilecon(mgr, mem->s.nvdimm.path,
                                          seclabel->imagelabel, true) < 0)
             return -1;
         break;
@@ -1606,7 +1606,7 @@ virSecuritySELinuxRestoreMemoryLabel(virSecurityManagerPtr mgr,
         if (!seclabel || !seclabel->relabel)
             return 0;
 
-        ret = virSecuritySELinuxRestoreFileLabel(mgr, mem->nvdimmPath, true);
+        ret = virSecuritySELinuxRestoreFileLabel(mgr, mem->s.nvdimm.path, true);
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
