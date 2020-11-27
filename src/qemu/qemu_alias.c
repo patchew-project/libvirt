@@ -521,7 +521,10 @@ qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
         idx = qemuDeviceMemoryGetAliasID(def, mem, oldAlias, prefix);
         break;
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
-        prefix = "virtiopmem";
+        if (mem->s.virtio.pmem)
+            prefix = "virtiopmem";
+        else
+            prefix = "virtiomem";
         idx = qemuDeviceMemoryGetAliasID(def, mem, true, prefix);
         break;
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
