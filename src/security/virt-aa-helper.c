@@ -1168,11 +1168,25 @@ get_files(vahControl * ctl)
     }
 
     for (i = 0; i < ctl->def->nmems; i++) {
-        if (ctl->def->mems[i] &&
-                ctl->def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
-            if (vah_add_file(&buf, ctl->def->mems[i]->s.nvdimm.path, "rw") != 0)
-                goto cleanup;
+        virDomainMemoryDefPtr mem = ctl->def->mems[i];
+        const char *path = NULL;
+
+        switch (mem->model) {
+        case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+            path = mem->s.nvdimm.path;
+            break;
+        case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+            path = mem->s.virtio.path;
+            break;
+        case VIR_DOMAIN_MEMORY_MODEL_NONE:
+        case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+        case VIR_DOMAIN_MEMORY_MODEL_LAST:
+            break;
         }
+
+        if (path &&
+            vah_add_file(&buf, path, "rw") != 0)
+            goto cleanup;
     }
 
     for (i = 0; i < ctl->def->nsysinfo; i++) {

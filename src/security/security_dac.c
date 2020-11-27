@@ -1885,22 +1885,25 @@ virSecurityDACRestoreMemoryLabel(virSecurityManagerPtr mgr,
                                  virDomainDefPtr def G_GNUC_UNUSED,
                                  virDomainMemoryDefPtr mem)
 {
-    int ret = -1;
+    const char *path = NULL;
 
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        ret = virSecurityDACRestoreFileLabel(mgr, mem->s.nvdimm.path);
+        path = mem->s.nvdimm.path;
         break;
-
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
-        ret = 0;
         break;
     }
 
-    return ret;
+    if (!path)
+        return 0;
+
+    return virSecurityDACRestoreFileLabel(mgr, path);
 }
 
 
@@ -2057,33 +2060,34 @@ virSecurityDACSetMemoryLabel(virSecurityManagerPtr mgr,
 {
     virSecurityDACDataPtr priv = virSecurityManagerGetPrivateData(mgr);
     virSecurityLabelDefPtr seclabel;
-    int ret = -1;
+    const char *path = NULL;
     uid_t user;
     gid_t group;
 
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_DAC_NAME);
-        if (seclabel && !seclabel->relabel)
-            return 0;
-
-        if (virSecurityDACGetIds(seclabel, priv, &user, &group, NULL, NULL) < 0)
-            return -1;
-
-        ret = virSecurityDACSetOwnership(mgr, NULL,
-                                         mem->s.nvdimm.path,
-                                         user, group, true);
+        path = mem->s.nvdimm.path;
         break;
-
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
-        ret = 0;
         break;
     }
 
-    return ret;
+    if (!path)
+        return 0;
+
+    seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_DAC_NAME);
+    if (seclabel && !seclabel->relabel)
+        return 0;
+
+    if (virSecurityDACGetIds(seclabel, priv, &user, &group, NULL, NULL) < 0)
+        return -1;
+
+    return virSecurityDACSetOwnership(mgr, NULL, path, user, group, true);
 }
 
 
