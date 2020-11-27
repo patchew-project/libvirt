@@ -7187,6 +7187,17 @@ Example: usage of the memory devices
          </label>
        </target>
      </memory>
+     <memory model='virtio'>
+       <source>
+         <path>/tmp/virtio_mem</path>
+       </source>
+       <target>
+         <size unit='KiB'>1048576</size>
+         <node>0</node>
+         <block unit='KiB'>2048</block>
+         <requested unit='KiB'>524288</requested>
+       </target>
+     </memory>
      <memory model='virtio' access='shared'>
        <source>
          <path>/tmp/virtio_pmem</path>
@@ -7299,6 +7310,17 @@ Example: usage of the memory devices
       the real NVDIMM device backend can guarantee the guest write persistence,
       so other backend types should use the ``readonly`` element. :since:`Since
       5.0.0`
+
+   ``block``
+     The size of an individual block, granularity of division of memory module.
+     Must be power of two and at least equal to size of a transparent hugepage
+     (2MiB on x84_64). The default is hypervisor dependant. This is valid for
+     ``virtio`` model only and mutually exclusive with ``pmem``.
+
+   ``requested``
+     The total size of blocks exposed to the guest. Must respect ``block``
+     granularity. This is valid for ``virtio`` model only and mutually
+     exclusive with ``pmem``.
 
 :anchor:`<a id="elementsIommu"/>`
 

@@ -2327,8 +2327,11 @@ struct _virDomainMemoryDef {
             bool pmem;
         } nvdimm; /* VIR_DOMAIN_MEMORY_MODEL_NVDIMM */
         struct {
+            // nodemask + hugepages + no prealloc
             char *path; /* Required for pmem, otherwise optional */
             bool pmem;
+            virBitmapPtr sourceNodes;
+            unsigned long long pagesize; /* kibibytes */
         } virtio; /* VIR_DOMAIN_MEMORY_MODEL_VIRTIO */
     } s;
 
@@ -2337,6 +2340,8 @@ struct _virDomainMemoryDef {
     int targetNode;
     unsigned long long size; /* kibibytes */
     unsigned long long labelsize; /* kibibytes; valid only for NVDIMM */
+    unsigned long long blocksize; /* kibibytes, valid for virtio-mem only */
+    unsigned long long requestedsize; /* kibibytes, valid for virtio-mem only */
     bool readonly; /* valid only for NVDIMM */
 
     /* required for QEMU NVDIMM ppc64 support */

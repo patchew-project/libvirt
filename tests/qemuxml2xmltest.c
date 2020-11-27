@@ -1239,6 +1239,7 @@ mymain(void)
     DO_TEST("memory-hotplug-nvdimm-ppc64", QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
                                            QEMU_CAPS_DEVICE_NVDIMM);
     DO_TEST_CAPS_LATEST("memory-hotplug-virtio-pmem");
+    DO_TEST_CAPS_LATEST("memory-hotplug-virtio-mem");
 
     DO_TEST("net-udp", NONE);
 
