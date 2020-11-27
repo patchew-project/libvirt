@@ -1238,6 +1238,8 @@ mymain(void)
                                               QEMU_CAPS_DEVICE_NVDIMM_UNARMED);
     DO_TEST("memory-hotplug-nvdimm-ppc64", QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
                                            QEMU_CAPS_DEVICE_NVDIMM);
+    DO_TEST_CAPS_LATEST("memory-hotplug-virtio-pmem");
+
     DO_TEST("net-udp", NONE);
 
     DO_TEST("video-virtio-gpu-device", QEMU_CAPS_DEVICE_VIRTIO_GPU);

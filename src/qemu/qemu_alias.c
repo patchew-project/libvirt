@@ -498,6 +498,7 @@ qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         prefix = "nvdimm";
         break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;

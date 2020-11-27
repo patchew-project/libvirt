@@ -1332,6 +1332,7 @@ VIR_ENUM_IMPL(virDomainMemoryModel,
               "",
               "dimm",
               "nvdimm",
+              "virtio",
 );
 
 VIR_ENUM_IMPL(virDomainShmemModel,
@@ -3142,6 +3143,9 @@ void virDomainMemoryDefFree(virDomainMemoryDefPtr def)
         break;
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         VIR_FREE(def->s.nvdimm.path);
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        VIR_FREE(def->s.virtio.path);
         break;
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
@@ -5373,15 +5377,31 @@ static int
 virDomainMemoryDefPostParse(virDomainMemoryDefPtr mem,
                             const virDomainDef *def)
 {
-    /* Although only the QEMU driver implements PPC64 support, this
-     * code is related to the platform specification (PAPR), i.e. it
-     * is hypervisor agnostic, and any future PPC64 hypervisor driver
-     * will have the same restriction.
-     */
-    if (ARCH_IS_PPC64(def->os.arch) &&
-        mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-        virDomainNVDimmAlignSizePseries(mem) < 0)
-        return -1;
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        /* Although only the QEMU driver implements PPC64 support, this
+         * code is related to the platform specification (PAPR), i.e. it
+         * is hypervisor agnostic, and any future PPC64 hypervisor driver
+         * will have the same restriction.
+         */
+        if (ARCH_IS_PPC64(def->os.arch) &&
+            virDomainNVDimmAlignSizePseries(mem) < 0)
+            return -1;
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        /* Virtio-pmem mandates shared access so that guest writes get
+         * reflected in the underlying file. */
+        if (mem->s.virtio.pmem &&
+            mem->access == VIR_DOMAIN_MEMORY_ACCESS_DEFAULT)
+            mem->access = VIR_DOMAIN_MEMORY_ACCESS_SHARED;
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
+    }
 
     return 0;
 }
@@ -6703,7 +6723,8 @@ static int
 virDomainMemoryDefValidate(const virDomainMemoryDef *mem,
                            const virDomainDef *def)
 {
-    if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         if (!mem->s.nvdimm.path) {
             virReportError(VIR_ERR_XML_DETAIL, "%s",
                            _("path is required for model 'nvdimm'"));
@@ -6721,6 +6742,39 @@ virDomainMemoryDefValidate(const virDomainMemoryDef *mem,
                            _("label size is required for NVDIMM device"));
             return -1;
         }
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        if (mem->s.virtio.pmem) {
+            if (!mem->s.virtio.path) {
+                virReportError(VIR_ERR_XML_DETAIL, "%s",
+                               _("path is required for model 'virtio'"));
+                return -1;
+            }
+
+            if (mem->access != VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("shared access mode required for virtio-pmem device"));
+                return -1;
+            }
+
+            if (mem->targetNode != -1) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("virtio-pmem does not support NUMA nodes"));
+                return -1;
+            }
+        } else {
+            /* TODO: plain virtio-mem behaves differently then virtio-pmem */
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtio-mem is not supported yet. <pmem/> is required"));
+            return -1;
+        }
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
     }
 
     return 0;
@@ -16717,6 +16771,14 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
 
         break;
 
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        def->s.virtio.path = virXPathString("string(./path)", ctxt);
+
+        if (virXPathBoolean("boolean(./pmem)", ctxt))
+            def->s.virtio.pmem = true;
+
+        break;
+
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
@@ -18598,6 +18660,12 @@ virDomainMemoryFindByDefInternal(virDomainDefPtr def,
 
         case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
             if (STRNEQ(tmp->s.nvdimm.path, mem->s.nvdimm.path))
+                continue;
+            break;
+
+        case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+            if (tmp->s.virtio.pmem != mem->s.virtio.pmem ||
+                STRNEQ_NULLABLE(tmp->s.virtio.path, mem->s.virtio.path))
                 continue;
             break;
 
@@ -24183,7 +24251,8 @@ virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
         return false;
     }
 
-    if (src->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+    switch (src->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         if (src->labelsize != dst->labelsize) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Target NVDIMM label size '%llu' doesn't match "
@@ -24219,6 +24288,21 @@ virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
                            _("Target NVDIMM UUID doesn't match source NVDIMM"));
             return false;
         }
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        if (src->s.virtio.pmem != dst->s.virtio.pmem) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Target NVDIMM pmem flag doesn't match "
+                             "source NVDIMM pmem flag"));
+            return false;
+        }
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
     }
 
     return virDomainDeviceInfoCheckABIStability(&src->info, &dst->info);
@@ -27871,6 +27955,13 @@ virDomainMemorySourceDefFormat(virBufferPtr buf,
                               def->s.nvdimm.alignsize);
 
         if (def->s.nvdimm.pmem)
+            virBufferAddLit(&childBuf, "<pmem/>\n");
+        break;
+
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        virBufferEscapeString(&childBuf, "<path>%s</path>\n", def->s.virtio.path);
+
+        if (def->s.virtio.pmem)
             virBufferAddLit(&childBuf, "<pmem/>\n");
         break;
 
