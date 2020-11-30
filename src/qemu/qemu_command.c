@@ -2977,7 +2977,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     if (discard == VIR_TRISTATE_BOOL_ABSENT)
         discard = def->mem.discard;
 
-    if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
+    /* The whole point of free_page_reporting is that as soon as guest frees
+     * any memory it is freed in the host too. Prealloc doesn't make much sense
+     * then. */
+    if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE &&
+        def->memballoon->free_page_reporting != VIR_TRISTATE_SWITCH_ON)
         prealloc = true;
 
     if (virDomainNumatuneGetMode(def->numa, mem->targetNode, &mode) < 0 &&
@@ -3064,7 +3068,10 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
 
         if (mem->nvdimmPath) {
             memPath = g_strdup(mem->nvdimmPath);
-            prealloc = true;
+            /* If the NVDIMM is a real device then there's nothing to prealloc.
+             * If anyhing, we would be only wearing off the device. */
+            if (!mem->nvdimmPmem)
+                prealloc = true;
         } else if (useHugepage) {
             if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &memPath) < 0)
                 return -1;
