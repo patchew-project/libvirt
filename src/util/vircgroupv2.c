@@ -1796,7 +1796,9 @@ virCgroupV2DenyDevice(virCgroupPtr group,
         return 0;
     }
 
-    if (newval == val) {
+    val = val & ~newval;
+
+    if (val == 0) {
         if (virBPFDeleteElem(group->unified.devices.mapfd, &key) < 0) {
             virReportSystemError(errno, "%s",
                                  _("failed to remove device from BPF cgroup map"));
@@ -1804,7 +1806,6 @@ virCgroupV2DenyDevice(virCgroupPtr group,
         }
         group->unified.devices.count--;
     } else {
-        val ^= val & newval;
         if (virBPFUpdateElem(group->unified.devices.mapfd, &key, &val) < 0) {
             virReportSystemError(errno, "%s",
                                  _("failed to update device in BPF cgroup map"));
