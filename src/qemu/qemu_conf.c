@@ -1380,6 +1380,12 @@ virCapsPtr virQEMUDriverCreateCapabilities(virQEMUDriverPtr driver)
                   "DOI \"%s\"", model, doi);
     }
 
+    /* Forcibly recreate NUMA caps. They are not static
+     * (e.g. size of hugepages pools can change). */
+    qemuDriverLock(driver);
+    g_clear_pointer(&driver->hostnuma, virCapabilitiesHostNUMAUnref);
+    qemuDriverUnlock(driver);
+
     caps->host.numa = virQEMUDriverGetHostNUMACaps(driver);
     caps->host.cpu = virQEMUDriverGetHostCPU(driver);
     return g_steal_pointer(&caps);
