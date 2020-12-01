@@ -20124,6 +20124,9 @@ qemuDomainGetGuestInfo(virDomainPtr dom,
  endagentjob:
     qemuDomainObjEndAgentJob(vm);
 
+    if (ret < 0)
+        goto cleanup;
+
     if (nfs > 0 || ndisks > 0) {
         if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
             goto cleanup;
