@@ -4972,17 +4972,16 @@ qemuDomainGetMaxVcpus(virDomainPtr dom)
 static int
 qemuDomainGetIOThreadsMon(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
-                          qemuMonitorIOThreadInfoPtr **iothreads)
+                          qemuMonitorIOThreadInfoPtr **iothreads,
+                          int *niothreads)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    int niothreads = 0;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    niothreads = qemuMonitorGetIOThreads(priv->mon, iothreads);
-    if (qemuDomainObjExitMonitor(driver, vm) < 0 || niothreads < 0)
+    *niothreads = qemuMonitorGetIOThreads(priv->mon, iothreads);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
         return -1;
-
-    return niothreads;
+    return 0;
 }
 
 
@@ -5014,7 +5013,7 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
         goto endjob;
     }
 
-    if ((niothreads = qemuDomainGetIOThreadsMon(driver, vm, &iothreads)) < 0)
+    if (qemuDomainGetIOThreadsMon(driver, vm, &iothreads, &niothreads) < 0)
         goto endjob;
 
     /* Nothing to do */
@@ -18507,7 +18506,7 @@ qemuDomainGetStatsIOThread(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = dom->privateData;
     size_t i;
     qemuMonitorIOThreadInfoPtr *iothreads = NULL;
-    int niothreads;
+    int niothreads = 0;
     int ret = -1;
 
     if (!HAVE_JOB(privflags) || !virDomainObjIsActive(dom))
@@ -18516,8 +18515,8 @@ qemuDomainGetStatsIOThread(virQEMUDriverPtr driver,
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD))
         return 0;
 
-    if ((niothreads = qemuDomainGetIOThreadsMon(driver, dom, &iothreads)) < 0)
-        return -1;
+    if (qemuDomainGetIOThreadsMon(driver, dom, &iothreads, &niothreads) < 0)
+        goto cleanup;
 
     /* qemuDomainGetIOThreadsMon returns a NULL-terminated list, so we must free
      * it even if it returns 0 */
