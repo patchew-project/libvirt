@@ -7610,6 +7610,15 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
         goto cleanup;
     }
 
+    if (chr->logfile) {
+        if (virJSONValueObjectAppendString(data, "logfile",
+                                           chr->logfile) < 0)
+            goto cleanup;
+        if (virJSONValueObjectAppendBooleanTristate(data, "logappend",
+                                                    chr->logappend) < 0)
+            goto cleanup;
+    }
+
     if (virJSONValueObjectAppendString(backend, "type", backend_type) < 0 ||
         virJSONValueObjectAppend(backend, "data", data) < 0)
         goto cleanup;
