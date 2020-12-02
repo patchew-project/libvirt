@@ -792,12 +792,14 @@ virExec(virCommandPtr cmd)
         if (virSetInherit(pidfilefd, true) < 0) {
             virReportSystemError(errno, "%s",
                                  _("Cannot disable close-on-exec flag"));
+            virPidFileReleasePath(cmd->pidfile, pidfilefd);
             goto fork_error;
         }
 
         c = '1';
         if (safewrite(pipesync[1], &c, sizeof(c)) != sizeof(c)) {
             virReportSystemError(errno, "%s", _("Unable to notify child process"));
+            virPidFileReleasePath(cmd->pidfile, pidfilefd);
             goto fork_error;
         }
         VIR_FORCE_CLOSE(pipesync[0]);
