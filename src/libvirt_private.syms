@@ -2386,6 +2386,7 @@ virJSONValueObjectAdd;
 virJSONValueObjectAddVArgs;
 virJSONValueObjectAppend;
 virJSONValueObjectAppendBoolean;
+virJSONValueObjectAppendBooleanTristate;
 virJSONValueObjectAppendNull;
 virJSONValueObjectAppendNumberDouble;
 virJSONValueObjectAppendNumberInt;

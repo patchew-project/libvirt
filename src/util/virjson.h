@@ -137,6 +137,7 @@ int virJSONValueObjectAppendNumberLong(virJSONValuePtr object, const char *key, 
 int virJSONValueObjectAppendNumberUlong(virJSONValuePtr object, const char *key, unsigned long long number);
 int virJSONValueObjectAppendNumberDouble(virJSONValuePtr object, const char *key, double number);
 int virJSONValueObjectAppendBoolean(virJSONValuePtr object, const char *key, int boolean);
+int virJSONValueObjectAppendBooleanTristate(virJSONValuePtr object, const char *key, int value);
 int virJSONValueObjectAppendNull(virJSONValuePtr object, const char *key);
 
 int virJSONValueObjectRemoveKey(virJSONValuePtr object, const char *key,

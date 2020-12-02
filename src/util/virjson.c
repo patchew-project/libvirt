@@ -767,6 +767,31 @@ virJSONValueObjectAppendBoolean(virJSONValuePtr object,
 
 
 int
+virJSONValueObjectAppendBooleanTristate(virJSONValuePtr object,
+                                        const char *key,
+                                        int value)
+{
+    g_autoptr(virJSONValue) jvalue = NULL;
+    int v;
+
+    if (value == VIR_TRISTATE_SWITCH_ABSENT)
+        return 0;
+
+    if (value == VIR_TRISTATE_SWITCH_OFF)
+        v = 0;
+    else
+        v = 1;
+
+    jvalue = virJSONValueNewBoolean(v);
+    if (virJSONValueObjectAppend(object, key, jvalue) < 0)
+        return -1;
+    jvalue = NULL;
+
+    return 0;
+}
+
+
+int
 virJSONValueObjectAppendNull(virJSONValuePtr object,
                              const char *key)
 {
