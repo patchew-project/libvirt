@@ -3012,6 +3012,7 @@ mymain(void)
     DO_TEST_CAPS_LATEST("memory-hotplug-nvdimm-pmem");
     DO_TEST_CAPS_LATEST("memory-hotplug-nvdimm-readonly");
     DO_TEST_CAPS_ARCH_LATEST("memory-hotplug-nvdimm-ppc64", "ppc64");
+    DO_TEST_CAPS_LATEST("memory-hotplug-virtio-pmem");
 
     DO_TEST("machine-aeskeywrap-on-caps",
             QEMU_CAPS_AES_KEY_WRAP,

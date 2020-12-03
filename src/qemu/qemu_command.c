@@ -2957,7 +2957,8 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     virDomainMemoryAccess memAccess = mem->access;
     size_t i;
     g_autofree char *memPath = NULL;
-    bool prealloc = false;
+    bool wantPrealloc = false;
+    bool allowPrealloc = !priv->memPrealloc;
     virBitmapPtr nodemask = NULL;
     int rc;
     g_autoptr(virJSONValue) props = NULL;
@@ -2991,6 +2992,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         nvdimmPmem = mem->s.nvdimm.pmem;
         break;
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        nvdimmPath = mem->s.virtio.path;
+        /* virtio-pmem doesn't need prealloc, it's very likely exposing a real
+         * device and thus there's nothing to prealloc */
+        allowPrealloc = false;
+        break;
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
@@ -3020,7 +3026,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         discard = def->mem.discard;
 
     if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
-        prealloc = true;
+        wantPrealloc = true;
 
     if (virDomainNumatuneGetMode(def->numa, mem->targetNode, &mode) < 0 &&
         virDomainNumatuneGetMode(def->numa, -1, &mode) < 0)
@@ -3095,7 +3101,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
                 return -1;
             }
 
-            prealloc = true;
+            wantPrealloc = true;
         }
 
         if (qemuBuildMemoryBackendPropsShare(props, memAccess) < 0)
@@ -3106,11 +3112,11 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
 
         if (nvdimmPath) {
             memPath = g_strdup(nvdimmPath);
-            prealloc = true;
+            wantPrealloc = true;
         } else if (useHugepage) {
             if (qemuGetDomainHupageMemPath(priv->driver, def, pagesize, &memPath) < 0)
                 return -1;
-            prealloc = true;
+            wantPrealloc = true;
         } else {
             /* We can have both pagesize and mem source. If that's the case,
              * prefer hugepages as those are more specific. */
@@ -3143,8 +3149,8 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         backendType = "memory-backend-ram";
     }
 
-    if (!priv->memPrealloc &&
-        virJSONValueObjectAdd(props, "B:prealloc", prealloc, NULL) < 0)
+    if (allowPrealloc &&
+        virJSONValueObjectAdd(props, "B:prealloc", wantPrealloc, NULL) < 0)
         return -1;
 
     if (virJSONValueObjectAdd(props, "U:size", mem->size * 1024, NULL) < 0)
@@ -3299,7 +3305,7 @@ qemuBuildMemoryDeviceStr(const virDomainDef *def,
                          virQEMUCapsPtr qemuCaps)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
-    const char *device;
+    const char *device = NULL;
 
     if (!mem->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -3308,45 +3314,45 @@ qemuBuildMemoryDeviceStr(const virDomainDef *def,
     }
 
     switch (mem->model) {
-    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
-
-        if (mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM)
-            device = "pc-dimm";
-        else
-            device = "nvdimm";
-
-        virBufferAsprintf(&buf, "%s,", device);
-
-        if (mem->targetNode >= 0)
-            virBufferAsprintf(&buf, "node=%d,", mem->targetNode);
-
-        if (mem->labelsize)
-            virBufferAsprintf(&buf, "label-size=%llu,", mem->labelsize * 1024);
-
-        if (virUUIDIsValid(mem->uuid)) {
-            char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-            virUUIDFormat(mem->uuid, uuidstr);
-            virBufferAsprintf(&buf, "uuid=%s,", uuidstr);
-        }
-
-        if (mem->readonly) {
-            virBufferAddLit(&buf, "unarmed=on,");
-        }
-
-        virBufferAsprintf(&buf, "memdev=mem%s,id=%s",
-                          mem->info.alias, mem->info.alias);
-
-        qemuBuildDeviceAddressStr(&buf, def, &mem->info, qemuCaps);
+        device = "pc-dimm";
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        device = "nvdimm";
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        device = "virtio-pmem-pci";
+
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
-
     }
+
+    virBufferAsprintf(&buf, "%s,", device);
+
+    if (mem->targetNode >= 0)
+        virBufferAsprintf(&buf, "node=%d,", mem->targetNode);
+
+    if (mem->labelsize)
+        virBufferAsprintf(&buf, "label-size=%llu,", mem->labelsize * 1024);
+
+    if (virUUIDIsValid(mem->uuid)) {
+        char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+        virUUIDFormat(mem->uuid, uuidstr);
+        virBufferAsprintf(&buf, "uuid=%s,", uuidstr);
+    }
+
+    if (mem->readonly) {
+        virBufferAddLit(&buf, "unarmed=on,");
+    }
+
+    virBufferAsprintf(&buf, "memdev=mem%s,id=%s",
+                      mem->info.alias, mem->info.alias);
+
+    qemuBuildDeviceAddressStr(&buf, def, &mem->info, qemuCaps);
+
 
     return virBufferContentAndReset(&buf);
 }
