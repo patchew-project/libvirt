@@ -486,15 +486,22 @@ qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
     size_t i;
     int maxidx = 0;
     int idx;
-    const char *prefix;
+    const char *prefix = NULL;
 
     if (mem->info.alias)
         return 0;
 
-    if (mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM)
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
         prefix = "dimm";
-    else
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         prefix = "nvdimm";
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
+    }
 
     if (oldAlias) {
         for (i = 0; i < def->nmems; i++) {

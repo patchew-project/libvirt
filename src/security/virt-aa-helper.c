@@ -1170,7 +1170,7 @@ get_files(vahControl * ctl)
     for (i = 0; i < ctl->def->nmems; i++) {
         if (ctl->def->mems[i] &&
                 ctl->def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
-            if (vah_add_file(&buf, ctl->def->mems[i]->nvdimmPath, "rw") != 0)
+            if (vah_add_file(&buf, ctl->def->mems[i]->s.nvdimm.path, "rw") != 0)
                 goto cleanup;
         }
     }

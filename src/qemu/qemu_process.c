@@ -3885,15 +3885,15 @@ qemuProcessNeedHugepagesPath(virDomainDefPtr def,
 
     for (i = 0; i < def->nmems; i++) {
         if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_DIMM &&
-            def->mems[i]->pagesize &&
-            def->mems[i]->pagesize != system_pagesize)
+            def->mems[i]->s.dimm.pagesize &&
+            def->mems[i]->s.dimm.pagesize != system_pagesize)
             return true;
     }
 
     if (mem &&
         mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM &&
-        mem->pagesize &&
-        mem->pagesize != system_pagesize)
+        mem->s.dimm.pagesize &&
+        mem->s.dimm.pagesize != system_pagesize)
         return true;
 
     return false;

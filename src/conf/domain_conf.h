@@ -2315,11 +2315,17 @@ struct _virDomainMemoryDef {
     virTristateBool discard;
 
     /* source */
-    virBitmapPtr sourceNodes;
-    unsigned long long pagesize; /* kibibytes */
-    char *nvdimmPath;
-    unsigned long long alignsize; /* kibibytes; valid only for NVDIMM */
-    bool nvdimmPmem; /* valid only for NVDIMM */
+    union {
+        struct {
+            virBitmapPtr sourceNodes;
+            unsigned long long pagesize; /* kibibytes */
+        } dimm; /* VIR_DOMAIN_MEMORY_MODEL_DIMM */
+        struct {
+            char *path;
+            unsigned long long alignsize; /* kibibytes */
+            bool pmem;
+        } nvdimm; /* VIR_DOMAIN_MEMORY_MODEL_NVDIMM */
+    } s;
 
     /* target */
     virDomainMemoryModel model;

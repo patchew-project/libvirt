@@ -3136,8 +3136,18 @@ void virDomainMemoryDefFree(virDomainMemoryDefPtr def)
     if (!def)
         return;
 
-    VIR_FREE(def->nvdimmPath);
-    virBitmapFree(def->sourceNodes);
+    switch (def->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+        virBitmapFree(def->s.dimm.sourceNodes);
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        VIR_FREE(def->s.nvdimm.path);
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+        break;
+    }
+
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def);
 }
@@ -6694,7 +6704,7 @@ virDomainMemoryDefValidate(const virDomainMemoryDef *mem,
                            const virDomainDef *def)
 {
     if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
-        if (!mem->nvdimmPath) {
+        if (!mem->s.nvdimm.path) {
             virReportError(VIR_ERR_XML_DETAIL, "%s",
                            _("path is required for model 'nvdimm'"));
             return -1;
@@ -16679,15 +16689,15 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
     switch (def->model) {
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
         if (virDomainParseMemory("./pagesize", "./pagesize/@unit", ctxt,
-                                 &def->pagesize, false, false) < 0)
+                                 &def->s.dimm.pagesize, false, false) < 0)
             return -1;
 
         if ((nodemask = virXPathString("string(./nodemask)", ctxt))) {
-            if (virBitmapParse(nodemask, &def->sourceNodes,
+            if (virBitmapParse(nodemask, &def->s.dimm.sourceNodes,
                                VIR_DOMAIN_CPUMASK_LEN) < 0)
                 return -1;
 
-            if (virBitmapIsAllClear(def->sourceNodes)) {
+            if (virBitmapIsAllClear(def->s.dimm.sourceNodes)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("Invalid value of 'nodemask': %s"), nodemask);
                 return -1;
@@ -16696,14 +16706,14 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        def->nvdimmPath = virXPathString("string(./path)", ctxt);
+        def->s.nvdimm.path = virXPathString("string(./path)", ctxt);
 
         if (virDomainParseMemory("./alignsize", "./alignsize/@unit", ctxt,
-                                 &def->alignsize, false, false) < 0)
+                                 &def->s.nvdimm.alignsize, false, false) < 0)
             return -1;
 
         if (virXPathBoolean("boolean(./pmem)", ctxt))
-            def->nvdimmPmem = true;
+            def->s.nvdimm.pmem = true;
 
         break;
 
@@ -18583,15 +18593,15 @@ virDomainMemoryFindByDefInternal(virDomainDefPtr def,
         switch (mem->model) {
         case VIR_DOMAIN_MEMORY_MODEL_DIMM:
             /* source stuff -> match with device */
-            if (tmp->pagesize != mem->pagesize)
+            if (tmp->s.dimm.pagesize != mem->s.dimm.pagesize)
                 continue;
 
-            if (!virBitmapEqual(tmp->sourceNodes, mem->sourceNodes))
+            if (!virBitmapEqual(tmp->s.dimm.sourceNodes, mem->s.dimm.sourceNodes))
                 continue;
             break;
 
         case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-            if (STRNEQ(tmp->nvdimmPath, mem->nvdimmPath))
+            if (STRNEQ(tmp->s.nvdimm.path, mem->s.nvdimm.path))
                 continue;
             break;
 
@@ -24186,15 +24196,15 @@ virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
             return false;
         }
 
-        if (src->alignsize != dst->alignsize) {
+        if (src->s.nvdimm.alignsize != dst->s.nvdimm.alignsize) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Target NVDIMM alignment '%llu' doesn't match "
                              "source NVDIMM alignment '%llu'"),
-                           src->alignsize, dst->alignsize);
+                           src->s.nvdimm.alignsize, dst->s.nvdimm.alignsize);
             return false;
         }
 
-        if (src->nvdimmPmem != dst->nvdimmPmem) {
+        if (src->s.nvdimm.pmem != dst->s.nvdimm.pmem) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Target NVDIMM pmem flag doesn't match "
                              "source NVDIMM pmem flag"));
@@ -27844,26 +27854,27 @@ virDomainMemorySourceDefFormat(virBufferPtr buf,
 
     switch (def->model) {
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
-        if (def->sourceNodes) {
-            if (!(bitmap = virBitmapFormat(def->sourceNodes)))
+        if (def->s.dimm.sourceNodes) {
+            if (!(bitmap = virBitmapFormat(def->s.dimm.sourceNodes)))
                 return -1;
 
             virBufferAsprintf(&childBuf, "<nodemask>%s</nodemask>\n", bitmap);
         }
 
-        if (def->pagesize)
+        if (def->s.dimm.pagesize) {
             virBufferAsprintf(&childBuf, "<pagesize unit='KiB'>%llu</pagesize>\n",
-                              def->pagesize);
+                              def->s.dimm.pagesize);
+        }
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        virBufferEscapeString(&childBuf, "<path>%s</path>\n", def->nvdimmPath);
+        virBufferEscapeString(&childBuf, "<path>%s</path>\n", def->s.nvdimm.path);
 
-        if (def->alignsize)
+        if (def->s.nvdimm.alignsize)
             virBufferAsprintf(&childBuf, "<alignsize unit='KiB'>%llu</alignsize>\n",
-                              def->alignsize);
+                              def->s.nvdimm.alignsize);
 
-        if (def->nvdimmPmem)
+        if (def->s.nvdimm.pmem)
             virBufferAddLit(&childBuf, "<pmem/>\n");
         break;
 
