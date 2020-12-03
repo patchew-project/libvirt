@@ -1892,6 +1892,7 @@ virSecurityDACRestoreMemoryLabel(virSecurityManagerPtr mgr,
         ret = virSecurityDACRestoreFileLabel(mgr, mem->s.nvdimm.path);
         break;
 
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -2074,6 +2075,7 @@ virSecurityDACSetMemoryLabel(virSecurityManagerPtr mgr,
                                          user, group, true);
         break;
 
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:

@@ -2986,6 +2986,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         alignsize = mem->s.nvdimm.alignsize;
         nvdimmPmem = mem->s.nvdimm.pmem;
         break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
@@ -3339,6 +3340,7 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 
         break;
 
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;

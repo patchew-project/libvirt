@@ -2402,7 +2402,7 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuDomainDefValidateMemoryHotplug(vm->def, priv->qemuCaps, mem) < 0)
         goto cleanup;
 
-    if (qemuDomainAssignMemoryDeviceSlot(vm->def, mem) < 0)
+    if (qemuDomainAssignMemoryDeviceSlot(driver, vm, mem) < 0)
         goto cleanup;
 
     /* in cases where we are using a VM with aliases generated according to the

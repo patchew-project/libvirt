@@ -5973,6 +5973,7 @@
         <choice>
           <value>dimm</value>
           <value>nvdimm</value>
+          <value>virtio</value>
         </choice>
       </attribute>
       <optional>

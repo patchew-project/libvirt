@@ -4620,6 +4620,7 @@ qemuValidateDomainDeviceDefMemory(virDomainMemoryDefPtr mem,
         }
         break;
 
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
