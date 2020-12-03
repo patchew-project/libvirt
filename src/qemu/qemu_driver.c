@@ -4284,6 +4284,39 @@ processGuestCrashloadedEvent(virQEMUDriverPtr driver,
 }
 
 
+static void
+processMemoryDeviceSizeChange(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              qemuMonitorMemoryDeviceSizeChangePtr info)
+{
+    virDomainMemoryDefPtr mem = NULL;
+    ssize_t idx;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        return;
+
+    if (!virDomainObjIsActive(vm)) {
+        VIR_DEBUG("Domain is not running");
+        goto endjob;
+    }
+
+    idx = virDomainMemoryFindByDeviceAlias(vm->def, info->devAlias);
+    if (idx < 0) {
+        VIR_DEBUG("Memory device '%s' not found", info->devAlias);
+        goto endjob;
+    }
+
+    mem = vm->def->mems[idx];
+    mem->actualsize = VIR_DIV_UP(info->size, 1024);
+
+    /* fix the balloon size */
+    ignore_value(qemuProcessRefreshBalloonState(driver, vm, QEMU_ASYNC_JOB_NONE));
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+}
+
+
 static void qemuProcessEventHandler(void *data, void *opaque)
 {
     struct qemuProcessEvent *processEvent = data;
@@ -4332,6 +4365,9 @@ static void qemuProcessEventHandler(void *data, void *opaque)
         break;
     case QEMU_PROCESS_EVENT_GUEST_CRASHLOADED:
         processGuestCrashloadedEvent(driver, vm);
+        break;
+    case QEMU_PROCESS_EVENT_MEMORY_DEVICE_SIZE_CHANGE:
+        processMemoryDeviceSizeChange(driver, vm, processEvent->data);
         break;
     case QEMU_PROCESS_EVENT_LAST:
         break;

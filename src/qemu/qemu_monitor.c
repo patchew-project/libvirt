@@ -1418,6 +1418,20 @@ qemuMonitorEmitSpiceMigrated(qemuMonitorPtr mon)
 
 
 int
+qemuMonitorEmitMemoryDeviceSizeChange(qemuMonitorPtr mon,
+                                      const char *devAlias,
+                                      unsigned long long size)
+{
+    int ret = -1;
+    VIR_DEBUG("mon=%p, devAlias='%s', size=%llu", mon, devAlias, size);
+
+    QEMU_MONITOR_CALLBACK(mon, ret, domainMemoryDeviceSizeChange, mon->vm, devAlias, size);
+
+    return ret;
+}
+
+
+int
 qemuMonitorEmitMemoryFailure(qemuMonitorPtr mon,
                              qemuMonitorEventMemoryFailurePtr mfp)
 {
@@ -4419,6 +4433,16 @@ qemuMonitorEventRdmaGidStatusFree(qemuMonitorRdmaGidStatusPtr info)
 
     VIR_FREE(info->netdev);
     VIR_FREE(info);
+}
+
+
+void
+qemuMonitorMemoryDeviceSizeChangeFree(qemuMonitorMemoryDeviceSizeChangePtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info->devAlias);
 }
 
 
