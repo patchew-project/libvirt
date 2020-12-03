@@ -1235,8 +1235,12 @@ udevProcessAPQueue(struct udev_device *device,
 
 
 static int
-udevProcessAPMatrix(virNodeDeviceDefPtr def)
+udevProcessAPMatrix(struct udev_device *device,
+                    virNodeDeviceDefPtr def)
 {
+    virNodeDevCapDataPtr data = &def->caps->data;
+
+    data->ap_matrix.addr =  g_strdup(udev_device_get_sysname(device));
     def->name = g_strdup("ap_matrix");
 
     return 0;
@@ -1383,7 +1387,7 @@ udevGetDeviceDetails(struct udev_device *device,
     case VIR_NODE_DEV_CAP_AP_QUEUE:
         return udevProcessAPQueue(device, def);
     case VIR_NODE_DEV_CAP_AP_MATRIX:
-        return udevProcessAPMatrix(def);
+        return udevProcessAPMatrix(device, def);
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
