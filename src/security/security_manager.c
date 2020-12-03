@@ -781,6 +781,9 @@ virSecurityManagerCheckDomainLabel(virSecurityManagerPtr mgr,
     size_t i;
 
     for (i = 0; i < def->nseclabels; i++) {
+        if (def->seclabels[i]->type == VIR_DOMAIN_SECLABEL_NONE)
+            continue;
+
         if (virSecurityManagerCheckModel(mgr, def->seclabels[i]->model) < 0)
             return -1;
     }
