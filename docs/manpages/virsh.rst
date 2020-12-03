@@ -4098,6 +4098,7 @@ setmem
 ::
 
    setmem domain size [[--config] [--live] | [--current]]
+      [--virtio [--node NODE] | [--alias ALIAS]]
 
 Change the memory allocation for a guest domain.
 If *--live* is specified, perform a memory balloon of a running guest.
@@ -4107,6 +4108,11 @@ If *--current* is specified, it is equivalent to either *--live* or
 Both *--live* and *--config* flags may be given, but *--current* is
 exclusive. If no flag is specified, behavior is different depending
 on hypervisor.
+If *--virtio* is specified then instead of changing the memory allocation for
+whole domain the individual memory device with virtio model is changed. If
+there is more than one such memory device then *--node* or *--alias* must be
+used to specify the device uniquely. *NODE* refers to the guest NUMA node to
+which the memory device is attached to and *ALIAS* is the device alias.
 
 *size* is a scaled integer (see ``NOTES`` above); it defaults to kibibytes
 (blocks of 1024 bytes) unless you provide a suffix (and the older option

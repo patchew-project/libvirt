@@ -8992,11 +8992,100 @@ static const vshCmdOptDef opts_setmem[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("new memory size, as scaled integer (default KiB)")
     },
+    {.name = "virtio",
+     .type = VSH_OT_BOOL,
+     .help = N_("modify virtio memory instead of top level domain memory")
+    },
+    {.name = "node",
+     .type = VSH_OT_INT,
+     .help = N_("guest numa node"),
+    },
+    {.name = "alias",
+     .type = VSH_OT_STRING,
+     .help = N_("memory device alias"),
+    },
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
     VIRSH_COMMON_OPT_DOMAIN_LIVE,
     VIRSH_COMMON_OPT_DOMAIN_CURRENT,
     {.name = NULL}
 };
+
+
+static int
+virshDomainSetmemVirtio(vshControl *ctl,
+                        virDomainPtr dom,
+                        unsigned long kibibytes,
+                        int numaNode,
+                        const char *alias,
+                        unsigned int flags)
+{
+    g_autoptr(xmlDoc) doc = NULL;
+    g_autoptr(xmlXPathContext) ctxt = NULL;
+    g_autofree char *xpath = NULL;
+    int nmems;
+    g_autofree xmlNodePtr *mems = NULL;
+    xmlNodePtr requestedSizeNode = NULL;
+    g_autofree char *kibibytesStr = NULL;
+    g_autoptr(xmlBuffer) xmlbuf = NULL;
+    unsigned int domainXMLFlags = 0;
+    const char *updatedMemoryXML = NULL;
+
+    if (flags & VIR_DOMAIN_AFFECT_CONFIG)
+        domainXMLFlags |= VIR_DOMAIN_XML_INACTIVE;
+
+    if (virshDomainGetXMLFromDom(ctl, dom, domainXMLFlags, &doc, &ctxt) < 0)
+        return -1;
+
+    if (alias) {
+        xpath = g_strdup_printf("/domain/devices/memory[./alias/@name='%s']", alias);
+    } else if (numaNode >= 0) {
+        xpath = g_strdup_printf("/domain/devices/memory[./target/node/text()=%d]", numaNode);
+    } else {
+        xpath = g_strdup("/domain/devices/memory[@model='virtio' and not(./source/pmem)]");
+    }
+
+    nmems = virXPathNodeSet(xpath, ctxt, &mems);
+    if (nmems < 0) {
+        vshSaveLibvirtError();
+        return -1;
+    } else if (nmems == 0) {
+        vshError(ctl, _("no virtio-mem device found"));
+        return -1;
+    } else if (nmems > 1) {
+        vshError(ctl, _("multiple virtio-mem devices found"));
+        return -1;
+    }
+
+    ctxt->node = mems[0];
+
+    requestedSizeNode = virXPathNode("./target/requested", ctxt);
+
+    if (!requestedSizeNode) {
+        vshError(ctl, _("virtio-mem device is missing <requested/>"));
+        return -1;
+    }
+
+    kibibytesStr = g_strdup_printf("%lu", kibibytes);
+    xmlNodeSetContent(requestedSizeNode, BAD_CAST kibibytesStr);
+
+    if (!(xmlbuf = xmlBufferCreate())) {
+        vshError(ctl, _("unable to allocate XML buffer"));
+        return -1;
+    }
+
+    if (xmlNodeDump(xmlbuf, doc, mems[0], 0, 1) < 0) {
+        vshError(ctl, _("unable to format new <memory/> node"));
+        return -1;
+    }
+
+    updatedMemoryXML = (const char *)xmlBufferContent(xmlbuf);
+
+    if (virDomainUpdateDeviceFlags(dom, updatedMemoryXML, flags) < 0)
+        return -1;
+
+    return 0;
+}
+
 
 static bool
 cmdSetmem(vshControl *ctl, const vshCmd *cmd)
@@ -9005,7 +9094,7 @@ cmdSetmem(vshControl *ctl, const vshCmd *cmd)
     unsigned long long bytes = 0;
     unsigned long long max;
     unsigned long kibibytes = 0;
-    bool ret = true;
+    bool ret = false;
     bool config = vshCommandOptBool(cmd, "config");
     bool live = vshCommandOptBool(cmd, "live");
     bool current = vshCommandOptBool(cmd, "current");
@@ -9013,6 +9102,7 @@ cmdSetmem(vshControl *ctl, const vshCmd *cmd)
 
     VSH_EXCLUSIVE_OPTIONS_VAR(current, live);
     VSH_EXCLUSIVE_OPTIONS_VAR(current, config);
+    VSH_EXCLUSIVE_OPTIONS("node", "alias");
 
     if (config)
         flags |= VIR_DOMAIN_AFFECT_CONFIG;
@@ -9028,20 +9118,36 @@ cmdSetmem(vshControl *ctl, const vshCmd *cmd)
         max = 1024ull * ULONG_MAX;
     else
         max = ULONG_MAX;
-    if (vshCommandOptScaledInt(ctl, cmd, "size", &bytes, 1024, max) < 0) {
-        virshDomainFree(dom);
-        return false;
-    }
+    if (vshCommandOptScaledInt(ctl, cmd, "size", &bytes, 1024, max) < 0)
+        goto cleanup;
+
     kibibytes = VIR_DIV_UP(bytes, 1024);
 
-    if (flags == 0) {
-        if (virDomainSetMemory(dom, kibibytes) != 0)
-            ret = false;
+    if (vshCommandOptBool(cmd, "virtio")) {
+        int numaNode = -1;
+        const char *alias = NULL;
+
+        if (vshCommandOptInt(ctl, cmd, "node", &numaNode) < 0)
+            goto cleanup;
+
+        if (vshCommandOptStringReq(ctl, cmd, "alias", &alias) < 0)
+            goto cleanup;
+
+        if (virshDomainSetmemVirtio(ctl, dom, kibibytes,
+                                    numaNode, alias, flags) < 0)
+            goto cleanup;
     } else {
-        if (virDomainSetMemoryFlags(dom, kibibytes, flags) < 0)
-            ret = false;
+        if (flags == 0) {
+            if (virDomainSetMemory(dom, kibibytes) != 0)
+                goto cleanup;
+        } else {
+            if (virDomainSetMemoryFlags(dom, kibibytes, flags) < 0)
+                goto cleanup;
+        }
     }
 
+    ret = true;
+ cleanup:
     virshDomainFree(dom);
     return ret;
 }
