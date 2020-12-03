@@ -6054,6 +6054,16 @@
           <ref name="scaledInteger"/>
         </element>
         <optional>
+          <element name="block">
+            <ref name="scaledInteger"/>
+          </element>
+        </optional>
+        <optional>
+          <element name="requested">
+            <ref name="scaledInteger"/>
+          </element>
+        </optional>
+        <optional>
           <element name="node">
             <ref name="unsignedInt"/>
           </element>
