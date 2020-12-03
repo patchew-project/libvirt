@@ -1235,6 +1235,15 @@ udevProcessAPQueue(struct udev_device *device,
 
 
 static int
+udevProcessAPMatrix(virNodeDeviceDefPtr def)
+{
+    def->name = g_strdup("ap_matrix");
+
+    return 0;
+}
+
+
+static int
 udevGetDeviceNodes(struct udev_device *device,
                    virNodeDeviceDefPtr def)
 {
@@ -1319,6 +1328,8 @@ udevGetDeviceType(struct udev_device *device,
             *type = VIR_NODE_DEV_CAP_CSS_DEV;
         else if (STREQ_NULLABLE(subsystem, "vdpa"))
             *type = VIR_NODE_DEV_CAP_VDPA;
+        else if (STREQ_NULLABLE(subsystem, "matrix"))
+            *type = VIR_NODE_DEV_CAP_AP_MATRIX;
 
         VIR_FREE(subsystem);
     }
@@ -1371,6 +1382,8 @@ udevGetDeviceDetails(struct udev_device *device,
         return udevProcessAPCard(device, def);
     case VIR_NODE_DEV_CAP_AP_QUEUE:
         return udevProcessAPQueue(device, def);
+    case VIR_NODE_DEV_CAP_AP_MATRIX:
+        return udevProcessAPMatrix(def);
     case VIR_NODE_DEV_CAP_MDEV_TYPES:
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
