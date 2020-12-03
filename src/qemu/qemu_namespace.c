@@ -351,10 +351,25 @@ static int
 qemuDomainSetupMemory(virDomainMemoryDefPtr mem,
                       char ***paths)
 {
-    if (mem->model != VIR_DOMAIN_MEMORY_MODEL_NVDIMM)
+    const char *path = NULL;
+
+    switch (mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
+        path = mem->s.nvdimm.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
+    case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_LAST:
+    case VIR_DOMAIN_MEMORY_MODEL_NONE:
+        break;
+    }
+
+    if (!path)
         return 0;
 
-    return virStringListAdd(paths, mem->s.nvdimm.path);
+    return virStringListAdd(paths, path);
 }
 
 
