@@ -1570,26 +1570,29 @@ virSecuritySELinuxSetMemoryLabel(virSecurityManagerPtr mgr,
                                  virDomainMemoryDefPtr mem)
 {
     virSecurityLabelDefPtr seclabel;
+    const char *path = NULL;
 
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
-        if (!seclabel || !seclabel->relabel)
-            return 0;
-
-        if (virSecuritySELinuxSetFilecon(mgr, mem->s.nvdimm.path,
-                                         seclabel->imagelabel, true) < 0)
-            return -1;
+        path = mem->s.nvdimm.path;
         break;
-
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
         break;
     }
 
-    return 0;
+    if (!path)
+        return 0;
+
+    seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
+    if (!seclabel || !seclabel->relabel)
+        return 0;
+
+    return virSecuritySELinuxSetFilecon(mgr, path, seclabel->imagelabel, true);
 }
 
 
@@ -1598,27 +1601,30 @@ virSecuritySELinuxRestoreMemoryLabel(virSecurityManagerPtr mgr,
                                      virDomainDefPtr def,
                                      virDomainMemoryDefPtr mem)
 {
-    int ret = -1;
     virSecurityLabelDefPtr seclabel;
+    const char *path = NULL;
 
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
-        if (!seclabel || !seclabel->relabel)
-            return 0;
-
-        ret = virSecuritySELinuxRestoreFileLabel(mgr, mem->s.nvdimm.path, true);
+        path = mem->s.nvdimm.path;
         break;
-
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        path = mem->s.virtio.path;
+        break;
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
-        ret = 0;
         break;
     }
 
-    return ret;
+    if (!path)
+        return 0;
+
+    seclabel = virDomainDefGetSecurityLabelDef(def, SECURITY_SELINUX_NAME);
+    if (!seclabel || !seclabel->relabel)
+        return 0;
+
+    return virSecuritySELinuxRestoreFileLabel(mgr, path, true);
 }
 
 
