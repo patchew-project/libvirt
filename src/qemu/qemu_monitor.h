@@ -1519,3 +1519,7 @@ qemuMonitorTransactionBackup(virJSONValuePtr actions,
                              const char *target,
                              const char *bitmap,
                              qemuMonitorTransactionBackupSyncMode syncmode);
+
+int qemuMonitorChangeMemoryRequestedSize(qemuMonitorPtr mon,
+                                         const char *alias,
+                                         unsigned long long requestedsize);
