@@ -13,6 +13,15 @@ v7.0.0 (unreleased)
 
 * **New features**
 
+  * qemu: Introduce virtio memory support
+
+    New ``virtio`` model is introduced for ``<memory/>`` device which
+    translates to ``virtio-pmem`` or ``virtio-mem`` on QEMU command
+    line. The former servers as a NVDIMM and the latter is a
+    paravirtualized mechanism of adding/removing memory to/from a VM.
+    It is exposed via ``virDomainUpdateDeviceFlags()`` API and ``virsh
+    setmem --virtio`` for user convenience.
+
 * **Improvements**
 
 * **Bug fixes**
