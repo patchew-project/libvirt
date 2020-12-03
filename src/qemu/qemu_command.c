@@ -2992,9 +2992,14 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         nvdimmPmem = mem->s.nvdimm.pmem;
         break;
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
+        pagesize = mem->s.virtio.pagesize;
+        needHugepage = !!pagesize;
+        useHugepage = !!pagesize;
+        nodemask = mem->s.virtio.sourceNodes;
         nvdimmPath = mem->s.virtio.path;
-        /* virtio-pmem doesn't need prealloc, it's very likely exposing a real
-         * device and thus there's nothing to prealloc */
+        /* virtio-pmem doesn't need prealloc. Either it's pmem and thus very
+         * likely exposing a real device where is nothing to prealloc, OR it's
+         * virtio-mem where we want to unmap pages on the fly. */
         allowPrealloc = false;
         break;
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -3322,7 +3327,10 @@ qemuBuildMemoryDeviceStr(const virDomainDef *def,
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_VIRTIO:
-        device = "virtio-pmem-pci";
+        if (mem->s.virtio.pmem)
+            device = "virtio-pmem-pci";
+        else
+            device = "virtio-mem-pci";
 
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
     case VIR_DOMAIN_MEMORY_MODEL_LAST:
@@ -3336,6 +3344,11 @@ qemuBuildMemoryDeviceStr(const virDomainDef *def,
 
     if (mem->labelsize)
         virBufferAsprintf(&buf, "label-size=%llu,", mem->labelsize * 1024);
+
+    if (mem->blocksize) {
+        virBufferAsprintf(&buf, "block-size=%llu,", mem->blocksize * 1024);
+        virBufferAsprintf(&buf, "requested-size=%llu,", mem->requestedsize * 1024);
+    }
 
     if (virUUIDIsValid(mem->uuid)) {
         char uuidstr[VIR_UUID_STRING_BUFLEN];
