@@ -40,6 +40,8 @@ typedef void virIfreq;
  */
 #define VIR_NET_GENERATED_TAP_PREFIX "vnet"
 
+#define VIR_NET_GENERATED_VETH_PREFIX "veth"
+
 /* libvirt will start macvtap/macvlan interface names with one of
  * these prefixes when it auto-generates the name
  */
@@ -156,6 +158,7 @@ typedef enum {
     VIR_NET_DEV_GEN_NAME_TAP,
     VIR_NET_DEV_GEN_NAME_MACVTAP,
     VIR_NET_DEV_GEN_NAME_MACVLAN,
+    VIR_NET_DEV_GEN_NAME_VETH,
     VIR_NET_DEV_GEN_NAME_LAST
 } virNetDevGenNameType;
 

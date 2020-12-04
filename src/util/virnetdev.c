@@ -102,6 +102,7 @@ VIR_ENUM_IMPL(virNetDevGenNameType,
               "tap",
               "macvtap",
               "macvlan",
+              "veth",
 );
 
 static virNetDevGenName
@@ -110,6 +111,7 @@ virNetDevGenNames[VIR_NET_DEV_GEN_NAME_LAST] = {
     {-1, VIR_NET_GENERATED_TAP_PREFIX, VIR_MUTEX_INITIALIZER},
     {-1, VIR_NET_GENERATED_MACVTAP_PREFIX, VIR_MUTEX_INITIALIZER},
     {-1, VIR_NET_GENERATED_MACVLAN_PREFIX, VIR_MUTEX_INITIALIZER},
+    {-1, VIR_NET_GENERATED_VETH_PREFIX, VIR_MUTEX_INITIALIZER},
 };
 
 typedef enum {
