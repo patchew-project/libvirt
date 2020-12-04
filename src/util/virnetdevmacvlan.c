@@ -45,7 +45,6 @@ VIR_ENUM_IMPL(virNetDevMacVLanMode,
 
 # include <net/if.h>
 # include <linux/if_tun.h>
-# include <math.h>
 
 # include "viralloc.h"
 # include "virlog.h"
@@ -64,39 +63,20 @@ VIR_LOG_INIT("util.netdevmacvlan");
 # define VIR_NET_GENERATED_PREFIX \
     ((flags & VIR_NETDEV_MACVLAN_CREATE_WITH_TAP) ? \
      VIR_NET_GENERATED_MACVTAP_PREFIX : VIR_NET_GENERATED_MACVLAN_PREFIX)
+# define VIR_NET_CREATE_TYPE \
+    ((flags & VIR_NETDEV_MACVLAN_CREATE_WITH_TAP) ? \
+     VIR_NET_DEV_GEN_NAME_MACVTAP : VIR_NET_DEV_GEN_NAME_MACVLAN)
 
 
-virMutex virNetDevMacVLanCreateMutex = VIR_MUTEX_INITIALIZER;
-static int virNetDevMacVTapLastID = -1;
-static int virNetDevMacVLanLastID = -1;
-
-
-static void
-virNetDevMacVLanReserveNameInternal(const char *name)
+static virNetDevGenNameType
+virNetDevMacVLanGetTypeByName(const char *name)
 {
-    unsigned int id;
-    const char *idstr = NULL;
-    int *lastID = NULL;
-    int len;
-
-    if (STRPREFIX(name, VIR_NET_GENERATED_MACVTAP_PREFIX)) {
-        lastID = &virNetDevMacVTapLastID;
-        len = strlen(VIR_NET_GENERATED_MACVTAP_PREFIX);
-    } else if (STRPREFIX(name, VIR_NET_GENERATED_MACVLAN_PREFIX)) {
-        lastID = &virNetDevMacVTapLastID;
-        len = strlen(VIR_NET_GENERATED_MACVLAN_PREFIX);
-    } else {
-        return;
-    }
-
-    VIR_INFO("marking device in use: '%s'", name);
-
-    idstr = name + len;
-
-    if (virStrToLong_ui(idstr, NULL, 10, &id) >= 0) {
-        if (*lastID < (int)id)
-            *lastID = id;
-    }
+    if (STRPREFIX(name, VIR_NET_GENERATED_MACVTAP_PREFIX))
+        return VIR_NET_DEV_GEN_NAME_MACVTAP;
+    else if (STRPREFIX(name, VIR_NET_GENERATED_MACVLAN_PREFIX))
+        return VIR_NET_DEV_GEN_NAME_MACVLAN;
+    else
+        return VIR_NET_DEV_GEN_NAME_NONE;
 }
 
 
@@ -113,9 +93,7 @@ virNetDevMacVLanReserveNameInternal(const char *name)
 void
 virNetDevMacVLanReserveName(const char *name)
 {
-    virMutexLock(&virNetDevMacVLanCreateMutex);
-    virNetDevMacVLanReserveNameInternal(name);
-    virMutexUnlock(&virNetDevMacVLanCreateMutex);
+    virNetDevReserveName(name, virNetDevMacVLanGetTypeByName(name), true);
 }
 
 
@@ -136,50 +114,7 @@ virNetDevMacVLanReserveName(const char *name)
 static int
 virNetDevMacVLanGenerateName(char **ifname, unsigned int flags)
 {
-    const char *prefix;
-    const char *iftemplate;
-    int *lastID;
-    int id;
-    double maxIDd;
-    int maxID = INT_MAX;
-    int attempts = 0;
-
-    if (flags & VIR_NETDEV_MACVLAN_CREATE_WITH_TAP) {
-        prefix = VIR_NET_GENERATED_MACVTAP_PREFIX;
-        iftemplate = VIR_NET_GENERATED_MACVTAP_PREFIX "%d";
-        lastID = &virNetDevMacVTapLastID;
-    } else {
-        prefix = VIR_NET_GENERATED_MACVLAN_PREFIX;
-        iftemplate = VIR_NET_GENERATED_MACVLAN_PREFIX "%d";
-        lastID = &virNetDevMacVLanLastID;
-    }
-
-    maxIDd = pow(10, IFNAMSIZ - 1 - strlen(prefix));
-    if (maxIDd <= (double)INT_MAX)
-        maxID = (int)maxIDd;
-
-    do {
-        g_autofree char *try = NULL;
-
-        id = ++(*lastID);
-
-        /* reset before overflow */
-        if (*lastID == maxID)
-            *lastID = -1;
-
-        try = g_strdup_printf(iftemplate, id);
-
-        if (!virNetDevExists(try)) {
-            g_free(*ifname);
-            *ifname = g_steal_pointer(&try);
-            return 0;
-        }
-    } while (++attempts < 10000);
-
-    virReportError(VIR_ERR_INTERNAL_ERROR,
-                   _("no unused %s names available"),
-                   *ifname);
-    return -1;
+    return virNetDevGenerateName(ifname, VIR_NET_CREATE_TYPE);
 }
 
 
@@ -832,7 +767,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
            return -1;
     }
 
-    virMutexLock(&virNetDevMacVLanCreateMutex);
+    virNetDevLockGenName(VIR_NET_CREATE_TYPE);
 
     if (ifnameRequested) {
         int rc;
@@ -843,7 +778,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
         VIR_INFO("Requested macvtap device name: %s", ifnameRequested);
 
         if ((rc = virNetDevExists(ifnameRequested)) < 0) {
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            virNetDevUnlockGenName(VIR_NET_CREATE_TYPE);
             return -1;
         }
 
@@ -854,14 +789,16 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
                 virReportSystemError(EEXIST,
                                      _("Unable to create device '%s'"),
                                      ifnameRequested);
-                virMutexUnlock(&virNetDevMacVLanCreateMutex);
+                virNetDevUnlockGenName(VIR_NET_CREATE_TYPE);
                 return -1;
             }
         } else {
 
             /* ifnameRequested is available. try to open it */
 
-            virNetDevMacVLanReserveNameInternal(ifnameRequested);
+            virNetDevReserveName(ifnameRequested,
+                                 VIR_NET_CREATE_TYPE,
+                                 false);
 
             if (virNetDevMacVLanCreate(ifnameRequested, type, macaddress,
                                        linkdev, macvtapMode) == 0) {
@@ -874,7 +811,7 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
                  * autogenerated named, so there is nothing else to
                  * try - fail and return.
                  */
-                virMutexUnlock(&virNetDevMacVLanCreateMutex);
+                virNetDevUnlockGenName(VIR_NET_CREATE_TYPE);
                 return -1;
             }
         }
@@ -888,13 +825,13 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
         if (virNetDevMacVLanGenerateName(&ifname, flags) < 0 ||
             virNetDevMacVLanCreate(ifname, type, macaddress,
                                    linkdev, macvtapMode) < 0) {
-            virMutexUnlock(&virNetDevMacVLanCreateMutex);
+            virNetDevUnlockGenName(VIR_NET_CREATE_TYPE);
             return -1;
         }
     }
 
     /* all done creating the device */
-    virMutexUnlock(&virNetDevMacVLanCreateMutex);
+    virNetDevUnlockGenName(VIR_NET_CREATE_TYPE);
 
     if (virNetDevVPortProfileAssociate(ifname,
                                        virtPortProfile,
