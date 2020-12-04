@@ -40,6 +40,12 @@ typedef void virIfreq;
  */
 #define VIR_NET_GENERATED_TAP_PREFIX "vnet"
 
+/* libvirt will start macvtap/macvlan interface names with one of
+ * these prefixes when it auto-generates the name
+ */
+#define VIR_NET_GENERATED_MACVTAP_PREFIX "macvtap"
+#define VIR_NET_GENERATED_MACVLAN_PREFIX "macvlan"
+
 typedef enum {
    VIR_NETDEV_RX_FILTER_MODE_NONE = 0,
    VIR_NETDEV_RX_FILTER_MODE_NORMAL,
@@ -143,6 +149,24 @@ struct _virNetDevCoalesce {
     uint32_t tx_coalesce_usecs_high;
     uint32_t tx_max_coalesced_frames_high;
     uint32_t rate_sample_interval;
+};
+
+typedef enum {
+    VIR_NET_DEV_GEN_NAME_NONE = 0,
+    VIR_NET_DEV_GEN_NAME_TAP,
+    VIR_NET_DEV_GEN_NAME_MACVTAP,
+    VIR_NET_DEV_GEN_NAME_MACVLAN,
+    VIR_NET_DEV_GEN_NAME_LAST
+} virNetDevGenNameType;
+
+VIR_ENUM_DECL(virNetDevGenNameType);
+
+typedef struct _virNetDevGenName virNetDevGenName;
+typedef virNetDevGenName *virNetDevGenNamePtr;
+struct _virNetDevGenName {
+    int lastID;         /* not "unsigned" because callers use %d */
+    const char *prefix;
+    virMutex mutex;
 };
 
 
@@ -321,3 +345,12 @@ int virNetDevVFInterfaceStats(virPCIDeviceAddressPtr vfAddr,
 ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virNetDevRxFilter, virNetDevRxFilterFree);
+
+void virNetDevReserveName(const char *name,
+                          virNetDevGenNameType type,
+                          bool locked);
+
+int virNetDevGenerateName(char **ifname, virNetDevGenNameType type);
+
+void virNetDevLockGenName(virNetDevGenNameType type);
+void virNetDevUnlockGenName(virNetDevGenNameType type);
