@@ -55,9 +55,6 @@
 
 VIR_LOG_INIT("util.netdevtap");
 
-virMutex virNetDevTapCreateMutex = VIR_MUTEX_INITIALIZER;
-static int virNetDevTapLastID = -1; /* not "unsigned" because callers use %d */
-
 
 /**
  * virNetDevTapReserveName:
@@ -72,25 +69,7 @@ static int virNetDevTapLastID = -1; /* not "unsigned" because callers use %d */
 void
 virNetDevTapReserveName(const char *name)
 {
-    unsigned int id;
-    const char *idstr = NULL;
-
-
-    if (STRPREFIX(name, VIR_NET_GENERATED_TAP_PREFIX)) {
-
-        VIR_INFO("marking device in use: '%s'", name);
-
-        idstr = name + strlen(VIR_NET_GENERATED_TAP_PREFIX);
-
-        if (virStrToLong_ui(idstr, NULL, 10, &id) >= 0) {
-            virMutexLock(&virNetDevTapCreateMutex);
-
-            if (virNetDevTapLastID < (int)id)
-                virNetDevTapLastID = id;
-
-            virMutexUnlock(&virNetDevTapCreateMutex);
-        }
-    }
+    virNetDevReserveName(name, VIR_NET_DEV_GEN_NAME_TAP, true);
 }
 
 
@@ -199,36 +178,7 @@ virNetDevTapGetRealDeviceName(char *ifname G_GNUC_UNUSED)
 static int
 virNetDevTapGenerateName(char **ifname)
 {
-    int id;
-    double maxIDd = pow(10, IFNAMSIZ - 1 - strlen(VIR_NET_GENERATED_TAP_PREFIX));
-    int maxID = INT_MAX;
-    int attempts = 0;
-
-    if (maxIDd <= (double)INT_MAX)
-        maxID = (int)maxIDd;
-
-    do {
-        g_autofree char *try = NULL;
-
-        id = ++virNetDevTapLastID;
-
-        /* reset before overflow */
-        if (virNetDevTapLastID >= maxID)
-            virNetDevTapLastID = -1;
-
-        try = g_strdup_printf(*ifname, id);
-
-        if (!virNetDevExists(try)) {
-            g_free(*ifname);
-            *ifname = g_steal_pointer(&try);
-            return 0;
-        }
-    } while (++attempts < 10000);
-
-    virReportError(VIR_ERR_INTERNAL_ERROR,
-                   _("no unused %s names available"),
-                   VIR_NET_GENERATED_TAP_PREFIX);
-    return -1;
+    return virNetDevGenerateName(ifname, VIR_NET_DEV_GEN_NAME_TAP);
 }
 
 
@@ -263,7 +213,7 @@ int virNetDevTapCreate(char **ifname,
     int ret = -1;
     int fd = -1;
 
-    virMutexLock(&virNetDevTapCreateMutex);
+    virNetDevLockGenName(VIR_NET_DEV_GEN_NAME_TAP);
 
     /* if ifname is "vnet%d", then auto-generate a name for the new
      * device (the kernel could do this for us, but has a bad habit of
@@ -333,7 +283,7 @@ int virNetDevTapCreate(char **ifname,
     ret = 0;
 
  cleanup:
-    virMutexUnlock(&virNetDevTapCreateMutex);
+    virNetDevUnlockGenName(VIR_NET_DEV_GEN_NAME_TAP);
     if (ret < 0) {
         VIR_FORCE_CLOSE(fd);
         while (i--)
