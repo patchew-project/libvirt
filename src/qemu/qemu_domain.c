@@ -5342,6 +5342,70 @@ qemuDomainTPMDefPostParse(virDomainTPMDefPtr tpm,
 
 
 static int
+qemuDomainNVDimmAlignSizePseries(virDomainMemoryDefPtr mem)
+{
+    /* For NVDIMMs in ppc64 in we want to align down the guest
+     * visible space, instead of align up, to avoid writing
+     * beyond the end of file by adding a potential 256MiB
+     * to the user specified size.
+     *
+     * The label-size is mandatory for ppc64 as well, meaning that
+     * the guest visible space will be target_size-label_size.
+     *
+     * Finally, target_size must include label_size.
+     *
+     * The above can be summed up as follows:
+     *
+     * target_size = AlignDown(target_size - label_size) + label_size
+     */
+    unsigned long long ppc64AlignSize = 256 * 1024;
+    unsigned long long guestArea = mem->size - mem->labelsize;
+
+    /* Align down guest_area. 256MiB is the minimum size. Error
+     * out if target_size is smaller than 256MiB + label_size,
+     * since aligning it up will cause QEMU errors. */
+    if (mem->size < (ppc64AlignSize + mem->labelsize)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("minimum target size for the NVDIMM "
+                         "must be 256MB plus the label size"));
+        return -1;
+    }
+
+    guestArea = (guestArea/ppc64AlignSize) * ppc64AlignSize;
+    mem->size = guestArea + mem->labelsize;
+
+    return 0;
+}
+
+
+static int
+qemuDomainMemoryDefPostParse(virDomainMemoryDefPtr mem, virArch arch,
+                             unsigned int parseFlags)
+{
+    /* Memory alignment can't be done for migration or snapshot
+     * scenarios. This logic was defined by commit c7d7ba85a624.
+     *
+     * There is no easy way to replicate at this point the same conditions
+     * used to call qemuDomainAlignMemorySizes(), which means checking if
+     * we're not migrating and not in a snapshot.
+     *
+     * We can use the PARSE_ABI_UPDATE flag, which is more strict -
+     * existing guests will not activate the flag to avoid breaking
+     * boot ABI. This means that any alignment done here will be replicated
+     * later on by qemuDomainAlignMemorySizes() to contemplate existing
+     * guests as well. */
+    if (parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE) {
+        if (ARCH_IS_PPC64(arch) &&
+            mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
+            qemuDomainNVDimmAlignSizePseries(mem) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                              const virDomainDef *def,
                              unsigned int parseFlags,
@@ -5398,6 +5462,11 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         ret = qemuDomainTPMDefPostParse(dev->data.tpm, def->os.arch);
         break;
 
+    case VIR_DOMAIN_DEVICE_MEMORY:
+        ret = qemuDomainMemoryDefPostParse(dev->data.memory, def->os.arch,
+                                           parseFlags);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -5410,7 +5479,6 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_RNG:
-    case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_AUDIO:
         ret = 0;
@@ -8044,44 +8112,6 @@ qemuDomainGetMemoryModuleSizeAlignment(const virDomainDef *def,
 }
 
 
-static int
-qemuDomainNVDimmAlignSizePseries(virDomainDefPtr def,
-                                 virDomainMemoryDefPtr mem)
-{
-    /* For NVDIMMs in ppc64 in we want to align down the guest
-     * visible space, instead of align up, to avoid writing
-     * beyond the end of file by adding a potential 256MiB
-     * to the user specified size.
-     *
-     * The label-size is mandatory for ppc64 as well, meaning that
-     * the guest visible space will be target_size-label_size.
-     *
-     * Finally, target_size must include label_size.
-     *
-     * The above can be summed up as follows:
-     *
-     * target_size = AlignDown(target_size - label_size) + label_size
-     */
-    unsigned long long ppc64AlignSize = qemuDomainGetMemorySizeAlignment(def);
-    unsigned long long guestArea = mem->size - mem->labelsize;
-
-    /* Align down guest_area. 256MiB is the minimum size. Error
-     * out if target_size is smaller than 256MiB + label_size,
-     * since aligning it up will cause QEMU errors. */
-    if (mem->size < (ppc64AlignSize + mem->labelsize)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("minimum target size for the NVDIMM "
-                         "must be 256MB plus the label size"));
-        return -1;
-    }
-
-    guestArea = (guestArea/ppc64AlignSize) * ppc64AlignSize;
-    mem->size = guestArea + mem->labelsize;
-
-    return 0;
-}
-
-
 int
 qemuDomainAlignMemorySizes(virDomainDefPtr def)
 {
@@ -8130,7 +8160,7 @@ qemuDomainAlignMemorySizes(virDomainDefPtr def)
     for (i = 0; i < def->nmems; i++) {
         if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
             ARCH_IS_PPC64(def->os.arch)) {
-            if (qemuDomainNVDimmAlignSizePseries(def, def->mems[i]) < 0)
+            if (qemuDomainNVDimmAlignSizePseries(def->mems[i]) < 0)
                 return -1;
         } else {
             align = qemuDomainGetMemoryModuleSizeAlignment(def, def->mems[i]);
@@ -8167,7 +8197,7 @@ qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
 {
     if (mem->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
         ARCH_IS_PPC64(def->os.arch)) {
-        return qemuDomainNVDimmAlignSizePseries(def, mem);
+        return qemuDomainNVDimmAlignSizePseries(mem);
     } else {
         mem->size = VIR_ROUND_UP(mem->size,
                                  qemuDomainGetMemorySizeAlignment(def));
