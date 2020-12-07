@@ -7322,6 +7322,30 @@ virDomainDefBootValidate(const virDomainDef *def)
 
 
 static int
+virDomainDefVideoValidate(const virDomainDef *def)
+{
+    size_t i;
+
+    if (def->nvideos == 0)
+        return 0;
+
+    /* Any video marked as primary will be put in index 0 by the
+     * parser. Ensure that we have only one primary set by the user. */
+    if (def->videos[0]->primary) {
+        for (i = 1; i < def->nvideos; i++) {
+            if (def->videos[i]->primary) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Only one primary video device is supported"));
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainDefValidateInternal(const virDomainDef *def,
                              virDomainXMLOptionPtr xmlopt)
 {
@@ -7367,6 +7391,9 @@ virDomainDefValidateInternal(const virDomainDef *def,
         return -1;
 
     if (virDomainDefBootValidate(def) < 0)
+        return -1;
+
+    if (virDomainDefVideoValidate(def) < 0)
         return -1;
 
     if (virDomainNumaDefValidate(def->numa) < 0)
@@ -22162,14 +22189,9 @@ virDomainDefParseXML(xmlDocPtr xml,
             goto error;
 
         if (video->primary) {
-            if (def->nvideos != 0 && def->videos[0]->primary) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("Only one primary video device is supported"));
-                goto error;
-            }
-
             insertAt = 0;
         }
+
         if (VIR_INSERT_ELEMENT_INPLACE(def->videos,
                                        insertAt,
                                        def->nvideos,
