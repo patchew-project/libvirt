@@ -5363,7 +5363,7 @@ qemuDomainNVDimmAlignSizePseries(virDomainMemoryDefPtr mem)
     /* Align down guest_area. 256MiB is the minimum size. Error
      * out if target_size is smaller than 256MiB + label_size,
      * since aligning it up will cause QEMU errors. */
-    if (mem->size < (ppc64AlignSize + mem->labelsize)) {
+    if (guestArea < ppc64AlignSize) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("minimum target size for the NVDIMM "
                          "must be 256MB plus the label size"));
