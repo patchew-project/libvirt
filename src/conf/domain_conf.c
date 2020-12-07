@@ -7398,6 +7398,27 @@ virDomainDefVideoValidate(const virDomainDef *def)
 
 
 static int
+virDomainDefTunablesValidate(const virDomainDef *def)
+{
+    size_t i, j;
+
+    for (i = 0; i < def->blkio.ndevices; i++) {
+        for (j = 0; j < i; j++) {
+            if (STREQ(def->blkio.devices[j].path,
+                      def->blkio.devices[i].path)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("duplicate blkio device path '%s'"),
+                               def->blkio.devices[i].path);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainDefValidateInternal(const virDomainDef *def,
                              virDomainXMLOptionPtr xmlopt)
 {
@@ -7446,6 +7467,9 @@ virDomainDefValidateInternal(const virDomainDef *def,
         return -1;
 
     if (virDomainDefVideoValidate(def) < 0)
+        return -1;
+
+    if (virDomainDefTunablesValidate(def) < 0)
         return -1;
 
     if (virDomainNumaDefValidate(def->numa) < 0)
@@ -21342,7 +21366,7 @@ virDomainDefTunablesParse(virDomainDefPtr def,
                           unsigned int flags)
 {
     g_autofree xmlNodePtr *nodes = NULL;
-    size_t i, j;
+    size_t i;
     int n;
 
     /* Extract blkio cgroup tunables */
@@ -21363,15 +21387,6 @@ virDomainDefTunablesParse(virDomainDefPtr def,
                                          &def->blkio.devices[i]) < 0)
             return -1;
         def->blkio.ndevices++;
-        for (j = 0; j < i; j++) {
-            if (STREQ(def->blkio.devices[j].path,
-                      def->blkio.devices[i].path)) {
-                virReportError(VIR_ERR_XML_ERROR,
-                               _("duplicate blkio device path '%s'"),
-                               def->blkio.devices[i].path);
-                return -1;
-            }
-        }
     }
     VIR_FREE(nodes);
 
