@@ -7476,6 +7476,29 @@ virDomainDefTunablesValidate(const virDomainDef *def)
 
 
 static int
+virDomainDefIdMapValidate(const virDomainDef *def)
+{
+    if ((def->idmap.uidmap && !def->idmap.gidmap) ||
+        (!def->idmap.uidmap && def->idmap.gidmap)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("uid and gid should be mapped both"));
+        return -1;
+    }
+
+    if ((def->idmap.uidmap && def->idmap.uidmap[0].start != 0) ||
+        (def->idmap.gidmap && def->idmap.gidmap[0].start != 0)) {
+        /* Root user of container hasn't been mapped to any user of host,
+         * return error. */
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("You must map the root user of container"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 virDomainDefValidateInternal(const virDomainDef *def,
                              virDomainXMLOptionPtr xmlopt)
 {
@@ -7527,6 +7550,9 @@ virDomainDefValidateInternal(const virDomainDef *def,
         return -1;
 
     if (virDomainDefTunablesValidate(def) < 0)
+        return -1;
+
+    if (virDomainDefIdMapValidate(def) < 0)
         return -1;
 
     if (virDomainNumaDefValidate(def->numa) < 0)
@@ -19045,15 +19071,6 @@ virDomainIdmapDefParseXML(xmlXPathContextPtr ctxt,
 
     qsort(idmap, num, sizeof(idmap[0]), virDomainIdMapEntrySort);
 
-    if (idmap[0].start != 0) {
-        /* Root user of container hasn't been mapped to any user of host,
-         * return error. */
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("You must map the root user of container"));
-        VIR_FREE(idmap);
-        return NULL;
-    }
-
     return idmap;
 }
 
@@ -22542,13 +22559,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         def->idmap.ngidmap = n;
     }
     VIR_FREE(nodes);
-
-    if ((def->idmap.uidmap && !def->idmap.gidmap) ||
-        (!def->idmap.uidmap && def->idmap.gidmap)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("uid and gid should be mapped both"));
-            goto error;
-    }
 
     if ((n = virXPathNodeSet("./sysinfo", ctxt, &nodes)) < 0)
         goto error;
