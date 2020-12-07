@@ -1439,12 +1439,21 @@ fi
 rm -rf %{_localstatedir}/lib/rpm-state/libvirt || :
 
 %post daemon-config-nwfilter
-cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
-# libvirt saves these files with mode 600
-chmod 600 %{_sysconfdir}/libvirt/nwfilter/*.xml
+restart_daemon=0
+for dfile in %{_datadir}/libvirt/nwfilter/*.xml; do
+  sfile=%{_sysconfdir}/libvirt/nwfilter/`basename $dfile`
+  if [ ! -f "$sfile" ]; then
+    cp "$dfile" "$sfile"
+    # libvirt saves these files with mode 600
+    chmod 600 "$sfile"
+    restart_daemon=1
+  fi
+done
 # Make sure libvirt picks up the new nwfilter defininitons
-mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || :
-touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
+if [ $restart_daemon -eq 1 ]; then
+  mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || :
+  touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
+fi
 
 %posttrans daemon-config-nwfilter
 if [ -f %{_localstatedir}/lib/rpm-state/libvirt/restart ]; then
