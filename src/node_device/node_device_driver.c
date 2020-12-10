@@ -637,7 +637,7 @@ nodeDeviceFindAddressByName(const char *name)
     }
 
     def = virNodeDeviceObjGetDef(dev);
-    for (caps = def->caps; caps != NULL; caps = caps->next) {
+    for (caps = def->caps; caps != NULL && addr == NULL; caps = caps->next) {
         switch (caps->data.type) {
         case VIR_NODE_DEV_CAP_PCI_DEV: {
             virPCIDeviceAddress pci_addr = {
