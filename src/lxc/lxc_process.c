@@ -1641,7 +1641,7 @@ virLXCProcessReconnectNotifyNets(virDomainDefPtr def)
          * impolite.
          */
         if (virDomainNetGetActualType(net) == VIR_DOMAIN_NET_TYPE_DIRECT)
-            virNetDevMacVLanReserveName(net->ifname);
+            virNetDevReserveName(net->ifname);
 
         if (net->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
             if (!conn && !(conn = virGetConnectNetwork()))
