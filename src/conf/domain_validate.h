@@ -49,3 +49,5 @@ int virDomainDefValidate(virDomainDefPtr def,
                          unsigned int parseFlags,
                          virDomainXMLOptionPtr xmlopt,
                          void *parseOpaque);
+int virDomainActualNetDefValidate(const virDomainNetDef *net);
+int virDomainNetDefValidate(const virDomainNetDef *net);
