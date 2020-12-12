@@ -1182,7 +1182,8 @@ qemuSnapshotDiskPrepareDisksTransient(virDomainObjPtr vm,
         snapdisk->src = virStorageSourceNew();
         snapdisk->src->type = VIR_STORAGE_TYPE_FILE;
         snapdisk->src->format = VIR_STORAGE_FILE_QCOW2;
-        snapdisk->src->path = g_strdup_printf("%s.TRANSIENT", domdisk->src->path);
+        snapdisk->src->path = g_strdup_printf("%s.TRANSIENT-%s",
+                                              domdisk->src->path, vm->def->name);
 
         if (virFileExists(snapdisk->src->path)) {
             virReportError(VIR_ERR_OPERATION_UNSUPPORTED,

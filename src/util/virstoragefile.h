@@ -384,6 +384,8 @@ struct _virStorageSource {
     /* these must not be used apart from formatting the output JSON in the qemu driver */
     char *ssh_user;
     bool ssh_host_key_check_disabled;
+
+    bool transient;
 };
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virStorageSource, virObjectUnref);

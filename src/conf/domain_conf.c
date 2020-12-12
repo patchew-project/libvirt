@@ -10186,6 +10186,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             def->src->shared = true;
         } else if (virXMLNodeNameEqual(cur, "transient")) {
             def->transient = true;
+            def->src->transient = true;
         } else if (!encryption &&
                    virXMLNodeNameEqual(cur, "encryption")) {
             if (!(encryption = virStorageEncryptionParseNode(cur, ctxt)))

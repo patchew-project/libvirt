@@ -1211,6 +1211,12 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
                                       "s:discard", "unmap",
                                       NULL) < 0)
                 return NULL;
+
+            if (src->transient) {
+                if (virJSONValueObjectAdd(fileprops,
+                                          "S:locking", "off", NULL) < 0)
+                    return NULL;
+            }
         }
     }
 
