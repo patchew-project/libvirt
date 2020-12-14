@@ -1842,7 +1842,7 @@ storageBackendUpdateVolTargetInfo(virStorageVolType voltype,
             }
         }
 
-        if (virStorageSourceUpdateCapacity(target, buf, len) < 0)
+        if (virStorageFileUpdateCapacity(target, buf, len) < 0)
             return -1;
     }
 
@@ -1906,7 +1906,7 @@ virStorageBackendUpdateVolTargetInfoFD(virStorageSourcePtr target,
     char *filecon = NULL;
 #endif
 
-    if (virStorageSourceUpdateBackingSizes(target, fd, sb) < 0)
+    if (virStorageFileUpdateBackingSizes(target, fd, sb) < 0)
         return -1;
 
     if (!target->perms)
@@ -3449,7 +3449,7 @@ storageBackendProbeTarget(virStorageSourcePtr target,
         return -1;
 
     if (meta->backingStoreRaw) {
-        virStorageSourceNewFromBacking(meta, &target->backingStore);
+        virStorageFileNewFromBacking(meta, &target->backingStore);
 
         /* XXX: Remote storage doesn't play nicely with volumes backed by
          * remote storage. To avoid trouble, just fake the backing store is RAW

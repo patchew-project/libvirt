@@ -106,8 +106,8 @@ testBackingXMLjsonXML(const void *args)
 
     protocolwrapper = g_strdup_printf("json:%s", propsstr);
 
-    if (virStorageSourceNewFromBackingAbsolute(protocolwrapper,
-                                               &jsonsrc) < 0) {
+    if (virStorageFileNewFromBackingAbsolute(protocolwrapper,
+                                             &jsonsrc) < 0) {
         fprintf(stderr, "failed to parse disk json\n");
         return -1;
     }
@@ -155,7 +155,7 @@ testJSONtoJSON(const void *args)
     if (virTestLoadFile(infile, &in) < 0)
         return -1;
 
-    if (virStorageSourceNewFromBackingAbsolute(in, &src) < 0) {
+    if (virStorageFileNewFromBackingAbsolute(in, &src) < 0) {
         fprintf(stderr, "failed to parse disk json\n");
         return -1;
     }

@@ -10838,7 +10838,7 @@ qemuDomainStorageUpdatePhysical(virQEMUDriverPtr driver,
         return -1;
     }
 
-    ret = virStorageSourceUpdatePhysicalSize(src, fd, &sb);
+    ret = virStorageFileUpdatePhysicalSize(src, fd, &sb);
 
     qemuDomainStorageCloseStat(src, &fd);
 
@@ -10906,10 +10906,10 @@ qemuStorageLimitsRefresh(virQEMUDriverPtr driver,
             goto cleanup;
     }
 
-    if (virStorageSourceUpdateBackingSizes(src, fd, &sb) < 0)
+    if (virStorageFileUpdateBackingSizes(src, fd, &sb) < 0)
         goto cleanup;
 
-    if (virStorageSourceUpdateCapacity(src, buf, len) < 0)
+    if (virStorageFileUpdateCapacity(src, buf, len) < 0)
         goto cleanup;
 
     /* If guest is not using raw disk format and is on a host block

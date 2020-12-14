@@ -592,7 +592,7 @@ testBackingParse(const void *args)
     if (!data->expect)
         erc = -1;
 
-    if ((rc = virStorageSourceNewFromBackingAbsolute(data->backing, &src)) != erc) {
+    if ((rc = virStorageFileNewFromBackingAbsolute(data->backing, &src)) != erc) {
         fprintf(stderr, "expected return value '%d' actual '%d'\n", erc, rc);
         return -1;
     }

@@ -1894,7 +1894,7 @@ qemuStorageSourcePrivateDataParse(xmlXPathContextPtr ctxt,
             return -1;
     }
 
-    if (virStorageSourcePrivateDataParseRelPath(ctxt, src) < 0)
+    if (virStorageFilePrivateDataParseRelPath(ctxt, src) < 0)
         return -1;
 
     return 0;
@@ -1936,7 +1936,7 @@ qemuStorageSourcePrivateDataFormat(virStorageSourcePtr src,
     if (src->pr)
         virBufferAsprintf(buf, "<reservations mgralias='%s'/>\n", src->pr->mgralias);
 
-    if (virStorageSourcePrivateDataFormatRelPath(src, buf) < 0)
+    if (virStorageFilePrivateDataFormatRelPath(src, buf) < 0)
         return -1;
 
     if (srcPriv) {
@@ -2597,15 +2597,15 @@ qemuDomainObjPrivateXMLParseBlockjobNodename(qemuBlockJobDataPtr job,
         return;
 
     if (job->disk &&
-        (*src = virStorageSourceFindByNodeName(job->disk->src, nodename)))
+        (*src = virStorageFileFindByNodeName(job->disk->src, nodename)))
         return;
 
     if (job->chain &&
-        (*src = virStorageSourceFindByNodeName(job->chain, nodename)))
+        (*src = virStorageFileFindByNodeName(job->chain, nodename)))
         return;
 
     if (job->mirrorChain &&
-        (*src = virStorageSourceFindByNodeName(job->mirrorChain, nodename)))
+        (*src = virStorageFileFindByNodeName(job->mirrorChain, nodename)))
         return;
 
     /* the node was in the XML but was not found in the job definitions */
@@ -9920,11 +9920,11 @@ qemuDomainDiskLookupByNodename(virDomainDefPtr def,
     for (i = 0; i < def->ndisks; i++) {
         virDomainDiskDefPtr domdisk = def->disks[i];
 
-        if ((*src = virStorageSourceFindByNodeName(domdisk->src, nodename)))
+        if ((*src = virStorageFileFindByNodeName(domdisk->src, nodename)))
             return domdisk;
 
         if (domdisk->mirror &&
-            (*src = virStorageSourceFindByNodeName(domdisk->mirror, nodename)))
+            (*src = virStorageFileFindByNodeName(domdisk->mirror, nodename)))
             return domdisk;
     }
 
@@ -9933,7 +9933,7 @@ qemuDomainDiskLookupByNodename(virDomainDefPtr def,
             virDomainBackupDiskDefPtr backupdisk = backupdef->disks + i;
 
             if (backupdisk->store &&
-                (*src = virStorageSourceFindByNodeName(backupdisk->store, nodename)))
+                (*src = virStorageFileFindByNodeName(backupdisk->store, nodename)))
                 return virDomainDiskByTarget(def, backupdisk->name);
         }
     }

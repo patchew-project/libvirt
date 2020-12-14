@@ -640,7 +640,7 @@ xenParseXLDiskSrc(virDomainDiskDefPtr disk, char *srcstr)
 
         virDomainDiskSetType(disk, VIR_STORAGE_TYPE_NETWORK);
         disk->src->protocol = VIR_STORAGE_NET_PROTOCOL_RBD;
-        ret = virStorageSourceParseRBDColonString(tmpstr, disk->src);
+        ret = virStorageFileParseRBDColonString(tmpstr, disk->src);
     } else {
         virDomainDiskSetSource(disk, srcstr);
 

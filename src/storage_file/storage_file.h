@@ -74,26 +74,26 @@ virStorageFileChainLookup(virStorageSourcePtr chain,
     ATTRIBUTE_NONNULL(1);
 
 int
-virStorageSourceUpdatePhysicalSize(virStorageSourcePtr src,
-                                   int fd,
-                                   struct stat const *sb);
+virStorageFileUpdatePhysicalSize(virStorageSourcePtr src,
+                                 int fd,
+                                 struct stat const *sb);
 int
-virStorageSourceUpdateBackingSizes(virStorageSourcePtr src,
-                                   int fd,
-                                   struct stat const *sb);
+virStorageFileUpdateBackingSizes(virStorageSourcePtr src,
+                                 int fd,
+                                 struct stat const *sb);
 
 int
-virStorageSourceUpdateCapacity(virStorageSourcePtr src,
-                               char *buf,
-                               ssize_t len);
+virStorageFileUpdateCapacity(virStorageSourcePtr src,
+                             char *buf,
+                             ssize_t len);
 
 int
-virStorageSourceNewFromBacking(virStorageSourcePtr parent,
-                               virStorageSourcePtr *backing);
+virStorageFileNewFromBacking(virStorageSourcePtr parent,
+                             virStorageSourcePtr *backing);
 
 int
-virStorageSourceParseRBDColonString(const char *rbdstr,
-                                    virStorageSourcePtr src)
+virStorageFileParseRBDColonString(const char *rbdstr,
+                                  virStorageSourcePtr src)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 typedef int
@@ -113,21 +113,21 @@ virStorageFileGetRelativeBackingPath(virStorageSourcePtr from,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
 int
-virStorageSourceNewFromBackingAbsolute(const char *path,
-                                       virStorageSourcePtr *src);
+virStorageFileNewFromBackingAbsolute(const char *path,
+                                     virStorageSourcePtr *src);
 
 virStorageSourcePtr
-virStorageSourceFindByNodeName(virStorageSourcePtr top,
-                               const char *nodeName)
+virStorageFileFindByNodeName(virStorageSourcePtr top,
+                             const char *nodeName)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 int
-virStorageSourcePrivateDataParseRelPath(xmlXPathContextPtr ctxt,
-                                        virStorageSourcePtr src);
+virStorageFilePrivateDataParseRelPath(xmlXPathContextPtr ctxt,
+                                      virStorageSourcePtr src);
 
 int
-virStorageSourcePrivateDataFormatRelPath(virStorageSourcePtr src,
-                                         virBufferPtr buf);
+virStorageFilePrivateDataFormatRelPath(virStorageSourcePtr src,
+                                       virBufferPtr buf);
 
 int
 virStorageFileInit(virStorageSourcePtr src);

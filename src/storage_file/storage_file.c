@@ -1292,8 +1292,8 @@ virStorageFileChainLookup(virStorageSourcePtr chain,
 
 
 static virStorageSourcePtr
-virStorageSourceNewFromBackingRelative(virStorageSourcePtr parent,
-                                       const char *rel)
+virStorageFileNewFromBackingRelative(virStorageSourcePtr parent,
+                                     const char *rel)
 {
     g_autofree char *dirname = NULL;
     g_autoptr(virStorageSource) def = virStorageSourceNew();
@@ -1480,8 +1480,8 @@ virStorageSourceRBDAddHost(virStorageSourcePtr src,
 
 
 int
-virStorageSourceParseRBDColonString(const char *rbdstr,
-                                    virStorageSourcePtr src)
+virStorageFileParseRBDColonString(const char *rbdstr,
+                                  virStorageSourcePtr src)
 {
     char *p, *e, *next;
     g_autofree char *options = NULL;
@@ -1691,7 +1691,7 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
         break;
 
     case VIR_STORAGE_NET_PROTOCOL_RBD:
-        if (virStorageSourceParseRBDColonString(path, src) < 0)
+        if (virStorageFileParseRBDColonString(path, src) < 0)
             return -1;
         break;
 
@@ -2253,7 +2253,7 @@ virStorageSourceParseBackingJSONRBD(virStorageSourcePtr src,
 
     /* legacy syntax passed via 'filename' option */
     if ((filename = virJSONValueObjectGetString(json, "filename")))
-        return virStorageSourceParseRBDColonString(filename, src);
+        return virStorageFileParseRBDColonString(filename, src);
 
     if (!pool || !image) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -2487,7 +2487,7 @@ virStorageSourceParseBackingJSON(virStorageSourcePtr src,
 
 
 /**
- * virStorageSourceNewFromBackingAbsolute
+ * virStorageFileNewFromBackingAbsolute
  * @path: string representing absolute location of a storage source
  * @src: filled with virStorageSource object representing @path
  *
@@ -2497,8 +2497,8 @@ virStorageSourceParseBackingJSON(virStorageSourcePtr src,
  * error is reported.
  */
 int
-virStorageSourceNewFromBackingAbsolute(const char *path,
-                                       virStorageSourcePtr *src)
+virStorageFileNewFromBackingAbsolute(const char *path,
+                                     virStorageSourcePtr *src)
 {
     const char *json;
     const char *dirpath;
@@ -2580,10 +2580,10 @@ virStorageSourceNewFromChild(virStorageSourcePtr parent,
     *child = NULL;
 
     if (virFileIsRelative(parentRaw)) {
-        if (!(def = virStorageSourceNewFromBackingRelative(parent, parentRaw)))
+        if (!(def = virStorageFileNewFromBackingRelative(parent, parentRaw)))
             return -1;
     } else {
-        if ((rc = virStorageSourceNewFromBackingAbsolute(parentRaw, &def)) < 0)
+        if ((rc = virStorageFileNewFromBackingAbsolute(parentRaw, &def)) < 0)
             return -1;
     }
 
@@ -2611,8 +2611,8 @@ virStorageSourceNewFromChild(virStorageSourcePtr parent,
 
 
 int
-virStorageSourceNewFromBacking(virStorageSourcePtr parent,
-                               virStorageSourcePtr *backing)
+virStorageFileNewFromBacking(virStorageSourcePtr parent,
+                             virStorageSourcePtr *backing)
 {
     int rc;
 
@@ -2639,9 +2639,9 @@ virStorageSourceNewFromBacking(virStorageSourcePtr parent,
  * Returns 0 on success, -1 on error. No libvirt errors are reported.
  */
 int
-virStorageSourceUpdatePhysicalSize(virStorageSourcePtr src,
-                                   int fd,
-                                   struct stat const *sb)
+virStorageFileUpdatePhysicalSize(virStorageSourcePtr src,
+                                 int fd,
+                                 struct stat const *sb)
 {
     off_t end;
     virStorageType actual_type = virStorageSourceGetActualType(src);
@@ -2687,9 +2687,9 @@ virStorageSourceUpdatePhysicalSize(virStorageSourcePtr src,
  * Returns 0 on success, -1 on error.
  */
 int
-virStorageSourceUpdateBackingSizes(virStorageSourcePtr src,
-                                   int fd,
-                                   struct stat const *sb)
+virStorageFileUpdateBackingSizes(virStorageSourcePtr src,
+                                 int fd,
+                                 struct stat const *sb)
 {
     /* Get info for normal formats */
     if (S_ISREG(sb->st_mode) || fd == -1) {
@@ -2750,9 +2750,9 @@ virStorageSourceUpdateBackingSizes(virStorageSourcePtr src,
  * Returns 0 on success, -1 on error.
  */
 int
-virStorageSourceUpdateCapacity(virStorageSourcePtr src,
-                               char *buf,
-                               ssize_t len)
+virStorageFileUpdateCapacity(virStorageSourcePtr src,
+                             char *buf,
+                             ssize_t len)
 {
     int format = src->format;
     g_autoptr(virStorageSource) meta = NULL;
@@ -3066,7 +3066,7 @@ virStorageFileGetRelativeBackingPath(virStorageSourcePtr top,
 
 
 /**
- * virStorageSourceFindByNodeName:
+ * virStorageFileFindByNodeName:
  * @top: backing chain top
  * @nodeName: node name to find in backing chain
  *
@@ -3075,8 +3075,8 @@ virStorageFileGetRelativeBackingPath(virStorageSourcePtr top,
  * On failure NULL is returned and no error is reported.
  */
 virStorageSourcePtr
-virStorageSourceFindByNodeName(virStorageSourcePtr top,
-                               const char *nodeName)
+virStorageFileFindByNodeName(virStorageSourcePtr top,
+                             const char *nodeName)
 {
     virStorageSourcePtr tmp;
 
@@ -3091,8 +3091,8 @@ virStorageSourceFindByNodeName(virStorageSourcePtr top,
 
 
 int
-virStorageSourcePrivateDataParseRelPath(xmlXPathContextPtr ctxt,
-                                        virStorageSourcePtr src)
+virStorageFilePrivateDataParseRelPath(xmlXPathContextPtr ctxt,
+                                      virStorageSourcePtr src)
 {
     src->relPath = virXPathString("string(./relPath)", ctxt);
     return 0;
@@ -3100,8 +3100,8 @@ virStorageSourcePrivateDataParseRelPath(xmlXPathContextPtr ctxt,
 
 
 int
-virStorageSourcePrivateDataFormatRelPath(virStorageSourcePtr src,
-                                         virBufferPtr buf)
+virStorageFilePrivateDataFormatRelPath(virStorageSourcePtr src,
+                                       virBufferPtr buf)
 {
     if (src->relPath)
         virBufferEscapeString(buf, "<relPath>%s</relPath>\n", src->relPath);
@@ -3708,7 +3708,7 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
     }
 
     if (src->backingStoreRaw) {
-        if ((rv = virStorageSourceNewFromBacking(src, &backingStore)) < 0)
+        if ((rv = virStorageFileNewFromBacking(src, &backingStore)) < 0)
             return -1;
 
         /* the backing file would not be usable for VM usage */
