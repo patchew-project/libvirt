@@ -41,6 +41,7 @@
 #include "virstring.h"
 #include "virdomainsnapshotobjlist.h"
 #include "virqemu.h"
+#include "storage_file.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 

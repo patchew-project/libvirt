@@ -23,6 +23,7 @@
 
 #include <glusterfs/api/glfs.h>
 
+#include "storage_file.h"
 #include "storage_file_gluster.h"
 #include "viralloc.h"
 #include "virerror.h"

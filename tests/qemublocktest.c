@@ -21,6 +21,7 @@
 #include "testutilsqemu.h"
 #include "testutilsqemuschema.h"
 #include "virstoragefile.h"
+#include "storage_file.h"
 #include "virstring.h"
 #include "virlog.h"
 #include "qemu/qemu_block.h"

@@ -25,6 +25,7 @@
 
 #include "storage_backend_gluster.h"
 #include "storage_conf.h"
+#include "storage_file.h"
 #include "viralloc.h"
 #include "virerror.h"
 #include "virlog.h"
