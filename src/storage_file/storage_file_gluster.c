@@ -24,11 +24,11 @@
 #include <glusterfs/api/glfs.h>
 
 #include "storage_file.h"
+#include "storage_file_backend.h"
 #include "storage_file_gluster.h"
 #include "viralloc.h"
 #include "virerror.h"
 #include "virlog.h"
-#include "virstoragefilebackend.h"
 #include "virstring.h"
 
 #define VIR_FROM_THIS VIR_FROM_STORAGE

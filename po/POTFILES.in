@@ -224,6 +224,7 @@
 @SRCDIR@src/storage/storage_driver.c
 @SRCDIR@src/storage/storage_util.c
 @SRCDIR@src/storage_file/storage_file.c
+@SRCDIR@src/storage_file/storage_file_backend.c
 @SRCDIR@src/storage_file/storage_file_fs.c
 @SRCDIR@src/storage_file/storage_file_gluster.c
 @SRCDIR@src/test/test_driver.c
@@ -306,7 +307,6 @@
 @SRCDIR@src/util/virsocketaddr.c
 @SRCDIR@src/util/virstorageencryption.c
 @SRCDIR@src/util/virstoragefile.c
-@SRCDIR@src/util/virstoragefilebackend.c
 @SRCDIR@src/util/virstring.c
 @SRCDIR@src/util/virsysinfo.c
 @SRCDIR@src/util/virsystemd.c

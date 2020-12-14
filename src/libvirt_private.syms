@@ -1655,6 +1655,10 @@ virStorageSourceUpdateCapacity;
 virStorageSourceUpdatePhysicalSize;
 
 
+# storage_file/storage_file_backend.h
+virStorageFileBackendRegister;
+
+
 # util/glibcompat.h
 vir_g_canonicalize_filename;
 vir_g_fsync;
@@ -3210,10 +3214,6 @@ virStorageSourcePoolModeTypeFromString;
 virStorageSourcePoolModeTypeToString;
 virStorageTypeFromString;
 virStorageTypeToString;
-
-
-# util/virstoragefilebackend.h
-virStorageFileBackendRegister;
 
 
 # util/virstring.h

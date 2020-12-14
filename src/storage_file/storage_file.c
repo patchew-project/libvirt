@@ -25,13 +25,13 @@
 #include <unistd.h>
 
 #include "storage_file.h"
+#include "storage_file_backend.h"
 #include "viralloc.h"
 #include "virendian.h"
 #include "virfile.h"
 #include "virhash.h"
 #include "virjson.h"
 #include "virlog.h"
-#include "virstoragefilebackend.h"
 #include "virstring.h"
 #include "viruri.h"
 
