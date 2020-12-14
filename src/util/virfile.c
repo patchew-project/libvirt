@@ -2016,6 +2016,19 @@ virFileIsFile(const char *backing)
 }
 
 
+bool
+virFileIsRelative(const char *path)
+{
+    if (path[0] == '/')
+        return false;
+
+    if (!virFileIsFile(path))
+        return false;
+
+    return true;
+}
+
+
 #if defined WITH_MNTENT_H && defined WITH_GETMNTENT_R
 static int
 virFileGetMountSubtreeImpl(const char *mtabpath,

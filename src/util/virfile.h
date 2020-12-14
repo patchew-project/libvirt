@@ -228,6 +228,8 @@ int virFileIsMountPoint(const char *file) ATTRIBUTE_NONNULL(1);
 int virFileIsCDROM(const char *path)
     ATTRIBUTE_NONNULL(1) G_GNUC_WARN_UNUSED_RESULT;
 bool virFileIsFile(const char *path);
+bool virFileIsRelative(const char *path);
+
 
 int virFileGetMountSubtree(const char *mtabpath,
                            const char *prefix,

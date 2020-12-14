@@ -757,19 +757,6 @@ virStorageFileMatchesVersion(int versionOffset,
 }
 
 
-bool
-virStorageIsRelative(const char *backing)
-{
-    if (backing[0] == '/')
-        return false;
-
-    if (!virFileIsFile(backing))
-        return false;
-
-    return true;
-}
-
-
 static int
 virStorageFileProbeFormatFromBuf(const char *path,
                                  char *buf,
@@ -3846,7 +3833,7 @@ virStorageSourceNewFromChild(virStorageSourcePtr parent,
 
     *child = NULL;
 
-    if (virStorageIsRelative(parentRaw)) {
+    if (virFileIsRelative(parentRaw)) {
         if (!(def = virStorageSourceNewFromBackingRelative(parent, parentRaw)))
             return -1;
     } else {

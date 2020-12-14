@@ -420,8 +420,6 @@ virStorageSourcePtr virStorageFileChainLookup(virStorageSourcePtr chain,
                                               virStorageSourcePtr *parent)
     ATTRIBUTE_NONNULL(1);
 
-bool virStorageIsRelative(const char *backing);
-
 int virStorageFileGetSCSIKey(const char *path,
                              char **key,
                              bool ignoreError);
