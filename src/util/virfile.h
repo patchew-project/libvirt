@@ -28,7 +28,7 @@
 
 #include "internal.h"
 #include "virbitmap.h"
-#include "virstoragefile.h"
+#include "virenum.h"
 
 typedef enum {
     VIR_FILE_CLOSE_PRESERVE_ERRNO = 1 << 0,
@@ -143,7 +143,7 @@ int virFileLoopDeviceAssociate(const char *file,
                                char **dev);
 
 int virFileNBDDeviceAssociate(const char *file,
-                              virStorageFileFormat fmt,
+                              const char *fmtstr,
                               bool readonly,
                               char **dev);
 
