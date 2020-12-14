@@ -51,7 +51,7 @@
 #include "domain_validate.h"
 #include "virtime.h"
 #include "virnetdevopenvswitch.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "storage_file.h"
 #include "virstring.h"
 #include "virthreadjob.h"

@@ -82,7 +82,7 @@
 #include "virsysinfo.h"
 #include "domain_nwfilter.h"
 #include "virhook.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "storage_file.h"
 #include "virfile.h"
 #include "virfdstream.h"

@@ -18,6 +18,9 @@ virt_storage_file_lib = static_library(
   [
     storage_file_sources,
   ],
+  include_directories: [
+    conf_inc_dir,
+  ],
   dependencies: [
     src_dep,
   ],

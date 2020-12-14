@@ -1053,6 +1053,56 @@ virStoragePoolEventRefreshNew;
 virStoragePoolEventStateRegisterID;
 
 
+# conf/storage_source.h
+virStorageAuthDefCopy;
+virStorageAuthDefFormat;
+virStorageAuthDefFree;
+virStorageAuthDefParse;
+virStorageFileFeatureTypeFromString;
+virStorageFileFeatureTypeToString;
+virStorageFileFormatTypeFromString;
+virStorageFileFormatTypeToString;
+virStorageNetHostDefClear;
+virStorageNetHostDefCopy;
+virStorageNetHostDefFree;
+virStorageNetHostTransportTypeFromString;
+virStorageNetHostTransportTypeToString;
+virStorageNetProtocolTypeToString;
+virStoragePRDefFormat;
+virStoragePRDefFree;
+virStoragePRDefIsEqual;
+virStoragePRDefIsManaged;
+virStoragePRDefParseXML;
+virStorageSourceBackingStoreClear;
+virStorageSourceChainHasManagedPR;
+virStorageSourceChainHasNVMe;
+virStorageSourceClear;
+virStorageSourceCopy;
+virStorageSourceGetActualType;
+virStorageSourceGetSecurityLabelDef;
+virStorageSourceHasBacking;
+virStorageSourceInitChainElement;
+virStorageSourceInitiatorClear;
+virStorageSourceInitiatorCopy;
+virStorageSourceInitiatorFormatXML;
+virStorageSourceInitiatorParseXML;
+virStorageSourceIsBacking;
+virStorageSourceIsBlockLocal;
+virStorageSourceIsEmpty;
+virStorageSourceIsLocalStorage;
+virStorageSourceIsRelative;
+virStorageSourceIsSameLocation;
+virStorageSourceNetCookiesValidate;
+virStorageSourceNetworkAssignDefaultPorts;
+virStorageSourceNew;
+virStorageSourceNVMeDefFree;
+virStorageSourcePoolDefFree;
+virStorageSourcePoolModeTypeFromString;
+virStorageSourcePoolModeTypeToString;
+virStorageTypeFromString;
+virStorageTypeToString;
+
+
 # conf/virchrdev.h
 virChrdevAlloc;
 virChrdevFree;
@@ -3165,55 +3215,8 @@ virStorageEncryptionParseNode;
 
 
 # util/virstoragefile.h
-virStorageAuthDefCopy;
-virStorageAuthDefFormat;
-virStorageAuthDefFree;
-virStorageAuthDefParse;
-virStorageFileFeatureTypeFromString;
-virStorageFileFeatureTypeToString;
-virStorageFileFormatTypeFromString;
-virStorageFileFormatTypeToString;
 virStorageFileGetNPIVKey;
 virStorageFileGetSCSIKey;
-virStorageNetHostDefClear;
-virStorageNetHostDefCopy;
-virStorageNetHostDefFree;
-virStorageNetHostTransportTypeFromString;
-virStorageNetHostTransportTypeToString;
-virStorageNetProtocolTypeToString;
-virStoragePRDefFormat;
-virStoragePRDefFree;
-virStoragePRDefIsEqual;
-virStoragePRDefIsManaged;
-virStoragePRDefParseXML;
-virStorageSourceBackingStoreClear;
-virStorageSourceChainHasManagedPR;
-virStorageSourceChainHasNVMe;
-virStorageSourceClear;
-virStorageSourceCopy;
-virStorageSourceGetActualType;
-virStorageSourceGetSecurityLabelDef;
-virStorageSourceHasBacking;
-virStorageSourceInitChainElement;
-virStorageSourceInitiatorClear;
-virStorageSourceInitiatorCopy;
-virStorageSourceInitiatorFormatXML;
-virStorageSourceInitiatorParseXML;
-virStorageSourceIsBacking;
-virStorageSourceIsBlockLocal;
-virStorageSourceIsEmpty;
-virStorageSourceIsLocalStorage;
-virStorageSourceIsRelative;
-virStorageSourceIsSameLocation;
-virStorageSourceNetCookiesValidate;
-virStorageSourceNetworkAssignDefaultPorts;
-virStorageSourceNew;
-virStorageSourceNVMeDefFree;
-virStorageSourcePoolDefFree;
-virStorageSourcePoolModeTypeFromString;
-virStorageSourcePoolModeTypeToString;
-virStorageTypeFromString;
-virStorageTypeToString;
 
 
 # util/virstring.h

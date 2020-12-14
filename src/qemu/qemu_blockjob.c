@@ -33,7 +33,7 @@
 #include "conf/domain_event.h"
 
 #include "virlog.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "virthread.h"
 #include "virtime.h"
 #include "locking/domain_lock.h"

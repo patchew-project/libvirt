@@ -48,7 +48,7 @@
 #include "virobject.h"
 #include "device_conf.h"
 #include "virbitmap.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "virseclabel.h"
 #include "virprocess.h"
 #include "virgic.h"
@@ -359,7 +359,7 @@ struct _virDomainHostdevDef {
 
 
 /* Types of disk frontend (guest view).  For backends (host view), see
- * virStorageType in util/virstoragefile.h */
+ * virStorageType in util/storage_source.h */
 typedef enum {
     VIR_DOMAIN_DISK_DEVICE_DISK,
     VIR_DOMAIN_DISK_DEVICE_CDROM,

@@ -31,7 +31,7 @@
 #include "node_device_conf.h"
 #include "storage_adapter_conf.h"
 #include "storage_conf.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 
 #include "virxml.h"
 #include "viruuid.h"

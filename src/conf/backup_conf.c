@@ -26,7 +26,7 @@
 #include "virlog.h"
 #include "viralloc.h"
 #include "backup_conf.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "virfile.h"
 #include "virerror.h"
 #include "virxml.h"

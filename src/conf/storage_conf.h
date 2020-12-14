@@ -23,7 +23,7 @@
 
 #include "internal.h"
 #include "virstorageencryption.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "virbitmap.h"
 #include "virthread.h"
 #include "device_conf.h"

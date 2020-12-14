@@ -63,6 +63,7 @@
 #include "viruuid.h"
 #include "virstoragefile.h"
 #include "storage_file.h"
+#include "storage_source.h"
 #include "storage_util.h"
 #include "virlog.h"
 #include "virfile.h"

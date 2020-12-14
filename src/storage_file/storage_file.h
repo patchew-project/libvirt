@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "virstoragefile.h"
+#include "storage_source.h"
 
 
 /* Minimum header size required to probe all known formats with

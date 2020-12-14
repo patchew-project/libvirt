@@ -35,7 +35,7 @@
 #include "virbuffer.h"
 #include "viralloc.h"
 #include "virxml.h"
-#include "virstoragefile.h"
+#include "storage_source.h"
 #include "virstring.h"
 #include "backup_conf.h"
 #include "virdomaincheckpointobjlist.h"

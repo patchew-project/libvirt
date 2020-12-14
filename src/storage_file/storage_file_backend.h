@@ -22,7 +22,7 @@
 
 #include <sys/stat.h>
 
-#include "virstoragefile.h"
+#include "storage_source.h"
 
 /* ------- virStorageFile backends ------------ */
 typedef struct _virStorageFileBackend virStorageFileBackend;

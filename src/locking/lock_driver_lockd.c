@@ -35,6 +35,7 @@
 #include "configmake.h"
 #include "virstring.h"
 #include "virutil.h"
+#include "virstoragefile.h"
 
 #include "lock_driver_lockd.h"
 
