@@ -1995,6 +1995,27 @@ virFileIsCDROM(const char *path)
 #endif /* defined(__linux__) */
 
 
+bool
+virFileIsFile(const char *backing)
+{
+    char *colon;
+    char *slash;
+
+    if (!backing)
+        return false;
+
+    colon = strchr(backing, ':');
+    slash = strchr(backing, '/');
+
+    /* Reject anything that looks like a protocol (such as nbd: or
+     * rbd:); if someone really does want a relative file name that
+     * includes ':', they can always prefix './'.  */
+    if (colon && (!slash || colon < slash))
+        return false;
+    return true;
+}
+
+
 #if defined WITH_MNTENT_H && defined WITH_GETMNTENT_R
 static int
 virFileGetMountSubtreeImpl(const char *mtabpath,

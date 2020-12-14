@@ -756,26 +756,6 @@ virStorageFileMatchesVersion(int versionOffset,
     return false;
 }
 
-bool
-virStorageIsFile(const char *backing)
-{
-    char *colon;
-    char *slash;
-
-    if (!backing)
-        return false;
-
-    colon = strchr(backing, ':');
-    slash = strchr(backing, '/');
-
-    /* Reject anything that looks like a protocol (such as nbd: or
-     * rbd:); if someone really does want a relative file name that
-     * includes ':', they can always prefix './'.  */
-    if (colon && (!slash || colon < slash))
-        return false;
-    return true;
-}
-
 
 bool
 virStorageIsRelative(const char *backing)
@@ -783,7 +763,7 @@ virStorageIsRelative(const char *backing)
     if (backing[0] == '/')
         return false;
 
-    if (!virStorageIsFile(backing))
+    if (!virFileIsFile(backing))
         return false;
 
     return true;
@@ -1450,7 +1430,7 @@ virStorageFileChainLookup(virStorageSourcePtr chain,
 {
     virStorageSourcePtr prev;
     const char *start = chain->path;
-    bool nameIsFile = virStorageIsFile(name);
+    bool nameIsFile = virFileIsFile(name);
 
     if (!parent)
         parent = &prev;
@@ -3794,7 +3774,7 @@ virStorageSourceNewFromBackingAbsolute(const char *path,
 
     *src = NULL;
 
-    if (virStorageIsFile(path)) {
+    if (virFileIsFile(path)) {
         def->type = VIR_STORAGE_TYPE_FILE;
 
         def->path = g_strdup(path);
