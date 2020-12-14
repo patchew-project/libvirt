@@ -413,7 +413,6 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
     virMacAddr tapmac;
     int ret = -1;
     unsigned int tap_create_flags = VIR_NETDEV_TAP_CREATE_IFUP;
-    bool template_ifname = false;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     const char *tunpath = "/dev/net/tun";
     const char *auditdev = tunpath;
@@ -459,9 +458,6 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
             STRPREFIX(net->ifname, VIR_NET_GENERATED_VNET_PREFIX) ||
             strchr(net->ifname, '%')) {
             VIR_FREE(net->ifname);
-            net->ifname = g_strdup(VIR_NET_GENERATED_VNET_PREFIX "%d");
-            /* avoid exposing vnet%d in getXMLDesc or error outputs */
-            template_ifname = true;
         }
         if (virNetDevTapCreate(&net->ifname, tunpath, tapfd, tapfdSize,
                                tap_create_flags) < 0) {
@@ -512,8 +508,6 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
         virDomainAuditNetDevice(def, net, auditdev, false);
         for (i = 0; i < tapfdSize && tapfd[i] >= 0; i++)
             VIR_FORCE_CLOSE(tapfd[i]);
-        if (template_ifname)
-            VIR_FREE(net->ifname);
     }
 
     return ret;
@@ -541,7 +535,6 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
     const char *brname;
     int ret = -1;
     unsigned int tap_create_flags = VIR_NETDEV_TAP_CREATE_IFUP;
-    bool template_ifname = false;
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
     const char *tunpath = "/dev/net/tun";
 
@@ -563,9 +556,6 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         STRPREFIX(net->ifname, VIR_NET_GENERATED_VNET_PREFIX) ||
         strchr(net->ifname, '%')) {
         VIR_FREE(net->ifname);
-        net->ifname = g_strdup(VIR_NET_GENERATED_VNET_PREFIX "%d");
-        /* avoid exposing vnet%d in getXMLDesc or error outputs */
-        template_ifname = true;
     }
 
     if (qemuInterfaceIsVnetCompatModel(net))
@@ -630,8 +620,6 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         size_t i;
         for (i = 0; i < *tapfdSize && tapfd[i] >= 0; i++)
             VIR_FORCE_CLOSE(tapfd[i]);
-        if (template_ifname)
-            VIR_FREE(net->ifname);
     }
 
     return ret;
