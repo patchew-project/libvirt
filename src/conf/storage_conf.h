@@ -22,7 +22,7 @@
 #pragma once
 
 #include "internal.h"
-#include "virstorageencryption.h"
+#include "storage_encryption.h"
 #include "storage_source.h"
 #include "virbitmap.h"
 #include "virthread.h"
