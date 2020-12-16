@@ -1994,6 +1994,8 @@ mymain(void)
             QEMU_CAPS_NUMA,
             QEMU_CAPS_OBJECT_MEMORY_RAM);
     DO_TEST_PARSE_ERROR("numatune-memnode", NONE);
+    DO_TEST_CAPS_LATEST("numatune-memnode-restrictive-mode");
+    DO_TEST_PARSE_ERROR("numatune-memnode-invalid-mode", NONE);
 
     DO_TEST("numatune-memnode-no-memory",
             QEMU_CAPS_NUMA,
