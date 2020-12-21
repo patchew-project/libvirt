@@ -507,11 +507,11 @@ vmwareExtractPid(const char * vmxPath)
     return pid_value;
 }
 
-char *
-vmwareCopyVMXFileName(const char *datastorePath, void *opaque G_GNUC_UNUSED)
+int
+vmwareCopyVMXFileName(const char *datastorePath, void *opaque G_GNUC_UNUSED,
+                      char **out)
 {
-    char *path;
+    *out = g_strdup(datastorePath);
 
-    path = g_strdup(datastorePath);
-    return path;
+    return *out ? 0 : -1;
 }
