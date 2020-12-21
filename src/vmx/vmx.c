@@ -2447,10 +2447,10 @@ virVMXParseDisk(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virConfPtr con
                 goto cleanup;
             }
 
-            virDomainDiskSetType(*def, VIR_STORAGE_TYPE_FILE);
             if (ctx->parseFileName(fileName, ctx->opaque, &tmp, true) < 0)
                 goto cleanup;
             virDomainDiskSetSource(*def, tmp);
+            virDomainDiskSetType(*def, VIR_STORAGE_TYPE_FILE);
             VIR_FREE(tmp);
         } else if (deviceType && STRCASEEQ(deviceType, "atapi-cdrom")) {
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_BLOCK);
