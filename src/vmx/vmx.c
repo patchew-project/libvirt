@@ -2447,10 +2447,18 @@ virVMXParseDisk(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virConfPtr con
                 goto cleanup;
             }
 
+            tmp = ctx->parseFileName(fileName, ctx->opaque);
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_FILE);
-            if (!(tmp = ctx->parseFileName(fileName, ctx->opaque)))
-                goto cleanup;
-            virDomainDiskSetSource(*def, tmp);
+            /* It is easily possible to have a cdrom with non-existing filename
+             * as the image and vmware just provides an empty cdrom.
+             *
+             * See: https://bugzilla.redhat.com/1903953
+             */
+            if (tmp) {
+                virDomainDiskSetSource(*def, tmp);
+            } else {
+                virResetLastError();
+            }
             VIR_FREE(tmp);
         } else if (deviceType && STRCASEEQ(deviceType, "atapi-cdrom")) {
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_BLOCK);
