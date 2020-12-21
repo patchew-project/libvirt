@@ -128,7 +128,8 @@ esxFreePrivate(esxPrivate **priv)
 static int
 esxParseVMXFileName(const char *fileName,
                     void *opaque,
-                    char **out)
+                    char **out,
+                    bool allow_missing)
 {
     esxVMX_Data *data = opaque;
     esxVI_String *propertyNameList = NULL;
@@ -222,9 +223,13 @@ esxParseVMXFileName(const char *fileName,
         }
 
         if (!datastoreList) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("File name '%s' refers to non-existing datastore '%s'"),
-                           fileName, datastoreName);
+            if (allow_missing) {
+                ret = 0;
+            } else {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("File name '%s' refers to non-existing datastore '%s'"),
+                               fileName, datastoreName);
+            }
             goto cleanup;
         }
 
