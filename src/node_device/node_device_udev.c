@@ -41,6 +41,7 @@
 #include "virnetdev.h"
 #include "virmdev.h"
 #include "virutil.h"
+#include <gio/gio.h>
 
 #include "configmake.h"
 
@@ -66,6 +67,10 @@ struct _udevEventData {
     virCond threadCond;
     bool threadQuit;
     bool udevReady;
+    bool mdevReady;
+
+    GList *mdevctlMonitors;
+    int mdevctlTimeout;
 };
 
 static virClassPtr udevEventDataClass;
@@ -85,6 +90,7 @@ udevEventDataDispose(void *obj)
     udev = udev_monitor_get_udev(priv->udev_monitor);
     udev_monitor_unref(priv->udev_monitor);
     udev_unref(udev);
+    g_list_free_full(priv->mdevctlMonitors, g_object_unref);
 
     virCondDestroy(&priv->threadCond);
 }
@@ -1821,7 +1827,7 @@ udevEventHandleThread(void *opaque G_GNUC_UNUSED)
     /* continue rather than break from the loop on non-fatal errors */
     while (1) {
         virObjectLock(priv);
-        while (!priv->udevReady && !priv->threadQuit) {
+        while (!priv->udevReady && !priv->mdevReady && !priv->threadQuit) {
             if (virCondWait(&priv->threadCond, &priv->parent.lock)) {
                 virReportSystemError(errno, "%s",
                                      _("handler failed to wait on condition"));
@@ -1835,46 +1841,58 @@ udevEventHandleThread(void *opaque G_GNUC_UNUSED)
             return;
         }
 
-        errno = 0;
-        device = udev_monitor_receive_device(priv->udev_monitor);
-        virObjectUnlock(priv);
-
-        if (!device) {
-            if (errno == 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("failed to receive device from udev monitor"));
-                return;
-            }
-
-            /* POSIX allows both EAGAIN and EWOULDBLOCK to be used
-             * interchangeably when the read would block or timeout was fired
-             */
-            VIR_WARNINGS_NO_WLOGICALOP_EQUAL_EXPR
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            VIR_WARNINGS_RESET
-                virReportSystemError(errno, "%s",
-                                     _("failed to receive device from udev "
-                                       "monitor"));
-                return;
-            }
-
-            /* Trying to move the reset of the @priv->udevReady flag to
-             * after the udev_monitor_receive_device wouldn't help much
-             * due to event mgmt and scheduler timing. */
-            virObjectLock(priv);
-            priv->udevReady = false;
+        if (priv->udevReady) {
+            errno = 0;
+            device = udev_monitor_receive_device(priv->udev_monitor);
             virObjectUnlock(priv);
 
-            continue;
+            if (!device) {
+                if (errno == 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                                   _("failed to receive device from udev monitor"));
+                    return;
+                }
+
+                /* POSIX allows both EAGAIN and EWOULDBLOCK to be used
+                 * interchangeably when the read would block or timeout was fired
+                 */
+                VIR_WARNINGS_NO_WLOGICALOP_EQUAL_EXPR
+                if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                VIR_WARNINGS_RESET
+                    virReportSystemError(errno, "%s",
+                                         _("failed to receive device from udev "
+                                           "monitor"));
+                    return;
+                }
+
+                /* Trying to move the reset of the @priv->udevReady flag to
+                 * after the udev_monitor_receive_device wouldn't help much
+                 * due to event mgmt and scheduler timing. */
+                virObjectLock(priv);
+                priv->udevReady = false;
+                virObjectUnlock(priv);
+
+                continue;
+            }
+
+            udevHandleOneDevice(device);
+            udev_device_unref(device);
+
+            /* Instead of waiting for the next event after processing @device
+             * data, let's keep reading from the udev monitor and only wait
+             * for the next event once either a EAGAIN or a EWOULDBLOCK error
+             * is encountered. */
         }
 
-        udevHandleOneDevice(device);
-        udev_device_unref(device);
+        if (priv->mdevReady) {
+            virObjectUnlock(priv);
+            if (nodeDeviceUpdateMediatedDevices() < 0)
+                VIR_WARN("mdevctl failed to updated mediated devices");
 
-        /* Instead of waiting for the next event after processing @device
-         * data, let's keep reading from the udev monitor and only wait
-         * for the next event once either a EAGAIN or a EWOULDBLOCK error
-         * is encountered. */
+            virObjectLock(priv);
+            priv->mdevReady = false;
+            virObjectUnlock(priv);
+        }
     }
 }
 
@@ -1896,6 +1914,117 @@ udevEventHandleCallback(int watch G_GNUC_UNUSED,
 
     virCondSignal(&priv->threadCond);
     virObjectUnlock(priv);
+}
+
+
+static void
+scheduleMdevctlHandler(int timer G_GNUC_UNUSED, void *opaque)
+{
+    udevEventDataPtr priv = opaque;
+
+    if (priv->mdevctlTimeout > 0) {
+        virEventRemoveTimeout(priv->mdevctlTimeout);
+        priv->mdevctlTimeout = -1;
+    }
+
+    virObjectLock(priv);
+    priv->mdevReady = true;
+    virCondSignal(&priv->threadCond);
+    virObjectUnlock(priv);
+}
+
+
+static void
+mdevctlEventHandleCallback(GFileMonitor *monitor,
+                           GFile *file,
+                           GFile *other_file,
+                           GFileMonitorEvent event_type,
+                           gpointer user_data);
+
+
+/* Recursively monitors a directory and its subdirectories for file changes and
+ * returns a GList of GFileMonitor objects */
+static GList*
+monitorFileRecursively(udevEventDataPtr udev,
+                       GFile *file)
+{
+    GList *monitors = NULL;
+    g_autoptr(GError) error = NULL;
+    g_autoptr(GFileEnumerator) children = NULL;
+    GFileMonitor *mon;
+
+    if (!(children = g_file_enumerate_children(file, "standard::*",
+                                               G_FILE_QUERY_INFO_NONE, NULL, &error))) {
+        if (error->code == G_IO_ERROR_NOT_DIRECTORY)
+            return NULL;
+        goto error;
+    }
+
+    if (!(mon = g_file_monitor(file, G_FILE_MONITOR_NONE, NULL, &error)))
+        goto error;
+
+    g_signal_connect(mon, "changed",
+                     G_CALLBACK(mdevctlEventHandleCallback), udev);
+    monitors = g_list_append(monitors, mon);
+
+    while (true) {
+        GFileInfo *info;
+        GFile *child;
+        GList *child_monitors = NULL;
+
+        if (!g_file_enumerator_iterate(children, &info, &child, NULL, &error))
+            goto error;
+        if (!info)
+            break;
+
+        child_monitors = monitorFileRecursively(udev, child);
+        if (child_monitors)
+            monitors = g_list_concat(monitors, child_monitors);
+    }
+
+    return monitors;
+
+ error:
+    g_list_free_full(monitors, g_object_unref);
+    virReportError(VIR_ERR_INTERNAL_ERROR,
+                   _("Unable to monitor directory: %s"), error->message);
+    return NULL;
+}
+
+
+static void
+mdevctlEventHandleCallback(GFileMonitor *monitor G_GNUC_UNUSED,
+                           GFile *file,
+                           GFile *other_file G_GNUC_UNUSED,
+                           GFileMonitorEvent event_type,
+                           gpointer user_data)
+{
+    udevEventDataPtr priv = user_data;
+
+    /* if a new directory appears, monitor that directory for changes */
+    if (event_type == G_FILE_MONITOR_EVENT_CREATED &&
+        g_file_query_file_type(file, G_FILE_QUERY_INFO_NONE, NULL) ==
+        G_FILE_TYPE_DIRECTORY) {
+        GList *newmonitors = monitorFileRecursively(priv, file);
+        priv->mdevctlMonitors = g_list_concat(priv->mdevctlMonitors, newmonitors);
+    }
+
+    /* When mdevctl creates a device, it can result in multiple notify events
+     * emitted for a single logical change (e.g. several CHANGED events, or a
+     * CREATED and CHANGED event followed by CHANGES_DONE_HINT). To avoid
+     * spawning a mdevctl thread multiple times for a single logical
+     * configuration change, try to coalesce these changes by waiting for the
+     * CHANGES_DONE_HINT event. As a fallback,  add a timeout to trigger the
+     * signal if that event never comes */
+    if (event_type != G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
+        if (priv->mdevctlTimeout > 0)
+            virEventRemoveTimeout(priv->mdevctlTimeout);
+        priv->mdevctlTimeout = virEventAddTimeout(100, scheduleMdevctlHandler,
+                                                  priv, NULL);
+        return;
+    }
+
+    scheduleMdevctlHandler(-1, priv);
 }
 
 
@@ -2052,6 +2181,7 @@ nodeStateInitialize(bool privileged,
     udevEventDataPtr priv = NULL;
     struct udev *udev = NULL;
     virThread enumThread;
+    g_autoptr(GFile) mdevctlConfigDir = g_file_new_for_path("/etc/mdevctl.d");
 
     if (root != NULL) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -2152,6 +2282,14 @@ nodeStateInitialize(bool privileged,
                                     udevEventHandleCallback, NULL, NULL);
     if (priv->watch == -1)
         goto unlock;
+
+    /* mdevctl may add notification events in the future:
+     * https://github.com/mdevctl/mdevctl/issues/27. For now, fall back to
+     * monitoring the mdevctl configuration directory for changes.
+     * mdevctl configuration is stored in a directory tree within
+     * /etc/mdevctl.d/. There is a directory for each parent device, which
+     * contains a file defining each mediated device */
+    priv->mdevctlMonitors = monitorFileRecursively(priv, mdevctlConfigDir);
 
     virObjectUnlock(priv);
 
