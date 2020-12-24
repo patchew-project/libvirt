@@ -2151,6 +2151,10 @@ struct remote_node_device_define_xml_ret {
     remote_nonnull_node_device dev;
 };
 
+struct remote_node_device_undefine_args {
+    remote_nonnull_string name;
+};
+
 
 /*
  * Events Register/Deregister:
@@ -6729,5 +6733,13 @@ enum remote_procedure {
      * @generate: both
      * @acl: node_device:write
      */
-    REMOTE_PROC_NODE_DEVICE_DEFINE_XML = 426
+    REMOTE_PROC_NODE_DEVICE_DEFINE_XML = 426,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: node_device:delete
+     */
+    REMOTE_PROC_NODE_DEVICE_UNDEFINE = 427
+
 };
