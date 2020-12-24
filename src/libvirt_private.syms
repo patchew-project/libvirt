@@ -1210,12 +1210,14 @@ virNodeDeviceObjListFindByName;
 virNodeDeviceObjListFindBySysfsPath;
 virNodeDeviceObjListFindMediatedDeviceByUUID;
 virNodeDeviceObjListFindSCSIHostByWWNs;
+virNodeDeviceObjListForEach;
 virNodeDeviceObjListFree;
 virNodeDeviceObjListGetNames;
 virNodeDeviceObjListGetParentHost;
 virNodeDeviceObjListNew;
 virNodeDeviceObjListNumOfDevices;
 virNodeDeviceObjListRemove;
+virNodeDeviceObjListRemoveLocked;
 virNodeDeviceObjSetActive;
 
 

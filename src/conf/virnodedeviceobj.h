@@ -80,6 +80,10 @@ void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
                            virNodeDeviceObjPtr dev);
 
+void
+virNodeDeviceObjListRemoveLocked(virNodeDeviceObjListPtr devs,
+                                 virNodeDeviceObjPtr dev);
+
 int
 virNodeDeviceObjListGetParentHost(virNodeDeviceObjListPtr devs,
                                   virNodeDeviceDefPtr def);
@@ -128,3 +132,11 @@ virNodeDeviceObjIsActive(virNodeDeviceObjPtr obj);
 void
 virNodeDeviceObjSetActive(virNodeDeviceObjPtr obj,
                           bool active);
+
+typedef void
+(*virNodeDeviceObjListIterator)(virNodeDeviceObjPtr obj,
+                                const void *opaque);
+
+void virNodeDeviceObjListForEach(virNodeDeviceObjListPtr devs,
+                                 virNodeDeviceObjListIterator iter,
+                                 const void *opaque);
