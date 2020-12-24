@@ -102,6 +102,11 @@ nodeDeviceCreateXML(virConnectPtr conn,
 int
 nodeDeviceDestroy(virNodeDevicePtr dev);
 
+virNodeDevicePtr
+nodeDeviceDefineXML(virConnectPtr conn,
+                    const char *xmlDesc,
+                    unsigned int flags);
+
 int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
                                       virNodeDevicePtr dev,
@@ -116,6 +121,11 @@ nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
 virCommandPtr
 nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
                                  char **uuid_out);
+
+virCommandPtr
+nodeDeviceGetMdevctlDefineCommand(virNodeDeviceDefPtr def,
+                                  char **uuid_out);
+
 virCommandPtr
 nodeDeviceGetMdevctlStopCommand(const char *uuid);
 

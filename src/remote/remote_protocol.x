@@ -2142,6 +2142,15 @@ struct remote_node_device_destroy_args {
     remote_nonnull_string name;
 };
 
+struct remote_node_device_define_xml_args {
+    remote_nonnull_string xml_desc;
+    unsigned int flags;
+};
+
+struct remote_node_device_define_xml_ret {
+    remote_nonnull_node_device dev;
+};
+
 
 /*
  * Events Register/Deregister:
@@ -6714,5 +6723,11 @@ enum remote_procedure {
      * @generate: none
      * @acl: domain:write
      */
-    REMOTE_PROC_DOMAIN_AUTHORIZED_SSH_KEYS_SET = 425
+    REMOTE_PROC_DOMAIN_AUTHORIZED_SSH_KEYS_SET = 425,
+
+    /**
+     * @generate: both
+     * @acl: node_device:write
+     */
+    REMOTE_PROC_NODE_DEVICE_DEFINE_XML = 426
 };

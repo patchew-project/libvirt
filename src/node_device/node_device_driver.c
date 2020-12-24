@@ -698,9 +698,13 @@ nodeDeviceFindAddressByName(const char *name)
 }
 
 
-virCommandPtr
-nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
-                                 char **uuid_out)
+/* the mdevctl 'start' and 'define' commands accept almost the exact same
+ * arguments, so provide a common implementation that can be wrapped by a more
+ * specific function */
+static virCommandPtr
+nodeDeviceGetMdevctlDefineStartCommand(virNodeDeviceDefPtr def,
+                                       const char *subcommand,
+                                       char **uuid_out)
 {
     virCommandPtr cmd;
     g_autofree char *json = NULL;
@@ -718,7 +722,7 @@ nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
         return NULL;
     }
 
-    cmd = virCommandNewArgList(MDEVCTL, "start",
+    cmd = virCommandNewArgList(MDEVCTL, subcommand,
                                "-p", parent_addr,
                                "--jsonfile", "/dev/stdin",
                                NULL);
@@ -729,11 +733,47 @@ nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
     return cmd;
 }
 
+virCommandPtr
+nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
+                                 char **uuid_out)
+{
+    return nodeDeviceGetMdevctlDefineStartCommand(def, "start", uuid_out);
+}
+
+virCommandPtr
+nodeDeviceGetMdevctlDefineCommand(virNodeDeviceDefPtr def,
+                                  char **uuid_out)
+{
+    return nodeDeviceGetMdevctlDefineStartCommand(def, "define", uuid_out);
+}
+
+
+
 static int
 virMdevctlStart(virNodeDeviceDefPtr def, char **uuid)
 {
     int status;
     g_autoptr(virCommand) cmd = nodeDeviceGetMdevctlStartCommand(def, uuid);
+    if (!cmd)
+        return -1;
+
+    /* an auto-generated uuid is returned via stdout if no uuid is specified in
+     * the mdevctl args */
+    if (virCommandRun(cmd, &status) < 0 || status != 0)
+        return -1;
+
+    /* remove newline */
+    *uuid = g_strstrip(*uuid);
+
+    return 0;
+}
+
+
+static int
+virMdevctlDefine(virNodeDeviceDefPtr def, char **uuid)
+{
+    int status;
+    g_autoptr(virCommand) cmd = nodeDeviceGetMdevctlDefineCommand(def, uuid);
     if (!cmd)
         return -1;
 
@@ -1067,6 +1107,55 @@ nodeDeviceDestroy(virNodeDevicePtr device)
     virNodeDeviceObjEndAPI(&obj);
     return ret;
 }
+
+virNodeDevicePtr
+nodeDeviceDefineXML(virConnectPtr conn,
+                    const char *xmlDesc,
+                    unsigned int flags)
+{
+    g_autoptr(virNodeDeviceDef) def = NULL;
+    virNodeDevicePtr device = NULL;
+    const char *virt_type = NULL;
+    g_autofree char *uuid = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (nodeDeviceWaitInit() < 0)
+        return NULL;
+
+    virt_type  = virConnectGetType(conn);
+
+    if (!(def = virNodeDeviceDefParseString(xmlDesc, CREATE_DEVICE, virt_type)))
+        return NULL;
+
+    if (virNodeDeviceDefineXMLEnsureACL(conn, def) < 0)
+        return NULL;
+
+    if (!nodeDeviceHasCapability(def, VIR_NODE_DEV_CAP_MDEV)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Unsupported device type"));
+        return NULL;
+    }
+
+    if (!def->parent) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("cannot define a mediated device without a parent"));
+        return NULL;
+    }
+
+    if (virMdevctlDefine(def, &uuid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to define mediated device"));
+        return NULL;
+    }
+
+    def->caps->data.mdev.uuid = g_strdup(uuid);
+    mdevGenerateDeviceName(def);
+    device = nodeDeviceFindNewMediatedDevice(conn, uuid);
+
+    return device;
+}
+
 
 
 int
