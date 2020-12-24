@@ -65,7 +65,7 @@ struct _udevEventData {
     virThread th;
     virCond threadCond;
     bool threadQuit;
-    bool dataReady;
+    bool udevReady;
 };
 
 static virClassPtr udevEventDataClass;
@@ -1809,7 +1809,7 @@ udevEventMonitorSanityCheck(udevEventDataPtr priv,
  * NB: Some older distros, such as CentOS 6, libudev opens sockets
  * without the NONBLOCK flag which might cause issues with event
  * based algorithm. Although the issue can be mitigated by resetting
- * priv->dataReady for each event found; however, the scheduler issues
+ * priv->udevReady for each event found; however, the scheduler issues
  * would still come into play.
  */
 static void
@@ -1821,7 +1821,7 @@ udevEventHandleThread(void *opaque G_GNUC_UNUSED)
     /* continue rather than break from the loop on non-fatal errors */
     while (1) {
         virObjectLock(priv);
-        while (!priv->dataReady && !priv->threadQuit) {
+        while (!priv->udevReady && !priv->threadQuit) {
             if (virCondWait(&priv->threadCond, &priv->parent.lock)) {
                 virReportSystemError(errno, "%s",
                                      _("handler failed to wait on condition"));
@@ -1858,11 +1858,11 @@ udevEventHandleThread(void *opaque G_GNUC_UNUSED)
                 return;
             }
 
-            /* Trying to move the reset of the @priv->dataReady flag to
+            /* Trying to move the reset of the @priv->udevReady flag to
              * after the udev_monitor_receive_device wouldn't help much
              * due to event mgmt and scheduler timing. */
             virObjectLock(priv);
-            priv->dataReady = false;
+            priv->udevReady = false;
             virObjectUnlock(priv);
 
             continue;
@@ -1892,7 +1892,7 @@ udevEventHandleCallback(int watch G_GNUC_UNUSED,
     if (!udevEventMonitorSanityCheck(priv, fd))
         priv->threadQuit = true;
     else
-        priv->dataReady = true;
+        priv->udevReady = true;
 
     virCondSignal(&priv->threadCond);
     virObjectUnlock(priv);
