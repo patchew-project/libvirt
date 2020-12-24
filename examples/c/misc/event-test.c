@@ -381,6 +381,10 @@ nodeDeviceEventToString(int event)
             return "Created";
         case VIR_NODE_DEVICE_EVENT_DELETED:
             return "Deleted";
+        case VIR_NODE_DEVICE_EVENT_STOPPED:
+            return "Stopped";
+        case VIR_NODE_DEVICE_EVENT_STARTED:
+            return "Started";
         case VIR_NODE_DEVICE_EVENT_LAST:
             break;
     }
