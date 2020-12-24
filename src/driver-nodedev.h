@@ -83,6 +83,9 @@ typedef int
 (*virDrvNodeDeviceUndefine)(virNodeDevicePtr dev);
 
 typedef int
+(*virDrvNodeDeviceCreate)(virNodeDevicePtr def);
+
+typedef int
 (*virDrvConnectNodeDeviceEventRegisterAny)(virConnectPtr conn,
                                            virNodeDevicePtr dev,
                                            int eventID,
@@ -123,4 +126,5 @@ struct _virNodeDeviceDriver {
     virDrvNodeDeviceDestroy nodeDeviceDestroy;
     virDrvNodeDeviceDefineXML nodeDeviceDefineXML;
     virDrvNodeDeviceUndefine nodeDeviceUndefine;
+    virDrvNodeDeviceCreate nodeDeviceCreate;
 };

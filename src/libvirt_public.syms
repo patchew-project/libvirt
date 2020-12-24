@@ -879,6 +879,7 @@ LIBVIRT_6.10.0 {
         virDomainAuthorizedSSHKeysSet;
         virNodeDeviceDefineXML;
         virNodeDeviceUndefine;
+        virNodeDeviceCreate;
 } LIBVIRT_6.0.0;
 
 # .... define new API here using predicted next version number ....

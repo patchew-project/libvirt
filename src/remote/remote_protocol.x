@@ -2155,6 +2155,10 @@ struct remote_node_device_undefine_args {
     remote_nonnull_string name;
 };
 
+struct remote_node_device_create_args {
+    remote_nonnull_string name;
+};
+
 
 /*
  * Events Register/Deregister:
@@ -6740,6 +6744,13 @@ enum remote_procedure {
      * @priority: high
      * @acl: node_device:delete
      */
-    REMOTE_PROC_NODE_DEVICE_UNDEFINE = 427
+    REMOTE_PROC_NODE_DEVICE_UNDEFINE = 427,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: node_device:start
+     */
+    REMOTE_PROC_NODE_DEVICE_CREATE = 428
 
 };
