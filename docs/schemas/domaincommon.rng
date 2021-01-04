@@ -4780,6 +4780,18 @@
           </optional>
         </group>
       </choice>
+      <choice>
+        <group>
+          <optional>
+            <attribute name="persistent_state">
+              <choice>
+                <value>yes</value>
+                <value>no</value>
+              </choice>
+           </attribute>
+          </optional>
+        </group>
+      </choice>
     </element>
   </define>
 
