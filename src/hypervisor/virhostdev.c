@@ -657,7 +657,8 @@ virHostdevReattachAllPCIDevices(virHostdevManagerPtr mgr,
 
         /* We need to look up the actual device because that's what
          * virPCIDeviceReattach() expects as its argument */
-        if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
+        if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs,
+                                            virPCIDeviceGetAddress(pci))))
             continue;
 
         if (virPCIDeviceGetManaged(actual)) {
@@ -777,7 +778,8 @@ virHostdevPreparePCIDevicesImpl(virHostdevManagerPtr mgr,
 
             /* Unmanaged devices should already have been marked as
              * inactive: if that's the case, we can simply move on */
-            if (virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)) {
+            if (virPCIDeviceListFind(mgr->inactivePCIHostdevs,
+                                     virPCIDeviceGetAddress(pci))) {
                 VIR_DEBUG("Not detaching unmanaged PCI device %s",
                           virPCIDeviceGetName(pci));
                 continue;
@@ -860,7 +862,8 @@ virHostdevPreparePCIDevicesImpl(virHostdevManagerPtr mgr,
          * there because 'pci' only contain address information and will
          * be released at the end of the function */
         pci = virPCIDeviceListGet(pcidevs, i);
-        actual = virPCIDeviceListFind(mgr->activePCIHostdevs, pci);
+        actual = virPCIDeviceListFind(mgr->activePCIHostdevs,
+                                      virPCIDeviceGetAddress(pci));
 
         VIR_DEBUG("Setting driver and domain information for PCI device %s",
                   virPCIDeviceGetName(pci));
@@ -992,7 +995,8 @@ virHostdevReAttachPCIDevicesImpl(virHostdevManagerPtr mgr,
          * information such as by which domain and driver it is used. As a
          * side effect, by looking it up we can also tell whether it was
          * really active in the first place */
-        actual = virPCIDeviceListFind(mgr->activePCIHostdevs, pci);
+        actual = virPCIDeviceListFind(mgr->activePCIHostdevs,
+                                      virPCIDeviceGetAddress(pci));
         if (actual) {
             const char *actual_drvname;
             const char *actual_domname;
