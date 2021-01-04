@@ -445,19 +445,26 @@ virNodeDeviceListCaps(virNodeDevicePtr dev,
  * Drops a reference to the node device, freeing it if
  * this was the last reference.
  *
- * Returns the 0 for success, -1 for error.
+ * Throws a VIR_ERR_INVALID_NODE_DEVICE error if @dev is
+ * not a valid node device. Does nothing if @dev is
+ * NULL.
  */
-int
+void
 virNodeDeviceFree(virNodeDevicePtr dev)
 {
+    if (!dev)
+        return;
+
     VIR_DEBUG("dev=%p, conn=%p", dev, dev ? dev->conn : NULL);
 
     virResetLastError();
 
-    virCheckNodeDeviceReturn(dev, -1);
+    virCheckNodeDeviceGoto(dev, invalid_device);
 
     virObjectUnref(dev);
-    return 0;
+
+ invalid_device:
+    return;
 }
 
 
