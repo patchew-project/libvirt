@@ -11953,11 +11953,10 @@ static const vshCmdOptDef opts_detach_device[] = {
 static bool
 cmdDetachDevice(vshControl *ctl, const vshCmd *cmd)
 {
-    virDomainPtr dom = NULL;
+    g_autoptr(virshDomain) dom = NULL;
     const char *from = NULL;
-    char *buffer = NULL;
+    g_autofree char *buffer = NULL;
     int ret;
-    bool funcRet = false;
     bool current = vshCommandOptBool(cmd, "current");
     bool config = vshCommandOptBool(cmd, "config");
     bool live = vshCommandOptBool(cmd, "live");
@@ -11982,11 +11981,11 @@ cmdDetachDevice(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_AFFECT_LIVE;
 
     if (vshCommandOptStringReq(ctl, cmd, "file", &from) < 0)
-        goto cleanup;
+        return false;
 
     if (virFileReadAll(from, VSH_MAX_XML_FILE, &buffer) < 0) {
         vshReportError(ctl);
-        goto cleanup;
+        return false;
     }
 
     if (flags != 0 || current)
@@ -11996,16 +11995,11 @@ cmdDetachDevice(vshControl *ctl, const vshCmd *cmd)
 
     if (ret < 0) {
         vshError(ctl, _("Failed to detach device from %s"), from);
-        goto cleanup;
+        return false;
     }
 
     vshPrintExtra(ctl, "%s", _("Device detached successfully\n"));
-    funcRet = true;
-
- cleanup:
-    VIR_FREE(buffer);
-    virshDomainFree(dom);
-    return funcRet;
+    return true;
 }
 
 
