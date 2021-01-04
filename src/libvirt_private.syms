@@ -2817,6 +2817,7 @@ virPCIDeviceAddressIsValid;
 virPCIDeviceAddressParse;
 virPCIDeviceCopy;
 virPCIDeviceDetach;
+virPCIDeviceExists;
 virPCIDeviceFileIterate;
 virPCIDeviceFree;
 virPCIDeviceGetAddress;
