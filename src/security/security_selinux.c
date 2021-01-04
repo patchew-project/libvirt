@@ -2086,7 +2086,7 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
 
     switch ((virDomainHostdevSubsysType)dev->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB: {
-        virUSBDevicePtr usb;
+        g_autoptr(virUSBDevice) usb = NULL;
 
         if (dev->missing)
             return 0;
@@ -2098,39 +2098,34 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
             return -1;
 
         ret = virUSBDeviceFileIterate(usb, virSecuritySELinuxSetUSBLabel, &data);
-        virUSBDeviceFree(usb);
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI: {
-        virPCIDevicePtr pci =
-            virPCIDeviceNew(&pcisrc->addr);
+        g_autoptr(virPCIDevice) pci = virPCIDeviceNew(&pcisrc->addr);
 
         if (!pci)
             return -1;
 
         if (pcisrc->backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO) {
-            char *vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci);
+            g_autofree char *vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci);
 
-            if (!vfioGroupDev) {
-                virPCIDeviceFree(pci);
+            if (!vfioGroupDev)
                 return -1;
-            }
+
             ret = virSecuritySELinuxSetHostdevLabelHelper(vfioGroupDev,
                                                           false,
                                                           &data);
-            VIR_FREE(vfioGroupDev);
         } else {
             ret = virPCIDeviceFileIterate(pci, virSecuritySELinuxSetPCILabel, &data);
         }
-        virPCIDeviceFree(pci);
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI: {
         virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
 
-        virSCSIDevicePtr scsi =
+        g_autoptr(virSCSIDevice) scsi =
             virSCSIDeviceNew(NULL,
                              scsihostsrc->adapter, scsihostsrc->bus,
                              scsihostsrc->target, scsihostsrc->unit,
@@ -2142,13 +2137,11 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
         ret = virSCSIDeviceFileIterate(scsi,
                                        virSecuritySELinuxSetSCSILabel,
                                        &data);
-        virSCSIDeviceFree(scsi);
-
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST: {
-        virSCSIVHostDevicePtr host = virSCSIVHostDeviceNew(hostsrc->wwpn);
+        g_autoptr(virSCSIVHostDevice) host = virSCSIVHostDeviceNew(hostsrc->wwpn);
 
         if (!host)
             return -1;
@@ -2156,19 +2149,16 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
         ret = virSCSIVHostDeviceFileIterate(host,
                                             virSecuritySELinuxSetHostLabel,
                                             &data);
-        virSCSIVHostDeviceFree(host);
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV: {
-        char *vfiodev = NULL;
+        g_autofree char *vfiodev = NULL;
 
         if (!(vfiodev = virMediatedDeviceGetIOMMUGroupDev(mdevsrc->uuidstr)))
             return ret;
 
         ret = virSecuritySELinuxSetHostdevLabelHelper(vfiodev, true, &data);
-
-        VIR_FREE(vfiodev);
         break;
     }
 
@@ -2324,7 +2314,7 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
 
     switch ((virDomainHostdevSubsysType)dev->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB: {
-        virUSBDevicePtr usb;
+        g_autoptr(virUSBDevice) usb = NULL;
 
         if (dev->missing)
             return 0;
@@ -2336,37 +2326,31 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
             return -1;
 
         ret = virUSBDeviceFileIterate(usb, virSecuritySELinuxRestoreUSBLabel, mgr);
-        virUSBDeviceFree(usb);
-
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI: {
-        virPCIDevicePtr pci =
-            virPCIDeviceNew(&pcisrc->addr);
+        g_autoptr(virPCIDevice) pci = virPCIDeviceNew(&pcisrc->addr);
 
         if (!pci)
             return -1;
 
         if (pcisrc->backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO) {
-            char *vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci);
+            g_autofree char *vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci);
 
-            if (!vfioGroupDev) {
-                virPCIDeviceFree(pci);
+            if (!vfioGroupDev)
                 return -1;
-            }
+
             ret = virSecuritySELinuxRestoreFileLabel(mgr, vfioGroupDev, false);
-            VIR_FREE(vfioGroupDev);
         } else {
             ret = virPCIDeviceFileIterate(pci, virSecuritySELinuxRestorePCILabel, mgr);
         }
-        virPCIDeviceFree(pci);
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI: {
         virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
-        virSCSIDevicePtr scsi =
+        g_autoptr(virSCSIDevice) scsi =
             virSCSIDeviceNew(NULL,
                              scsihostsrc->adapter, scsihostsrc->bus,
                              scsihostsrc->target, scsihostsrc->unit,
@@ -2376,13 +2360,11 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
             return -1;
 
         ret = virSCSIDeviceFileIterate(scsi, virSecuritySELinuxRestoreSCSILabel, mgr);
-        virSCSIDeviceFree(scsi);
-
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST: {
-        virSCSIVHostDevicePtr host = virSCSIVHostDeviceNew(hostsrc->wwpn);
+        g_autoptr(virSCSIVHostDevice) host = virSCSIVHostDeviceNew(hostsrc->wwpn);
 
         if (!host)
             return -1;
@@ -2390,20 +2372,16 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
         ret = virSCSIVHostDeviceFileIterate(host,
                                             virSecuritySELinuxRestoreHostLabel,
                                             mgr);
-        virSCSIVHostDeviceFree(host);
-
         break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV: {
-        char *vfiodev = NULL;
+        g_autofree char *vfiodev = NULL;
 
         if (!(vfiodev = virMediatedDeviceGetIOMMUGroupDev(mdevsrc->uuidstr)))
             return -1;
 
         ret = virSecuritySELinuxRestoreFileLabel(mgr, vfiodev, true);
-
-        VIR_FREE(vfiodev);
         break;
     }
 
