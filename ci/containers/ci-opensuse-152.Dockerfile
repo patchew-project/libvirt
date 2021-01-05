@@ -3,7 +3,7 @@
 #  $ lcitool dockerfile opensuse-151 libvirt
 #
 # https://gitlab.com/libvirt/libvirt-ci/-/commit/b098ec6631a85880f818f2dd25c437d509e53680
-FROM registry.opensuse.org/opensuse/leap:15.1
+FROM registry.opensuse.org/opensuse/leap:15.2
 
 RUN zypper update -y && \
     zypper install -y \
