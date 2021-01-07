@@ -1600,7 +1600,15 @@
       <attribute name="type">
         <ref name="storageFormat"/>
       </attribute>
-      <empty/>
+      <optional>
+        <element name="metadata_cache">
+          <optional>
+            <element name="max_size">
+              <ref name="scaledInteger"/>
+            </element>
+          </optional>
+        </element>
+      </optional>
     </element>
   </define>
 
@@ -2245,7 +2253,15 @@
         </attribute>
       </optional>
       <ref name="virtioOptions"/>
-      <empty/>
+      <optional>
+        <element name="metadata_cache">
+          <optional>
+            <element name="max_size">
+              <ref name="scaledInteger"/>
+            </element>
+          </optional>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="driverFormat">

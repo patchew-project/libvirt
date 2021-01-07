@@ -2216,6 +2216,7 @@ virStorageSourceCopy(const virStorageSource *src,
     def->sslverify = src->sslverify;
     def->readahead = src->readahead;
     def->timeout = src->timeout;
+    def->metadataCacheMaxSize = src->metadataCacheMaxSize;
 
     /* storage driver metadata are not copied */
     def->drv = NULL;
