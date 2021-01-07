@@ -1343,6 +1343,17 @@ qemuBlockStorageSourceGetFormatQcow2Props(virStorageSourcePtr src,
     if (qemuBlockStorageSourceGetFormatQcowGenericProps(src, "qcow2", props) < 0)
         return -1;
 
+    /* 'cache-size' controls the maximum size of l2 and refcount caches.
+     * see: qemu.git/docs/qcow2-cache.txt
+     * https://git.qemu.org/?p=qemu.git;a=blob;f=docs/qcow2-cache.txt
+     */
+    if (src->metadataCacheMaxSize > 0) {
+        if (virJSONValueObjectAdd(props,
+                                  "U:cache-size", src->metadataCacheMaxSize,
+                                  NULL) < 0)
+            return -1;
+    }
+
     return 0;
 }
 
