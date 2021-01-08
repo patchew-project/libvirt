@@ -507,30 +507,36 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
                                    virStoragePoolObjPtr pool,
                                    virStorageBackendRBDStatePtr ptr)
 {
-    int ret = -1;
+    int rc, ret = -1;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     rbd_image_t image = NULL;
     rbd_image_info_t info;
     uint64_t features;
     uint64_t flags;
 
-    if ((ret = rbd_open_read_only(ptr->ioctx, vol->name, &image, NULL)) < 0) {
+    if ((rc = rbd_open_read_only(ptr->ioctx, vol->name, &image, NULL)) < 0) {
+        ret = rc;
         virReportSystemError(errno, _("failed to open the RBD image '%s'"),
                              vol->name);
         goto cleanup;
     }
 
-    if ((ret = rbd_stat(image, &info, sizeof(info))) < 0) {
+    if ((rc = rbd_stat(image, &info, sizeof(info))) < 0) {
+        ret = rc;
         virReportSystemError(errno, _("failed to stat the RBD image '%s'"),
                              vol->name);
         goto cleanup;
     }
 
-    if ((ret = volStorageBackendRBDGetFeatures(image, vol->name, &features)) < 0)
+    if ((rc = volStorageBackendRBDGetFeatures(image, vol->name, &features)) < 0) {
+        ret = rc;
         goto cleanup;
+    }
 
-    if ((ret = volStorageBackendRBDGetFlags(image, vol->name, &flags)) < 0)
+    if ((rc = volStorageBackendRBDGetFlags(image, vol->name, &flags)) < 0) {
+        ret = rc;
         goto cleanup;
+    }
 
     vol->target.capacity = info.size;
     vol->type = VIR_STORAGE_VOL_NETWORK;
@@ -543,8 +549,10 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
                   "Querying for actual allocation",
                   def->source.name, vol->name);
 
-        if ((ret = virStorageBackendRBDSetAllocation(vol, image, &info)) < 0)
+        if ((rc = virStorageBackendRBDSetAllocation(vol, image, &info)) < 0) {
+            ret = rc;
             goto cleanup;
+        }
     } else {
         vol->target.allocation = info.obj_size * info.num_objs;
     }
@@ -559,6 +567,8 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
 
     VIR_FREE(vol->key);
     vol->key = g_strdup_printf("%s/%s", def->source.name, vol->name);
+
+    ret = 0;
 
  cleanup:
     if (image)
