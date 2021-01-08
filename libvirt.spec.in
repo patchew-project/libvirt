@@ -126,7 +126,7 @@
 %endif
 
 # RHEL doesn't ship OpenVZ, VBox, PowerHypervisor,
-# VMware, libxenlight (Xen 4.1 and newer),
+# VMware, libxenlight
 # or HyperV.
 %if 0%{?rhel}
     %define with_openvz 0
@@ -272,7 +272,7 @@ BuildRequires: perl
 BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
-BuildRequires: xen-devel
+BuildRequires: pkgconfig(xenlight)
 %endif
 BuildRequires: glib2-devel >= 2.48
 BuildRequires: libxml2-devel
