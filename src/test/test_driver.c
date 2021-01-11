@@ -3677,7 +3677,6 @@ testDomainSetBlockIoTune(virDomainPtr dom,
     }
 
     info = conf_disk->blkdeviotune;
-    info.group_name = g_strdup(conf_disk->blkdeviotune.group_name);
 
     if (virTypedParamsAddString(&eventParams, &eventNparams, &eventMaxparams,
                                 VIR_DOMAIN_TUNABLE_BLKDEV_DISK, path) < 0)
@@ -3739,7 +3738,6 @@ testDomainSetBlockIoTune(virDomainPtr dom,
                          VIR_DOMAIN_TUNABLE_BLKDEV_SIZE_IOPS_SEC);
 
         if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
-            VIR_FREE(info.group_name);
             info.group_name = g_strdup(param->value.s);
             if (virTypedParamsAddString(&eventParams,
                                         &eventNparams,
@@ -3770,6 +3768,9 @@ testDomainSetBlockIoTune(virDomainPtr dom,
                          VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX_LENGTH);
     }
 #undef SET_IOTUNE_FIELD
+
+    if (!info.group_name)
+        info.group_name = g_strdup(conf_disk->blkdeviotune.group_name);
 
     if (virDomainBlockIoTuneValidate(&info) < 0)
         goto cleanup;
