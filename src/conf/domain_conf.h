@@ -3955,6 +3955,13 @@ virDomainBlockIoTuneFromParams(virTypedParameterPtr params,
                                virDomainBlockIoTuneInfoPtr iotune,
                                virDomainBlockIoTuneInfoPtr set);
 
+int
+virDomainBlockIoTuneToEventParams(virDomainBlockIoTuneInfoPtr iotune,
+                                  virDomainBlockIoTuneInfoPtr set,
+                                  virTypedParameterPtr *params,
+                                  int *nparams,
+                                  int *maxparams);
+
 bool
 virDomainDriveAddressIsUsedByDisk(const virDomainDef *def,
                                   virDomainDiskBus bus_type,

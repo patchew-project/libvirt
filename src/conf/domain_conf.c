@@ -31773,6 +31773,59 @@ virDomainBlockIoTuneFromParams(virTypedParameterPtr params,
 }
 
 
+static const char* virDomainBlockIoTuneFieldEventNames[] = {
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX,
+    VIR_DOMAIN_TUNABLE_BLKDEV_SIZE_IOPS_SEC,
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX_LENGTH,
+    VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX_LENGTH,
+    VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX_LENGTH,
+};
+
+
+int
+virDomainBlockIoTuneToEventParams(virDomainBlockIoTuneInfoPtr iotune,
+                                  virDomainBlockIoTuneInfoPtr set,
+                                  virTypedParameterPtr *params,
+                                  int *nparams,
+                                  int *maxparams)
+{
+    g_autofree unsigned long long **fields = virDomainBlockIoTuneFields(iotune);
+    g_autofree unsigned long long **set_fields = virDomainBlockIoTuneFields(set);
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS(virDomainBlockIoTuneFieldEventNames); i++) {
+        const char *name = virDomainBlockIoTuneFieldEventNames[i];
+
+        if (*set_fields[i] &&
+            virTypedParamsAddULLong(params, nparams, maxparams,
+                                    name, *fields[i]) < 0)
+            return -1;
+    }
+
+    if (iotune->group_name &&
+        virTypedParamsAddString(params, nparams, maxparams,
+                                VIR_DOMAIN_TUNABLE_BLKDEV_GROUP_NAME,
+                                iotune->group_name) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 /**
  * virHostdevIsSCSIDevice:
  * @hostdev: host device to check

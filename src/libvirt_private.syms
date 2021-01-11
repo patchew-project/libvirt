@@ -237,6 +237,7 @@ virDomainBlockIoTuneInfoHasAny;
 virDomainBlockIoTuneInfoHasBasic;
 virDomainBlockIoTuneInfoHasMax;
 virDomainBlockIoTuneInfoHasMaxLength;
+virDomainBlockIoTuneToEventParams;
 virDomainBlockIoTuneValidate;
 virDomainBootTypeFromString;
 virDomainBootTypeToString;
