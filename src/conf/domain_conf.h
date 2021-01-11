@@ -3949,6 +3949,12 @@ bool
 virDomainBlockIoTuneInfoEqual(const virDomainBlockIoTuneInfo *a,
                               const virDomainBlockIoTuneInfo *b);
 
+int
+virDomainBlockIoTuneFromParams(virTypedParameterPtr params,
+                               int nparams,
+                               virDomainBlockIoTuneInfoPtr iotune,
+                               virDomainBlockIoTuneInfoPtr set);
+
 bool
 virDomainDriveAddressIsUsedByDisk(const virDomainDef *def,
                                   virDomainDiskBus bus_type,

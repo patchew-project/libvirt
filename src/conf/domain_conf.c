@@ -31741,6 +31741,38 @@ virDomainBlockIoTuneInfoEqual(const virDomainBlockIoTuneInfo *a,
 }
 
 
+int
+virDomainBlockIoTuneFromParams(virTypedParameterPtr params,
+                               int nparams,
+                               virDomainBlockIoTuneInfoPtr iotune,
+                               virDomainBlockIoTuneInfoPtr set)
+{
+    g_autofree unsigned long long **fields = virDomainBlockIoTuneFields(iotune);
+    g_autofree unsigned long long **set_fields = virDomainBlockIoTuneFields(set);
+    const char *group_name = NULL;
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS(virDomainBlockIoTuneFieldNames); i++) {
+        const char *name = virDomainBlockIoTuneFieldNames[i];
+        int rc;
+
+        rc = virTypedParamsGetULLong(params, nparams, name, fields[i]);
+        if (rc < 0)
+            return -1;
+        if (rc == 1)
+            *set_fields[i] = 1;
+    }
+
+    if (virTypedParamsGetString(params, nparams,
+                                VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME,
+                                &group_name) < 0)
+        return -1;
+    iotune->group_name = g_strdup(group_name);
+
+    return 0;
+}
+
+
 /**
  * virHostdevIsSCSIDevice:
  * @hostdev: host device to check
