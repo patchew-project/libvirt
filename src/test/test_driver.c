@@ -3783,25 +3783,6 @@ testDomainSetBlockIoTune(virDomainPtr dom,
     if (virDomainBlockIoTuneValidate(&info) < 0)
         goto cleanup;
 
-#define TEST_BLOCK_IOTUNE_MAX_CHECK(FIELD, FIELD_MAX) \
-    do { \
-        if (info.FIELD > info.FIELD_MAX) { \
-            virReportError(VIR_ERR_INVALID_ARG, \
-                           _("%s cannot be set higher than %s "), \
-                             #FIELD, #FIELD_MAX); \
-            goto cleanup; \
-        } \
-    } while (0);
-
-    TEST_BLOCK_IOTUNE_MAX_CHECK(total_bytes_sec, total_bytes_sec_max);
-    TEST_BLOCK_IOTUNE_MAX_CHECK(read_bytes_sec, read_bytes_sec_max);
-    TEST_BLOCK_IOTUNE_MAX_CHECK(write_bytes_sec, write_bytes_sec_max);
-    TEST_BLOCK_IOTUNE_MAX_CHECK(total_iops_sec, total_iops_sec_max);
-    TEST_BLOCK_IOTUNE_MAX_CHECK(read_iops_sec, read_iops_sec_max);
-    TEST_BLOCK_IOTUNE_MAX_CHECK(write_iops_sec, write_iops_sec_max);
-
-#undef TEST_BLOCK_IOTUNE_MAX_CHECK
-
     virDomainDiskSetBlockIOTune(conf_disk, &info);
     info.group_name = NULL;
 
