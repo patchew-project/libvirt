@@ -15869,17 +15869,6 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
     return ret;
 }
 
-typedef enum {
-    QEMU_BLOCK_IOTUNE_SET_BYTES            = 1 << 0,
-    QEMU_BLOCK_IOTUNE_SET_IOPS             = 1 << 1,
-    QEMU_BLOCK_IOTUNE_SET_BYTES_MAX        = 1 << 2,
-    QEMU_BLOCK_IOTUNE_SET_IOPS_MAX         = 1 << 3,
-    QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS        = 1 << 4,
-    QEMU_BLOCK_IOTUNE_SET_GROUP_NAME       = 1 << 5,
-    QEMU_BLOCK_IOTUNE_SET_BYTES_MAX_LENGTH = 1 << 6,
-    QEMU_BLOCK_IOTUNE_SET_IOPS_MAX_LENGTH  = 1 << 7,
-} qemuBlockIoTuneSetFlags;
-
 
 /* If the user didn't specify bytes limits, inherit previous values;
  * likewise if the user didn't specify iops limits.  */
