@@ -8695,40 +8695,80 @@ virDomainBlockIoTuneValidate(virDomainBlockIoTuneInfoPtr iotune)
     return 0;
 }
 
-#define PARSE_IOTUNE(val) \
-    if (virXPathULongLong("string(./iotune/" #val ")", \
-                          ctxt, &def->blkdeviotune.val) == -2) { \
-        virReportError(VIR_ERR_XML_ERROR, \
-                       _("disk iotune field '%s' must be an integer"), #val); \
-        return -1; \
-    }
+
+static const char* virDomainBlockIoTuneFieldNames[] = {
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC_MAX,
+    VIR_DOMAIN_BLOCK_IOTUNE_SIZE_IOPS_SEC,
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC_MAX_LENGTH,
+    VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC_MAX_LENGTH,
+    VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC_MAX_LENGTH,
+    VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC_MAX_LENGTH,
+};
+
+
+static unsigned long long**
+virDomainBlockIoTuneFields(virDomainBlockIoTuneInfoPtr iotune)
+{
+    unsigned long long **ret = g_new0(unsigned long long*,
+                                      G_N_ELEMENTS(virDomainBlockIoTuneFieldNames));
+    size_t i = 0;
+
+    ret[i++] = &iotune->total_bytes_sec;
+    ret[i++] = &iotune->read_bytes_sec;
+    ret[i++] = &iotune->write_bytes_sec;
+    ret[i++] = &iotune->total_iops_sec;
+    ret[i++] = &iotune->read_iops_sec;
+    ret[i++] = &iotune->write_iops_sec;
+    ret[i++] = &iotune->total_bytes_sec_max;
+    ret[i++] = &iotune->read_bytes_sec_max;
+    ret[i++] = &iotune->write_bytes_sec_max;
+    ret[i++] = &iotune->total_iops_sec_max;
+    ret[i++] = &iotune->read_iops_sec_max;
+    ret[i++] = &iotune->write_iops_sec_max;
+    ret[i++] = &iotune->size_iops_sec;
+    ret[i++] = &iotune->total_bytes_sec_max_length;
+    ret[i++] = &iotune->read_bytes_sec_max_length;
+    ret[i++] = &iotune->write_bytes_sec_max_length;
+    ret[i++] = &iotune->total_iops_sec_max_length;
+    ret[i++] = &iotune->read_iops_sec_max_length;
+    ret[i++] = &iotune->write_iops_sec_max_length;
+
+    return ret;
+}
+
 
 static int
 virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
                             xmlXPathContextPtr ctxt)
 {
-    PARSE_IOTUNE(total_bytes_sec);
-    PARSE_IOTUNE(read_bytes_sec);
-    PARSE_IOTUNE(write_bytes_sec);
-    PARSE_IOTUNE(total_iops_sec);
-    PARSE_IOTUNE(read_iops_sec);
-    PARSE_IOTUNE(write_iops_sec);
+    g_autofree unsigned long long **fields =
+                            virDomainBlockIoTuneFields(&def->blkdeviotune);
+    size_t i;
 
-    PARSE_IOTUNE(total_bytes_sec_max);
-    PARSE_IOTUNE(read_bytes_sec_max);
-    PARSE_IOTUNE(write_bytes_sec_max);
-    PARSE_IOTUNE(total_iops_sec_max);
-    PARSE_IOTUNE(read_iops_sec_max);
-    PARSE_IOTUNE(write_iops_sec_max);
+    for (i = 0; i < G_N_ELEMENTS(virDomainBlockIoTuneFieldNames); i++) {
+        const char *name = virDomainBlockIoTuneFieldNames[i];
+        g_autofree char *sel = g_strdup_printf("string(./iotune/%s)", name);
 
-    PARSE_IOTUNE(size_iops_sec);
-
-    PARSE_IOTUNE(total_bytes_sec_max_length);
-    PARSE_IOTUNE(read_bytes_sec_max_length);
-    PARSE_IOTUNE(write_bytes_sec_max_length);
-    PARSE_IOTUNE(total_iops_sec_max_length);
-    PARSE_IOTUNE(read_iops_sec_max_length);
-    PARSE_IOTUNE(write_iops_sec_max_length);
+        if (virXPathULongLong(sel, ctxt, fields[i]) == -2) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("disk iotune field '%s' must be an integer"),
+                           name);
+            return -1;
+        }
+    }
 
     def->blkdeviotune.group_name =
         virXPathString("string(./iotune/group_name)", ctxt);
@@ -8738,7 +8778,6 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
 
     return 0;
 }
-#undef PARSE_IOTUNE
 
 
 static int
