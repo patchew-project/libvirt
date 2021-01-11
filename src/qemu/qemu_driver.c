@@ -15921,7 +15921,7 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
 
     if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))
         newinfo->size_iops_sec = oldinfo->size_iops_sec;
-    if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME))
+    if (!newinfo->group_name)
         newinfo->group_name = g_strdup(oldinfo->group_name);
 
     /* The length field is handled a bit differently. If not defined/set,
@@ -16165,7 +16165,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         /* NB: Cannot use macro since this is a value.s not a value.ul */
         if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
             info.group_name = g_strdup(param->value.s);
-            set_fields |= QEMU_BLOCK_IOTUNE_SET_GROUP_NAME;
             if (virTypedParamsAddString(&eventParams, &eventNparams,
                                         &eventMaxparams,
                                         VIR_DOMAIN_TUNABLE_BLKDEV_GROUP_NAME,
