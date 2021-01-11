@@ -3599,8 +3599,6 @@ testDomainGetInterfaceParameters(virDomainPtr dom,
 }
 
 
-#define TEST_BLOCK_IOTUNE_MAX 1000000000000000LL
-
 static int
 testDomainSetBlockIoTune(virDomainPtr dom,
                          const char *path,
@@ -3698,13 +3696,6 @@ testDomainSetBlockIoTune(virDomainPtr dom,
 
     for (i = 0; i < nparams; i++) {
         virTypedParameterPtr param = &params[i];
-
-        if (param->value.ul > TEST_BLOCK_IOTUNE_MAX) {
-            virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
-                           _("block I/O throttle limit value must"
-                             " be no more than %llu"), TEST_BLOCK_IOTUNE_MAX);
-            goto cleanup;
-        }
 
         SET_IOTUNE_FIELD(total_bytes_sec,
                          VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC,
