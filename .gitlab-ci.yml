@@ -31,6 +31,9 @@ stages:
     - docker push "$TAG"
   after_script:
     - docker logout
+  except:
+    variables:
+      - $DISABLE_JOB
 
 # We build many containers which can be useful to debug problems but are not
 # needed for the pipeline itself to complete: those sometimes fail, and when
@@ -62,6 +65,9 @@ stages:
       then
         rpmbuild --nodeps -ta build/meson-dist/libvirt-*.tar.xz;
       fi
+  except:
+    variables:
+      - $DISABLE_JOB
 
 # Jobs that we delegate to Cirrus CI because they require an operating
 # system other than Linux. These jobs will only run if the required
@@ -102,6 +108,9 @@ stages:
     variables:
       - $CIRRUS_GITHUB_REPO
       - $CIRRUS_API_TOKEN
+  except:
+    variables:
+      - $DISABLE_JOB
 
 .cross_build_default_job_template: &cross_build_job_definition
   stage: builds
@@ -116,6 +125,9 @@ stages:
     - meson build --werror $MESON_OPTS || (cat build/meson-logs/meson-log.txt && exit 1)
     - ninja -C build
     - if test "$CROSS" = "i686" ; then ninja -C build test ; fi
+  except:
+    variables:
+      - $DISABLE_JOB
 
 
 # Native container build jobs
