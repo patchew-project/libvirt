@@ -16039,7 +16039,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     g_autofree char *drivealias = NULL;
     const char *qdevid = NULL;
     int ret = -1;
-    size_t i;
     virDomainDiskDefPtr conf_disk = NULL;
     virDomainDiskDefPtr disk;
     virDomainBlockIoTuneInfo set_fields;
@@ -16121,72 +16120,17 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
 
+    if (virDomainBlockIoTuneFromParams(params, nparams, &info, &set_fields) < 0)
+        goto endjob;
+
+    if (virDomainBlockIoTuneToEventParams(&info, &set_fields,
+                                          &eventParams,
+                                          &eventNparams, &eventMaxparams) < 0)
+        goto endjob;
+
     if (virTypedParamsAddString(&eventParams, &eventNparams, &eventMaxparams,
                                 VIR_DOMAIN_TUNABLE_BLKDEV_DISK, path) < 0)
         goto endjob;
-
-#define SET_IOTUNE_FIELD(FIELD, CONST) \
-    if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_##CONST)) { \
-        info.FIELD = param->value.ul; \
-        set_fields.FIELD = 1; \
-        if (virTypedParamsAddULLong(&eventParams, &eventNparams, \
-                                    &eventMaxparams, \
-                                    VIR_DOMAIN_TUNABLE_BLKDEV_##CONST, \
-                                    param->value.ul) < 0) \
-            goto endjob; \
-        continue; \
-    }
-
-    for (i = 0; i < nparams; i++) {
-        virTypedParameterPtr param = &params[i];
-
-        SET_IOTUNE_FIELD(total_bytes_sec, TOTAL_BYTES_SEC);
-        SET_IOTUNE_FIELD(read_bytes_sec, READ_BYTES_SEC);
-        SET_IOTUNE_FIELD(write_bytes_sec, WRITE_BYTES_SEC);
-        SET_IOTUNE_FIELD(total_iops_sec, TOTAL_IOPS_SEC);
-        SET_IOTUNE_FIELD(read_iops_sec, READ_IOPS_SEC);
-        SET_IOTUNE_FIELD(write_iops_sec, WRITE_IOPS_SEC);
-
-        SET_IOTUNE_FIELD(total_bytes_sec_max,
-                         TOTAL_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(read_bytes_sec_max,
-                         READ_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(write_bytes_sec_max,
-                         WRITE_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(total_iops_sec_max,
-                         TOTAL_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(read_iops_sec_max,
-                         READ_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(write_iops_sec_max,
-                         WRITE_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(size_iops_sec, SIZE_IOPS_SEC);
-
-        /* NB: Cannot use macro since this is a value.s not a value.ul */
-        if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
-            info.group_name = g_strdup(param->value.s);
-            if (virTypedParamsAddString(&eventParams, &eventNparams,
-                                        &eventMaxparams,
-                                        VIR_DOMAIN_TUNABLE_BLKDEV_GROUP_NAME,
-                                        param->value.s) < 0)
-                goto endjob;
-            continue;
-        }
-
-        SET_IOTUNE_FIELD(total_bytes_sec_max_length,
-                         TOTAL_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(read_bytes_sec_max_length,
-                         READ_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(write_bytes_sec_max_length,
-                         WRITE_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(total_iops_sec_max_length,
-                         TOTAL_IOPS_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(read_iops_sec_max_length,
-                         READ_IOPS_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(write_iops_sec_max_length,
-                         WRITE_IOPS_SEC_MAX_LENGTH);
-    }
-
-#undef SET_IOTUNE_FIELD
 
     if (virDomainBlockIoTuneValidate(&info) < 0)
         goto endjob;
