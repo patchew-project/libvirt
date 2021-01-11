@@ -24225,53 +24225,29 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
 }
 
 
-#define FORMAT_IOTUNE(val) \
-        if (disk->blkdeviotune.val) { \
-            virBufferAsprintf(&childBuf, "<" #val ">%llu</" #val ">\n", \
-                              disk->blkdeviotune.val); \
-        }
-
 static void
 virDomainDiskDefFormatIotune(virBufferPtr buf,
                              virDomainDiskDefPtr disk)
 {
     g_auto(virBuffer) childBuf = VIR_BUFFER_INIT_CHILD(buf);
+    g_autofree unsigned long long **fields =
+                            virDomainBlockIoTuneFields(&disk->blkdeviotune);
+    size_t i;
 
-    FORMAT_IOTUNE(total_bytes_sec);
-    FORMAT_IOTUNE(read_bytes_sec);
-    FORMAT_IOTUNE(write_bytes_sec);
-    FORMAT_IOTUNE(total_iops_sec);
-    FORMAT_IOTUNE(read_iops_sec);
-    FORMAT_IOTUNE(write_iops_sec);
+    for (i = 0; i < G_N_ELEMENTS(virDomainBlockIoTuneFieldNames); i++) {
+        const char *name = virDomainBlockIoTuneFieldNames[i];
 
-    FORMAT_IOTUNE(total_bytes_sec_max);
-    FORMAT_IOTUNE(read_bytes_sec_max);
-    FORMAT_IOTUNE(write_bytes_sec_max);
-    FORMAT_IOTUNE(total_iops_sec_max);
-    FORMAT_IOTUNE(read_iops_sec_max);
-    FORMAT_IOTUNE(write_iops_sec_max);
-
-    if (disk->blkdeviotune.size_iops_sec) {
-        virBufferAsprintf(&childBuf, "<size_iops_sec>%llu</size_iops_sec>\n",
-                          disk->blkdeviotune.size_iops_sec);
+        if (*fields[i])
+            virBufferAsprintf(&childBuf, "<%s>%llu</%s>\n",
+                              name, *fields[i], name);
     }
 
-    if (disk->blkdeviotune.group_name) {
+    if (disk->blkdeviotune.group_name)
         virBufferEscapeString(&childBuf, "<group_name>%s</group_name>\n",
                               disk->blkdeviotune.group_name);
-    }
-
-    FORMAT_IOTUNE(total_bytes_sec_max_length);
-    FORMAT_IOTUNE(read_bytes_sec_max_length);
-    FORMAT_IOTUNE(write_bytes_sec_max_length);
-    FORMAT_IOTUNE(total_iops_sec_max_length);
-    FORMAT_IOTUNE(read_iops_sec_max_length);
-    FORMAT_IOTUNE(write_iops_sec_max_length);
 
     virXMLFormatElement(buf, "iotune", NULL, &childBuf);
 }
-
-#undef FORMAT_IOTUNE
 
 
 static void
