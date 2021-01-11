@@ -15901,6 +15901,22 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
     SET_IOTUNE_DEFAULTS(IOPS_MAX, iops_sec_max);
 #undef SET_IOTUNE_DEFAULTS
 
+#define RESET_IOTUNE_MAX(BOOL, FIELD) \
+    do { \
+        if (set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL) { \
+            if (!newinfo->total_##FIELD) \
+                newinfo->total_##FIELD##_max = 0; \
+            if (!newinfo->read_##FIELD) \
+                newinfo->read_##FIELD##_max = 0; \
+            if (!newinfo->write_##FIELD) \
+                newinfo->write_##FIELD##_max = 0; \
+        } \
+    } while (0)
+
+    RESET_IOTUNE_MAX(BYTES, bytes_sec);
+    RESET_IOTUNE_MAX(IOPS, iops_sec);
+#undef RESET_IOTUNE_MAX
+
     if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))
         newinfo->size_iops_sec = oldinfo->size_iops_sec;
     if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME))
@@ -16210,17 +16226,10 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         do { \
             if (info.val##_max) { \
                 if (!info.val) { \
-                    if (QEMU_BLOCK_IOTUNE_SET_##_bool) { \
-                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
-                                       _("cannot reset '%s' when " \
-                                         "'%s' is set"), \
-                                       #val, #val "_max"); \
-                    } else { \
-                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
-                                       _("value '%s' cannot be set if " \
-                                         "'%s' is not set"), \
-                                       #val "_max", #val); \
-                    } \
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
+                                   _("value '%s' cannot be set if " \
+                                     "'%s' is not set"), \
+                                   #val "_max", #val); \
                     goto endjob; \
                 } \
                 if (info.val##_max < info.val) { \
