@@ -3609,11 +3609,11 @@ testDomainSetBlockIoTune(virDomainPtr dom,
     virDomainObjPtr vm = NULL;
     virDomainDefPtr def = NULL;
     virDomainBlockIoTuneInfo info = {0};
+    virDomainBlockIoTuneInfo set_fields = {0};
     virDomainDiskDefPtr conf_disk = NULL;
     virTypedParameterPtr eventParams = NULL;
     int eventNparams = 0;
     int eventMaxparams = 0;
-    size_t i;
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -3678,96 +3678,17 @@ testDomainSetBlockIoTune(virDomainPtr dom,
 
     info = conf_disk->blkdeviotune;
 
+    if (virDomainBlockIoTuneFromParams(params, nparams, &info, &set_fields) < 0)
+        goto cleanup;
+
+    if (virDomainBlockIoTuneToEventParams(&info, &set_fields,
+                                          &eventParams,
+                                          &eventNparams, &eventMaxparams) < 0)
+        goto cleanup;
+
     if (virTypedParamsAddString(&eventParams, &eventNparams, &eventMaxparams,
                                 VIR_DOMAIN_TUNABLE_BLKDEV_DISK, path) < 0)
         goto cleanup;
-
-#define SET_IOTUNE_FIELD(FIELD, STR, TUNABLE_STR) \
-    if (STREQ(param->field, STR)) { \
-        info.FIELD = param->value.ul; \
-        if (virTypedParamsAddULLong(&eventParams, &eventNparams, \
-                                    &eventMaxparams, \
-                                    TUNABLE_STR, \
-                                    param->value.ul) < 0) \
-            goto cleanup; \
-        continue; \
-    }
-
-    for (i = 0; i < nparams; i++) {
-        virTypedParameterPtr param = &params[i];
-
-        SET_IOTUNE_FIELD(total_bytes_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC);
-        SET_IOTUNE_FIELD(read_bytes_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC);
-        SET_IOTUNE_FIELD(write_bytes_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC);
-        SET_IOTUNE_FIELD(total_iops_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC);
-        SET_IOTUNE_FIELD(read_iops_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC);
-        SET_IOTUNE_FIELD(write_iops_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC);
-
-        SET_IOTUNE_FIELD(total_bytes_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(read_bytes_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(write_bytes_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX);
-        SET_IOTUNE_FIELD(total_iops_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(read_iops_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(write_iops_sec_max,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC_MAX,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX);
-        SET_IOTUNE_FIELD(size_iops_sec,
-                         VIR_DOMAIN_BLOCK_IOTUNE_SIZE_IOPS_SEC,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_SIZE_IOPS_SEC);
-
-        if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
-            info.group_name = g_strdup(param->value.s);
-            if (virTypedParamsAddString(&eventParams,
-                                        &eventNparams,
-                                        &eventMaxparams,
-                                        VIR_DOMAIN_TUNABLE_BLKDEV_GROUP_NAME,
-                                        param->value.s) < 0)
-                goto cleanup;
-            continue;
-        }
-
-        SET_IOTUNE_FIELD(total_bytes_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(read_bytes_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(write_bytes_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_BYTES_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(total_iops_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_IOPS_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(read_iops_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_READ_IOPS_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX_LENGTH);
-        SET_IOTUNE_FIELD(write_iops_sec_max_length,
-                         VIR_DOMAIN_BLOCK_IOTUNE_WRITE_IOPS_SEC_MAX_LENGTH,
-                         VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX_LENGTH);
-    }
-#undef SET_IOTUNE_FIELD
 
     if (!info.group_name)
         info.group_name = g_strdup(conf_disk->blkdeviotune.group_name);
