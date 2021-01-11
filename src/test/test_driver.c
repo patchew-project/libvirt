@@ -3780,38 +3780,8 @@ testDomainSetBlockIoTune(virDomainPtr dom,
     }
 #undef SET_IOTUNE_FIELD
 
-    if ((info.total_bytes_sec && info.read_bytes_sec) ||
-        (info.total_bytes_sec && info.write_bytes_sec)) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("total and read/write of bytes_sec "
-                         "cannot be set at the same time"));
+    if (virDomainBlockIoTuneValidate(&info) < 0)
         goto cleanup;
-    }
-
-    if ((info.total_iops_sec && info.read_iops_sec) ||
-        (info.total_iops_sec && info.write_iops_sec)) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("total and read/write of iops_sec "
-                         "cannot be set at the same time"));
-        goto cleanup;
-    }
-
-    if ((info.total_bytes_sec_max && info.read_bytes_sec_max) ||
-        (info.total_bytes_sec_max && info.write_bytes_sec_max)) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("total and read/write of bytes_sec_max "
-                         "cannot be set at the same time"));
-        goto cleanup;
-    }
-
-    if ((info.total_iops_sec_max && info.read_iops_sec_max) ||
-        (info.total_iops_sec_max && info.write_iops_sec_max)) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("total and read/write of iops_sec_max "
-                         "cannot be set at the same time"));
-        goto cleanup;
-    }
-
 
 #define TEST_BLOCK_IOTUNE_MAX_CHECK(FIELD, FIELD_MAX) \
     do { \
