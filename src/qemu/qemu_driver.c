@@ -15889,11 +15889,13 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
                                  qemuBlockIoTuneSetFlags set_fields)
 {
 #define SET_IOTUNE_DEFAULTS(BOOL, FIELD) \
-    if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL)) { \
-        newinfo->total_##FIELD = oldinfo->total_##FIELD; \
-        newinfo->read_##FIELD = oldinfo->read_##FIELD; \
-        newinfo->write_##FIELD = oldinfo->write_##FIELD; \
-    }
+    do { \
+        if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL)) { \
+            newinfo->total_##FIELD = oldinfo->total_##FIELD; \
+            newinfo->read_##FIELD = oldinfo->read_##FIELD; \
+            newinfo->write_##FIELD = oldinfo->write_##FIELD; \
+        } \
+    } while (0)
 
     SET_IOTUNE_DEFAULTS(BYTES, bytes_sec);
     SET_IOTUNE_DEFAULTS(BYTES_MAX, bytes_sec_max);
@@ -15935,13 +15937,15 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
      * our newinfo is clearing, then set max_length based on whether we
      * have a value in the family set/defined. */
 #define SET_MAX_LENGTH(BOOL, FIELD) \
-    if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL)) \
-        newinfo->FIELD##_max_length = oldinfo->FIELD##_max_length; \
-    else if ((set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL) && \
-             oldinfo->FIELD##_max_length && \
-             !newinfo->FIELD##_max_length) \
-        newinfo->FIELD##_max_length = (newinfo->FIELD || \
-                                       newinfo->FIELD##_max) ? 1 : 0;
+    do { \
+        if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL)) \
+            newinfo->FIELD##_max_length = oldinfo->FIELD##_max_length; \
+        else if ((set_fields & QEMU_BLOCK_IOTUNE_SET_##BOOL) && \
+                 oldinfo->FIELD##_max_length && \
+                 !newinfo->FIELD##_max_length) \
+            newinfo->FIELD##_max_length = (newinfo->FIELD || \
+                                           newinfo->FIELD##_max) ? 1 : 0; \
+    } while (0)
 
     SET_MAX_LENGTH(BYTES_MAX_LENGTH, total_bytes_sec);
     SET_MAX_LENGTH(BYTES_MAX_LENGTH, read_bytes_sec);
