@@ -16222,35 +16222,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         if (qemuDomainCheckBlockIoTuneReset(disk, &info) < 0)
             goto endjob;
 
-#define CHECK_MAX(val, _bool) \
-        do { \
-            if (info.val##_max) { \
-                if (!info.val) { \
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
-                                   _("value '%s' cannot be set if " \
-                                     "'%s' is not set"), \
-                                   #val "_max", #val); \
-                    goto endjob; \
-                } \
-                if (info.val##_max < info.val) { \
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
-                                   _("value '%s' cannot be " \
-                                     "smaller than '%s'"), \
-                                   #val "_max", #val); \
-                    goto endjob; \
-                } \
-            } \
-        } while (false)
-
-        CHECK_MAX(total_bytes_sec, BYTES);
-        CHECK_MAX(read_bytes_sec, BYTES);
-        CHECK_MAX(write_bytes_sec, BYTES);
-        CHECK_MAX(total_iops_sec, IOPS);
-        CHECK_MAX(read_iops_sec, IOPS);
-        CHECK_MAX(write_iops_sec, IOPS);
-
-#undef CHECK_MAX
-
         /* blockdev-based qemu doesn't want to set the throttling when a cdrom
          * is empty. Skip the monitor call here since we will set the throttling
          * once new media is inserted */
