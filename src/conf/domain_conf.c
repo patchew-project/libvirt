@@ -8627,6 +8627,45 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
     return 0;
 }
 
+
+int
+virDomainBlockIoTuneValidate(virDomainBlockIoTuneInfoPtr iotune)
+{
+    if (iotune->total_bytes_sec &&
+        (iotune->read_bytes_sec || iotune->write_bytes_sec)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("total and read/write bytes_sec "
+                         "cannot be set at the same time"));
+        return -1;
+    }
+
+    if (iotune->total_iops_sec &&
+        (iotune->read_iops_sec || iotune->write_iops_sec)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("total and read/write iops_sec "
+                         "cannot be set at the same time"));
+        return -1;
+    }
+
+    if (iotune->total_bytes_sec_max &&
+        (iotune->read_bytes_sec_max || iotune->write_bytes_sec_max)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("total and read/write bytes_sec_max "
+                         "cannot be set at the same time"));
+        return -1;
+    }
+
+    if (iotune->total_iops_sec_max &&
+        (iotune->read_iops_sec_max || iotune->write_iops_sec_max)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("total and read/write iops_sec_max "
+                         "cannot be set at the same time"));
+        return -1;
+    }
+
+    return 0;
+}
+
 #define PARSE_IOTUNE(val) \
     if (virXPathULongLong("string(./iotune/" #val ")", \
                           ctxt, &def->blkdeviotune.val) == -2) { \
@@ -8665,45 +8704,8 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
     def->blkdeviotune.group_name =
         virXPathString("string(./iotune/group_name)", ctxt);
 
-    if ((def->blkdeviotune.total_bytes_sec &&
-         def->blkdeviotune.read_bytes_sec) ||
-        (def->blkdeviotune.total_bytes_sec &&
-         def->blkdeviotune.write_bytes_sec)) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("total and read/write bytes_sec "
-                         "cannot be set at the same time"));
+    if (virDomainBlockIoTuneValidate(&def->blkdeviotune) < 0)
         return -1;
-    }
-
-    if ((def->blkdeviotune.total_iops_sec &&
-         def->blkdeviotune.read_iops_sec) ||
-        (def->blkdeviotune.total_iops_sec &&
-         def->blkdeviotune.write_iops_sec)) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("total and read/write iops_sec "
-                         "cannot be set at the same time"));
-        return -1;
-    }
-
-    if ((def->blkdeviotune.total_bytes_sec_max &&
-         def->blkdeviotune.read_bytes_sec_max) ||
-        (def->blkdeviotune.total_bytes_sec_max &&
-         def->blkdeviotune.write_bytes_sec_max)) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("total and read/write bytes_sec_max "
-                         "cannot be set at the same time"));
-        return -1;
-    }
-
-    if ((def->blkdeviotune.total_iops_sec_max &&
-         def->blkdeviotune.read_iops_sec_max) ||
-        (def->blkdeviotune.total_iops_sec_max &&
-         def->blkdeviotune.write_iops_sec_max)) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("total and read/write iops_sec_max "
-                         "cannot be set at the same time"));
-        return -1;
-    }
 
     return 0;
 }
