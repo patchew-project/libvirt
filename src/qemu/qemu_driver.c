@@ -53,6 +53,7 @@
 #include "qemu_namespace.h"
 #include "qemu_saveimage.h"
 #include "qemu_snapshot.h"
+#include "qemu_validate.h"
 
 #include "virerror.h"
 #include "virlog.h"
@@ -16210,6 +16211,9 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
 
     virDomainBlockIoTuneInfoCopy(&info, &conf_info);
 
+    if (qemuValidateDomainBlkdeviotune(&info, priv->qemuCaps) < 0)
+        goto endjob;
+
     if (def) {
         supportMaxOptions = virQEMUCapsGet(priv->qemuCaps,
                                            QEMU_CAPS_DRIVE_IOTUNE_MAX);
@@ -16217,33 +16221,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
                                                 QEMU_CAPS_DRIVE_IOTUNE_GROUP);
         supportMaxLengthOptions =
             virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH);
-
-        if (!supportMaxOptions &&
-            (set_fields & (QEMU_BLOCK_IOTUNE_SET_BYTES_MAX |
-                           QEMU_BLOCK_IOTUNE_SET_IOPS_MAX |
-                           QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("a block I/O throttling parameter is not "
-                             "supported with this QEMU binary"));
-             goto endjob;
-        }
-
-        if (!supportGroupNameOption &&
-            (set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("the block I/O throttling group parameter is not "
-                             "supported with this QEMU binary"));
-             goto endjob;
-        }
-
-        if (!supportMaxLengthOptions &&
-            (set_fields & (QEMU_BLOCK_IOTUNE_SET_BYTES_MAX_LENGTH |
-                           QEMU_BLOCK_IOTUNE_SET_IOPS_MAX_LENGTH))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("a block I/O throttling length parameter is not "
-                             "supported with this QEMU binary"));
-             goto endjob;
-        }
 
         if (!(disk = qemuDomainDiskByName(def, path)))
             goto endjob;
