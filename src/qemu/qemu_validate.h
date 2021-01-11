@@ -26,6 +26,10 @@
 #include "qemu_capabilities.h"
 #include "qemu_conf.h"
 
+int
+qemuValidateDomainBlkdeviotune(const virDomainBlockIoTuneInfo *iotune,
+                               virQEMUCapsPtr qemuCaps);
+
 int qemuValidateDomainDef(const virDomainDef *def,
                           void *opaque,
                           void *parseOpaque);

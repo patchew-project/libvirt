@@ -2696,6 +2696,61 @@ qemuValidateDomainDeviceDefDiskFrontend(const virDomainDiskDef *disk,
 }
 
 
+int
+qemuValidateDomainBlkdeviotune(const virDomainBlockIoTuneInfo *iotune,
+                               virQEMUCapsPtr qemuCaps)
+{
+    if (iotune->total_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->read_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->write_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->total_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->read_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->write_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->total_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->read_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->write_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->total_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->read_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->write_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
+        iotune->size_iops_sec > QEMU_BLOCK_IOTUNE_MAX) {
+        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                       _("block I/O throttle limit must "
+                         "be no more than %llu using QEMU"),
+                       QEMU_BLOCK_IOTUNE_MAX);
+        return -1;
+    }
+
+    /* block I/O throttling 1.7 */
+    if (virDomainBlockIoTuneInfoHasMax(iotune) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("there are some block I/O throttling parameters "
+                         "that are not supported with this QEMU binary"));
+        return -1;
+    }
+
+    /* block I/O group 2.4 */
+    if (iotune->group_name &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_GROUP)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("the block I/O throttling group parameter is "
+                         "not supported with this QEMU binary"));
+        return -1;
+    }
+
+    /* block I/O throttling length 2.6 */
+    if (virDomainBlockIoTuneInfoHasMaxLength(iotune) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("there are some block I/O throttling length parameters "
+                         "that are not supported with this QEMU binary"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /**
  * qemuValidateDomainDeviceDefDiskBlkdeviotune:
  * @disk: disk configuration
@@ -2740,51 +2795,8 @@ qemuValidateDomainDeviceDefDiskBlkdeviotune(const virDomainDiskDef *disk,
         }
     }
 
-    if (disk->blkdeviotune.total_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.read_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.write_bytes_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.total_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.read_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.write_iops_sec > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.total_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.read_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.write_bytes_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.total_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.read_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.write_iops_sec_max > QEMU_BLOCK_IOTUNE_MAX ||
-        disk->blkdeviotune.size_iops_sec > QEMU_BLOCK_IOTUNE_MAX) {
-        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
-                      _("block I/O throttle limit must "
-                        "be no more than %llu using QEMU"), QEMU_BLOCK_IOTUNE_MAX);
+    if (qemuValidateDomainBlkdeviotune(&disk->blkdeviotune, qemuCaps) < 0)
         return -1;
-    }
-
-    /* block I/O throttling 1.7 */
-    if (virDomainBlockIoTuneInfoHasMax(&disk->blkdeviotune) &&
-        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("there are some block I/O throttling parameters "
-                         "that are not supported with this QEMU binary"));
-        return -1;
-    }
-
-    /* block I/O group 2.4 */
-    if (disk->blkdeviotune.group_name &&
-        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_GROUP)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("the block I/O throttling group parameter is "
-                         "not supported with this QEMU binary"));
-        return -1;
-    }
-
-    /* block I/O throttling length 2.6 */
-    if (virDomainBlockIoTuneInfoHasMaxLength(&disk->blkdeviotune) &&
-        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("there are some block I/O throttling length parameters "
-                         "that are not supported with this QEMU binary"));
-        return -1;
-    }
 
     return 0;
 }
