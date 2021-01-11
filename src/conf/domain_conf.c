@@ -8663,6 +8663,35 @@ virDomainBlockIoTuneValidate(virDomainBlockIoTuneInfoPtr iotune)
         return -1;
     }
 
+#define CHECK_MAX(val) \
+    do { \
+        if (iotune->val##_max) { \
+            if (!iotune->val) { \
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
+                               _("value '%s' cannot be set if " \
+                                 "'%s' is not set"), \
+                               #val "_max", #val); \
+                return -1; \
+            } \
+            if (iotune->val##_max < iotune->val) { \
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, \
+                               _("value '%s' cannot be " \
+                                 "smaller than '%s'"), \
+                               #val "_max", #val); \
+                return -1; \
+            } \
+        } \
+    } while (false)
+
+    CHECK_MAX(total_bytes_sec);
+    CHECK_MAX(read_bytes_sec);
+    CHECK_MAX(write_bytes_sec);
+    CHECK_MAX(total_iops_sec);
+    CHECK_MAX(read_iops_sec);
+    CHECK_MAX(write_iops_sec);
+
+#undef CHECK_MAX
+
     return 0;
 }
 
