@@ -302,6 +302,7 @@ VIR_ENUM_IMPL(virDomainDevice,
               "iommu",
               "vsock",
               "audio",
+              "authz",
 );
 
 VIR_ENUM_IMPL(virDomainDiskDevice,
@@ -1329,6 +1330,19 @@ VIR_ENUM_IMPL(virDomainLaunchSecurity,
               VIR_DOMAIN_LAUNCH_SECURITY_LAST,
               "",
               "sev",
+);
+
+VIR_ENUM_IMPL(virDomainAuthzType,
+                VIR_DOMAIN_AUTHZ_TYPE_LAST,
+                "tls",
+                "sasl",
+);
+VIR_ENUM_IMPL(virDomainAuthzMode,
+                VIR_DOMAIN_AUTHZ_MODE_LAST,
+                "simple",
+                "list",
+                "listfile",
+                "pam",
 );
 
 static virClassPtr virDomainObjClass;
@@ -2859,6 +2873,14 @@ void virDomainAudioDefFree(virDomainAudioDefPtr def)
     VIR_FREE(def);
 }
 
+void virDomainAuthzDefFree(virDomainAuthzDefPtr def)
+{
+    if (!def)
+        return;
+    VIR_FREE(def->identity);
+    VIR_FREE(def);
+}
+
 virDomainSoundDefPtr
 virDomainSoundDefRemove(virDomainDefPtr def, size_t idx)
 {
@@ -3199,6 +3221,9 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
         break;
     case VIR_DOMAIN_DEVICE_AUDIO:
         virDomainAudioDefFree(def->data.audio);
+        break;
+    case VIR_DOMAIN_DEVICE_AUTHZ:
+        virDomainAuthzDefFree(def->data.authz);
         break;
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
@@ -4051,6 +4076,7 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_AUDIO:
+    case VIR_DOMAIN_DEVICE_AUTHZ:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -4147,6 +4173,9 @@ virDomainDeviceSetData(virDomainDeviceDefPtr device,
         break;
     case VIR_DOMAIN_DEVICE_AUDIO:
         device->data.audio = devicedata;
+        break;
+    case VIR_DOMAIN_DEVICE_AUTHZ:
+        device->data.authz = devicedata;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
@@ -4410,6 +4439,7 @@ virDomainDeviceInfoIterateFlags(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_VSOCK:
     case VIR_DOMAIN_DEVICE_AUDIO:
+    case VIR_DOMAIN_DEVICE_AUTHZ:
         break;
     }
 #endif
@@ -5393,6 +5423,7 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_AUDIO:
+    case VIR_DOMAIN_DEVICE_AUTHZ:
         ret = 0;
         break;
 
@@ -15669,6 +15700,44 @@ virDomainVsockDefParseXML(virDomainXMLOptionPtr xmlopt,
     return g_steal_pointer(&vsock);
 }
 
+static virDomainAuthzDefPtr
+virDomainAuthzDefParseXML(xmlNodePtr node)
+{
+    g_autofree char *mode = NULL;
+    g_autofree char *identity = NULL;
+    g_autofree char *tmp = NULL;
+    virDomainAuthzDefPtr def;
+
+    def = g_new0(virDomainAuthzDef, 1);
+
+    if (!(mode = virXMLPropString(node, "mode")))
+        def->mode = VIR_DOMAIN_AUTHZ_MODE_SIMPLE;
+
+    if ((def->mode = virDomainAuthzModeTypeFromString(mode)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown authz mode: %s"), mode);
+        goto error;
+    }
+
+    if ((tmp = virXMLPropString(node, "index")) &&
+        virStrToLong_ulp(tmp, NULL, 10, &def->index) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("invalid authz index: %s"), tmp);
+        goto error;
+    }
+
+    if (!(def->identity = virXMLPropString(node, "identity"))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("authz identity must be set"));
+        goto error;
+    }
+
+    return def;
+ error:
+    virDomainAuthzDefFree(def);
+    return NULL;
+}
+
 virDomainDeviceDefPtr
 virDomainDeviceDefParse(const char *xmlStr,
                         const virDomainDef *def,
@@ -15825,6 +15894,10 @@ virDomainDeviceDefParse(const char *xmlStr,
     case VIR_DOMAIN_DEVICE_VSOCK:
         if (!(dev->data.vsock = virDomainVsockDefParseXML(xmlopt, node, ctxt,
                                                           flags)))
+            return NULL;
+        break;
+    case VIR_DOMAIN_DEVICE_AUTHZ:
+        if (!(dev->data.authz = virDomainAuthzDefParseXML(node)))
             return NULL;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
@@ -20704,6 +20777,20 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
+    /* analysis of the authz devices */
+    if ((n = virXPathNodeSet("./devices/authz", ctxt, &nodes)) < 0)
+        goto error;
+    if (n)
+        def->authzs = g_new0(virDomainAuthzDefPtr, n);
+
+    for (i = 0; i < n; i++) {
+        virDomainAuthzDefPtr authzs = virDomainAuthzDefParseXML(nodes[i]);
+        if (!authzs)
+            goto error;
+        def->authzs[def->nauthzs++] = authzs;
+    }
+    VIR_FREE(nodes);
+
     /* analysis of the graphics devices */
     if ((n = virXPathNodeSet("./devices/graphics", ctxt, &nodes)) < 0)
         goto error;
@@ -23371,6 +23458,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_VSOCK:
     case VIR_DOMAIN_DEVICE_AUDIO:
+    case VIR_DOMAIN_DEVICE_AUTHZ:
         break;
     }
 #endif
@@ -26213,6 +26301,18 @@ virDomainAudioDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 
+    return 0;
+}
+
+
+static int
+virDomainAuthzDefFormat(virBufferPtr buf,
+                        virDomainAuthzDefPtr def)
+{
+    virBufferAsprintf(buf, "<authz mode='%s' index='%lu' identity='%s'/>\n",
+                      virDomainAuthzModeTypeToString(def->mode),
+                      def->index,
+                      def->identity);
     return 0;
 }
 
@@ -30044,6 +30144,9 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
         break;
     case VIR_DOMAIN_DEVICE_AUDIO:
         rc = virDomainAudioDefFormat(&buf, src->data.audio);
+        break;
+    case VIR_DOMAIN_DEVICE_AUTHZ:
+        rc = virDomainAuthzDefFormat(&buf, src->data.authz);
         break;
 
     case VIR_DOMAIN_DEVICE_NONE:

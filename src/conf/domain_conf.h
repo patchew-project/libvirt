@@ -86,6 +86,7 @@ typedef enum {
     VIR_DOMAIN_DEVICE_IOMMU,
     VIR_DOMAIN_DEVICE_VSOCK,
     VIR_DOMAIN_DEVICE_AUDIO,
+    VIR_DOMAIN_DEVICE_AUTHZ,
 
     VIR_DOMAIN_DEVICE_LAST
 } virDomainDeviceType;
@@ -118,6 +119,7 @@ struct _virDomainDeviceDef {
         virDomainIOMMUDefPtr iommu;
         virDomainVsockDefPtr vsock;
         virDomainAudioDefPtr audio;
+        virDomainAuthzDefPtr authz;
     } data;
 };
 
@@ -1462,6 +1464,26 @@ struct _virDomainAudioDef {
 };
 
 typedef enum {
+    VIR_DOMAIN_AUTHZ_TYPE_TLS,
+    VIR_DOMAIN_AUTHZ_TYPE_SASL,
+    VIR_DOMAIN_AUTHZ_TYPE_LAST
+} virDomainAuthzType;
+
+typedef enum {
+    VIR_DOMAIN_AUTHZ_MODE_SIMPLE,
+    VIR_DOMAIN_AUTHZ_MODE_LIST,
+    VIR_DOMAIN_AUTHZ_MODE_LISTFILE,
+    VIR_DOMAIN_AUTHZ_MODE_PAM,
+    VIR_DOMAIN_AUTHZ_MODE_LAST
+} virDomainAuthzMode;
+
+struct _virDomainAuthzDef {
+    int mode;
+    unsigned long index;
+    char *identity;
+};
+
+typedef enum {
     VIR_DOMAIN_WATCHDOG_MODEL_I6300ESB,
     VIR_DOMAIN_WATCHDOG_MODEL_IB700,
     VIR_DOMAIN_WATCHDOG_MODEL_DIAG288,
@@ -2627,6 +2649,9 @@ struct _virDomainDef {
 
     virDomainClockDef clock;
 
+    size_t nauthzs;
+    virDomainAuthzDefPtr *authzs;
+
     size_t ngraphics;
     virDomainGraphicsDefPtr *graphics;
 
@@ -3108,6 +3133,7 @@ ssize_t virDomainSoundDefFind(const virDomainDef *def,
 void virDomainSoundDefFree(virDomainSoundDefPtr def);
 virDomainSoundDefPtr virDomainSoundDefRemove(virDomainDefPtr def, size_t idx);
 void virDomainAudioDefFree(virDomainAudioDefPtr def);
+void virDomainAuthzDefFree(virDomainAuthzDefPtr def);
 void virDomainMemballoonDefFree(virDomainMemballoonDefPtr def);
 void virDomainNVRAMDefFree(virDomainNVRAMDefPtr def);
 void virDomainWatchdogDefFree(virDomainWatchdogDefPtr def);
@@ -3674,6 +3700,8 @@ VIR_ENUM_DECL(virDomainChrSpicevmc);
 VIR_ENUM_DECL(virDomainSoundCodec);
 VIR_ENUM_DECL(virDomainSoundModel);
 VIR_ENUM_DECL(virDomainAudioType);
+VIR_ENUM_DECL(virDomainAuthzType);
+VIR_ENUM_DECL(virDomainAuthzMode);
 VIR_ENUM_DECL(virDomainKeyWrapCipherName);
 VIR_ENUM_DECL(virDomainMemballoonModel);
 VIR_ENUM_DECL(virDomainSmbiosMode);

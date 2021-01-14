@@ -546,6 +546,7 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
         case VIR_DOMAIN_DEVICE_IOMMU:
         case VIR_DOMAIN_DEVICE_AUDIO:
         case VIR_DOMAIN_DEVICE_LAST:
+        case VIR_DOMAIN_DEVICE_AUTHZ:
         default:
             return 0;
     }

@@ -96,6 +96,9 @@ typedef virDomainABIStability *virDomainABIStabilityPtr;
 typedef struct _virDomainActualNetDef virDomainActualNetDef;
 typedef virDomainActualNetDef *virDomainActualNetDefPtr;
 
+typedef struct _virDomainAuthzDef virDomainAuthzDef;
+typedef virDomainAuthzDef *virDomainAuthzDefPtr;
+
 typedef struct _virDomainBackupDef virDomainBackupDef;
 typedef virDomainBackupDef *virDomainBackupDefPtr;
 

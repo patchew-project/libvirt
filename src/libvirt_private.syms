@@ -228,6 +228,8 @@ virDiskNameToIndex;
 virDomainActualNetDefFree;
 virDomainAudioTypeTypeFromString;
 virDomainAudioTypeTypeToString;
+virDomainAuthzModeTypeToString;
+virDomainAuthzTypeTypeToString;
 virDomainBlockedReasonTypeFromString;
 virDomainBlockedReasonTypeToString;
 virDomainBlockIoTuneInfoCopy;
