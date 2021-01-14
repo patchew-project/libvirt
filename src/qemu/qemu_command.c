@@ -7538,6 +7538,30 @@ qemuBuildGraphicsSDLCommandLine(virQEMUDriverConfigPtr cfg G_GNUC_UNUSED,
 
 
 static int
+qemuBuildGraphicsVNCAuthzCommandLine(virBufferPtr opt,
+                                     virDomainGraphicsDefPtr graphics)
+{
+    size_t i;
+    int nAuthzs = graphics->data.vnc.auth.nAuthzs;
+    virDomainGraphicsAuthzDefPtr authzs = graphics->data.vnc.auth.authzs;
+
+    if (nAuthzs <= 0) {
+        return 0;
+    }
+
+    for (i = 0; i < nAuthzs; i++) {
+        if (authzs[i].type == VIR_DOMAIN_AUTHZ_TYPE_SASL) {
+            virBufferAsprintf(opt, ",sasl-authz=authz%lu", authzs[i].index);
+        } else if (authzs[i].type == VIR_DOMAIN_AUTHZ_TYPE_TLS) {
+            virBufferAsprintf(opt, ",tls-authz=authz%lu", authzs[i].index);
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
                                 virCommandPtr cmd,
                                 virQEMUCapsPtr qemuCaps,
@@ -7643,7 +7667,10 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
         if (cfg->vncSASLdir)
             virCommandAddEnvPair(cmd, "SASL_CONF_PATH", cfg->vncSASLdir);
 
-        /* TODO: Support ACLs later */
+    }
+
+    if (cfg->vncSASL || cfg->vncTLS) {
+        qemuBuildGraphicsVNCAuthzCommandLine(&opt, graphics);
     }
 
     virCommandAddArg(cmd, "-vnc");
