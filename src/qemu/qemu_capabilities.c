@@ -609,6 +609,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "ncr53c90",
               "dc390",
               "am53c974",
+              "memory-backend-file.x-use-canonical-path-for-ramblock-id",
     );
 
 
@@ -1665,6 +1666,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendFile[] =
     { "discard-data", QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD },
     { "align", QEMU_CAPS_OBJECT_MEMORY_FILE_ALIGN },
     { "pmem", QEMU_CAPS_OBJECT_MEMORY_FILE_PMEM },
+    /* While we do NOT want to use QEMU's experimental or internal knobs, this
+     * one is exception. Without this migration is broken. See justification in
+     * qemuBuildMemoryBackendProps(). You have been warned. */
+    { "x-use-canonical-path-for-ramblock-id", QEMU_CAPS_X_USE_CANONICAL_PATH_FOR_RAMBLOCK_ID },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendMemfd[] = {
