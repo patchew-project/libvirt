@@ -28950,6 +28950,12 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
             return -1;
     }
 
+    for (n = 0; n < def->nauthzs; n++) {
+        if (virDomainAuthzDefFormat(buf, def->authzs[n]) < 0)
+            return -1;
+
+    }
+
     for (n = 0; n < def->ngraphics; n++) {
         if (virDomainGraphicsDefFormat(buf, def->graphics[n], flags) < 0)
             return -1;
