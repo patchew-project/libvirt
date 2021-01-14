@@ -3960,6 +3960,33 @@ qemuBuildInputCommandLine(virCommandPtr cmd,
 }
 
 
+static int
+qemuBuildAuthzCommandLine(virCommandPtr cmd,
+                          const virDomainDef *def)
+{
+    g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
+    size_t i;
+
+    for (i = 0; i < def->nauthzs; i++) {
+        virDomainAuthzDefPtr authzs = def->authzs[i];
+
+        virBufferFreeAndReset(&buf);
+
+        virCommandAddArg(cmd, "-object");
+
+        virBufferAsprintf(&buf, "authz-%s,id=authz%lu,identity=",
+                          virDomainAuthzModeTypeToString(authzs->mode),
+                          authzs->index);
+        virQEMUBuildBufferEscapeComma(&buf, authzs->identity);
+
+        virCommandAddArgBuffer(cmd, &buf);
+
+    }
+
+    return 0;
+}
+
+
 static char *
 qemuBuildSoundDevStr(const virDomainDef *def,
                      virDomainSoundDefPtr sound,
@@ -9963,6 +9990,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildInputCommandLine(cmd, def, qemuCaps) < 0)
+        return NULL;
+
+    if (qemuBuildAuthzCommandLine(cmd, def) < 0)
         return NULL;
 
     if (qemuBuildGraphicsCommandLine(cfg, cmd, def, qemuCaps) < 0)
