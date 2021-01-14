@@ -26960,9 +26960,9 @@ virDomainTimerDefFormat(virBufferPtr buf,
 }
 
 static void
-virDomainGraphicsAuthDefFormatAttr(virBufferPtr buf,
-                                   virDomainGraphicsAuthDefPtr def,
-                                   unsigned int flags)
+virDomainGraphicsPasswdDefFormatAttr(virBufferPtr buf,
+                                     virDomainGraphicsAuthDefPtr def,
+                                     unsigned int flags)
 {
     if (!def->passwd)
         return;
@@ -26983,6 +26983,34 @@ virDomainGraphicsAuthDefFormatAttr(virBufferPtr buf,
     if (def->connected)
         virBufferEscapeString(buf, " connected='%s'",
                               virDomainGraphicsAuthConnectedTypeToString(def->connected));
+}
+
+
+static void
+virDomainGraphicsAuthzDefFormatAttr(virBufferPtr buf,
+                                    virDomainGraphicsAuthzDefPtr def)
+{
+    virBufferAsprintf(buf, "<authz type='%s' index='%lu'/>\n",
+                      virDomainAuthzTypeTypeToString(def->type),
+                      def->index);
+    return;
+}
+
+
+static void
+virDomainGraphicsAuthzsDefFormatAttr(virBufferPtr buf,
+                                     virDomainGraphicsAuthDefPtr def)
+{
+    size_t i;
+
+    if (!def->nAuthzs)
+        return;
+
+    for (i = 0; i < def->nAuthzs; i++) {
+        virDomainGraphicsAuthzDefFormatAttr(buf, &def->authzs[i]);
+    }
+
+    return;
 }
 
 
@@ -27149,7 +27177,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
                               virDomainGraphicsVNCSharePolicyTypeToString(
                               def->data.vnc.sharePolicy));
 
-        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.vnc.auth, flags);
+        virDomainGraphicsPasswdDefFormatAttr(buf, &def->data.vnc.auth, flags);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
@@ -27261,7 +27289,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, " defaultMode='%s'",
               virDomainGraphicsSpiceChannelModeTypeToString(def->data.spice.defaultMode));
 
-        virDomainGraphicsAuthDefFormatAttr(buf, &def->data.spice.auth, flags);
+        virDomainGraphicsPasswdDefFormatAttr(buf, &def->data.spice.auth, flags);
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
@@ -27316,6 +27344,8 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         }
         virDomainGraphicsListenDefFormat(buf, &def->listens[i], flags);
     }
+
+    virDomainGraphicsAuthzsDefFormatAttr(buf, &def->data.vnc.auth);
 
     if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
         for (i = 0; i < VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_LAST; i++) {
