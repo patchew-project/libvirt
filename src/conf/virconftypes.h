@@ -162,6 +162,9 @@ typedef virDomainGraphicsDef *virDomainGraphicsDefPtr;
 typedef struct _virDomainGraphicsListenDef virDomainGraphicsListenDef;
 typedef virDomainGraphicsListenDef *virDomainGraphicsListenDefPtr;
 
+typedef struct _virDomainGraphicsAuthzDef virDomainGraphicsAuthzDef;
+typedef virDomainGraphicsAuthzDef *virDomainGraphicsAuthzDefPtr;
+
 typedef struct _virDomainHostdevCaps virDomainHostdevCaps;
 typedef virDomainHostdevCaps *virDomainHostdevCapsPtr;
 

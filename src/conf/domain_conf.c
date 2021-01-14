@@ -12751,9 +12751,9 @@ virDomainTimerDefParseXML(xmlNodePtr node,
 
 
 static int
-virDomainGraphicsAuthDefParseXML(xmlNodePtr node,
-                                 virDomainGraphicsAuthDefPtr def,
-                                 int type)
+virDomainGraphicsPasswdDefParseXML(xmlNodePtr node,
+                                   virDomainGraphicsAuthDefPtr def,
+                                   int type)
 {
     g_autofree char *validTo = NULL;
     g_autofree char *connected = virXMLPropString(node, "connected");
@@ -12815,6 +12815,95 @@ virDomainGraphicsAuthDefParseXML(xmlNodePtr node,
         def->connected = action;
     }
 
+    return 0;
+}
+
+
+static int
+virDomainGraphicsAuthzDefParseXML(virDomainGraphicsAuthzDefPtr def,
+                                  xmlNodePtr node)
+{
+   int ret = -1;
+   g_autofree char *type = virXMLPropString(node, "type");
+   g_autofree char *id = virXMLPropString(node, "index");
+   unsigned int idVal;
+   int typeVal;
+
+   if (!type || !id) {
+       virReportError(VIR_ERR_XML_ERROR, "%s",
+                      _("graphics authz type and id must be specified"));
+       goto error;
+   }
+
+   if ((typeVal = virDomainAuthzTypeTypeFromString(type)) < 0) {
+       virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                      _("unknown graphics authz type '%s'"), type);
+       goto error;
+   }
+
+   if ((virStrToLong_uip(id, NULL, 10, &idVal) < 0)) {
+       virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                      _("invalid graphics authz index: %s"), id);
+       goto error;
+   }
+
+   def->type = typeVal;
+   def->index = idVal;
+
+   ret = 0;
+ error:
+   return ret;
+}
+
+
+static int
+virDomainGraphicsAuthzsDefParseXML(xmlNodePtr node,
+                                   virDomainGraphicsAuthDefPtr def,
+                                   xmlXPathContextPtr ctxt)
+{
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
+    int nAuthzs;
+    int ret = -1;
+    g_autofree xmlNodePtr *authzNodes = NULL;
+
+    ctxt->node = node;
+
+    /* parse the <authz> subelements for graphics types that support it */
+    nAuthzs = virXPathNodeSet("./authz", ctxt, &authzNodes);
+    if (nAuthzs < 0) {
+        goto cleanup;
+    }
+
+    if (nAuthzs > 0) {
+        size_t i;
+
+        def->authzs = g_new0(virDomainGraphicsAuthzDef, nAuthzs);
+
+        for (i = 0; i < nAuthzs; i++) {
+            if (virDomainGraphicsAuthzDefParseXML(&def->authzs[i],
+                                                  authzNodes[i]) < 0)
+                goto cleanup;
+
+            def->nAuthzs++;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+
+static int
+virDomainGraphicsAuthDefParseXML(xmlNodePtr node,
+                                 virDomainGraphicsAuthDefPtr def,
+                                 xmlXPathContextPtr ctxt,
+                                 int type)
+{
+    if (virDomainGraphicsPasswdDefParseXML(node, def, type) ||
+        virDomainGraphicsAuthzsDefParseXML(node, def, ctxt))
+        return -1;
     return 0;
 }
 
@@ -13126,7 +13215,7 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     def->data.vnc.keymap = virXMLPropString(node, "keymap");
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.vnc.auth,
-                                         def->type) < 0)
+                                         ctxt, def->type) < 0)
         return -1;
 
     return 0;
@@ -13312,7 +13401,7 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
     def->data.spice.keymap = virXMLPropString(node, "keymap");
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.spice.auth,
-                                         def->type) < 0)
+                                         ctxt, def->type) < 0)
         return -1;
 
     cur = node->children;

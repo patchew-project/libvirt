@@ -1613,11 +1613,18 @@ typedef enum {
     VIR_DOMAIN_GRAPHICS_AUTH_CONNECTED_LAST
 } virDomainGraphicsAuthConnectedType;
 
+struct _virDomainGraphicsAuthzDef {
+    virDomainAuthzType type;
+    unsigned long index;
+};
+
 struct _virDomainGraphicsAuthDef {
     char *passwd;
     bool expires; /* Whether there is an expiry time set */
     time_t validTo;  /* seconds since epoch */
     int connected; /* action if connected */
+    size_t nAuthzs;
+    virDomainGraphicsAuthzDefPtr authzs;
 };
 
 typedef enum {
