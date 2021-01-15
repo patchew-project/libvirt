@@ -245,6 +245,7 @@ typedef enum {
     VIR_CONNECT_LIST_STORAGE_POOLS_ZFS           = 1 << 17,
     VIR_CONNECT_LIST_STORAGE_POOLS_VSTORAGE      = 1 << 18,
     VIR_CONNECT_LIST_STORAGE_POOLS_ISCSI_DIRECT  = 1 << 19,
+    VIR_CONNECT_LIST_STORAGE_POOLS_LINSTOR       = 1 << 20,
 } virConnectListAllStoragePoolsFlags;
 
 int                     virConnectListAllStoragePools(virConnectPtr conn,

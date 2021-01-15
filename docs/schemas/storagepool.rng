@@ -26,6 +26,7 @@
         <ref name="poolgluster"/>
         <ref name="poolzfs"/>
         <ref name="poolvstorage"/>
+        <ref name="poollinstor"/>
       </choice>
     </element>
   </define>
@@ -221,6 +222,21 @@
       <ref name="features"/>
       <ref name="sourcevstorage"/>
       <ref name="target"/>
+    </interleave>
+  </define>
+
+  <define name="poollinstor">
+    <attribute name="type">
+      <value>linstor</value>
+    </attribute>
+    <interleave>
+      <ref name="commonMetadataNameOptional"/>
+      <ref name="sizing"/>
+      <ref name="features"/>
+      <ref name="sourcelinstor"/>
+      <optional>
+        <ref name="target"/>
+      </optional>
     </interleave>
   </define>
 
@@ -459,6 +475,17 @@
     <element name="source">
       <interleave>
         <ref name="sourceinfoname"/>
+      </interleave>
+    </element>
+  </define>
+
+  <define name="sourcelinstor">
+    <element name="source">
+      <interleave>
+        <ref name="sourceinfoname"/>
+        <optional>
+          <ref name="sourceinfohost"/>
+        </optional>
       </interleave>
     </element>
   </define>
