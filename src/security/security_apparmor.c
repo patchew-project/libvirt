@@ -877,8 +877,7 @@ AppArmorSetSecurityHostdevLabel(virSecurityManagerPtr mgr,
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI: {
         virPCIDevicePtr pci =
-            virPCIDeviceNew(pcisrc->addr.domain, pcisrc->addr.bus,
-                            pcisrc->addr.slot, pcisrc->addr.function);
+            virPCIDeviceNew(&pcisrc->addr);
 
         if (!pci)
             goto done;
