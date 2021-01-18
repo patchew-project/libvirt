@@ -175,7 +175,7 @@ virPCIDeviceListFindByIDs(virPCIDeviceListPtr list,
                           unsigned int slot,
                           unsigned int function);
 int virPCIDeviceListFindIndex(virPCIDeviceListPtr list,
-                              virPCIDevicePtr dev);
+                              virPCIDeviceAddressPtr devAddr);
 
 /*
  * Callback that will be invoked once for each file
