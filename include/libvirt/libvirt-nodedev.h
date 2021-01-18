@@ -114,7 +114,7 @@ char *                  virNodeDeviceGetXMLDesc (virNodeDevicePtr dev,
                                                  unsigned int flags);
 
 int                     virNodeDeviceRef        (virNodeDevicePtr dev);
-int                     virNodeDeviceFree       (virNodeDevicePtr dev);
+void                    virNodeDeviceFree       (virNodeDevicePtr dev);
 
 int                     virNodeDeviceDettach    (virNodeDevicePtr dev);
 int                     virNodeDeviceDetachFlags(virNodeDevicePtr dev,
