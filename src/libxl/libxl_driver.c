@@ -5852,18 +5852,17 @@ libxlNodeDeviceDettach(virNodeDevicePtr dev)
 static int
 libxlNodeDeviceReAttach(virNodeDevicePtr dev)
 {
-    virPCIDevicePtr pci = NULL;
+    g_autoptr(virPCIDevice) pci = NULL;
     virPCIDeviceAddress devAddr;
-    int ret = -1;
-    virNodeDeviceDefPtr def = NULL;
-    char *xml = NULL;
+    g_autoptr(virNodeDeviceDef) def = NULL;
+    g_autofree char *xml = NULL;
     libxlDriverPrivatePtr driver = dev->conn->privateData;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
-    virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
+    g_autoptr(virConnect) nodeconn = NULL;
+    g_autoptr(virNodeDevice) nodedev = NULL;
 
     if (!(nodeconn = virGetConnectNodeDev()))
-        goto cleanup;
+        return -1;
 
     /* 'dev' is associated with the QEMU virConnectPtr,
      * so for split daemons, we need to get a copy that
@@ -5871,40 +5870,32 @@ libxlNodeDeviceReAttach(virNodeDevicePtr dev)
      */
     if (!(nodedev = virNodeDeviceLookupByName(
               nodeconn, virNodeDeviceGetName(dev))))
-        goto cleanup;
+        return -1;
 
     xml = virNodeDeviceGetXMLDesc(nodedev, 0);
     if (!xml)
-        goto cleanup;
+        return -1;
 
     def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL);
     if (!def)
-        goto cleanup;
+        return -1;
 
     /* ACL check must happen against original 'dev',
      * not the new 'nodedev' we acquired */
     if (virNodeDeviceReAttachEnsureACL(dev->conn, def) < 0)
-        goto cleanup;
+        return -1;
 
     if (virDomainDriverNodeDeviceGetPCIInfo(def, &devAddr) < 0)
-        goto cleanup;
+        return -1;
 
     pci = virPCIDeviceNew(&devAddr);
     if (!pci)
-        goto cleanup;
+        return -1;
 
     if (virHostdevPCINodeDeviceReAttach(hostdev_mgr, pci) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virPCIDeviceFree(pci);
-    virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
-    virObjectUnref(nodeconn);
-    VIR_FREE(xml);
-    return ret;
+    return 0;
 }
 
 static int
