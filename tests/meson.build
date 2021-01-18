@@ -202,6 +202,9 @@ foreach mock : mock_libs
       libvirt_lib,
       mock.get('link_with', []),
     ],
+    link_args: [
+      coverage_flags,
+    ],
   )
 endforeach
 
@@ -218,6 +221,7 @@ executable(
   ],
   link_args: [
     libvirt_no_indirect,
+    coverage_flags
   ],
 )
 
@@ -566,6 +570,7 @@ foreach data : tests
     ],
     link_args: [
       libvirt_no_indirect,
+      coverage_flags,
     ],
     link_with: [
       libvirt_lib,
@@ -643,6 +648,9 @@ foreach data : helpers
     ],
     link_with: [
       data['link_with'],
+    ],
+    link_args: [
+      coverage_flags,
     ],
     export_dynamic: true,
   )

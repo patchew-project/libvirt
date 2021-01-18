@@ -21,6 +21,7 @@ src_dep = declare_dependency(
     + coverage_flags
     + driver_modules_flags
     + win32_link_flags
+    + coverage_flags
   ),
 )
 
