@@ -1974,7 +1974,7 @@ if conf.has('WITH_LIBVIRTD')
       conf.set('WITH_STORAGE_VSTORAGE', 1)
       foreach name : ['vstorage', 'vstorage-mount', 'umount']
         path = get_variable('@0@_prog'.format(name.underscorify())).path()
-        conf.set_quoted(name.to_upper(), path)
+        conf.set_quoted(name.underscorify().to_upper(), path)
       endforeach
     endif
   endif
