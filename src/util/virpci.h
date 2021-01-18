@@ -161,7 +161,7 @@ virPCIDevicePtr virPCIDeviceListGet(virPCIDeviceListPtr list,
                                     int idx);
 size_t virPCIDeviceListCount(virPCIDeviceListPtr list);
 virPCIDevicePtr virPCIDeviceListSteal(virPCIDeviceListPtr list,
-                                      virPCIDevicePtr dev);
+                                      virPCIDeviceAddressPtr devAddr);
 virPCIDevicePtr virPCIDeviceListStealIndex(virPCIDeviceListPtr list,
                                            int idx);
 void virPCIDeviceListDel(virPCIDeviceListPtr list,
