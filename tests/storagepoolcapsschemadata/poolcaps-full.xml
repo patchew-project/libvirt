@@ -204,4 +204,11 @@
       </enum>
     </volOptions>
   </pool>
+  <pool type='linstor' supported='yes'>
+    <volOptions>
+      <defaultFormat type='raw'/>
+      <enum name='targetFormatType'>
+      </enum>
+    </volOptions>
+  </pool>
 </storagepoolCapabilities>

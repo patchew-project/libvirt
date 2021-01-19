@@ -31379,6 +31379,7 @@ virDomainStorageSourceTranslateSourcePool(virStorageSourcePtr src,
     case VIR_STORAGE_POOL_SCSI:
     case VIR_STORAGE_POOL_ZFS:
     case VIR_STORAGE_POOL_VSTORAGE:
+    case VIR_STORAGE_POOL_LINSTOR:
         if (!(src->path = virStorageVolGetPath(vol)))
             return -1;
 

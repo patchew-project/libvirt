@@ -68,6 +68,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
     case VIR_STORAGE_POOL_GLUSTER:
     case VIR_STORAGE_POOL_ZFS:
     case VIR_STORAGE_POOL_VSTORAGE:
+    case VIR_STORAGE_POOL_LINSTOR:
     case VIR_STORAGE_POOL_LAST:
     default:
         VIR_TEST_DEBUG("pool type '%s' has no xml2argv test", defTypeStr);

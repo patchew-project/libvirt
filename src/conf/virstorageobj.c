@@ -1461,13 +1461,15 @@ virStoragePoolObjSourceFindDuplicateCb(const void *payload,
     case VIR_STORAGE_POOL_FS:
     case VIR_STORAGE_POOL_LOGICAL:
     case VIR_STORAGE_POOL_DISK:
+    case VIR_STORAGE_POOL_LINSTOR:
     case VIR_STORAGE_POOL_ZFS:
         if ((data->def->type == VIR_STORAGE_POOL_ISCSI ||
              data->def->type == VIR_STORAGE_POOL_ISCSI_DIRECT ||
              data->def->type == VIR_STORAGE_POOL_FS ||
              data->def->type == VIR_STORAGE_POOL_LOGICAL ||
              data->def->type == VIR_STORAGE_POOL_DISK ||
-             data->def->type == VIR_STORAGE_POOL_ZFS) &&
+             data->def->type == VIR_STORAGE_POOL_ZFS ||
+             data->def->type == VIR_STORAGE_POOL_LINSTOR) &&
             virStoragePoolObjSourceMatchTypeDEVICE(obj, data->def))
             return 1;
         break;
