@@ -177,6 +177,11 @@ x64-opensuse-151-container:
   variables:
     NAME: opensuse-151
 
+x64-opensuse-152-container:
+  extends: .container_job
+  variables:
+    NAME: opensuse-152
+
 x64-ubuntu-1804-container:
   extends: .container_job
   variables:
@@ -385,6 +390,14 @@ x64-opensuse-151:
     NAME: opensuse-151
     RPM: skip
 
+x64-opensuse-152:
+  extends: .native_build_job
+  needs:
+    - x64-opensuse-152-container
+  variables:
+    NAME: opensuse-152
+    RPM: skip
+
 x64-ubuntu-1804:
   extends: .native_build_job
   needs:
@@ -545,9 +558,9 @@ website:
 
 codestyle:
   stage: builds
-  image: $CI_REGISTRY_IMAGE/ci-opensuse-151:latest
+  image: $CI_REGISTRY_IMAGE/ci-opensuse-152:latest
   needs:
-    - x64-opensuse-151-container
+    - x64-opensuse-152-container
   before_script:
     - *script_variables
   script:
