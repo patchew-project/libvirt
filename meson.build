@@ -1899,6 +1899,11 @@ if conf.has('WITH_LIBVIRTD')
     error('Need libiscsi for iscsi-direct storage driver')
   endif
 
+  if not get_option('storage_linstor').disabled()
+    use_storage = true
+    conf.set('WITH_STORAGE_LINSTOR', 1)
+  endif
+
   if not get_option('storage_lvm').disabled()
     lvm_enable = true
     lvm_progs = [
@@ -2297,6 +2302,7 @@ storagedriver_summary = {
   'Dir': conf.has('WITH_STORAGE_DIR'),
   'FS': conf.has('WITH_STORAGE_FS'),
   'NetFS': conf.has('WITH_STORAGE_FS'),
+  'Linstor': conf.has('WITH_STORAGE_LINSTOR'),
   'LVM': conf.has('WITH_STORAGE_LVM'),
   'iSCSI': conf.has('WITH_STORAGE_ISCSI'),
   'iscsi-direct': conf.has('WITH_STORAGE_ISCSI_DIRECT'),

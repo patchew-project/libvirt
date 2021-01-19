@@ -70,6 +70,9 @@
 #if WITH_STORAGE_VSTORAGE
 # include "storage_backend_vstorage.h"
 #endif
+#if WITH_STORAGE_LINSTOR
+# include "storage_backend_linstor.h"
+#endif
 
 #define VIR_FROM_THIS VIR_FROM_STORAGE
 
@@ -143,6 +146,9 @@ virStorageBackendDriversRegister(bool allbackends G_GNUC_UNUSED)
 #endif
 #if WITH_STORAGE_VSTORAGE
     VIR_STORAGE_BACKEND_REGISTER(virStorageBackendVstorageRegister, "vstorage");
+#endif
+#if WITH_STORAGE_LINSTOR
+    VIR_STORAGE_BACKEND_REGISTER(virStorageBackendLinstorRegister, "linstor");
 #endif
 
     return 0;

@@ -829,5 +829,44 @@
 
     <h3>Valid volume format types</h3>
     <p>The valid volume types are the same as for the directory pool.</p>
+
+
+    <h2><a id="StorageBackendLINSTOR">LINSTOR pool</a></h2>
+    <p>
+      This provides a pool using the LINSTOR software-defined-storage.
+      LINSTOR can provide block storage devices based on DRBD or basic
+      LVM/ZFS volumes.
+    </p>
+
+    <p>
+      To use LINSTOR in libvirt, setup a working LINSTOR cluster, documentation
+      for that is in the LINSTOR Users-guide.
+      And create a resource-group that will be used by libvirt, also make sure
+      the resource-group is setup in a way so that all nodes you want to use with libvirt
+      will create a resource. So either use diskless-on-remaining or make sure
+      replica-count is the same as you have nodes in your cluster.
+    </p>
+
+    <p><span class="since">Since 7.1.0</span></p>.
+
+    <h3>Example pool input</h3>
+    <pre>
+    &lt;pool type="linstor"&gt;
+    &lt;name&gt;linstorpool&lt;/name&gt;
+    &lt;source&gt;
+    &lt;name&gt;libvirtrscgrp&lt;/name&gt;
+    &lt;host name="linstornode"&gt;/&gt;
+    &lt;/source&gt;
+    &lt;/pool&gt;</pre>
+
+    <h3>Valid pool format types</h3>
+    <p>
+      The LINSTOR volume pool does not use the pool format type element.
+    </p>
+
+    <h3>Valid volume format types</h3>
+    <p>
+      The LINSTOR volume pool does not use the volume format type element.
+    </p>
   </body>
 </html>
