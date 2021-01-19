@@ -519,6 +519,12 @@ if conf.has('WITH_STORAGE_SHEEPDOG')
   ]
 endif
 
+if conf.has('WITH_STORAGE_LINSTOR')
+  tests += [
+    { 'name': 'storagebackendlinstortest', 'link_with': [ storage_driver_impl_lib, storage_backend_linstor_priv_lib ] },
+  ]
+endif
+
 if conf.has('WITH_VBOX')
   tests += [
     { 'name': 'vboxsnapshotxmltest', 'link_with': [ vbox_driver_impl ] },

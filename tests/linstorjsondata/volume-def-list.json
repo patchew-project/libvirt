@@ -1,0 +1,158 @@
+[
+  [
+    {
+      "name": "test",
+      "props": {
+        "DrbdPrimarySetOn": "LINSTOR2",
+        "DrbdOptions/Handlers/quorum-lost": "/usr/bin/false",
+        "DrbdOptions/Resource/on-no-quorum": "io-error",
+        "DrbdOptions/Resource/quorum": "majority"
+      },
+      "layer_data": [
+        {
+          "type": "DRBD",
+          "data": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7000,
+            "transport_type": "IP",
+            "secret": "nho9cGTqxHSpsL3PVRlh",
+            "down": false
+          }
+        },
+        {
+          "type": "STORAGE"
+        }
+      ],
+      "uuid": "8a6f32cd-05c7-4ab0-b1e4-28ae7bd9716c",
+      "resource_group_name": "DfltRscGrp",
+      "volume_definitions": [
+        {
+          "volume_number": 0,
+          "size_kib": 102400,
+          "props": {
+            "DrbdCurrentGi": "8D2C5D7B9EFDE716",
+            "DrbdOptions/Disk/discard-zeroes-if-aligned": "yes",
+            "DrbdOptions/Disk/rs-discard-granularity": "65536"
+          },
+          "layer_data": [
+            {
+              "type": "DRBD",
+              "data": {
+                "volume_number": 0,
+                "minor_number": 1000
+              }
+            },
+            {
+              "type": "STORAGE"
+            }
+          ],
+          "uuid": "d5711c63-4aa8-4d01-97a6-982129fb757a"
+        }
+      ]
+    },
+    {
+      "name": "test2",
+      "props": {
+        "DrbdPrimarySetOn": "LINSTOR1",
+        "DrbdOptions/Resource/on-no-quorum": "io-error",
+        "DrbdOptions/Resource/quorum": "majority"
+      },
+      "layer_data": [
+        {
+          "type": "DRBD",
+          "data": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7001,
+            "transport_type": "IP",
+            "secret": "2vD4CZEbaEAO3XIZ/ICv",
+            "down": false
+          }
+        },
+        {
+          "type": "STORAGE"
+        }
+      ],
+      "uuid": "1b0b86a3-eba1-4453-b8ac-b8389f1ef732",
+      "resource_group_name": "libvirtgrp",
+      "volume_definitions": [
+        {
+          "volume_number": 0,
+          "size_kib": 102400,
+          "props": {
+            "DrbdCurrentGi": "65E85E9CE441095A",
+            "DrbdOptions/Disk/discard-zeroes-if-aligned": "yes",
+            "DrbdOptions/Disk/rs-discard-granularity": "65536"
+          },
+          "layer_data": [
+            {
+              "type": "DRBD",
+              "data": {
+                "volume_number": 0,
+                "minor_number": 1001
+              }
+            },
+            {
+              "type": "STORAGE"
+            }
+          ],
+          "uuid": "3d859e23-db34-4b29-a1d9-7237dca34b48"
+        }
+      ]
+    },
+    {
+      "name": "test3",
+      "props": {
+        "DrbdPrimarySetOn": "LINSTOR2",
+        "DrbdOptions/Resource/on-no-quorum": "io-error",
+        "DrbdOptions/Resource/quorum": "majority"
+      },
+      "layer_data": [
+        {
+          "type": "DRBD",
+          "data": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7002,
+            "transport_type": "IP",
+            "secret": "YfrSh5eLhZStJ0JHFaVx",
+            "down": false
+          }
+        },
+        {
+          "type": "STORAGE"
+        }
+      ],
+      "uuid": "1d14069d-2a17-4865-be9f-73be985c029e",
+      "resource_group_name": "libvirtgrp",
+      "volume_definitions": [
+        {
+          "volume_number": 0,
+          "size_kib": 102400,
+          "props": {
+            "DrbdCurrentGi": "57D5597EEFCA7CCE",
+            "DrbdOptions/Disk/discard-zeroes-if-aligned": "yes",
+            "DrbdOptions/Disk/rs-discard-granularity": "65536"
+          },
+          "layer_data": [
+            {
+              "type": "DRBD",
+              "data": {
+                "volume_number": 0,
+                "minor_number": 1002
+              }
+            },
+            {
+              "type": "STORAGE"
+            }
+          ],
+          "uuid": "f57e6b5f-e516-4a7d-ba3a-24af5cad0428"
+        }
+      ]
+    }
+  ]
+]

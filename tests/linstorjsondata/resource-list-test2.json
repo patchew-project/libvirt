@@ -1,0 +1,332 @@
+[
+  [
+    {
+      "name": "test2",
+      "node_name": "linstor1",
+      "props": {
+        "StorPoolName": "thinpool"
+      },
+      "layer_object": {
+        "children": [
+          {
+            "type": "STORAGE",
+            "storage": {
+              "storage_volumes": [
+                {
+                  "volume_number": 0,
+                  "device_path": "/dev/scratch/test2_00000",
+                  "allocated_size_kib": 106496,
+                  "usable_size_kib": 106496,
+                  "disk_state": "[]"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "DRBD",
+        "drbd": {
+          "drbd_resource_definition": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7001,
+            "transport_type": "IP",
+            "secret": "2vD4CZEbaEAO3XIZ/ICv",
+            "down": false
+          },
+          "node_id": 0,
+          "peer_slots": 7,
+          "al_stripes": 1,
+          "al_size": 32,
+          "drbd_volumes": [
+            {
+              "drbd_volume_definition": {
+                "volume_number": 0,
+                "minor_number": 1001
+              },
+              "device_path": "/dev/drbd1001",
+              "backing_device": "/dev/scratch/test2_00000",
+              "allocated_size_kib": 102460,
+              "usable_size_kib": 102400
+            }
+          ],
+          "connections": {
+            "linstor2": {
+              "connected": true,
+              "message": "Connected"
+            },
+            "linstor3": {
+              "connected": true,
+              "message": "Connected"
+            }
+          },
+          "promotion_score": 10102,
+          "may_promote": true
+        }
+      },
+      "state": {
+        "in_use": false
+      },
+      "uuid": "a567d642-02ab-4dd3-8183-a726b20aa9d9",
+      "create_timestamp": 1606836534107,
+      "volumes": [
+        {
+          "volume_number": 0,
+          "storage_pool_name": "thinpool",
+          "provider_kind": "LVM_THIN",
+          "device_path": "/dev/drbd1001",
+          "allocated_size_kib": 63,
+          "state": {
+            "disk_state": "UpToDate"
+          },
+          "layer_data_list": [
+            {
+              "type": "DRBD",
+              "data": {
+                "drbd_volume_definition": {
+                  "volume_number": 0,
+                  "minor_number": 1001
+                },
+                "device_path": "/dev/drbd1001",
+                "backing_device": "/dev/scratch/test2_00000",
+                "allocated_size_kib": 102460,
+                "usable_size_kib": 102400
+              }
+            },
+            {
+              "type": "STORAGE",
+              "data": {
+                "volume_number": 0,
+                "device_path": "/dev/scratch/test2_00000",
+                "allocated_size_kib": 106496,
+                "usable_size_kib": 106496,
+                "disk_state": "[]"
+              }
+            }
+          ],
+          "uuid": "2e4b6876-c6a0-4df9-8283-5633fce67dee"
+        }
+      ]
+    },
+    {
+      "name": "test2",
+      "node_name": "linstor2",
+      "props": {
+        "StorPoolName": "DfltDisklessStorPool"
+      },
+      "flags": [
+        "DISKLESS",
+        "DRBD_DISKLESS",
+        "TIE_BREAKER"
+      ],
+      "layer_object": {
+        "children": [
+          {
+            "type": "STORAGE",
+            "storage": {
+              "storage_volumes": [
+                {
+                  "volume_number": 0,
+                  "allocated_size_kib": 0,
+                  "usable_size_kib": 102400
+                }
+              ]
+            }
+          }
+        ],
+        "type": "DRBD",
+        "drbd": {
+          "drbd_resource_definition": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7001,
+            "transport_type": "IP",
+            "secret": "2vD4CZEbaEAO3XIZ/ICv",
+            "down": false
+          },
+          "node_id": 2,
+          "peer_slots": 7,
+          "al_stripes": 1,
+          "al_size": 32,
+          "flags": [
+            "DISKLESS",
+            "INITIALIZED"
+          ],
+          "drbd_volumes": [
+            {
+              "drbd_volume_definition": {
+                "volume_number": 0,
+                "minor_number": 1001
+              },
+              "device_path": "/dev/drbd1001",
+              "allocated_size_kib": -1,
+              "usable_size_kib": 102400
+            }
+          ],
+          "connections": {
+            "linstor1": {
+              "connected": true,
+              "message": "Connected"
+            },
+            "linstor3": {
+              "connected": true,
+              "message": "Connected"
+            }
+          },
+          "promotion_score": 2,
+          "may_promote": false
+        }
+      },
+      "state": {
+        "in_use": false
+      },
+      "uuid": "57696dfa-4e9e-4a95-93bb-787e8a34fe42",
+      "create_timestamp": 1606836534944,
+      "volumes": [
+        {
+          "volume_number": 0,
+          "storage_pool_name": "DfltDisklessStorPool",
+          "provider_kind": "DISKLESS",
+          "device_path": "/dev/drbd1001",
+          "allocated_size_kib": 0,
+          "state": {
+            "disk_state": "Diskless"
+          },
+          "layer_data_list": [
+            {
+              "type": "DRBD",
+              "data": {
+                "drbd_volume_definition": {
+                  "volume_number": 0,
+                  "minor_number": 1001
+                },
+                "device_path": "/dev/drbd1001",
+                "allocated_size_kib": -1,
+                "usable_size_kib": 102400
+              }
+            },
+            {
+              "type": "STORAGE",
+              "data": {
+                "volume_number": 0,
+                "allocated_size_kib": 0,
+                "usable_size_kib": 102400
+              }
+            }
+          ],
+          "uuid": "eb058821-f1f9-4d4e-8f89-c33839b71a6b"
+        }
+      ]
+    },
+    {
+      "name": "test2",
+      "node_name": "linstor3",
+      "props": {
+        "AutoSelectedStorPoolName": "thinpool",
+        "StorPoolName": "thinpool"
+      },
+      "layer_object": {
+        "children": [
+          {
+            "type": "STORAGE",
+            "storage": {
+              "storage_volumes": [
+                {
+                  "volume_number": 0,
+                  "device_path": "/dev/scratch/test2_00000",
+                  "allocated_size_kib": 106496,
+                  "usable_size_kib": 106496,
+                  "disk_state": "[]"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "DRBD",
+        "drbd": {
+          "drbd_resource_definition": {
+            "peer_slots": 7,
+            "al_stripes": 1,
+            "al_stripe_size_kib": 32,
+            "port": 7001,
+            "transport_type": "IP",
+            "secret": "2vD4CZEbaEAO3XIZ/ICv",
+            "down": false
+          },
+          "node_id": 1,
+          "peer_slots": 7,
+          "al_stripes": 1,
+          "al_size": 32,
+          "drbd_volumes": [
+            {
+              "drbd_volume_definition": {
+                "volume_number": 0,
+                "minor_number": 1001
+              },
+              "device_path": "/dev/drbd1001",
+              "backing_device": "/dev/scratch/test2_00000",
+              "allocated_size_kib": 102460,
+              "usable_size_kib": 102400
+            }
+          ],
+          "connections": {
+            "linstor2": {
+              "connected": true,
+              "message": "Connected"
+            },
+            "linstor1": {
+              "connected": true,
+              "message": "Connected"
+            }
+          },
+          "promotion_score": 10102,
+          "may_promote": true
+        }
+      },
+      "state": {
+        "in_use": false
+      },
+      "uuid": "f2b1885d-c6e9-4878-9e0a-32d9939e7e73",
+      "create_timestamp": 1606836535621,
+      "volumes": [
+        {
+          "volume_number": 0,
+          "storage_pool_name": "thinpool",
+          "provider_kind": "LVM_THIN",
+          "device_path": "/dev/drbd1001",
+          "allocated_size_kib": 63,
+          "state": {
+            "disk_state": "UpToDate"
+          },
+          "layer_data_list": [
+            {
+              "type": "DRBD",
+              "data": {
+                "drbd_volume_definition": {
+                  "volume_number": 0,
+                  "minor_number": 1001
+                },
+                "device_path": "/dev/drbd1001",
+                "backing_device": "/dev/scratch/test2_00000",
+                "allocated_size_kib": 102460,
+                "usable_size_kib": 102400
+              }
+            },
+            {
+              "type": "STORAGE",
+              "data": {
+                "volume_number": 0,
+                "device_path": "/dev/scratch/test2_00000",
+                "allocated_size_kib": 106496,
+                "usable_size_kib": 106496,
+                "disk_state": "[]"
+              }
+            }
+          ],
+          "uuid": "c1911c4e-8650-4743-bbc1-5000b133f7a5"
+        }
+      ]
+    }
+  ]
+]

@@ -1,0 +1,192 @@
+[
+  [
+    {
+      "storage_pool_name": "DfltDisklessStorPool",
+      "node_name": "kitfox",
+      "provider_kind": "DISKLESS",
+      "static_traits": {
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 9223372036854775807,
+      "total_capacity": 9223372036854775807,
+      "free_space_mgr_name": "kitfox:DfltDisklessStorPool",
+      "uuid": "d43400aa-cec3-4517-9eac-e188821dd537",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "DfltDisklessStorPool",
+      "node_name": "redfox",
+      "provider_kind": "DISKLESS",
+      "static_traits": {
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 9223372036854775807,
+      "total_capacity": 9223372036854775807,
+      "free_space_mgr_name": "redfox:DfltDisklessStorPool",
+      "uuid": "227873ed-422b-4200-a01b-13050218d67b",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "DfltDisklessStorPool",
+      "node_name": "silverfox",
+      "provider_kind": "DISKLESS",
+      "static_traits": {
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 9223372036854775807,
+      "total_capacity": 9223372036854775807,
+      "free_space_mgr_name": "silverfox:DfltDisklessStorPool",
+      "uuid": "62540ab6-8eea-4283-8e96-338ece66bf68",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "DfltDisklessStorPool",
+      "node_name": "swiftfox",
+      "provider_kind": "DISKLESS",
+      "static_traits": {
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 9223372036854775807,
+      "total_capacity": 9223372036854775807,
+      "free_space_mgr_name": "swiftfox:DfltDisklessStorPool",
+      "uuid": "0299ef6d-4a72-49c6-bcb1-681875b9da51",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "hddpool",
+      "node_name": "kitfox",
+      "provider_kind": "LVM",
+      "props": {
+        "StorDriver/StorPoolName": "hddpool"
+      },
+      "static_traits": {
+        "Provisioning": "Fat",
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 46365757440,
+      "total_capacity": 46884159488,
+      "free_space_mgr_name": "kitfox:hddpool",
+      "uuid": "896402d9-a128-45b2-9a22-73a75ff02cf8",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "hddpool",
+      "node_name": "redfox",
+      "provider_kind": "LVM",
+      "props": {
+        "StorDriver/StorPoolName": "hddpool"
+      },
+      "static_traits": {
+        "Provisioning": "Fat",
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 44282089472,
+      "total_capacity": 46884159488,
+      "free_space_mgr_name": "redfox:hddpool",
+      "uuid": "8b1ba3b9-a202-4d79-bc1e-bd0c4b44d700",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "hddpool",
+      "node_name": "silverfox",
+      "provider_kind": "LVM",
+      "props": {
+        "StorDriver/StorPoolName": "hddpool"
+      },
+      "static_traits": {
+        "Provisioning": "Fat",
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 46346166272,
+      "total_capacity": 46884159488,
+      "free_space_mgr_name": "silverfox:hddpool",
+      "uuid": "0425df26-da1f-4980-af55-1117b7671b28",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "hddpool",
+      "node_name": "swiftfox",
+      "provider_kind": "LVM",
+      "props": {
+        "StorDriver/StorPoolName": "hddpool"
+      },
+      "static_traits": {
+        "Provisioning": "Fat",
+        "SupportsSnapshots": "false"
+      },
+      "free_capacity": 44498202624,
+      "total_capacity": 46884159488,
+      "free_space_mgr_name": "swiftfox:hddpool",
+      "uuid": "5be30898-c8fa-4bea-a54e-99062d43ab30",
+      "supports_snapshots": false
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "kitfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2520332505,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "kitfox:ssdpool",
+      "uuid": "0ec1c14b-684f-432d-83c4-06c093fd5008",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "redfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2263879729,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "redfox:ssdpool",
+      "uuid": "ce5cadae-0138-4ce7-8294-9c2dd648ff2c",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "silverfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2541678516,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "silverfox:ssdpool",
+      "uuid": "1042ae20-ec3d-494a-8188-0032df0775a2",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "swiftfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2682983094,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "swiftfox:ssdpool",
+      "uuid": "38c8220f-b0c1-4977-8b3f-0376bc5f9ee2",
+      "supports_snapshots": true
+    }
+  ]
+]
