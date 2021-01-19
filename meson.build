@@ -1957,8 +1957,20 @@ if conf.has('WITH_LIBVIRTD')
   endif
 
   if not get_option('storage_vstorage').disabled()
-    use_storage = true
-    conf.set('WITH_STORAGE_VSTORAGE', 1)
+    vstorage_enable = true
+
+    if not cc.has_header('mntent.h')
+      if get_option('storage_fs').enabled()
+        error('<mntent.h> is required for the FS storage driver')
+      else
+        vstorage_enable = false
+      endif
+    endif
+
+    if vstorage_enable
+      use_storage = true
+      conf.set('WITH_STORAGE_VSTORAGE', 1)
+    endif
   endif
 
   if not get_option('storage_zfs').disabled()
