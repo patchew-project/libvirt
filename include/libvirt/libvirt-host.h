@@ -567,22 +567,22 @@ VIR_EXPORT_VAR virConnectAuthPtr virConnectAuthPtrDefault;
 # define VIR_UUID_STRING_BUFLEN (36+1)
 
 
-int                     virGetVersion           (unsigned long *libVer,
-                                                 const char *type,
-                                                 unsigned long *typeVer);
+int virGetVersion(unsigned long *libVer,
+                  const char *type,
+                  unsigned long *typeVer);
 
 /*
  * Connection and disconnections to the Hypervisor
  */
-int                     virInitialize           (void);
+int virInitialize(void);
 
-virConnectPtr           virConnectOpen          (const char *name);
-virConnectPtr           virConnectOpenReadOnly  (const char *name);
-virConnectPtr           virConnectOpenAuth      (const char *name,
-                                                 virConnectAuthPtr auth,
-                                                 unsigned int flags);
-int                     virConnectRef           (virConnectPtr conn);
-int                     virConnectClose         (virConnectPtr conn);
+virConnectPtr virConnectOpen(const char *name);
+virConnectPtr virConnectOpenReadOnly(const char *name);
+virConnectPtr virConnectOpenAuth(const char *name,
+                                 virConnectAuthPtr auth,
+                                 unsigned int flags);
+int virConnectRef(virConnectPtr conn);
+int virConnectClose(virConnectPtr conn);
 
 /**
  * VIR_CONNECT_IDENTITY_USER_NAME:
@@ -652,20 +652,20 @@ int                     virConnectClose         (virConnectPtr conn);
 # define VIR_CONNECT_IDENTITY_SELINUX_CONTEXT "selinux-context"
 
 
-int                     virConnectSetIdentity   (virConnectPtr conn,
-                                                 virTypedParameterPtr params,
-                                                 int nparams,
-                                                 unsigned int flags);
+int virConnectSetIdentity(virConnectPtr conn,
+                          virTypedParameterPtr params,
+                          int nparams,
+                          unsigned int flags);
 
-const char *            virConnectGetType       (virConnectPtr conn);
-int                     virConnectGetVersion    (virConnectPtr conn,
-                                                 unsigned long *hvVer);
-int                     virConnectGetLibVersion (virConnectPtr conn,
-                                                 unsigned long *libVer);
-char *                  virConnectGetHostname   (virConnectPtr conn);
-char *                  virConnectGetURI        (virConnectPtr conn);
-char *                  virConnectGetSysinfo    (virConnectPtr conn,
-                                                 unsigned int flags);
+const char * virConnectGetType(virConnectPtr conn);
+int virConnectGetVersion(virConnectPtr conn,
+                         unsigned long *hvVer);
+int virConnectGetLibVersion(virConnectPtr conn,
+                            unsigned long *libVer);
+char * virConnectGetHostname(virConnectPtr conn);
+char * virConnectGetURI(virConnectPtr conn);
+char * virConnectGetSysinfo(virConnectPtr conn,
+                            unsigned int flags);
 
 int virConnectSetKeepAlive(virConnectPtr conn,
                            int interval,
@@ -694,42 +694,42 @@ int virConnectUnregisterCloseCallback(virConnectPtr conn,
  * Capabilities of the connection / driver.
  */
 
-int                     virConnectGetMaxVcpus   (virConnectPtr conn,
-                                                 const char *type);
-int                     virNodeGetInfo          (virConnectPtr conn,
-                                                 virNodeInfoPtr info);
-char *                  virConnectGetCapabilities (virConnectPtr conn);
+int virConnectGetMaxVcpus(virConnectPtr conn,
+                          const char *type);
+int virNodeGetInfo(virConnectPtr conn,
+                   virNodeInfoPtr info);
+char * virConnectGetCapabilities(virConnectPtr conn);
 
-int                     virNodeGetCPUStats (virConnectPtr conn,
-                                            int cpuNum,
-                                            virNodeCPUStatsPtr params,
-                                            int *nparams,
-                                            unsigned int flags);
+int virNodeGetCPUStats(virConnectPtr conn,
+                       int cpuNum,
+                       virNodeCPUStatsPtr params,
+                       int *nparams,
+                       unsigned int flags);
 
-int                     virNodeGetMemoryStats (virConnectPtr conn,
-                                               int cellNum,
-                                               virNodeMemoryStatsPtr params,
-                                               int *nparams,
-                                               unsigned int flags);
+int virNodeGetMemoryStats(virConnectPtr conn,
+                          int cellNum,
+                          virNodeMemoryStatsPtr params,
+                          int *nparams,
+                          unsigned int flags);
 
-unsigned long long      virNodeGetFreeMemory    (virConnectPtr conn);
+unsigned long long virNodeGetFreeMemory(virConnectPtr conn);
 
-int                     virNodeGetSecurityModel (virConnectPtr conn,
-                                                 virSecurityModelPtr secmodel);
+int virNodeGetSecurityModel(virConnectPtr conn,
+                            virSecurityModelPtr secmodel);
 
-int                     virNodeSuspendForDuration (virConnectPtr conn,
-                                                   unsigned int target,
-                                                   unsigned long long duration,
-                                                   unsigned int flags);
+int virNodeSuspendForDuration(virConnectPtr conn,
+                              unsigned int target,
+                              unsigned long long duration,
+                              unsigned int flags);
 
 /*
  * NUMA support
  */
 
-int                      virNodeGetCellsFreeMemory(virConnectPtr conn,
-                                                   unsigned long long *freeMems,
-                                                   int startCell,
-                                                   int maxCells);
+int virNodeGetCellsFreeMemory(virConnectPtr conn,
+                              unsigned long long *freeMems,
+                              int startCell,
+                              int maxCells);
 
 
 int virConnectIsEncrypted(virConnectPtr conn);
