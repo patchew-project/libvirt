@@ -48,15 +48,14 @@ typedef struct _virNodeDevice virNodeDevice;
 typedef virNodeDevice *virNodeDevicePtr;
 
 
-int                     virNodeNumOfDevices     (virConnectPtr conn,
-                                                 const char *cap,
-                                                 unsigned int flags);
+int virNodeNumOfDevices(virConnectPtr conn,
+                        const char *cap,
+                        unsigned int flags);
 
-int                     virNodeListDevices      (virConnectPtr conn,
-                                                 const char *cap,
-                                                 char **const names,
-                                                 int maxnames,
-                                                 unsigned int flags);
+int virNodeListDevices(virConnectPtr conn,
+                       const char *cap,
+                       char **const names,
+                       int maxnames, unsigned int flags);
 /*
  * virConnectListAllNodeDevices:
  *
@@ -88,46 +87,50 @@ typedef enum {
     VIR_CONNECT_LIST_NODE_DEVICES_CAP_AP_MATRIX     = 1 << 20, /* s390 AP Matrix */
 } virConnectListAllNodeDeviceFlags;
 
-int                     virConnectListAllNodeDevices (virConnectPtr conn,
-                                                      virNodeDevicePtr **devices,
-                                                      unsigned int flags);
+int virConnectListAllNodeDevices(virConnectPtr conn,
+                                 virNodeDevicePtr **devices,
+                                 unsigned int flags);
 
-virNodeDevicePtr        virNodeDeviceLookupByName (virConnectPtr conn,
-                                                   const char *name);
+virNodeDevicePtr virNodeDeviceLookupByName(virConnectPtr conn,
+                                           const char *name);
 
-virNodeDevicePtr        virNodeDeviceLookupSCSIHostByWWN (virConnectPtr conn,
-                                                          const char *wwnn,
-                                                          const char *wwpn,
-                                                          unsigned int flags);
+virNodeDevicePtr virNodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
+                                                  const char *wwnn,
+                                                  const char *wwpn,
+                                                  unsigned int flags);
 
-const char *            virNodeDeviceGetName     (virNodeDevicePtr dev);
+const char *virNodeDeviceGetName(virNodeDevicePtr dev);
 
-const char *            virNodeDeviceGetParent   (virNodeDevicePtr dev);
+const char *virNodeDeviceGetParent(virNodeDevicePtr dev);
 
-int                     virNodeDeviceNumOfCaps   (virNodeDevicePtr dev);
+int virNodeDeviceNumOfCaps(virNodeDevicePtr dev);
 
-int                     virNodeDeviceListCaps    (virNodeDevicePtr dev,
-                                                  char **const names,
-                                                  int maxnames);
+int virNodeDeviceListCaps(virNodeDevicePtr dev,
+                          char **const names,
+                          int maxnames);
 
-char *                  virNodeDeviceGetXMLDesc (virNodeDevicePtr dev,
-                                                 unsigned int flags);
+char * virNodeDeviceGetXMLDesc(virNodeDevicePtr dev,
+                               unsigned int flags);
 
-int                     virNodeDeviceRef        (virNodeDevicePtr dev);
-int                     virNodeDeviceFree       (virNodeDevicePtr dev);
+int virNodeDeviceRef(virNodeDevicePtr dev);
 
-int                     virNodeDeviceDettach    (virNodeDevicePtr dev);
-int                     virNodeDeviceDetachFlags(virNodeDevicePtr dev,
-                                                 const char *driverName,
-                                                 unsigned int flags);
-int                     virNodeDeviceReAttach   (virNodeDevicePtr dev);
-int                     virNodeDeviceReset      (virNodeDevicePtr dev);
+int virNodeDeviceFree(virNodeDevicePtr dev);
 
-virNodeDevicePtr        virNodeDeviceCreateXML  (virConnectPtr conn,
-                                                 const char *xmlDesc,
-                                                 unsigned int flags);
+int virNodeDeviceDettach(virNodeDevicePtr dev);
 
-int                     virNodeDeviceDestroy    (virNodeDevicePtr dev);
+int virNodeDeviceDetachFlags(virNodeDevicePtr dev,
+                             const char *driverName,
+                             unsigned int flags);
+
+int virNodeDeviceReAttach(virNodeDevicePtr dev);
+
+int virNodeDeviceReset(virNodeDevicePtr dev);
+
+virNodeDevicePtr virNodeDeviceCreateXML(virConnectPtr conn,
+                                        const char *xmlDesc,
+                                        unsigned int flags);
+
+int virNodeDeviceDestroy(virNodeDevicePtr dev);
 
 /**
  * VIR_NODE_DEVICE_EVENT_CALLBACK:
