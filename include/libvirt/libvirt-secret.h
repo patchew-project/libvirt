@@ -55,11 +55,11 @@ typedef enum {
 # endif
 } virSecretUsageType;
 
-virConnectPtr           virSecretGetConnect     (virSecretPtr secret);
-int                     virConnectNumOfSecrets  (virConnectPtr conn);
-int                     virConnectListSecrets   (virConnectPtr conn,
-                                                 char **uuids,
-                                                 int maxuuids);
+virConnectPtr virSecretGetConnect(virSecretPtr secret);
+int virConnectNumOfSecrets(virConnectPtr conn);
+int virConnectListSecrets(virConnectPtr conn,
+                          char **uuids,
+                          int maxuuids);
 
 /*
  * virConnectListAllSecrets:
@@ -78,37 +78,37 @@ typedef enum {
     VIR_CONNECT_LIST_SECRETS_NO_PRIVATE   = 1 << 3,
 } virConnectListAllSecretsFlags;
 
-int                     virConnectListAllSecrets(virConnectPtr conn,
-                                                 virSecretPtr **secrets,
-                                                 unsigned int flags);
-virSecretPtr            virSecretLookupByUUID(virConnectPtr conn,
-                                              const unsigned char *uuid);
-virSecretPtr            virSecretLookupByUUIDString(virConnectPtr conn,
-                                                    const char *uuid);
-virSecretPtr            virSecretLookupByUsage(virConnectPtr conn,
-                                               int usageType,
-                                               const char *usageID);
-virSecretPtr            virSecretDefineXML      (virConnectPtr conn,
-                                                 const char *xml,
-                                                 unsigned int flags);
-int                     virSecretGetUUID        (virSecretPtr secret,
-                                                 unsigned char *buf);
-int                     virSecretGetUUIDString  (virSecretPtr secret,
-                                                 char *buf);
-int                     virSecretGetUsageType   (virSecretPtr secret);
-const char *            virSecretGetUsageID     (virSecretPtr secret);
-char *                  virSecretGetXMLDesc     (virSecretPtr secret,
-                                                 unsigned int flags);
-int                     virSecretSetValue       (virSecretPtr secret,
-                                                 const unsigned char *value,
-                                                 size_t value_size,
-                                                 unsigned int flags);
-unsigned char *         virSecretGetValue       (virSecretPtr secret,
-                                                 size_t *value_size,
-                                                 unsigned int flags);
-int                     virSecretUndefine       (virSecretPtr secret);
-int                     virSecretRef            (virSecretPtr secret);
-int                     virSecretFree           (virSecretPtr secret);
+int virConnectListAllSecrets(virConnectPtr conn,
+                             virSecretPtr **secrets,
+                             unsigned int flags);
+virSecretPtr virSecretLookupByUUID(virConnectPtr conn,
+                                   const unsigned char *uuid);
+virSecretPtr virSecretLookupByUUIDString(virConnectPtr conn,
+                                         const char *uuid);
+virSecretPtr virSecretLookupByUsage(virConnectPtr conn,
+                                    int usageType,
+                                    const char *usageID);
+virSecretPtr virSecretDefineXML(virConnectPtr conn,
+                                const char *xml,
+                                unsigned int flags);
+int virSecretGetUUID(virSecretPtr secret,
+                     unsigned char *buf);
+int virSecretGetUUIDString(virSecretPtr secret,
+                           char *buf);
+int virSecretGetUsageType(virSecretPtr secret);
+const char * virSecretGetUsageID(virSecretPtr secret);
+char * virSecretGetXMLDesc(virSecretPtr secret,
+                           unsigned int flags);
+int virSecretSetValue(virSecretPtr secret,
+                      const unsigned char *value,
+                      size_t value_size,
+                      unsigned int flags);
+unsigned char * virSecretGetValue(virSecretPtr secret,
+                                  size_t *value_size,
+                                  unsigned int flags);
+int virSecretUndefine(virSecretPtr secret);
+int virSecretRef(virSecretPtr secret);
+int virSecretFree(virSecretPtr secret);
 
 /**
  * VIR_SECRET_EVENT_CALLBACK:
