@@ -2,7 +2,7 @@
 #
 #  $ lcitool dockerfile fedora-33 libvirt
 #
-# https://gitlab.com/libvirt/libvirt-ci/-/commit/d527e0c012f476c293f3bc801b7da08bc85f98ef
+# https://gitlab.com/libvirt/libvirt-ci/-/commit/6226ef038c9b5cb6334f7192223fb64f5a1fa960
 FROM registry.fedoraproject.org/fedora:33
 
 RUN dnf install -y nosync && \

@@ -2,7 +2,7 @@
 #
 #  $ lcitool dockerfile --cross mips debian-10 libvirt
 #
-# https://gitlab.com/libvirt/libvirt-ci/-/commit/d527e0c012f476c293f3bc801b7da08bc85f98ef
+# https://gitlab.com/libvirt/libvirt-ci/-/commit/6226ef038c9b5cb6334f7192223fb64f5a1fa960
 FROM docker.io/library/debian:10-slim
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -98,6 +98,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             libudev-dev:mips \
             libxml2-dev:mips \
             libyajl-dev:mips \
+            systemtap-sdt-dev:mips \
             xfslibs-dev:mips && \
     eatmydata apt-get autoremove -y && \
     eatmydata apt-get autoclean -y && \
