@@ -65,23 +65,23 @@ typedef virNetworkPort *virNetworkPortPtr;
 /*
  * Get connection from network.
  */
-virConnectPtr           virNetworkGetConnect    (virNetworkPtr network);
+virConnectPtr virNetworkGetConnect(virNetworkPtr network);
 
 /*
  * List active networks
  */
-int                     virConnectNumOfNetworks (virConnectPtr conn);
-int                     virConnectListNetworks  (virConnectPtr conn,
-                                                 char **const names,
-                                                 int maxnames);
+int virConnectNumOfNetworks(virConnectPtr conn);
+int virConnectListNetworks(virConnectPtr conn,
+                           char **const names,
+                           int maxnames);
 
 /*
  * List inactive networks
  */
-int                     virConnectNumOfDefinedNetworks  (virConnectPtr conn);
-int                     virConnectListDefinedNetworks   (virConnectPtr conn,
-                                                         char **const names,
-                                                         int maxnames);
+int virConnectNumOfDefinedNetworks(virConnectPtr conn);
+int virConnectListDefinedNetworks(virConnectPtr conn,
+                                  char **const names,
+                                  int maxnames);
 /*
  * virConnectListAllNetworks:
  *
@@ -99,36 +99,36 @@ typedef enum {
     VIR_CONNECT_LIST_NETWORKS_NO_AUTOSTART  = 1 << 5,
 } virConnectListAllNetworksFlags;
 
-int                     virConnectListAllNetworks       (virConnectPtr conn,
-                                                         virNetworkPtr **nets,
-                                                         unsigned int flags);
+int virConnectListAllNetworks(virConnectPtr conn,
+                              virNetworkPtr **nets,
+                              unsigned int flags);
 
 /*
  * Lookup network by name or uuid
  */
-virNetworkPtr           virNetworkLookupByName          (virConnectPtr conn,
-                                                         const char *name);
-virNetworkPtr           virNetworkLookupByUUID          (virConnectPtr conn,
-                                                         const unsigned char *uuid);
-virNetworkPtr           virNetworkLookupByUUIDString    (virConnectPtr conn,
-                                                         const char *uuid);
+virNetworkPtr virNetworkLookupByName(virConnectPtr conn,
+                                     const char *name);
+virNetworkPtr virNetworkLookupByUUID(virConnectPtr conn,
+                                     const unsigned char *uuid);
+virNetworkPtr virNetworkLookupByUUIDString(virConnectPtr conn,
+                                           const char *uuid);
 
 /*
  * Create active transient network
  */
-virNetworkPtr           virNetworkCreateXML     (virConnectPtr conn,
-                                                 const char *xmlDesc);
+virNetworkPtr virNetworkCreateXML(virConnectPtr conn,
+                                  const char *xmlDesc);
 
 /*
  * Define inactive persistent network
  */
-virNetworkPtr           virNetworkDefineXML     (virConnectPtr conn,
-                                                 const char *xmlDesc);
+virNetworkPtr virNetworkDefineXML(virConnectPtr conn,
+                                  const char *xmlDesc);
 
 /*
  * Delete persistent network
  */
-int                     virNetworkUndefine      (virNetworkPtr network);
+int virNetworkUndefine(virNetworkPtr network);
 
 /**
  * virNetworkUpdateCommand:
@@ -189,41 +189,41 @@ typedef enum {
 /*
  * Update an existing network definition
  */
-int                     virNetworkUpdate(virNetworkPtr network,
-                                         unsigned int command, /* virNetworkUpdateCommand */
-                                         unsigned int section, /* virNetworkUpdateSection */
-                                         int parentIndex,
-                                         const char *xml,
-                                         unsigned int flags);
+int virNetworkUpdate(virNetworkPtr network,
+                     unsigned int command, /* virNetworkUpdateCommand */
+                     unsigned int section, /* virNetworkUpdateSection */
+                     int parentIndex,
+                     const char *xml,
+                     unsigned int flags);
 
 /*
  * Activate persistent network
  */
-int                     virNetworkCreate        (virNetworkPtr network);
+int virNetworkCreate(virNetworkPtr network);
 
 /*
  * Network destroy/free
  */
-int                     virNetworkDestroy       (virNetworkPtr network);
-int                     virNetworkRef           (virNetworkPtr network);
-int                     virNetworkFree          (virNetworkPtr network);
+int virNetworkDestroy(virNetworkPtr network);
+int virNetworkRef(virNetworkPtr network);
+int virNetworkFree(virNetworkPtr network);
 
 /*
  * Network information
  */
-const char*             virNetworkGetName       (virNetworkPtr network);
-int                     virNetworkGetUUID       (virNetworkPtr network,
-                                                 unsigned char *uuid);
-int                     virNetworkGetUUIDString (virNetworkPtr network,
-                                                 char *buf);
-char *                  virNetworkGetXMLDesc    (virNetworkPtr network,
-                                                 unsigned int flags);
-char *                  virNetworkGetBridgeName (virNetworkPtr network);
+const char* virNetworkGetName(virNetworkPtr network);
+int virNetworkGetUUID(virNetworkPtr network,
+                      unsigned char *uuid);
+int virNetworkGetUUIDString(virNetworkPtr network,
+                            char *buf);
+char * virNetworkGetXMLDesc(virNetworkPtr network,
+                            unsigned int flags);
+char * virNetworkGetBridgeName(virNetworkPtr network);
 
-int                     virNetworkGetAutostart  (virNetworkPtr network,
-                                                 int *autostart);
-int                     virNetworkSetAutostart  (virNetworkPtr network,
-                                                 int autostart);
+int virNetworkGetAutostart(virNetworkPtr network,
+                           int *autostart);
+int virNetworkSetAutostart(virNetworkPtr network,
+                           int autostart);
 
 int virNetworkIsActive(virNetworkPtr net);
 int virNetworkIsPersistent(virNetworkPtr net);
