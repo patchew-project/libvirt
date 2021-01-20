@@ -63,71 +63,71 @@ typedef virNWFilterBinding *virNWFilterBindingPtr;
 /*
  * List NWFilters
  */
-int                     virConnectNumOfNWFilters (virConnectPtr conn);
-int                     virConnectListNWFilters  (virConnectPtr conn,
-                                                  char **const names,
-                                                  int maxnames);
-int                     virConnectListAllNWFilters(virConnectPtr conn,
-                                                   virNWFilterPtr **filters,
-                                                   unsigned int flags);
+int virConnectNumOfNWFilters(virConnectPtr conn);
+int virConnectListNWFilters(virConnectPtr conn,
+                            char **const names,
+                            int maxnames);
+int virConnectListAllNWFilters(virConnectPtr conn,
+                               virNWFilterPtr **filters,
+                               unsigned int flags);
 /*
  * Lookup nwfilter by name or uuid
  */
-virNWFilterPtr          virNWFilterLookupByName       (virConnectPtr conn,
-                                                       const char *name);
-virNWFilterPtr          virNWFilterLookupByUUID       (virConnectPtr conn,
-                                                       const unsigned char *uuid);
-virNWFilterPtr          virNWFilterLookupByUUIDString (virConnectPtr conn,
-                                                       const char *uuid);
+virNWFilterPtr virNWFilterLookupByName(virConnectPtr conn,
+                                       const char *name);
+virNWFilterPtr virNWFilterLookupByUUID(virConnectPtr conn,
+                                       const unsigned char *uuid);
+virNWFilterPtr virNWFilterLookupByUUIDString(virConnectPtr conn,
+                                             const char *uuid);
 
 /*
  * Define persistent nwfilter
  */
-virNWFilterPtr          virNWFilterDefineXML    (virConnectPtr conn,
-                                                 const char *xmlDesc);
+virNWFilterPtr virNWFilterDefineXML(virConnectPtr conn,
+                                    const char *xmlDesc);
 
 /*
  * Delete persistent nwfilter
  */
-int                     virNWFilterUndefine     (virNWFilterPtr nwfilter);
+int virNWFilterUndefine(virNWFilterPtr nwfilter);
 
 /*
  * NWFilter destroy/free
  */
-int                     virNWFilterRef          (virNWFilterPtr nwfilter);
-int                     virNWFilterFree         (virNWFilterPtr nwfilter);
+int virNWFilterRef(virNWFilterPtr nwfilter);
+int virNWFilterFree(virNWFilterPtr nwfilter);
 
 /*
  * NWFilter information
  */
-const char*             virNWFilterGetName       (virNWFilterPtr nwfilter);
-int                     virNWFilterGetUUID       (virNWFilterPtr nwfilter,
-                                                  unsigned char *uuid);
-int                     virNWFilterGetUUIDString (virNWFilterPtr nwfilter,
-                                                  char *buf);
-char *                  virNWFilterGetXMLDesc    (virNWFilterPtr nwfilter,
+const char* virNWFilterGetName(virNWFilterPtr nwfilter);
+int virNWFilterGetUUID(virNWFilterPtr nwfilter,
+                       unsigned char *uuid);
+int virNWFilterGetUUIDString(virNWFilterPtr nwfilter,
+                             char *buf);
+char * virNWFilterGetXMLDesc(virNWFilterPtr nwfilter,
+                             unsigned int flags);
+
+
+virNWFilterBindingPtr virNWFilterBindingLookupByPortDev(virConnectPtr conn,
+                                                        const char *portdev);
+
+const char * virNWFilterBindingGetPortDev(virNWFilterBindingPtr binding);
+const char * virNWFilterBindingGetFilterName(virNWFilterBindingPtr binding);
+
+int virConnectListAllNWFilterBindings(virConnectPtr conn,
+                                      virNWFilterBindingPtr **bindings,
+                                      unsigned int flags);
+
+virNWFilterBindingPtr virNWFilterBindingCreateXML(virConnectPtr conn,
+                                                  const char *xml,
                                                   unsigned int flags);
 
+char * virNWFilterBindingGetXMLDesc(virNWFilterBindingPtr binding,
+                                    unsigned int flags);
 
-virNWFilterBindingPtr   virNWFilterBindingLookupByPortDev(virConnectPtr conn,
-                                                          const char *portdev);
-
-const char *            virNWFilterBindingGetPortDev(virNWFilterBindingPtr binding);
-const char *            virNWFilterBindingGetFilterName(virNWFilterBindingPtr binding);
-
-int                     virConnectListAllNWFilterBindings(virConnectPtr conn,
-                                                          virNWFilterBindingPtr **bindings,
-                                                          unsigned int flags);
-
-virNWFilterBindingPtr   virNWFilterBindingCreateXML(virConnectPtr conn,
-                                                    const char *xml,
-                                                    unsigned int flags);
-
-char *                  virNWFilterBindingGetXMLDesc(virNWFilterBindingPtr binding,
-                                                     unsigned int flags);
-
-int                     virNWFilterBindingDelete(virNWFilterBindingPtr binding);
-int                     virNWFilterBindingRef(virNWFilterBindingPtr binding);
-int                     virNWFilterBindingFree(virNWFilterBindingPtr binding);
+int virNWFilterBindingDelete(virNWFilterBindingPtr binding);
+int virNWFilterBindingRef(virNWFilterBindingPtr binding);
+int virNWFilterBindingFree(virNWFilterBindingPtr binding);
 
 #endif /* LIBVIRT_NWFILTER_H */
