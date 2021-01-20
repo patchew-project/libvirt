@@ -191,7 +191,7 @@ typedef enum {
 /*
  * Get connection from pool.
  */
-virConnectPtr           virStoragePoolGetConnect        (virStoragePoolPtr pool);
+virConnectPtr virStoragePoolGetConnect(virStoragePoolPtr pool);
 
 /* Storage Pool capabilities */
 char *virConnectGetStoragePoolCapabilities(virConnectPtr conn,
@@ -200,18 +200,18 @@ char *virConnectGetStoragePoolCapabilities(virConnectPtr conn,
 /*
  * List active storage pools
  */
-int                     virConnectNumOfStoragePools     (virConnectPtr conn);
-int                     virConnectListStoragePools      (virConnectPtr conn,
-                                                         char **const names,
-                                                         int maxnames);
+int virConnectNumOfStoragePools(virConnectPtr conn);
+int virConnectListStoragePools(virConnectPtr conn,
+                               char **const names,
+                               int maxnames);
 
 /*
  * List inactive storage pools
  */
-int                     virConnectNumOfDefinedStoragePools(virConnectPtr conn);
-int                     virConnectListDefinedStoragePools(virConnectPtr conn,
-                                                          char **const names,
-                                                          int maxnames);
+int virConnectNumOfDefinedStoragePools(virConnectPtr conn);
+int virConnectListDefinedStoragePools(virConnectPtr conn,
+                                      char **const names,
+                                      int maxnames);
 
 /*
  * virConnectListAllStoragePoolsFlags:
@@ -247,149 +247,149 @@ typedef enum {
     VIR_CONNECT_LIST_STORAGE_POOLS_ISCSI_DIRECT  = 1 << 19,
 } virConnectListAllStoragePoolsFlags;
 
-int                     virConnectListAllStoragePools(virConnectPtr conn,
-                                                      virStoragePoolPtr **pools,
-                                                      unsigned int flags);
+int virConnectListAllStoragePools(virConnectPtr conn,
+                                  virStoragePoolPtr **pools,
+                                  unsigned int flags);
 /*
  * Query a host for storage pools of a particular type
  */
-char *                  virConnectFindStoragePoolSources(virConnectPtr conn,
-                                                         const char *type,
-                                                         const char *srcSpec,
-                                                         unsigned int flags);
+char * virConnectFindStoragePoolSources(virConnectPtr conn,
+                                        const char *type,
+                                        const char *srcSpec,
+                                        unsigned int flags);
 
 /*
  * Lookup pool by name or uuid
  */
-virStoragePoolPtr       virStoragePoolLookupByName      (virConnectPtr conn,
-                                                         const char *name);
-virStoragePoolPtr       virStoragePoolLookupByUUID      (virConnectPtr conn,
-                                                         const unsigned char *uuid);
-virStoragePoolPtr       virStoragePoolLookupByUUIDString(virConnectPtr conn,
-                                                         const char *uuid);
-virStoragePoolPtr       virStoragePoolLookupByVolume    (virStorageVolPtr vol);
-virStoragePoolPtr       virStoragePoolLookupByTargetPath(virConnectPtr conn,
-                                                         const char *path);
+virStoragePoolPtr virStoragePoolLookupByName(virConnectPtr conn,
+                                             const char *name);
+virStoragePoolPtr virStoragePoolLookupByUUID(virConnectPtr conn,
+                                             const unsigned char *uuid);
+virStoragePoolPtr virStoragePoolLookupByUUIDString(virConnectPtr conn,
+                                                   const char *uuid);
+virStoragePoolPtr virStoragePoolLookupByVolume(virStorageVolPtr vol);
+virStoragePoolPtr virStoragePoolLookupByTargetPath(virConnectPtr conn,
+                                                   const char *path);
 
 /*
  * Creating/destroying pools
  */
-virStoragePoolPtr       virStoragePoolCreateXML         (virConnectPtr conn,
-                                                         const char *xmlDesc,
-                                                         unsigned int flags);
-virStoragePoolPtr       virStoragePoolDefineXML         (virConnectPtr conn,
-                                                         const char *xmlDesc,
-                                                         unsigned int flags);
-int                     virStoragePoolBuild             (virStoragePoolPtr pool,
-                                                         unsigned int flags);
-int                     virStoragePoolUndefine          (virStoragePoolPtr pool);
-int                     virStoragePoolCreate            (virStoragePoolPtr pool,
-                                                         unsigned int flags);
-int                     virStoragePoolDestroy           (virStoragePoolPtr pool);
-int                     virStoragePoolDelete            (virStoragePoolPtr pool,
-                                                         unsigned int flags);
-int                     virStoragePoolRef               (virStoragePoolPtr pool);
-int                     virStoragePoolFree              (virStoragePoolPtr pool);
-int                     virStoragePoolRefresh           (virStoragePoolPtr pool,
-                                                         unsigned int flags);
+virStoragePoolPtr virStoragePoolCreateXML(virConnectPtr conn,
+                                          const char *xmlDesc,
+                                          unsigned int flags);
+virStoragePoolPtr virStoragePoolDefineXML(virConnectPtr conn,
+                                          const char *xmlDesc,
+                                          unsigned int flags);
+int virStoragePoolBuild(virStoragePoolPtr pool,
+                        unsigned int flags);
+int virStoragePoolUndefine(virStoragePoolPtr pool);
+int virStoragePoolCreate(virStoragePoolPtr pool,
+                         unsigned int flags);
+int virStoragePoolDestroy(virStoragePoolPtr pool);
+int virStoragePoolDelete(virStoragePoolPtr pool,
+                         unsigned int flags);
+int virStoragePoolRef(virStoragePoolPtr pool);
+int virStoragePoolFree(virStoragePoolPtr pool);
+int virStoragePoolRefresh(virStoragePoolPtr pool,
+                          unsigned int flags);
 
 /*
  * StoragePool information
  */
-const char*             virStoragePoolGetName           (virStoragePoolPtr pool);
-int                     virStoragePoolGetUUID           (virStoragePoolPtr pool,
-                                                         unsigned char *uuid);
-int                     virStoragePoolGetUUIDString     (virStoragePoolPtr pool,
-                                                         char *buf);
+const char* virStoragePoolGetName(virStoragePoolPtr pool);
+int virStoragePoolGetUUID(virStoragePoolPtr pool,
+                          unsigned char *uuid);
+int virStoragePoolGetUUIDString(virStoragePoolPtr pool,
+                                char *buf);
 
-int                     virStoragePoolGetInfo           (virStoragePoolPtr vol,
-                                                         virStoragePoolInfoPtr info);
+int virStoragePoolGetInfo(virStoragePoolPtr vol,
+                          virStoragePoolInfoPtr info);
 
-char *                  virStoragePoolGetXMLDesc        (virStoragePoolPtr pool,
-                                                         unsigned int flags);
+char * virStoragePoolGetXMLDesc(virStoragePoolPtr pool,
+                                unsigned int flags);
 
-int                     virStoragePoolGetAutostart      (virStoragePoolPtr pool,
-                                                         int *autostart);
-int                     virStoragePoolSetAutostart      (virStoragePoolPtr pool,
-                                                         int autostart);
+int virStoragePoolGetAutostart(virStoragePoolPtr pool,
+                               int *autostart);
+int virStoragePoolSetAutostart(virStoragePoolPtr pool,
+                               int autostart);
 
 /*
  * List/lookup storage volumes within a pool
  */
-int                     virStoragePoolNumOfVolumes      (virStoragePoolPtr pool);
-int                     virStoragePoolListVolumes       (virStoragePoolPtr pool,
-                                                         char **const names,
-                                                         int maxnames);
-int                     virStoragePoolListAllVolumes    (virStoragePoolPtr pool,
-                                                         virStorageVolPtr **vols,
-                                                         unsigned int flags);
+int virStoragePoolNumOfVolumes(virStoragePoolPtr pool);
+int virStoragePoolListVolumes(virStoragePoolPtr pool,
+                              char **const names,
+                              int maxnames);
+int virStoragePoolListAllVolumes(virStoragePoolPtr pool,
+                                 virStorageVolPtr **vols,
+                                 unsigned int flags);
 
-virConnectPtr           virStorageVolGetConnect         (virStorageVolPtr vol);
+virConnectPtr virStorageVolGetConnect(virStorageVolPtr vol);
 
 /*
  * Lookup volumes based on various attributes
  */
-virStorageVolPtr        virStorageVolLookupByName       (virStoragePoolPtr pool,
-                                                         const char *name);
-virStorageVolPtr        virStorageVolLookupByKey        (virConnectPtr conn,
-                                                         const char *key);
-virStorageVolPtr        virStorageVolLookupByPath       (virConnectPtr conn,
-                                                         const char *path);
+virStorageVolPtr virStorageVolLookupByName(virStoragePoolPtr pool,
+                                           const char *name);
+virStorageVolPtr virStorageVolLookupByKey(virConnectPtr conn,
+                                          const char *key);
+virStorageVolPtr virStorageVolLookupByPath(virConnectPtr conn,
+                                           const char *path);
 
 
-const char*             virStorageVolGetName            (virStorageVolPtr vol);
-const char*             virStorageVolGetKey             (virStorageVolPtr vol);
+const char* virStorageVolGetName(virStorageVolPtr vol);
+const char* virStorageVolGetKey(virStorageVolPtr vol);
 
 typedef enum {
     VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA = 1 << 0,
     VIR_STORAGE_VOL_CREATE_REFLINK = 1 << 1, /* perform a btrfs lightweight copy */
 } virStorageVolCreateFlags;
 
-virStorageVolPtr        virStorageVolCreateXML          (virStoragePoolPtr pool,
-                                                         const char *xmldesc,
-                                                         unsigned int flags);
-virStorageVolPtr        virStorageVolCreateXMLFrom      (virStoragePoolPtr pool,
-                                                         const char *xmldesc,
-                                                         virStorageVolPtr clonevol,
-                                                         unsigned int flags);
+virStorageVolPtr virStorageVolCreateXML(virStoragePoolPtr pool,
+                                        const char *xmldesc,
+                                        unsigned int flags);
+virStorageVolPtr virStorageVolCreateXMLFrom(virStoragePoolPtr pool,
+                                            const char *xmldesc,
+                                            virStorageVolPtr clonevol,
+                                            unsigned int flags);
 
 typedef enum {
     VIR_STORAGE_VOL_DOWNLOAD_SPARSE_STREAM = 1 << 0, /* Use sparse stream */
 } virStorageVolDownloadFlags;
 
-int                     virStorageVolDownload           (virStorageVolPtr vol,
-                                                         virStreamPtr stream,
-                                                         unsigned long long offset,
-                                                         unsigned long long length,
-                                                         unsigned int flags);
+int virStorageVolDownload(virStorageVolPtr vol,
+                          virStreamPtr stream,
+                          unsigned long long offset,
+                          unsigned long long length,
+                          unsigned int flags);
 typedef enum {
     VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM = 1 << 0,  /* Use sparse stream */
 } virStorageVolUploadFlags;
 
-int                     virStorageVolUpload             (virStorageVolPtr vol,
-                                                         virStreamPtr stream,
-                                                         unsigned long long offset,
-                                                         unsigned long long length,
-                                                         unsigned int flags);
-int                     virStorageVolDelete             (virStorageVolPtr vol,
-                                                         unsigned int flags);
-int                     virStorageVolWipe               (virStorageVolPtr vol,
-                                                         unsigned int flags);
-int                     virStorageVolWipePattern        (virStorageVolPtr vol,
-                                                         unsigned int algorithm,
-                                                         unsigned int flags);
-int                     virStorageVolRef                (virStorageVolPtr vol);
-int                     virStorageVolFree               (virStorageVolPtr vol);
+int virStorageVolUpload(virStorageVolPtr vol,
+                        virStreamPtr stream,
+                        unsigned long long offset,
+                        unsigned long long length,
+                        unsigned int flags);
+int virStorageVolDelete(virStorageVolPtr vol,
+                        unsigned int flags);
+int virStorageVolWipe(virStorageVolPtr vol,
+                      unsigned int flags);
+int virStorageVolWipePattern(virStorageVolPtr vol,
+                             unsigned int algorithm,
+                             unsigned int flags);
+int virStorageVolRef(virStorageVolPtr vol);
+int virStorageVolFree(virStorageVolPtr vol);
 
-int                     virStorageVolGetInfo            (virStorageVolPtr vol,
-                                                         virStorageVolInfoPtr info);
-int                     virStorageVolGetInfoFlags       (virStorageVolPtr vol,
-                                                         virStorageVolInfoPtr info,
-                                                         unsigned int flags);
-char *                  virStorageVolGetXMLDesc         (virStorageVolPtr pool,
-                                                         unsigned int flags);
+int virStorageVolGetInfo(virStorageVolPtr vol,
+                         virStorageVolInfoPtr info);
+int virStorageVolGetInfoFlags(virStorageVolPtr vol,
+                              virStorageVolInfoPtr info,
+                              unsigned int flags);
+char * virStorageVolGetXMLDesc(virStorageVolPtr pool,
+                               unsigned int flags);
 
-char *                  virStorageVolGetPath            (virStorageVolPtr vol);
+char * virStorageVolGetPath(virStorageVolPtr vol);
 
 typedef enum {
     VIR_STORAGE_VOL_RESIZE_ALLOCATE = 1 << 0, /* force allocation of new size */
@@ -397,9 +397,9 @@ typedef enum {
     VIR_STORAGE_VOL_RESIZE_SHRINK   = 1 << 2, /* allow decrease in capacity */
 } virStorageVolResizeFlags;
 
-int                     virStorageVolResize             (virStorageVolPtr vol,
-                                                         unsigned long long capacity,
-                                                         unsigned int flags);
+int virStorageVolResize(virStorageVolPtr vol,
+                        unsigned long long capacity,
+                        unsigned int flags);
 
 int virStoragePoolIsActive(virStoragePoolPtr pool);
 int virStoragePoolIsPersistent(virStoragePoolPtr pool);
