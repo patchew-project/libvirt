@@ -424,24 +424,24 @@ typedef enum {
 /*
  * Fetch scheduler parameters, caller allocates 'params' field of size 'nparams'
  */
-int     virDomainGetSchedulerParameters (virDomainPtr domain,
+int virDomainGetSchedulerParameters(virDomainPtr domain,
+                                    virTypedParameterPtr params,
+                                    int *nparams);
+int virDomainGetSchedulerParametersFlags(virDomainPtr domain,
                                          virTypedParameterPtr params,
-                                         int *nparams);
-int     virDomainGetSchedulerParametersFlags (virDomainPtr domain,
-                                              virTypedParameterPtr params,
-                                              int *nparams,
-                                              unsigned int flags);
+                                         int *nparams,
+                                         unsigned int flags);
 
 /*
  * Change scheduler parameters
  */
-int     virDomainSetSchedulerParameters (virDomainPtr domain,
+int virDomainSetSchedulerParameters(virDomainPtr domain,
                                          virTypedParameterPtr params,
                                          int nparams);
-int     virDomainSetSchedulerParametersFlags (virDomainPtr domain,
-                                              virTypedParameterPtr params,
-                                              int nparams,
-                                              unsigned int flags);
+int virDomainSetSchedulerParametersFlags(virDomainPtr domain,
+                                         virTypedParameterPtr params,
+                                         int nparams,
+                                         unsigned int flags);
 
 /**
  * virDomainBlockStats:
@@ -1151,41 +1151,41 @@ char * virConnectGetDomainCapabilities(virConnectPtr conn,
 /*
  * Gather list of running domains
  */
-int                     virConnectListDomains   (virConnectPtr conn,
-                                                 int *ids,
-                                                 int maxids);
+int virConnectListDomains(virConnectPtr conn,
+                          int *ids,
+                          int maxids);
 
 /*
  * Number of domains
  */
-int                     virConnectNumOfDomains  (virConnectPtr conn);
+int virConnectNumOfDomains(virConnectPtr conn);
 
 
 /*
  * Get connection from domain.
  */
-virConnectPtr           virDomainGetConnect     (virDomainPtr domain);
+virConnectPtr virDomainGetConnect(virDomainPtr domain);
 
 /*
  * Domain creation and destruction
  */
 
-virDomainPtr            virDomainCreateXML      (virConnectPtr conn,
-                                                 const char *xmlDesc,
-                                                 unsigned int flags);
-virDomainPtr            virDomainCreateXMLWithFiles(virConnectPtr conn,
-                                                    const char *xmlDesc,
-                                                    unsigned int nfiles,
-                                                    int *files,
-                                                    unsigned int flags);
-virDomainPtr            virDomainLookupByName   (virConnectPtr conn,
-                                                 const char *name);
-virDomainPtr            virDomainLookupByID     (virConnectPtr conn,
-                                                 int id);
-virDomainPtr            virDomainLookupByUUID   (virConnectPtr conn,
-                                                 const unsigned char *uuid);
-virDomainPtr            virDomainLookupByUUIDString     (virConnectPtr conn,
-                                                         const char *uuid);
+virDomainPtr virDomainCreateXML(virConnectPtr conn,
+                                const char *xmlDesc,
+                                unsigned int flags);
+virDomainPtr virDomainCreateXMLWithFiles(virConnectPtr conn,
+                                         const char *xmlDesc,
+                                         unsigned int nfiles,
+                                         int *files,
+                                         unsigned int flags);
+virDomainPtr virDomainLookupByName(virConnectPtr conn,
+                                   const char *name);
+virDomainPtr virDomainLookupByID(virConnectPtr conn,
+                                 int id);
+virDomainPtr virDomainLookupByUUID(virConnectPtr conn,
+                                   const unsigned char *uuid);
+virDomainPtr virDomainLookupByUUIDString(virConnectPtr conn,
+                                         const char *uuid);
 
 typedef enum {
     VIR_DOMAIN_SHUTDOWN_DEFAULT        = 0,        /* hypervisor choice */
@@ -1196,9 +1196,9 @@ typedef enum {
     VIR_DOMAIN_SHUTDOWN_PARAVIRT       = (1 << 4), /* Use paravirt guest control */
 } virDomainShutdownFlagValues;
 
-int                     virDomainShutdown       (virDomainPtr domain);
-int                     virDomainShutdownFlags  (virDomainPtr domain,
-                                                 unsigned int flags);
+int virDomainShutdown(virDomainPtr domain);
+int virDomainShutdownFlags(virDomainPtr domain,
+                           unsigned int flags);
 
 typedef enum {
     VIR_DOMAIN_REBOOT_DEFAULT        = 0,        /* hypervisor choice */
@@ -1209,12 +1209,12 @@ typedef enum {
     VIR_DOMAIN_REBOOT_PARAVIRT       = (1 << 4), /* Use paravirt guest control */
 } virDomainRebootFlagValues;
 
-int                     virDomainReboot         (virDomainPtr domain,
-                                                 unsigned int flags);
-int                     virDomainReset          (virDomainPtr domain,
-                                                 unsigned int flags);
+int virDomainReboot(virDomainPtr domain,
+                    unsigned int flags);
+int virDomainReset(virDomainPtr domain,
+                   unsigned int flags);
 
-int                     virDomainDestroy        (virDomainPtr domain);
+int virDomainDestroy(virDomainPtr domain);
 
 /**
  * virDomainDestroyFlagsValues:
@@ -1227,22 +1227,22 @@ typedef enum {
     VIR_DOMAIN_DESTROY_GRACEFUL  = 1 << 0, /* only SIGTERM, no SIGKILL */
 } virDomainDestroyFlagsValues;
 
-int                     virDomainDestroyFlags   (virDomainPtr domain,
-                                                 unsigned int flags);
-int                     virDomainRef            (virDomainPtr domain);
-int                     virDomainFree           (virDomainPtr domain);
+int virDomainDestroyFlags(virDomainPtr domain,
+                          unsigned int flags);
+int virDomainRef(virDomainPtr domain);
+int virDomainFree(virDomainPtr domain);
 
 /*
  * Domain suspend/resume
  */
-int                     virDomainSuspend        (virDomainPtr domain);
-int                     virDomainResume         (virDomainPtr domain);
-int                     virDomainPMSuspendForDuration (virDomainPtr domain,
-                                                       unsigned int target,
-                                                       unsigned long long duration,
-                                                       unsigned int flags);
-int                     virDomainPMWakeup       (virDomainPtr domain,
-                                                 unsigned int flags);
+int virDomainSuspend(virDomainPtr domain);
+int virDomainResume(virDomainPtr domain);
+int virDomainPMSuspendForDuration(virDomainPtr domain,
+                                  unsigned int target,
+                                  unsigned long long duration,
+                                  unsigned int flags);
+int virDomainPMWakeup(virDomainPtr domain,
+                      unsigned int flags);
 /*
  * Domain save/restore
  */
@@ -1259,77 +1259,77 @@ typedef enum {
     VIR_DOMAIN_SAVE_PAUSED       = 1 << 2, /* Favor paused over running */
 } virDomainSaveRestoreFlags;
 
-int                     virDomainSave           (virDomainPtr domain,
-                                                 const char *to);
-int                     virDomainSaveFlags      (virDomainPtr domain,
-                                                 const char *to,
-                                                 const char *dxml,
-                                                 unsigned int flags);
-int                     virDomainRestore        (virConnectPtr conn,
-                                                 const char *from);
-int                     virDomainRestoreFlags   (virConnectPtr conn,
-                                                 const char *from,
-                                                 const char *dxml,
-                                                 unsigned int flags);
+int virDomainSave(virDomainPtr domain,
+                  const char *to);
+int virDomainSaveFlags(virDomainPtr domain,
+                       const char *to,
+                       const char *dxml,
+                       unsigned int flags);
+int virDomainRestore(virConnectPtr conn,
+                     const char *from);
+int virDomainRestoreFlags(virConnectPtr conn,
+                          const char *from,
+                          const char *dxml,
+                          unsigned int flags);
 
 /* See below for virDomainSaveImageXMLFlags */
-char *          virDomainSaveImageGetXMLDesc    (virConnectPtr conn,
-                                                 const char *file,
-                                                 unsigned int flags);
-int             virDomainSaveImageDefineXML     (virConnectPtr conn,
-                                                 const char *file,
-                                                 const char *dxml,
-                                                 unsigned int flags);
+char * virDomainSaveImageGetXMLDesc(virConnectPtr conn,
+                                    const char *file,
+                                    unsigned int flags);
+int virDomainSaveImageDefineXML(virConnectPtr conn,
+                                const char *file,
+                                const char *dxml,
+                                unsigned int flags);
 
 /*
  * Managed domain save
  */
-int                    virDomainManagedSave     (virDomainPtr dom,
-                                                 unsigned int flags);
-int                    virDomainHasManagedSaveImage(virDomainPtr dom,
-                                                    unsigned int flags);
-int                    virDomainManagedSaveRemove(virDomainPtr dom,
-                                                  unsigned int flags);
-char *                 virDomainManagedSaveGetXMLDesc(virDomainPtr domain,
-                                                      unsigned int flags);
-int                    virDomainManagedSaveDefineXML(virDomainPtr domain,
-                                                     const char *dxml,
-                                                     unsigned int flags);
+int virDomainManagedSave(virDomainPtr dom,
+                         unsigned int flags);
+int virDomainHasManagedSaveImage(virDomainPtr dom,
+                                 unsigned int flags);
+int virDomainManagedSaveRemove(virDomainPtr dom,
+                               unsigned int flags);
+char * virDomainManagedSaveGetXMLDesc(virDomainPtr domain,
+                                      unsigned int flags);
+int virDomainManagedSaveDefineXML(virDomainPtr domain,
+                                  const char *dxml,
+                                  unsigned int flags);
 
 
 /*
  * Domain core dump
  */
-int                     virDomainCoreDump       (virDomainPtr domain,
-                                                 const char *to,
-                                                 unsigned int flags);
+int virDomainCoreDump(virDomainPtr domain,
+                      const char *to,
+                      unsigned int flags);
 
 /*
  * Domain core dump with format specified
  */
-int                 virDomainCoreDumpWithFormat (virDomainPtr domain,
-                                                 const char *to,
-                                                 unsigned int dumpformat,
-                                                 unsigned int flags);
+int virDomainCoreDumpWithFormat(virDomainPtr domain,
+                                const char *to,
+                                unsigned int dumpformat,
+                                unsigned int flags);
 
 /*
  * Screenshot of current domain console
  */
-char *                  virDomainScreenshot     (virDomainPtr domain,
-                                                 virStreamPtr stream,
-                                                 unsigned int screen,
-                                                 unsigned int flags);
+char * virDomainScreenshot(virDomainPtr domain,
+                           virStreamPtr stream,
+                           unsigned int screen,
+                           unsigned int flags);
 
 /*
  * Domain runtime information, and collecting CPU statistics
  */
 
-int                     virDomainGetInfo        (virDomainPtr domain,
-                                                 virDomainInfoPtr info);
-int                     virDomainGetState       (virDomainPtr domain,
-                                                 int *state,
-                                                 int *reason,
-                                                 unsigned int flags);
+int virDomainGetInfo(virDomainPtr domain,
+                     virDomainInfoPtr info);
+int virDomainGetState(virDomainPtr domain,
+                      int *state,
+                      int *reason,
+                      unsigned int flags);
 
 /**
  * VIR_DOMAIN_CPU_STATS_CPUTIME:
@@ -1364,15 +1364,15 @@ int virDomainGetCPUStats(virDomainPtr domain,
                          unsigned int ncpus,
                          unsigned int flags);
 
-int                     virDomainGetControlInfo (virDomainPtr domain,
-                                                 virDomainControlInfoPtr info,
-                                                 unsigned int flags);
+int virDomainGetControlInfo(virDomainPtr domain,
+                            virDomainControlInfoPtr info,
+                            unsigned int flags);
 
 /*
  * Return scheduler type in effect 'sedf', 'credit', 'linux'
  */
-char *                  virDomainGetSchedulerType(virDomainPtr domain,
-                                                  int *nparams);
+char * virDomainGetSchedulerType(virDomainPtr domain,
+                                 int *nparams);
 
 
 /* Manage blkio parameters.  */
@@ -1442,12 +1442,12 @@ char *                  virDomainGetSchedulerType(virDomainPtr domain,
 
 
 /* Set Blkio tunables for the domain */
-int     virDomainSetBlkioParameters(virDomainPtr domain,
-                                    virTypedParameterPtr params,
-                                    int nparams, unsigned int flags);
-int     virDomainGetBlkioParameters(virDomainPtr domain,
-                                    virTypedParameterPtr params,
-                                    int *nparams, unsigned int flags);
+int virDomainSetBlkioParameters(virDomainPtr domain,
+                                virTypedParameterPtr params,
+                                int nparams, unsigned int flags);
+int virDomainGetBlkioParameters(virDomainPtr domain,
+                                virTypedParameterPtr params,
+                                int *nparams, unsigned int flags);
 
 /* Manage memory parameters. */
 
@@ -1497,12 +1497,12 @@ int     virDomainGetBlkioParameters(virDomainPtr domain,
 # define VIR_DOMAIN_MEMORY_SWAP_HARD_LIMIT "swap_hard_limit"
 
 /* Set memory tunables for the domain */
-int     virDomainSetMemoryParameters(virDomainPtr domain,
-                                     virTypedParameterPtr params,
-                                     int nparams, unsigned int flags);
-int     virDomainGetMemoryParameters(virDomainPtr domain,
-                                     virTypedParameterPtr params,
-                                     int *nparams, unsigned int flags);
+int virDomainSetMemoryParameters(virDomainPtr domain,
+                                 virTypedParameterPtr params,
+                                 int nparams, unsigned int flags);
+int virDomainGetMemoryParameters(virDomainPtr domain,
+                                 virTypedParameterPtr params,
+                                 int *nparams, unsigned int flags);
 
 /* Memory size modification flags. */
 typedef enum {
@@ -1549,47 +1549,47 @@ typedef enum {
  */
 # define VIR_DOMAIN_NUMA_MODE "numa_mode"
 
-int     virDomainSetNumaParameters(virDomainPtr domain,
-                                   virTypedParameterPtr params,
-                                   int nparams, unsigned int flags);
-int     virDomainGetNumaParameters(virDomainPtr domain,
-                                   virTypedParameterPtr params,
-                                   int *nparams, unsigned int flags);
+int virDomainSetNumaParameters(virDomainPtr domain,
+                               virTypedParameterPtr params,
+                               int nparams, unsigned int flags);
+int virDomainGetNumaParameters(virDomainPtr domain,
+                               virTypedParameterPtr params,
+                               int *nparams, unsigned int flags);
 
 /*
  * Dynamic control of domains
  */
-const char *            virDomainGetName        (virDomainPtr domain);
-unsigned int            virDomainGetID          (virDomainPtr domain);
-int                     virDomainGetUUID        (virDomainPtr domain,
-                                                 unsigned char *uuid);
-int                     virDomainGetUUIDString  (virDomainPtr domain,
-                                                 char *buf);
-char *                  virDomainGetOSType      (virDomainPtr domain);
-unsigned long           virDomainGetMaxMemory   (virDomainPtr domain);
-int                     virDomainSetMaxMemory   (virDomainPtr domain,
-                                                 unsigned long memory);
-int                     virDomainSetMemory      (virDomainPtr domain,
-                                                 unsigned long memory);
-int                     virDomainSetMemoryFlags (virDomainPtr domain,
-                                                 unsigned long memory,
-                                                 unsigned int flags);
-int                     virDomainSetMemoryStatsPeriod (virDomainPtr domain,
-                                                       int period,
-                                                       unsigned int flags);
-int                     virDomainGetMaxVcpus    (virDomainPtr domain);
-int                     virDomainGetSecurityLabel (virDomainPtr domain,
-                                                   virSecurityLabelPtr seclabel);
+const char * virDomainGetName(virDomainPtr domain);
+unsigned int virDomainGetID(virDomainPtr domain);
+int virDomainGetUUID(virDomainPtr domain,
+                     unsigned char *uuid);
+int virDomainGetUUIDString(virDomainPtr domain,
+                           char *buf);
+char * virDomainGetOSType(virDomainPtr domain);
+unsigned long virDomainGetMaxMemory(virDomainPtr domain);
+int virDomainSetMaxMemory(virDomainPtr domain,
+                          unsigned long memory);
+int virDomainSetMemory(virDomainPtr domain,
+                       unsigned long memory);
+int virDomainSetMemoryFlags (virDomainPtr domain,
+                             unsigned long memory,
+                             unsigned int flags);
+int virDomainSetMemoryStatsPeriod(virDomainPtr domain,
+                                  int period,
+                                  unsigned int flags);
+int virDomainGetMaxVcpus(virDomainPtr domain);
+int virDomainGetSecurityLabel(virDomainPtr domain,
+                              virSecurityLabelPtr seclabel);
 
 typedef enum {
     VIR_DOMAIN_GET_HOSTNAME_LEASE = (1 << 0), /* Parse DHCP lease file */
     VIR_DOMAIN_GET_HOSTNAME_AGENT = (1 << 1), /* Query qemu guest agent */
 } virDomainGetHostnameFlags;
 
-char *                  virDomainGetHostname    (virDomainPtr domain,
-                                                 unsigned int flags);
-int                     virDomainGetSecurityLabelList (virDomainPtr domain,
-                                                       virSecurityLabelPtr* seclabels);
+char * virDomainGetHostname(virDomainPtr domain,
+                            unsigned int flags);
+int virDomainGetSecurityLabelList(virDomainPtr domain,
+                                  virSecurityLabelPtr* seclabels);
 
 typedef enum {
     VIR_DOMAIN_METADATA_DESCRIPTION = 0, /* Operate on <description> */
@@ -1635,32 +1635,32 @@ typedef enum {
     VIR_DOMAIN_SAVE_IMAGE_XML_SECURE         = VIR_DOMAIN_XML_SECURE, /* dump security sensitive information too */
 } virDomainSaveImageXMLFlags;
 
-char *                  virDomainGetXMLDesc     (virDomainPtr domain,
-                                                 unsigned int flags);
+char * virDomainGetXMLDesc(virDomainPtr domain,
+                           unsigned int flags);
 
 
-char *                  virConnectDomainXMLFromNative(virConnectPtr conn,
-                                                      const char *nativeFormat,
-                                                      const char *nativeConfig,
-                                                      unsigned int flags);
-char *                  virConnectDomainXMLToNative(virConnectPtr conn,
-                                                    const char *nativeFormat,
-                                                    const char *domainXml,
-                                                    unsigned int flags);
+char * virConnectDomainXMLFromNative(virConnectPtr conn,
+                                     const char *nativeFormat,
+                                     const char *nativeConfig,
+                                     unsigned int flags);
+char * virConnectDomainXMLToNative(virConnectPtr conn,
+                                   const char *nativeFormat,
+                                   const char *domainXml,
+                                   unsigned int flags);
 
-int                     virDomainBlockStats     (virDomainPtr dom,
-                                                 const char *disk,
-                                                 virDomainBlockStatsPtr stats,
-                                                 size_t size);
-int                     virDomainBlockStatsFlags (virDomainPtr dom,
-                                                  const char *disk,
-                                                  virTypedParameterPtr params,
-                                                  int *nparams,
-                                                  unsigned int flags);
-int                     virDomainInterfaceStats (virDomainPtr dom,
-                                                 const char *device,
-                                                 virDomainInterfaceStatsPtr stats,
-                                                 size_t size);
+int virDomainBlockStats(virDomainPtr dom,
+                        const char *disk,
+                        virDomainBlockStatsPtr stats,
+                        size_t size);
+int virDomainBlockStatsFlags(virDomainPtr dom,
+                             const char *disk,
+                             virTypedParameterPtr params,
+                             int *nparams,
+                             unsigned int flags);
+int virDomainInterfaceStats(virDomainPtr dom,
+                            const char *device,
+                            virDomainInterfaceStatsPtr stats,
+                            size_t size);
 
 /* Management of interface parameters */
 
@@ -1713,23 +1713,23 @@ int                     virDomainInterfaceStats (virDomainPtr dom,
  */
 # define VIR_DOMAIN_BANDWIDTH_OUT_BURST "outbound.burst"
 
-int                     virDomainSetInterfaceParameters (virDomainPtr dom,
-                                                         const char *device,
-                                                         virTypedParameterPtr params,
-                                                         int nparams, unsigned int flags);
-int                     virDomainGetInterfaceParameters (virDomainPtr dom,
-                                                         const char *device,
-                                                         virTypedParameterPtr params,
-                                                         int *nparams, unsigned int flags);
+int virDomainSetInterfaceParameters(virDomainPtr dom,
+                                    const char *device,
+                                    virTypedParameterPtr params,
+                                    int nparams, unsigned int flags);
+int virDomainGetInterfaceParameters(virDomainPtr dom,
+                                    const char *device,
+                                    virTypedParameterPtr params,
+                                    int *nparams, unsigned int flags);
 
 /* Management of domain block devices */
 
-int                     virDomainBlockPeek (virDomainPtr dom,
-                                            const char *disk,
-                                            unsigned long long offset,
-                                            size_t size,
-                                            void *buffer,
-                                            unsigned int flags);
+int virDomainBlockPeek(virDomainPtr dom,
+                       const char *disk,
+                       unsigned long long offset,
+                       size_t size,
+                       void *buffer,
+                       unsigned int flags);
 
 /**
  * virDomainBlockResizeFlags:
@@ -1740,10 +1740,10 @@ typedef enum {
     VIR_DOMAIN_BLOCK_RESIZE_BYTES = 1 << 0, /* size in bytes instead of KiB */
 } virDomainBlockResizeFlags;
 
-int                     virDomainBlockResize (virDomainPtr dom,
-                                              const char *disk,
-                                              unsigned long long size,
-                                              unsigned int flags);
+int virDomainBlockResize(virDomainPtr dom,
+                         const char *disk,
+                         unsigned long long size,
+                         unsigned int flags);
 
 /** virDomainBlockInfo:
  *
@@ -1784,17 +1784,17 @@ struct _virDomainBlockInfo {
                                     * offset, similar to 'ls') */
 };
 
-int                     virDomainGetBlockInfo(virDomainPtr dom,
-                                              const char *disk,
-                                              virDomainBlockInfoPtr info,
-                                              unsigned int flags);
+int virDomainGetBlockInfo(virDomainPtr dom,
+                          const char *disk,
+                          virDomainBlockInfoPtr info,
+                          unsigned int flags);
 
 /* Management of domain memory */
 
-int                     virDomainMemoryStats (virDomainPtr dom,
-                                              virDomainMemoryStatPtr stats,
-                                              unsigned int nr_stats,
-                                              unsigned int flags);
+int virDomainMemoryStats(virDomainPtr dom,
+                         virDomainMemoryStatPtr stats,
+                         unsigned int nr_stats,
+                         unsigned int flags);
 
 /* Memory peeking flags. */
 
@@ -1803,11 +1803,11 @@ typedef enum {
     VIR_MEMORY_PHYSICAL           = 1 << 1, /* addresses are physical addresses */
 } virDomainMemoryFlags;
 
-int                     virDomainMemoryPeek (virDomainPtr dom,
-                                             unsigned long long start,
-                                             size_t size,
-                                             void *buffer,
-                                             unsigned int flags);
+int virDomainMemoryPeek(virDomainPtr dom,
+                        unsigned long long start,
+                        size_t size,
+                        void *buffer,
+                        unsigned int flags);
 
 typedef enum {
     VIR_DOMAIN_DEFINE_VALIDATE = (1 << 0), /* Validate the XML document against schema */
@@ -1816,13 +1816,13 @@ typedef enum {
 /*
  * defined but not running domains
  */
-virDomainPtr            virDomainDefineXML      (virConnectPtr conn,
-                                                 const char *xml);
+virDomainPtr virDomainDefineXML(virConnectPtr conn,
+                                const char *xml);
 
-virDomainPtr            virDomainDefineXMLFlags (virConnectPtr conn,
-                                                 const char *xml,
-                                                 unsigned int flags);
-int                     virDomainUndefine       (virDomainPtr domain);
+virDomainPtr virDomainDefineXMLFlags(virConnectPtr conn,
+                                     const char *xml,
+                                     unsigned int flags);
+int virDomainUndefine(virDomainPtr domain);
 
 typedef enum {
     VIR_DOMAIN_UNDEFINE_MANAGED_SAVE       = (1 << 0), /* Also remove any
@@ -1841,12 +1841,12 @@ typedef enum {
 } virDomainUndefineFlagsValues;
 
 
-int                     virDomainUndefineFlags   (virDomainPtr domain,
-                                                  unsigned int flags);
-int                     virConnectNumOfDefinedDomains  (virConnectPtr conn);
-int                     virConnectListDefinedDomains (virConnectPtr conn,
-                                                      char **const names,
-                                                      int maxnames);
+int virDomainUndefineFlags(virDomainPtr domain,
+                           unsigned int flags);
+int virConnectNumOfDefinedDomains(virConnectPtr conn);
+int virConnectListDefinedDomains(virConnectPtr conn,
+                                 char **const names,
+                                 int maxnames);
 /**
  * virConnectListAllDomainsFlags:
  *
@@ -1879,22 +1879,22 @@ typedef enum {
     VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT  = 1 << 15,
 } virConnectListAllDomainsFlags;
 
-int                     virConnectListAllDomains (virConnectPtr conn,
-                                                  virDomainPtr **domains,
-                                                  unsigned int flags);
-int                     virDomainCreate         (virDomainPtr domain);
-int                     virDomainCreateWithFlags (virDomainPtr domain,
-                                                  unsigned int flags);
+int virConnectListAllDomains(virConnectPtr conn,
+                             virDomainPtr **domains,
+                             unsigned int flags);
+int virDomainCreate(virDomainPtr domain);
+int virDomainCreateWithFlags(virDomainPtr domain,
+                             unsigned int flags);
 
-int                     virDomainCreateWithFiles (virDomainPtr domain,
-                                                  unsigned int nfiles,
-                                                  int *files,
-                                                  unsigned int flags);
+int virDomainCreateWithFiles(virDomainPtr domain,
+                             unsigned int nfiles,
+                             int *files,
+                             unsigned int flags);
 
-int                     virDomainGetAutostart   (virDomainPtr domain,
-                                                 int *autostart);
-int                     virDomainSetAutostart   (virDomainPtr domain,
-                                                 int autostart);
+int virDomainGetAutostart(virDomainPtr domain,
+                          int *autostart);
+int virDomainSetAutostart(virDomainPtr domain,
+                          int autostart);
 
 /**
  * virVcpuInfo: structure for information about a virtual CPU in a domain.
@@ -1937,39 +1937,39 @@ typedef enum {
     VIR_DOMAIN_VCPU_HOTPLUGGABLE = (1 << 4), /* Make vcpus added hot(un)pluggable */
 } virDomainVcpuFlags;
 
-int                     virDomainSetVcpus       (virDomainPtr domain,
-                                                 unsigned int nvcpus);
-int                     virDomainSetVcpusFlags  (virDomainPtr domain,
-                                                 unsigned int nvcpus,
-                                                 unsigned int flags);
-int                     virDomainGetVcpusFlags  (virDomainPtr domain,
-                                                 unsigned int flags);
+int virDomainSetVcpus(virDomainPtr domain,
+                      unsigned int nvcpus);
+int virDomainSetVcpusFlags(virDomainPtr domain,
+                           unsigned int nvcpus,
+                           unsigned int flags);
+int virDomainGetVcpusFlags(virDomainPtr domain,
+                           unsigned int flags);
 
-int                     virDomainPinVcpu        (virDomainPtr domain,
-                                                 unsigned int vcpu,
-                                                 unsigned char *cpumap,
-                                                 int maplen);
-int                     virDomainPinVcpuFlags   (virDomainPtr domain,
-                                                 unsigned int vcpu,
-                                                 unsigned char *cpumap,
-                                                 int maplen,
-                                                 unsigned int flags);
+int virDomainPinVcpu(virDomainPtr domain,
+                     unsigned int vcpu,
+                     unsigned char *cpumap,
+                     int maplen);
+int virDomainPinVcpuFlags(virDomainPtr domain,
+                          unsigned int vcpu,
+                          unsigned char *cpumap,
+                          int maplen,
+                          unsigned int flags);
 
-int                     virDomainGetVcpuPinInfo (virDomainPtr domain,
-                                                 int ncpumaps,
-                                                 unsigned char *cpumaps,
-                                                 int maplen,
-                                                 unsigned int flags);
+int virDomainGetVcpuPinInfo(virDomainPtr domain,
+                            int ncpumaps,
+                            unsigned char *cpumaps,
+                            int maplen,
+                            unsigned int flags);
 
-int                     virDomainPinEmulator   (virDomainPtr domain,
-                                                unsigned char *cpumap,
-                                                int maplen,
-                                                unsigned int flags);
+int virDomainPinEmulator(virDomainPtr domain,
+                         unsigned char *cpumap,
+                         int maplen,
+                         unsigned int flags);
 
-int                     virDomainGetEmulatorPinInfo (virDomainPtr domain,
-                                                     unsigned char *cpumaps,
-                                                     int maplen,
-                                                     unsigned int flags);
+int virDomainGetEmulatorPinInfo(virDomainPtr domain,
+                                unsigned char *cpumaps,
+                                int maplen,
+                                unsigned int flags);
 
 /**
  * virIOThreadInfo:
@@ -1985,22 +1985,22 @@ struct _virDomainIOThreadInfo {
     int cpumaplen;                     /* cpumap size */
 };
 
-void                 virDomainIOThreadInfoFree(virDomainIOThreadInfoPtr info);
+void virDomainIOThreadInfoFree(virDomainIOThreadInfoPtr info);
 
-int                  virDomainGetIOThreadInfo(virDomainPtr domain,
-                                               virDomainIOThreadInfoPtr **info,
-                                               unsigned int flags);
-int                  virDomainPinIOThread(virDomainPtr domain,
-                                          unsigned int iothread_id,
-                                          unsigned char *cpumap,
-                                          int maplen,
-                                          unsigned int flags);
-int                  virDomainAddIOThread(virDomainPtr domain,
-                                          unsigned int iothread_id,
-                                          unsigned int flags);
-int                  virDomainDelIOThread(virDomainPtr domain,
-                                          unsigned int iothread_id,
-                                          unsigned int flags);
+int virDomainGetIOThreadInfo(virDomainPtr domain,
+                             virDomainIOThreadInfoPtr **info,
+                             unsigned int flags);
+int virDomainPinIOThread(virDomainPtr domain,
+                         unsigned int iothread_id,
+                         unsigned char *cpumap,
+                         int maplen,
+                         unsigned int flags);
+int virDomainAddIOThread(virDomainPtr domain,
+                         unsigned int iothread_id,
+                         unsigned int flags);
+int virDomainDelIOThread(virDomainPtr domain,
+                         unsigned int iothread_id,
+                         unsigned int flags);
 
 /* IOThread set parameters */
 
@@ -2039,11 +2039,11 @@ int                  virDomainDelIOThread(virDomainPtr domain,
  */
 # define VIR_DOMAIN_IOTHREAD_POLL_SHRINK "poll_shrink"
 
-int                  virDomainSetIOThreadParams(virDomainPtr domain,
-                                                unsigned int iothread_id,
-                                                virTypedParameterPtr params,
-                                                int nparams,
-                                                unsigned int flags);
+int virDomainSetIOThreadParams(virDomainPtr domain,
+                               unsigned int iothread_id,
+                               virTypedParameterPtr params,
+                               int nparams,
+                               unsigned int flags);
 
 
 /**
@@ -2091,11 +2091,11 @@ int                  virDomainSetIOThreadParams(virDomainPtr domain,
 # define VIR_CPU_MAPLEN(cpu) (((cpu) + 7) / 8)
 
 
-int                     virDomainGetVcpus       (virDomainPtr domain,
-                                                 virVcpuInfoPtr info,
-                                                 int maxinfo,
-                                                 unsigned char *cpumaps,
-                                                 int maplen);
+int virDomainGetVcpus(virDomainPtr domain,
+                      virVcpuInfoPtr info,
+                      int maxinfo,
+                      unsigned char *cpumaps,
+                      int maplen);
 
 /**
  * VIR_CPU_USABLE:
@@ -3015,9 +3015,9 @@ int virDomainSendProcessSignal(virDomainPtr domain,
 /*
  * Deprecated calls
  */
-virDomainPtr            virDomainCreateLinux    (virConnectPtr conn,
-                                                 const char *xmlDesc,
-                                                 unsigned int flags);
+virDomainPtr virDomainCreateLinux(virConnectPtr conn,
+                                  const char *xmlDesc,
+                                  unsigned int flags);
 
 
 /*
