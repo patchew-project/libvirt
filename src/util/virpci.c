@@ -2469,7 +2469,7 @@ virPCIDeviceAddressGetSysfsFile(virPCIDeviceAddressPtr addr,
  * @idx: used to choose which netdev when there are several
  *       (ignored if physPortID is set)
  * @physPortID: match this string in the netdev's phys_port_id
- *       (or NULL to ignore and use idx instead)
+ *       (or NULL to ignore and use phys_port_name or idx instead)
  * @netname: used to return the name of the netdev
  *       (set to NULL (but returns success) if there is no netdev)
  *
@@ -2483,6 +2483,7 @@ virPCIGetNetName(const char *device_link_sysfs_path,
 {
     g_autofree char *pcidev_sysfs_net_path = NULL;
     g_autofree char *firstEntryName = NULL;
+    g_autofree char *thisPhysPortName = NULL;
     g_autoptr(DIR) dir = NULL;
     struct dirent *entry = NULL;
     size_t i = 0;
@@ -2522,7 +2523,42 @@ virPCIGetNetName(const char *device_link_sysfs_path,
 
                 continue;
             }
+
         } else {
+            /* Most switch devices use phys_port_name instead of
+             * phys_port_id.
+             * NOTE: VFs' representors net devices can be linked to PF's PCI
+             * device, which mean that there'll be multiple net devices
+             * instances and to get a proper net device need to match on
+             * specific regex.
+             * To get PF netdev, for ex., used following regex:
+             * "(p[0-9]+$)|(p[0-9]+s[0-9]+$)"
+             * or to get exact VF's netdev next regex is used:
+             * "pf0vf1$"
+             */
+            if (virNetDevGetPhysPortName(entry->d_name, &thisPhysPortName) < 0)
+                return -1;
+
+            if (thisPhysPortName) {
+                /* if this one doesn't match, keep looking */
+                if (!virStringMatch(thisPhysPortName, VIR_PF_PHYS_PORT_NAME_REGEX)) {
+                    VIR_FREE(thisPhysPortName);
+                    /* Save the first entry we find to use as a failsafe
+                     * in case we fail to match on regex.
+                     */
+                    if (!firstEntryName)
+                        firstEntryName = g_strdup(entry->d_name);
+
+                    continue;
+                }
+            } else {
+                /* Save the first entry we find to use as a failsafe in case
+                 * phys_port_name is not supported.
+                 */
+                if (!firstEntryName)
+                    firstEntryName = g_strdup(entry->d_name);
+                continue;
+            }
             if (i++ < idx)
                 continue;
         }

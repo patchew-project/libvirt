@@ -1263,7 +1263,7 @@ virNetDevGetVirtualFunctions(const char *pfname,
         }
 
         if (virPCIGetNetName(pci_sysfs_device_link, 0,
-                             pfPhysPortID, NULL, &((*vfname)[i])) < 0) {
+                             pfPhysPortID, &((*vfname)[i])) < 0) {
             goto cleanup;
         }
 
@@ -1358,8 +1358,7 @@ virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
         return -1;
 
     if (virPCIGetNetName(physfn_sysfs_path, 0,
-                         vfPhysPortID,
-                         VIR_PF_PHYS_PORT_NAME_REGEX, pfname) < 0) {
+                         vfPhysPortID, pfname) < 0) {
         return -1;
     }
 
@@ -1422,7 +1421,7 @@ virNetDevPFGetVF(const char *pfname, int vf, char **vfname)
      * isn't bound to a netdev driver, it won't have a netdev name,
      * and vfname will be NULL).
      */
-    return virPCIGetNetName(virtfnSysfsPath, 0, pfPhysPortID, NULL, vfname);
+    return virPCIGetNetName(virtfnSysfsPath, 0, pfPhysPortID, vfname);
 }
 
 
