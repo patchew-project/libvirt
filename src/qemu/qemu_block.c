@@ -3439,7 +3439,7 @@ qemuBlockUpdateRelativeBacking(virDomainObjPtr vm,
         if (rc < 0)
             return rc;
 
-        if (backingStoreStr && virStorageIsRelative(backingStoreStr))
+        if (backingStoreStr && virStorageFileIsRelative(backingStoreStr))
             n->backingStore->relPath = g_steal_pointer(&backingStoreStr);
     }
 

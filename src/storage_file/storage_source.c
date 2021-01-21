@@ -185,7 +185,7 @@ virStorageFileChainLookup(virStorageSourcePtr chain,
 {
     virStorageSourcePtr prev;
     const char *start = chain->path;
-    bool nameIsFile = virStorageIsFile(name);
+    bool nameIsFile = virStorageFileIsFile(name);
 
     if (!parent)
         parent = &prev;
@@ -1532,7 +1532,7 @@ virStorageSourceNewFromBackingAbsolute(const char *path,
 
     *src = NULL;
 
-    if (virStorageIsFile(path)) {
+    if (virStorageFileIsFile(path)) {
         def->type = VIR_STORAGE_TYPE_FILE;
 
         def->path = g_strdup(path);
@@ -1604,7 +1604,7 @@ virStorageSourceNewFromChild(virStorageSourcePtr parent,
 
     *child = NULL;
 
-    if (virStorageIsRelative(parentRaw)) {
+    if (virStorageFileIsRelative(parentRaw)) {
         if (!(def = virStorageSourceNewFromBackingRelative(parent, parentRaw)))
             return -1;
     } else {

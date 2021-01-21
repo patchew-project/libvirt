@@ -1094,7 +1094,7 @@ qemuSnapshotDiskPrepareOne(virDomainObjPtr vm,
                 if (virStorageFileGetBackingStoreStr(dd->src, &backingStoreStr) < 0)
                     return -1;
                 if (backingStoreStr != NULL) {
-                    if (virStorageIsRelative(backingStoreStr))
+                    if (virStorageFileIsRelative(backingStoreStr))
                         dd->relPath = g_steal_pointer(&backingStoreStr);
                 }
             }

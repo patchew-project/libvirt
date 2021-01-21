@@ -33,8 +33,8 @@ int virStorageFileParseBackingStoreStr(const char *str,
                                        unsigned int *chainIndex)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
 
-bool virStorageIsFile(const char *path);
-bool virStorageIsRelative(const char *backing);
+bool virStorageFileIsFile(const char *path);
+bool virStorageFileIsRelative(const char *backing);
 
 int virStorageFileGetSCSIKey(const char *path,
                              char **key,

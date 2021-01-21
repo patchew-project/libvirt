@@ -3216,10 +3216,10 @@ virSocketAddrSetPort;
 virStorageFileCanonicalizePath;
 virStorageFileGetNPIVKey;
 virStorageFileGetSCSIKey;
+virStorageFileIsFile;
+virStorageFileIsRelative;
 virStorageFileParseBackingStoreStr;
 virStorageFileParseChainIndex;
-virStorageIsFile;
-virStorageIsRelative;
 
 
 # util/virstring.h

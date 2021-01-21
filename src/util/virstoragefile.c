@@ -38,7 +38,7 @@ VIR_LOG_INIT("util.storagefile");
 
 
 bool
-virStorageIsFile(const char *backing)
+virStorageFileIsFile(const char *backing)
 {
     char *colon;
     char *slash;
@@ -59,12 +59,12 @@ virStorageIsFile(const char *backing)
 
 
 bool
-virStorageIsRelative(const char *backing)
+virStorageFileIsRelative(const char *backing)
 {
     if (backing[0] == '/')
         return false;
 
-    if (!virStorageIsFile(backing))
+    if (!virStorageFileIsFile(backing))
         return false;
 
     return true;
