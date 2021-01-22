@@ -5119,4 +5119,8 @@ int virDomainAuthorizedSSHKeysSet(virDomainPtr domain,
                                   unsigned int nkeys,
                                   unsigned int flags);
 
+int virDomainGetDeprecations(virDomainPtr domain,
+                             char ***msgs,
+                             unsigned int flags);
+
 #endif /* LIBVIRT_DOMAIN_H */

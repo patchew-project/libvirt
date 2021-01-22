@@ -13102,3 +13102,50 @@ virDomainAuthorizedSSHKeysSet(virDomainPtr domain,
     virDispatchError(conn);
     return -1;
 }
+
+
+/**
+ * virDomainGetDeprecations:
+ * @domain: a domain object
+ * @msgs: pointer to a variable to store deprecation messages
+ * @flags: extra flags; not used yet, so callers should always pass 0
+ *
+ * Fetch a list of all deprecation messages for the VM and
+ * store them into @msgs array which is allocated upon
+ * successful return and is NULL terminated. The caller is
+ * responsible for freeing @msgs when no longer needed.
+ *
+ * Note that some hypervisors may only report deprecation
+ * messages while the VM is in a running state.
+ *
+ * Returns: number of messages stored in @msgs,
+ *          -1 otherwise.
+ */
+int
+virDomainGetDeprecations(virDomainPtr domain,
+                         char ***msgs,
+                         unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "msgs=%p, flags=0x%x", msgs, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+    virCheckNonNullArgGoto(msgs, error);
+
+    if (conn->driver->domainGetDeprecations) {
+        int ret;
+        ret = conn->driver->domainGetDeprecations(domain, msgs, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
