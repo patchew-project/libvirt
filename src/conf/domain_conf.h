@@ -2331,6 +2331,9 @@ struct _virDomainMemoryDef {
     unsigned long long labelsize; /* kibibytes; valid only for NVDIMM */
     unsigned long long blocksize; /* kibibytes; valid only for VIRTIO_MEM */
     unsigned long long requestedsize; /* kibibytes; valid only for VIRTIO_MEM */
+    unsigned long long actualsize; /* kibibytes, valid for VIRTIO_MEM and
+                                      active domain only, only to report never
+                                      parse */
     bool readonly; /* valid only for NVDIMM */
 
     /* required for QEMU NVDIMM ppc64 support */
@@ -3611,6 +3614,10 @@ int virDomainMemoryFindInactiveByDef(virDomainDefPtr def,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_WARN_UNUSED_RESULT;
 ssize_t virDomainMemoryFindByDeviceInfo(virDomainDefPtr dev,
                                         virDomainDeviceInfoPtr info)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_WARN_UNUSED_RESULT;
+
+ssize_t virDomainMemoryFindByDeviceAlias(virDomainDefPtr def,
+                                         const char *alias)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) G_GNUC_WARN_UNUSED_RESULT;
 
 int virDomainShmemDefInsert(virDomainDefPtr def, virDomainShmemDefPtr shmem)
