@@ -20319,6 +20319,36 @@ qemuDomainAuthorizedSSHKeysSet(virDomainPtr dom,
 }
 
 
+static int
+qemuDomainGetDeprecations(virDomainPtr dom,
+                          char ***msgs,
+                          unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    int rv = -1;
+    size_t i;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainGetDeprecationsEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    *msgs = g_new0(char *, vm->ndeprecations + 1);
+    for (i = 0; i < vm->ndeprecations; i++) {
+        (*msgs)[i] = g_strdup(vm->deprecations[i]);
+    }
+    (*msgs)[vm->ndeprecations] = NULL;
+    rv = vm->ndeprecations;
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return rv;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -20560,6 +20590,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainBackupGetXMLDesc = qemuDomainBackupGetXMLDesc, /* 6.0.0 */
     .domainAuthorizedSSHKeysGet = qemuDomainAuthorizedSSHKeysGet, /* 6.10.0 */
     .domainAuthorizedSSHKeysSet = qemuDomainAuthorizedSSHKeysSet, /* 6.10.0 */
+    .domainGetDeprecations = qemuDomainGetDeprecations, /* 7.1.0 */
 };
 
 
