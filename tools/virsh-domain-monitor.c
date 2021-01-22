@@ -1291,6 +1291,7 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
     char *str, uuid[VIR_UUID_STRING_BUFLEN];
     int has_managed_save = 0;
     virshControlPtr priv = ctl->privData;
+    char **deprecations = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
@@ -1391,6 +1392,18 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
             VIR_FREE(seclabel);
         }
     }
+
+    if (virDomainGetDeprecations(dom, &deprecations, 0) > 0) {
+        size_t i;
+        for (i = 0; deprecations[i] != NULL; i++) {
+            if (i == 0) {
+                vshPrint(ctl, "%-15s %s\n", _("Deprecations:"), deprecations[i]);
+            } else {
+                vshPrint(ctl, "%-15s %s\n", "", deprecations[i]);
+            }
+        }
+    }
+
     virshDomainFree(dom);
     return ret;
 }
