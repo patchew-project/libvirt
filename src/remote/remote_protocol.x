@@ -286,6 +286,9 @@ const REMOTE_DOMAIN_AUTHORIZED_SSH_KEYS_MAX = 2048;
 /* Upper limit on number of deprecation messages */
 const REMOTE_DOMAIN_DEPRECATIONS_MAX = 2048;
 
+/* Upper limit on number of tainting codes */
+const REMOTE_DOMAIN_TAINTING_MAX = 2048;
+
 
 /* UUID.  VIR_UUID_BUFLEN definition comes from libvirt.h */
 typedef opaque remote_uuid[VIR_UUID_BUFLEN];
@@ -3811,6 +3814,15 @@ struct remote_domain_get_deprecations_ret {
     remote_nonnull_string msgs<REMOTE_DOMAIN_DEPRECATIONS_MAX>;
 };
 
+struct remote_domain_get_tainting_args {
+    remote_nonnull_domain dom;
+    unsigned int flags;
+};
+
+struct remote_domain_get_tainting_ret {
+    remote_nonnull_string codes<REMOTE_DOMAIN_TAINTING_MAX>;
+};
+
 
 /*----- Protocol. -----*/
 
@@ -6733,5 +6745,11 @@ enum remote_procedure {
      * @generate: none
      * @acl: domain:read
      */
-    REMOTE_PROC_DOMAIN_GET_DEPRECATIONS = 426
+    REMOTE_PROC_DOMAIN_GET_DEPRECATIONS = 426,
+
+    /**
+     * @generate: none
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_GET_TAINTING = 427
 };

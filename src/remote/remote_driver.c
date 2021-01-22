@@ -8141,6 +8141,49 @@ remoteDomainGetDeprecations(virDomainPtr domain,
     return rv;
 }
 
+static int
+remoteDomainGetTainting(virDomainPtr domain,
+                        char ***codes,
+                        unsigned int flags)
+{
+    int rv = -1;
+    size_t i;
+    struct private_data *priv = domain->conn->privateData;
+    remote_domain_get_tainting_args args;
+    remote_domain_get_tainting_ret ret;
+
+    remoteDriverLock(priv);
+
+    make_nonnull_domain(&args.dom, domain);
+    args.flags = flags;
+    memset(&ret, 0, sizeof(ret));
+
+    if (call(domain->conn, priv, 0, REMOTE_PROC_DOMAIN_GET_TAINTING,
+             (xdrproc_t) xdr_remote_domain_get_tainting_args, (char *)&args,
+             (xdrproc_t) xdr_remote_domain_get_tainting_ret, (char *)&ret) == -1) {
+        goto cleanup;
+    }
+
+    if (ret.codes.codes_len > REMOTE_DOMAIN_TAINTING_MAX) {
+        virReportError(VIR_ERR_RPC, "%s",
+                       _("remoteDomainGetTainting: "
+                         "returned number of codes exceeds limit"));
+        goto cleanup;
+    }
+
+    *codes = g_new0(char *, ret.codes.codes_len + 1);
+    for (i = 0; i < ret.codes.codes_len; i++)
+        (*codes)[i] = g_strdup(ret.codes.codes_val[i]);
+
+    rv = ret.codes.codes_len;
+
+ cleanup:
+    remoteDriverUnlock(priv);
+    xdr_free((xdrproc_t)xdr_remote_domain_get_tainting_ret,
+             (char *) &ret);
+    return rv;
+}
+
 /* get_nonnull_domain and get_nonnull_network turn an on-wire
  * (name, uuid) pair into virDomainPtr or virNetworkPtr object.
  * These can return NULL if underlying memory allocations fail,
@@ -8575,6 +8618,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainAuthorizedSSHKeysGet = remoteDomainAuthorizedSSHKeysGet, /* 6.10.0 */
     .domainAuthorizedSSHKeysSet = remoteDomainAuthorizedSSHKeysSet, /* 6.10.0 */
     .domainGetDeprecations = remoteDomainGetDeprecations, /* 7.1.0 */
+    .domainGetTainting = remoteDomainGetTainting, /* 7.1.0 */
 };
 
 static virNetworkDriver network_driver = {

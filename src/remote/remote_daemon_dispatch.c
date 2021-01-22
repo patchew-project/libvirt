@@ -7508,3 +7508,49 @@ remoteDispatchDomainGetDeprecations(virNetServerPtr server G_GNUC_UNUSED,
 
     return rv;
 }
+
+
+static int
+remoteDispatchDomainGetTainting(virNetServerPtr server G_GNUC_UNUSED,
+                                virNetServerClientPtr client,
+                                virNetMessagePtr msg G_GNUC_UNUSED,
+                                virNetMessageErrorPtr rerr,
+                                remote_domain_get_tainting_args *args,
+                                remote_domain_get_tainting_ret *ret)
+{
+    int rv = -1;
+    virConnectPtr conn = remoteGetHypervisorConn(client);
+    int ncodes = 0;
+    char **codes = NULL;
+    virDomainPtr dom = NULL;
+
+    if (!conn)
+        goto cleanup;
+
+    if (!(dom = get_nonnull_domain(conn, args->dom)))
+        goto cleanup;
+
+    if ((ncodes = virDomainGetTainting(dom, &codes, args->flags)) < 0)
+        goto cleanup;
+
+    if (ncodes > REMOTE_DOMAIN_TAINTING_MAX) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Number of codes %d, which exceeds max limit: %d"),
+                       ncodes, REMOTE_DOMAIN_TAINTING_MAX);
+        goto cleanup;
+    }
+
+    ret->codes.codes_val = g_steal_pointer(&codes);
+    ret->codes.codes_len = ncodes;
+
+    rv = ncodes;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    if (ncodes > 0)
+        virStringListFreeCount(codes, ncodes);
+    virObjectUnref(dom);
+
+    return rv;
+}
