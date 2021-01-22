@@ -1404,6 +1404,10 @@ typedef int
 (*virDrvDomainGetDeprecations)(virDomainPtr domain,
                                char ***msgs,
                                unsigned int flags);
+typedef int
+(*virDrvDomainGetTainting)(virDomainPtr domain,
+                           char ***codes,
+                           unsigned int flags);
 
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
@@ -1671,4 +1675,5 @@ struct _virHypervisorDriver {
     virDrvDomainAuthorizedSSHKeysGet domainAuthorizedSSHKeysGet;
     virDrvDomainAuthorizedSSHKeysSet domainAuthorizedSSHKeysSet;
     virDrvDomainGetDeprecations domainGetDeprecations;
+    virDrvDomainGetTainting domainGetTainting;
 };

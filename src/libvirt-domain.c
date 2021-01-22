@@ -13149,3 +13149,51 @@ virDomainGetDeprecations(virDomainPtr domain,
     virDispatchError(conn);
     return -1;
 }
+
+
+/**
+ * virDomainGetTainting:
+ * @domain: a domain object
+ * @codes: pointer to a variable to store tainting codes
+ * @flags: extra flags; not used yet, so callers should always pass 0
+ *
+ * Fetch a list of all tainting codes for the VM and
+ * store them into @msgs array which is allocated upon
+ * successful return and is NULL terminated. The caller is
+ * responsible for freeing @msgs when no longer needed.
+ *
+ * Note that some hypervisors may only report tainting
+ * codes while the VM is in a running state. The list
+ * tainting codes is also hypervisor specific.
+ *
+ * Returns: number of messages stored in @msgs,
+ *          -1 otherwise.
+ */
+int
+virDomainGetTainting(virDomainPtr domain,
+                     char ***codes,
+                     unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "codes=%p, flags=0x%x", codes, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+    virCheckNonNullArgGoto(codes, error);
+
+    if (conn->driver->domainGetTainting) {
+        int ret;
+        ret = conn->driver->domainGetTainting(domain, codes, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
