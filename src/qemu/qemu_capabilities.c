@@ -610,6 +610,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "dc390",
               "am53c974",
               "virtio-pmem-pci",
+              "virtio-mem-pci",
     );
 
 
@@ -1327,6 +1328,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "dc390", QEMU_CAPS_SCSI_DC390 },
     { "am53c974", QEMU_CAPS_SCSI_AM53C974 },
     { "virtio-pmem-pci", QEMU_CAPS_DEVICE_VIRTIO_PMEM_PCI },
+    { "virtio-mem-pci", QEMU_CAPS_DEVICE_VIRTIO_MEM_PCI },
 };
 
 
