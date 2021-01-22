@@ -18,6 +18,13 @@ v7.1.0 (unreleased)
     The virtio-pmem is a virtio variant of NVDIMM and just like NVDIMM
     virtio-pmem also allows accessing host pages bypassing guest page cache.
 
+  * Introduce virtio-mem ``<memory/>`` model
+
+    New virtio-mem model is introduced for ``<memory/>`` device which is a
+    paravirtualized mechanism of adding/removing memory to/from a VM. Use
+    ``virDomainUpdateDeviceFlags()`` API to adjust amount of memory or ``virsh
+    update-memory`` for convenience.
+
 * **Improvements**
 
 * **Bug fixes**
