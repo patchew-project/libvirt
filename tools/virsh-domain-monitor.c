@@ -1292,6 +1292,7 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
     int has_managed_save = 0;
     virshControlPtr priv = ctl->privData;
     char **deprecations = NULL;
+    char **tainting = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
@@ -1390,6 +1391,17 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
             }
 
             VIR_FREE(seclabel);
+        }
+    }
+
+    if (virDomainGetTainting(dom, &tainting, 0) > 0) {
+        size_t i;
+        for (i = 0; tainting[i] != NULL; i++) {
+            if (i == 0) {
+                vshPrint(ctl, "%-15s %s\n", _("Tainting:"), tainting[i]);
+            } else {
+                vshPrint(ctl, "%-15s %s\n", "", tainting[i]);
+            }
         }
     }
 
