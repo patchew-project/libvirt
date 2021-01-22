@@ -2799,6 +2799,8 @@ struct _virDomainObj {
     void (*privateDataFreeFunc)(void *);
 
     int taint;
+    size_t ndeprecations;
+    char **deprecations;
 
     unsigned long long original_memlock; /* Original RLIMIT_MEMLOCK, zero if no
                                           * restore will be required later */
@@ -3056,6 +3058,8 @@ void virDomainObjEndAPI(virDomainObjPtr *vm);
 
 bool virDomainObjTaint(virDomainObjPtr obj,
                        virDomainTaintFlags taint);
+void virDomainObjDeprecation(virDomainObjPtr obj,
+                             const char *msg);
 
 void virDomainObjBroadcast(virDomainObjPtr vm);
 int virDomainObjWait(virDomainObjPtr vm);

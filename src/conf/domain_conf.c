@@ -1774,6 +1774,15 @@ bool virDomainObjTaint(virDomainObjPtr obj,
 }
 
 
+void virDomainObjDeprecation(virDomainObjPtr obj,
+                             const char *msg)
+{
+    obj->deprecations = g_renew(char *, obj->deprecations,
+                                obj->ndeprecations + 1);
+    obj->deprecations[obj->ndeprecations++] = g_strdup(msg);
+}
+
+
 static void
 virDomainGraphicsAuthDefClear(virDomainGraphicsAuthDefPtr def)
 {
@@ -21205,7 +21214,8 @@ virDomainObjParseXML(xmlDocPtr xml,
     int reason = 0;
     void *parseOpaque = NULL;
     g_autofree char *tmp = NULL;
-    g_autofree xmlNodePtr *nodes = NULL;
+    g_autofree xmlNodePtr *taintNodes = NULL;
+    g_autofree xmlNodePtr *depNodes = NULL;
 
     if (!(obj = virDomainObjNew(xmlopt)))
         return NULL;
@@ -21252,10 +21262,10 @@ virDomainObjParseXML(xmlDocPtr xml,
     }
     obj->pid = (pid_t)val;
 
-    if ((n = virXPathNodeSet("./taint", ctxt, &nodes)) < 0)
+    if ((n = virXPathNodeSet("./taint", ctxt, &taintNodes)) < 0)
         goto error;
     for (i = 0; i < n; i++) {
-        char *str = virXMLPropString(nodes[i], "flag");
+        char *str = virXMLPropString(taintNodes[i], "flag");
         if (str) {
             int flag = virDomainTaintTypeFromString(str);
             if (flag < 0) {
@@ -21267,6 +21277,13 @@ virDomainObjParseXML(xmlDocPtr xml,
             VIR_FREE(str);
             virDomainObjTaint(obj, flag);
         }
+    }
+
+    if ((n = virXPathNodeSet("./deprecation", ctxt, &depNodes)) < 0)
+        goto error;
+    for (i = 0; i < n; i++) {
+        g_autofree char *str = virXMLNodeContentString(depNodes[i]);
+        virDomainObjDeprecation(obj, str);
     }
 
     if (xmlopt->privateData.parse &&
@@ -29071,6 +29088,11 @@ virDomainObjFormat(virDomainObjPtr obj,
         if (obj->taint & (1 << i))
             virBufferAsprintf(&buf, "<taint flag='%s'/>\n",
                               virDomainTaintTypeToString(i));
+    }
+
+    for (i = 0; i < obj->ndeprecations; i++) {
+        virBufferEscapeString(&buf, "<deprecation>%s</deprecation>\n",
+                              obj->deprecations[i]);
     }
 
     if (xmlopt->privateData.format &&
