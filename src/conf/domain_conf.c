@@ -17297,6 +17297,29 @@ virDomainMemoryFindInactiveByDef(virDomainDefPtr def,
 }
 
 
+ssize_t
+virDomainMemoryFindByDeviceInfo(virDomainDefPtr def,
+                                virDomainDeviceInfoPtr info)
+{
+    size_t i;
+
+    for (i = 0; i < def->nmems; i++) {
+        virDomainMemoryDefPtr tmp = def->mems[i];
+
+        if (!virDomainDeviceInfoAddressIsEqual(&tmp->info, info))
+            continue;
+
+        /* alias, if present */
+        if (STRNEQ_NULLABLE(tmp->info.alias, info->alias))
+            continue;
+
+        return i;
+    }
+
+    return -1;
+}
+
+
 /**
  * virDomainMemoryInsert:
  *
