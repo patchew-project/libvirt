@@ -1155,10 +1155,11 @@ libm_dep = cc.find_library('m', required : false)
 
 netcf_version = '0.1.8'
 netcf_dep = dependency('netcf', version: '>=' + netcf_version, required: get_option('netcf'))
-if not get_option('netcf').disabled()
-  if netcf_dep.found()
-    conf.set('WITH_NETCF', 1)
+if get_option('netcf').enabled()
+  if not netcf_dep.found()
+    error('You must install the netcf development package to build with netcf')
   endif
+  conf.set('WITH_NETCF', 1)
 endif
 
 have_gnu_gettext_tools = false
