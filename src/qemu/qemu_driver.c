@@ -20349,6 +20349,40 @@ qemuDomainGetDeprecations(virDomainPtr dom,
 }
 
 
+static int
+qemuDomainGetTainting(virDomainPtr dom,
+                      char ***codes,
+                      unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    int rv = -1;
+    size_t i, n;
+    size_t ntaint;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainGetTaintingEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    ntaint = __builtin_popcount(vm->taint);
+    *codes = g_new0(char *, ntaint + 1);
+    for (i = 0, n = 0; i < VIR_DOMAIN_TAINT_LAST && n < ntaint; i++) {
+        if (vm->taint & (1 << i)) {
+            (*codes)[n++] = g_strdup(virDomainTaintTypeToString(i));
+        }
+    }
+    (*codes)[n] = NULL;
+    rv = ntaint;
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return rv;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -20591,6 +20625,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainAuthorizedSSHKeysGet = qemuDomainAuthorizedSSHKeysGet, /* 6.10.0 */
     .domainAuthorizedSSHKeysSet = qemuDomainAuthorizedSSHKeysSet, /* 6.10.0 */
     .domainGetDeprecations = qemuDomainGetDeprecations, /* 7.1.0 */
+    .domainGetTainting = qemuDomainGetTainting, /* 7.1.0 */
 };
 
 
