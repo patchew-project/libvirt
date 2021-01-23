@@ -814,7 +814,9 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
 static int
 qemuDomainAttachVirtioDiskDevice(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
-                                 virDomainDiskDefPtr disk)
+                                 virDomainDiskDefPtr disk,
+                                 int bootindex,
+                                 qemuDomainAsyncJob asyncJob)
 {
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_DISK, { .disk = disk } };
     bool releaseaddr = false;
@@ -823,8 +825,8 @@ qemuDomainAttachVirtioDiskDevice(virQEMUDriverPtr driver,
     if (qemuDomainEnsureVirtioAddress(&releaseaddr, vm, &dev, disk->dst) < 0)
         return -1;
 
-    if ((rv = qemuDomainAttachDiskGeneric(driver, vm, disk, 0,
-                                          QEMU_ASYNC_JOB_NONE)) < 0) {
+    if ((rv = qemuDomainAttachDiskGeneric(driver, vm, disk, bootindex,
+                                          asyncJob)) < 0) {
         if (rv == -1 && releaseaddr)
             qemuDomainReleaseDeviceAddress(vm, &disk->info);
 
@@ -1033,7 +1035,7 @@ static int
 qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
                                        virDomainObjPtr vm,
                                        virDomainDeviceDefPtr dev,
-                                       qemuDomainAsyncJob asyncJob G_GNUC_UNUSED)
+                                       qemuDomainAsyncJob asyncJob)
 {
     size_t i;
     virDomainDiskDefPtr disk = dev->data.disk;
@@ -1080,7 +1082,8 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
         break;
 
     case VIR_DOMAIN_DISK_BUS_VIRTIO:
-        ret = qemuDomainAttachVirtioDiskDevice(driver, vm, disk);
+        ret = qemuDomainAttachVirtioDiskDevice(driver, vm, disk,
+                                               disk->info.bootIndex, asyncJob);
         break;
 
     case VIR_DOMAIN_DISK_BUS_SCSI:

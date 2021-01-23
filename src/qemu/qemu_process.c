@@ -6907,7 +6907,7 @@ qemuCheckTransientDiskSharable(virDomainObjPtr vm)
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
 
-        if (disk->transient && disk->bus != VIR_DOMAIN_DISK_BUS_LAST)
+        if (disk->transient && disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO)
              return;
     }
 
