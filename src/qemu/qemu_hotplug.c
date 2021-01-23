@@ -1030,7 +1030,8 @@ qemuDomainAttachUSBMassStorageDevice(virQEMUDriverPtr driver,
 static int
 qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
                                        virDomainObjPtr vm,
-                                       virDomainDeviceDefPtr dev)
+                                       virDomainDeviceDefPtr dev,
+                                       qemuDomainAsyncJob asyncJob G_GNUC_UNUSED)
 {
     size_t i;
     virDomainDiskDefPtr disk = dev->data.disk;
@@ -1138,7 +1139,7 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
         return 0;
     }
 
-    return qemuDomainAttachDeviceDiskLiveInternal(driver, vm, dev);
+    return qemuDomainAttachDeviceDiskLiveInternal(driver, vm, dev, QEMU_ASYNC_JOB_NONE);
 }
 
 
