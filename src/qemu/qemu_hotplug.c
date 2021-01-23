@@ -694,6 +694,7 @@ static int
 qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainDiskDefPtr disk,
+                            unsigned int bootindex,
                             qemuDomainAsyncJob asyncJob)
 {
     g_autoptr(qemuBlockStorageSourceChainData) data = NULL;
@@ -732,7 +733,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
             goto cleanup;
     }
 
-    if (!(devstr = qemuBuildDiskDeviceStr(vm->def, disk, 0, priv->qemuCaps)))
+    if (!(devstr = qemuBuildDiskDeviceStr(vm->def, disk, bootindex, priv->qemuCaps)))
         goto cleanup;
 
     if (VIR_REALLOC_N(vm->def->disks, vm->def->ndisks + 1) < 0)
@@ -822,7 +823,8 @@ qemuDomainAttachVirtioDiskDevice(virQEMUDriverPtr driver,
     if (qemuDomainEnsureVirtioAddress(&releaseaddr, vm, &dev, disk->dst) < 0)
         return -1;
 
-    if ((rv = qemuDomainAttachDiskGeneric(driver, vm, disk, QEMU_ASYNC_JOB_NONE)) < 0) {
+    if ((rv = qemuDomainAttachDiskGeneric(driver, vm, disk, 0,
+                                          QEMU_ASYNC_JOB_NONE)) < 0) {
         if (rv == -1 && releaseaddr)
             qemuDomainReleaseDeviceAddress(vm, &disk->info);
 
@@ -1001,7 +1003,7 @@ qemuDomainAttachSCSIDisk(virQEMUDriverPtr driver,
             return -1;
     }
 
-    if (qemuDomainAttachDiskGeneric(driver, vm, disk, QEMU_ASYNC_JOB_NONE) < 0)
+    if (qemuDomainAttachDiskGeneric(driver, vm, disk, 0, QEMU_ASYNC_JOB_NONE) < 0)
         return -1;
 
     return 0;
@@ -1018,7 +1020,7 @@ qemuDomainAttachUSBMassStorageDevice(virQEMUDriverPtr driver,
     if (virDomainUSBAddressEnsure(priv->usbaddrs, &disk->info) < 0)
         return -1;
 
-    if (qemuDomainAttachDiskGeneric(driver, vm, disk, QEMU_ASYNC_JOB_NONE) < 0) {
+    if (qemuDomainAttachDiskGeneric(driver, vm, disk, 0, QEMU_ASYNC_JOB_NONE) < 0) {
         virDomainUSBAddressRelease(priv->usbaddrs, &disk->info);
         return -1;
     }
