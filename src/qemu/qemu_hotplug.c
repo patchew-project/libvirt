@@ -4302,7 +4302,8 @@ static bool qemuIsMultiFunctionDevice(virDomainDefPtr def,
 static int
 qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
-                           virDomainDiskDefPtr disk)
+                           virDomainDiskDefPtr disk,
+                           qemuDomainAsyncJob asyncJob)
 {
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
     g_autoptr(qemuBlockStorageSourceChainData) diskBackend = NULL;
@@ -4347,7 +4348,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
         }
     }
 
-    qemuDomainObjEnterMonitor(driver, vm);
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        goto cleanup;
 
     if (corAlias)
         ignore_value(qemuMonitorBlockdevDel(priv->mon, corAlias));
@@ -5093,7 +5095,8 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
          * into this function.
          */
     case VIR_DOMAIN_DEVICE_DISK:
-        if (qemuDomainRemoveDiskDevice(driver, vm, dev->data.disk) < 0)
+        if (qemuDomainRemoveDiskDevice(driver, vm, dev->data.disk,
+                                       QEMU_ASYNC_JOB_NONE) < 0)
             return -1;
         break;
     case VIR_DOMAIN_DEVICE_CONTROLLER:
