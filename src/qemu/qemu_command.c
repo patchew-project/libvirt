@@ -2139,6 +2139,9 @@ qemuBuildDisksCommandLine(virCommandPtr cmd,
                 bootCD = 0;
                 break;
             case VIR_DOMAIN_DISK_DEVICE_DISK:
+                /* to use bootindex later for transient disk */
+                disk->info.bootIndex = bootDisk;
+                G_GNUC_FALLTHROUGH;
             case VIR_DOMAIN_DISK_DEVICE_LUN:
                 bootindex = bootDisk;
                 bootDisk = 0;

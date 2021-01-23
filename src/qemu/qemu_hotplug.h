@@ -160,3 +160,6 @@ int qemuHotplugAttachDBusVMState(virQEMUDriverPtr driver,
 int qemuHotplugRemoveDBusVMState(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
                                  qemuDomainAsyncJob asyncJob);
+
+int qemuHotplugCreateDisksTransient(virDomainObjPtr vm,
+                                    qemuDomainAsyncJob asyncJob);

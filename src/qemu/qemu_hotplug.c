@@ -6710,3 +6710,288 @@ qemuDomainSetVcpuInternal(virQEMUDriverPtr driver,
     virBitmapFree(livevcpus);
     return ret;
 }
+
+struct _qemuHotplugTransientDiskContext {
+    virDomainDeviceDefPtr trandev;
+    virDomainDiskDefPtr *domdisk;
+    size_t ndd;
+};
+
+typedef struct  _qemuHotplugTransientDiskContext  qemuHotplugTransientDiskContext;
+typedef qemuHotplugTransientDiskContext *qemuHotplugTransientDiskContextPtr;
+
+static qemuHotplugTransientDiskContextPtr
+qemuHotplugTransientDiskContextNew(size_t ndisks)
+{
+    qemuHotplugTransientDiskContextPtr ret = g_new0(qemuHotplugTransientDiskContext, 1);
+
+    ret->trandev = g_new0(virDomainDeviceDef, ndisks);
+    ret->domdisk = g_new0(virDomainDiskDefPtr, ndisks);
+
+    return ret;
+}
+
+static void
+qemuHotplugTransientDiskCleanup(virDomainDeviceDefPtr data,
+                                virDomainDiskDefPtr *domdisk)
+{
+    VIR_FREE(data);
+    VIR_FREE(domdisk);
+
+    return;
+}
+
+static void
+qemuHotplugTransientDiskContextCleanup(qemuHotplugTransientDiskContextPtr hptctxt)
+{
+    if (!hptctxt)
+        return;
+
+    qemuHotplugTransientDiskCleanup(hptctxt->trandev, hptctxt->domdisk);
+
+    g_free(hptctxt);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(qemuHotplugTransientDiskContext, qemuHotplugTransientDiskContextCleanup);
+
+static int
+qemuHotplugDiskPrepareOneBlockdev(virQEMUDriverPtr driver,
+                                  virDomainObjPtr vm,
+                                  virQEMUDriverConfigPtr cfg,
+                                  virDomainDiskDefPtr domdisk,
+                                  virDomainDiskDefPtr trandisk,
+                                  GHashTable *blockNamedNodeData,
+                                  qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    g_autoptr(qemuBlockStorageSourceChainData) data = NULL;
+    g_autoptr(virStorageSource) terminator = NULL;
+
+    terminator = virStorageSourceNew();
+
+    if (qemuDomainPrepareStorageSourceBlockdev(trandisk, trandisk->src,
+                                               priv, cfg) < 0)
+        return -1;
+
+    if (!(data = qemuBuildStorageSourceChainAttachPrepareBlockdevTop(trandisk->src,
+                                                                     terminator,
+                                                                     priv->qemuCaps)))
+        return -1;
+
+    if (qemuBlockStorageSourceCreateDetectSize(blockNamedNodeData,
+                                               trandisk->src, domdisk->src) < 0)
+       return -1;
+
+    if (qemuBlockStorageSourceCreate(vm, trandisk->src, domdisk->src,
+                                    NULL, data->srcdata[0],
+                                    asyncJob) < 0)
+       return -1;
+
+    /* blockdev-del the transient disk src. The disk is blockdev-add'ed
+     * while the disk is hot-added */
+    if (qemuBlockStorageSourceDetachOneBlockdev(driver, vm,
+                                                asyncJob, trandisk->src) < 0)
+       return -1;
+
+    return 0;
+}
+
+static int
+qemuHotplugDiskTransientPrepareOne(virDomainObjPtr vm,
+                                   virQEMUDriverConfigPtr cfg,
+                                   virDomainDiskDefPtr domdisk,
+                                   virDomainDiskDefPtr trandisk,
+                                   GHashTable *blockNamedNodeData,
+                                   qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    bool supportsCreate;
+
+    if (qemuDomainStorageSourceValidateDepth(trandisk->src, 1, trandisk->dst) < 0)
+        return -1;
+
+    if (virStorageSourceInitChainElement(trandisk->src, domdisk->src, false) < 0)
+        return -1;
+
+    trandisk->src->readonly = false;
+    supportsCreate = virStorageSourceSupportsCreate(trandisk->src);
+
+    if (supportsCreate) {
+        if (qemuDomainStorageFileInit(driver, vm, trandisk->src, NULL) < 0)
+            return -1;
+
+        if (virStorageSourceCreate(trandisk->src) < 0) {
+            virReportSystemError(errno, _("failed to create image file '%s'"),
+                                     NULLSTR(trandisk->src->path));
+            return -1;
+        }
+    }
+
+    if (qemuDomainStorageSourceAccessAllow(driver, vm, trandisk->src,
+                                           false, true, true) < 0)
+        return -1;
+
+    if (qemuHotplugDiskPrepareOneBlockdev(driver, vm, cfg, domdisk, trandisk,
+                                          blockNamedNodeData, asyncJob) < 0)
+        return -1;
+
+    return 0;
+}
+
+static qemuHotplugTransientDiskContextPtr
+qemuHotplugDiskPrepareDisksTransient(virDomainObjPtr vm,
+                                     virQEMUDriverConfigPtr cfg,
+                                     GHashTable *blockNamedNodeData,
+                                     qemuDomainAsyncJob asyncJob)
+{
+    g_autoptr(qemuHotplugTransientDiskContext) hptctxt = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    size_t i;
+
+    hptctxt = qemuHotplugTransientDiskContextNew(vm->def->ndisks);
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr domdisk = vm->def->disks[i];
+        virDomainDiskDefPtr trandisk;
+        virDomainDeviceDefPtr trandev;
+
+        if (!(trandisk = virDomainDiskDefNew(driver->xmlopt)))
+            return NULL;
+
+        trandev = hptctxt->trandev + hptctxt->ndd;
+        trandev->type = VIR_DOMAIN_DEVICE_DISK;
+
+        memcpy(&trandisk->info, &domdisk->info, sizeof(virDomainDeviceInfo));
+        trandisk->info.alias = NULL;
+        trandisk->info.romfile = NULL;
+
+        if (domdisk->transient) {
+            trandisk->src = virStorageSourceNew();
+            trandisk->src->type = VIR_STORAGE_TYPE_FILE;
+            trandisk->src->format = VIR_STORAGE_FILE_QCOW2;
+            trandisk->src->path = g_strdup_printf("%s.TRANSIENT-%s",
+                                               domdisk->src->path, vm->def->name);
+
+            if (!(trandisk->src->backingStore =
+                                 virStorageSourceCopy(domdisk->src, false)))
+               return NULL;
+
+            if (virFileExists(trandisk->src->path)) {
+                virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                               _("Overlay file '%s' for transient disk '%s' already exists"),
+                               trandisk->src->path, domdisk->dst);
+                return NULL;
+            }
+
+            if (qemuHotplugDiskTransientPrepareOne(vm, cfg, domdisk, trandisk,
+                                                   blockNamedNodeData,
+                                                   asyncJob) < 0)
+                return NULL;
+        } else {
+            /* The disks without transient option will be device_add as well
+             * because to fix the bootindex */
+            if (!(trandisk->src = virStorageSourceCopy(domdisk->src, false)))
+                return NULL;
+        }
+
+        trandisk->bus = domdisk->bus;
+        trandisk->dst = g_strdup(domdisk->dst);
+        trandev->data.disk = trandisk;
+
+        hptctxt->domdisk[hptctxt->ndd] = domdisk;
+
+        hptctxt->ndd++;
+    }
+
+    return g_steal_pointer(&hptctxt);
+}
+
+static int
+qemuHotplugDiskTransientCreate(virDomainObjPtr vm,
+                               qemuHotplugTransientDiskContextPtr hptctxt,
+                               virQEMUDriverConfigPtr cfg,
+                               qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    const char *alias = NULL;
+    size_t i;
+    int ret;
+
+    for (i = 0; i < hptctxt->ndd; i++) {
+        virDomainDeviceDefPtr trandev = hptctxt->trandev + i;
+        virDomainDiskDefPtr domdisk = hptctxt->domdisk[i];
+        bool transient = domdisk->transient;
+
+        /* transient disk doesn't support disk hotplug. Disable it here temporarily
+         * to remove it  */
+        if (transient)
+            domdisk->transient = false;
+
+       /* blockdev-del StorageProgs and FormatProps of domdisk so that
+        * qemuDomainAttachDeviceDiskLiveInternal() can blockdev-add without
+        * write lock issue */
+        if (qemuDomainRemoveDiskDevice(driver, vm, domdisk, asyncJob) < 0)
+            return -1;
+
+        ret = qemuDomainAttachDeviceDiskLiveInternal(driver, vm, trandev, asyncJob);
+        if (!ret) {
+            alias = trandev->data.disk->info.alias;
+            if (transient) {
+                trandev->data.disk->transient = true;
+            }
+        } else {
+            VIR_DEBUG("Failed to attach disk %s (transient: %d) with disk hotplug.",
+                      trandev->data.disk->dst, transient);
+            return -1;
+        }
+
+        if (alias) {
+            virObjectEventPtr event;
+            event = virDomainEventDeviceAddedNewFromObj(vm, alias);
+            virObjectEventStateQueue(driver->domainEventState, event);
+        }
+
+        if (qemuDomainUpdateDeviceList(driver, vm, asyncJob) < 0)
+            return -1;
+    }
+
+    if (virDomainObjSave(vm, driver->xmlopt, cfg->stateDir) < 0)
+        return -1;
+
+    return 0;
+}
+
+int
+qemuHotplugCreateDisksTransient(virDomainObjPtr vm,
+                                qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
+    g_autoptr(qemuHotplugTransientDiskContext) hptctxt = NULL;
+    g_autoptr(GHashTable) blockNamedNodeData = NULL;
+
+    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV) &&
+        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PCIE_ROOT_PORT_HOTPLUG)) {
+
+        VIR_DEBUG("prepare transient disks with disk hotplug");
+
+        if (!(blockNamedNodeData = qemuBlockGetNamedNodeData(vm, asyncJob)))
+            return -1;
+
+        if (!(hptctxt = qemuHotplugDiskPrepareDisksTransient(vm, cfg,
+                                                 blockNamedNodeData,
+                                                 asyncJob)))
+            return -1;
+
+        if (qemuHotplugDiskTransientCreate(vm, hptctxt, cfg, asyncJob) < 0)
+            return -1;
+    }
+
+    priv->inhibitDiskTransientDelete = false;
+
+    return 0;
+}
