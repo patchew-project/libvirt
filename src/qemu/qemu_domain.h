@@ -267,6 +267,9 @@ struct _qemuDomainObjPrivate {
     /* prevent deletion of <transient> disk overlay files between startup and
      * succesful setup of the overlays */
     bool inhibitDiskTransientDelete;
+
+    /* True if the all transient disks are sharable */
+    bool TransientDiskSharable;
 };
 
 #define QEMU_DOMAIN_PRIVATE(vm) \

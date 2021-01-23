@@ -6892,6 +6892,40 @@ qemuProcessEnablePerf(virDomainObjPtr vm)
     return 0;
 }
 
+static void
+qemuCheckTransientDiskSharable(virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool hotplug = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PCIE_ROOT_PORT_HOTPLUG);
+    size_t i;
+
+    priv->TransientDiskSharable = false;
+
+    if (!hotplug)
+        return;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        if (disk->transient && disk->bus != VIR_DOMAIN_DISK_BUS_LAST)
+             return;
+    }
+
+    priv->TransientDiskSharable = true;
+}
+
+static int
+qemuProcessCreateDisksTransient(virDomainObjPtr vm,
+                                qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (priv->TransientDiskSharable)
+        return qemuHotplugCreateDisksTransient(vm, asyncJob);
+    else
+        return qemuSnapshotCreateDisksTransient(vm, asyncJob);
+}
+
 
 /**
  * qemuProcessLaunch:
@@ -6981,6 +7015,8 @@ qemuProcessLaunch(virConnectPtr conn,
                             qemuDomainLogContextGetManager(logCtxt),
                             incoming != NULL) < 0)
         goto cleanup;
+
+    qemuCheckTransientDiskSharable(vm);
 
     VIR_DEBUG("Building emulator command line");
     if (!(cmd = qemuBuildCommandLine(driver,
@@ -7228,7 +7264,7 @@ qemuProcessLaunch(virConnectPtr conn,
         goto cleanup;
 
     VIR_DEBUG("Setting up transient disk");
-    if (qemuSnapshotCreateDisksTransient(vm, asyncJob) < 0)
+    if (qemuProcessCreateDisksTransient(vm, asyncJob) < 0)
         goto cleanup;
 
     ret = 0;

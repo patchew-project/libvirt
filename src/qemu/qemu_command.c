@@ -2063,9 +2063,13 @@ qemuBuildDiskCommandLine(virCommandPtr cmd,
                          const virDomainDef *def,
                          virDomainDiskDefPtr disk,
                          virQEMUCapsPtr qemuCaps,
-                         unsigned int bootindex)
+                         unsigned int bootindex,
+                         qemuDomainObjPrivatePtr priv)
 {
     g_autofree char *optstr = NULL;
+
+    if ((disk->transient) && (priv->TransientDiskSharable))
+        disk->src->readonly = true;
 
     if (qemuBuildDiskSourceCommandLine(cmd, disk, qemuCaps) < 0)
         return -1;
@@ -2084,6 +2088,10 @@ qemuBuildDiskCommandLine(virCommandPtr cmd,
     if (qemuCommandAddExtDevice(cmd, &disk->info) < 0)
         return -1;
 
+    /* All disks are hot-added later if TransientDiskSharable is true */
+    if (priv->TransientDiskSharable)
+        return 0;
+
     virCommandAddArg(cmd, "-device");
 
     if (!(optstr = qemuBuildDiskDeviceStr(def, disk, bootindex,
@@ -2098,7 +2106,8 @@ qemuBuildDiskCommandLine(virCommandPtr cmd,
 static int
 qemuBuildDisksCommandLine(virCommandPtr cmd,
                           const virDomainDef *def,
-                          virQEMUCapsPtr qemuCaps)
+                          virQEMUCapsPtr qemuCaps,
+                          qemuDomainObjPrivatePtr priv)
 {
     size_t i;
     unsigned int bootCD = 0;
@@ -2154,7 +2163,7 @@ qemuBuildDisksCommandLine(virCommandPtr cmd,
         if (disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY)
             bootindex = 0;
 
-        if (qemuBuildDiskCommandLine(cmd, def, disk, qemuCaps, bootindex) < 0)
+        if (qemuBuildDiskCommandLine(cmd, def, disk, qemuCaps, bootindex, priv) < 0)
             return -1;
     }
 
@@ -9935,7 +9944,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                                               VIR_DOMAIN_CONTROLLER_TYPE_CCID) < 0)
         return NULL;
 
-    if (qemuBuildDisksCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildDisksCommandLine(cmd, def, qemuCaps, priv) < 0)
         return NULL;
 
     if (qemuBuildFilesystemCommandLine(cmd, def, qemuCaps, priv) < 0)
