@@ -5947,6 +5947,9 @@ qemuBuildClockArgStr(virDomainClockDefPtr def)
             case VIR_DOMAIN_TIMER_TRACK_WALL:
                 virBufferAddLit(&buf, ",clock=host");
                 break;
+            case VIR_DOMAIN_TIMER_TRACK_REALTIME:
+                virBufferAddLit(&buf, ",clock=rt");
+                break;
             }
 
             switch (def->timers[i]->tickpolicy) {
