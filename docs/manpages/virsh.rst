@@ -7629,7 +7629,7 @@ using the UNIX driver. Ideally the process will also have had the
 ::
 
        $ qemu-kvm -cdrom ~/demo.iso \
-           -monitor unix:/tmp/demo,server,nowait \
+           -monitor unix:/tmp/demo,server=on,wait=off \
            -name foo \
            -uuid cece4f9f-dff0-575d-0e8e-01fe380f12ea  &
        $ QEMUPID=$!

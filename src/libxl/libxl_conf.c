@@ -263,13 +263,13 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
 
         *buf = g_strdup_printf("%s:%s:%s%s", prefix, srcdef->data.tcp.host,
                                srcdef->data.tcp.service,
-                               srcdef->data.tcp.listen ? ",server,nowait" : "");
+                               srcdef->data.tcp.listen ? ",server=on,wait=off" : "");
         break;
     }
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
         *buf = g_strdup_printf("unix:%s%s", srcdef->data.nix.path,
-                               srcdef->data.nix.listen ? ",server,nowait" : "");
+                               srcdef->data.nix.listen ? ",server=on,wait=off" : "");
         break;
 
     default:

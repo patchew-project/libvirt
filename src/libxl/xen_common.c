@@ -872,7 +872,7 @@ xenParseSxprChar(const char *value,
         else
             def->source->data.tcp.service = g_strdup(offset);
 
-        if (offset2 && strstr(offset2, ",server"))
+        if (offset2 && strstr(offset2, ",server=on"))
             def->source->data.tcp.listen = true;
     }
     break;
@@ -924,7 +924,7 @@ xenParseSxprChar(const char *value,
             def->source->data.nix.path = g_strdup(value);
 
         if (offset != NULL &&
-            strstr(offset, ",server") != NULL)
+            strstr(offset, ",server=on") != NULL)
             def->source->data.nix.listen = true;
     }
     break;
@@ -1587,7 +1587,7 @@ xenFormatSxprChr(virDomainChrDefPtr def,
                           NULLSTR_EMPTY(def->source->data.tcp.host),
                           NULLSTR_EMPTY(def->source->data.tcp.service),
                           (def->source->data.tcp.listen ?
-                           ",server,nowait" : ""));
+                           ",server=on,wait=off" : ""));
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UDP:
@@ -1602,7 +1602,7 @@ xenFormatSxprChr(virDomainChrDefPtr def,
         virBufferAsprintf(buf, "%s:", type);
         virBufferEscapeSexpr(buf, "%s", def->source->data.nix.path);
         if (def->source->data.nix.listen)
-            virBufferAddLit(buf, ",server,nowait");
+            virBufferAddLit(buf, ",server=on,wait=off");
         break;
 
     default:

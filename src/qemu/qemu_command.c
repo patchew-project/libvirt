@@ -4843,9 +4843,9 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                           telnet ? ",telnet" : "");
 
         if (dev->data.tcp.listen) {
-            virBufferAddLit(&buf, ",server");
+            virBufferAddLit(&buf, ",server=on");
             if (cdevflags & QEMU_BUILD_CHARDEV_TCP_NOWAIT)
-                virBufferAddLit(&buf, ",nowait");
+                virBufferAddLit(&buf, ",wait=off");
         }
 
         qemuBuildChrChardevReconnectStr(&buf, &dev->data.tcp.reconnect);
@@ -4906,9 +4906,9 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
             virQEMUBuildBufferEscapeComma(&buf, dev->data.nix.path);
         }
         if (dev->data.nix.listen) {
-            virBufferAddLit(&buf, ",server");
+            virBufferAddLit(&buf, ",server=on");
             if (cdevflags & QEMU_BUILD_CHARDEV_TCP_NOWAIT)
-                virBufferAddLit(&buf, ",nowait");
+                virBufferAddLit(&buf, ",wait=off");
         }
 
         qemuBuildChrChardevReconnectStr(&buf, &dev->data.nix.reconnect);
@@ -7730,7 +7730,7 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
      * in this bit of the code */
     if (!graphics->data.spice.auth.passwd &&
         !cfg->spicePassword)
-        virBufferAddLit(&opt, "disable-ticketing,");
+        virBufferAddLit(&opt, "disable-ticketing=on,");
 
     if (hasSecure) {
         virBufferAddLit(&opt, "x509-dir=");
@@ -7812,10 +7812,10 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         virBufferAsprintf(&opt, "streaming-video=%s,",
                           virDomainGraphicsSpiceStreamingModeTypeToString(graphics->data.spice.streaming));
     if (graphics->data.spice.copypaste == VIR_TRISTATE_BOOL_NO)
-        virBufferAddLit(&opt, "disable-copy-paste,");
+        virBufferAddLit(&opt, "disable-copy-paste=on,");
 
     if (graphics->data.spice.filetransfer == VIR_TRISTATE_BOOL_NO)
-        virBufferAddLit(&opt, "disable-agent-file-xfer,");
+        virBufferAddLit(&opt, "disable-agent-file-xfer=on,");
 
     if (graphics->data.spice.gl == VIR_TRISTATE_BOOL_YES) {
         /* spice.gl is a TristateBool, but qemu expects on/off: use
