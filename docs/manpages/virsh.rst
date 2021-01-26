@@ -6859,7 +6859,7 @@ If *--atomic* is specified, libvirt will guarantee that the snapshot
 either succeeds, or fails with no changes; not all hypervisors support
 this.  If this flag is not specified, then some hypervisors may fail
 after partially performing the action, and ``dumpxml`` must be used to
-see whether any partial changes occurred.
+see whether any partial changes occurred. No effect on QEMU hypervisor.
 
 If *--live* is specified, libvirt takes the snapshot while
 the guest is running. Both disk snapshot and domain memory snapshot are
