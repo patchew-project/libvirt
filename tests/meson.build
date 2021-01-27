@@ -546,6 +546,10 @@ if conf.has('WITH_YAJL')
   ]
 endif
 
+# Increase the default timeout because some tests may run longer,
+# esp. on slower systems.
+timeout = 180
+
 foreach data : tests
   test_sources = '@0@.c'.format(data['name'])
   test_bin = executable(
@@ -577,12 +581,6 @@ foreach data : tests
     ],
     export_dynamic: true,
   )
-  if data['name'] == 'qemuxml2argvtest'
-    timeout = 90
-  else
-    # default meson timeout
-    timeout = 30
-  endif
   test(data['name'], test_bin, env: tests_env, timeout: timeout)
 endforeach
 
@@ -683,7 +681,7 @@ endif
 
 foreach name : test_scripts
   script = find_program(name)
-  test(name, script, env: tests_env)
+  test(name, script, env: tests_env, timeout: timeout)
 endforeach
 
 add_test_setup(
@@ -703,6 +701,6 @@ add_test_setup(
     '--suppressions=@0@'.format(meson.current_source_dir() / '.valgrind.supp'),
     '--error-exitcode=1',
   ],
-  # default timeout in meson is 30s
+  # Tests take a lot longer when run under Valgrind
   timeout_multiplier: 4,
 )

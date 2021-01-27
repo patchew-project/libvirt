@@ -44,6 +44,7 @@ if git
         potfiles_dep,
       ],
       suite: 'syntax-check',
+      timeout: 120,
     )
   endforeach
 endif
