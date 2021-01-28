@@ -4768,6 +4768,90 @@
 }
 
 {
+  "execute": "device-list-properties",
+  "arguments": {
+    "typename": "vhost-user-fs-device"
+  },
+  "id": "libvirt-33"
+}
+
+{
+  "return": [
+    {
+      "default-value": false,
+      "name": "packed",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "use-disabled-flag",
+      "type": "bool"
+    },
+    {
+      "default-value": false,
+      "name": "iommu_platform",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "event_idx",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "default-value": false,
+      "name": "x-disable-legacy-check",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "notify_on_empty",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "any_layout",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "use-started",
+      "type": "bool"
+    },
+    {
+      "default-value": true,
+      "name": "indirect_desc",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "name": "chardev",
+      "description": "ID of a chardev to use as a backend",
+      "type": "str"
+    },
+    {
+      "default-value": 128,
+      "name": "queue-size",
+      "type": "uint16"
+    },
+    {
+      "name": "tag",
+      "type": "str"
+    },
+    {
+      "default-value": 1,
+      "name": "num-request-queues",
+      "type": "uint16"
+    }
+  ],
+  "id": "libvirt-33"
+}
+
+{
   "execute": "qom-list-properties",
   "arguments": {
     "typename": "memory-backend-file"
