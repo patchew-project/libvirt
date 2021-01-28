@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
         origenv++;
     }
 
-    if (!(newenv = malloc(sizeof(*newenv) * n)))
+    if ((n == 0) || !(newenv = malloc(sizeof(*newenv) * n)))
         abort();
 
     origenv = environ;
