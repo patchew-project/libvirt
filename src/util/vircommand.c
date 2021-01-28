@@ -1520,21 +1520,16 @@ virCommandAddEnvXDG(virCommandPtr cmd, const char *baseDir)
 void
 virCommandAddArg(virCommandPtr cmd, const char *val)
 {
-    char *arg;
-
     if (!cmd || cmd->has_error)
         return;
 
-    arg = g_strdup(val);
-
     /* Arg plus trailing NULL. */
     if (VIR_RESIZE_N(cmd->args, cmd->maxargs, cmd->nargs, 1 + 1) < 0) {
-        VIR_FREE(arg);
         cmd->has_error = ENOMEM;
         return;
     }
 
-    cmd->args[cmd->nargs++] = arg;
+    cmd->args[cmd->nargs++] = g_strdup(val);
 }
 
 
