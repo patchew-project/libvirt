@@ -254,7 +254,10 @@ udevGetIntSysfsAttr(struct udev_device *udev_device,
 
     str = udevGetDeviceSysfsAttr(udev_device, attr_name);
 
-    if (str && virStrToLong_i(str, NULL, base, value) < 0) {
+    if (!str)
+        return -1;
+
+    if (virStrToLong_i(str, NULL, base, value) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Failed to convert '%s' to int"), str);
         return -1;
