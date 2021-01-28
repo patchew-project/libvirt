@@ -1525,11 +1525,6 @@ virCommandAddArg(virCommandPtr cmd, const char *val)
     if (!cmd || cmd->has_error)
         return;
 
-    if (val == NULL) {
-        cmd->has_error = EINVAL;
-        return;
-    }
-
     arg = g_strdup(val);
 
     /* Arg plus trailing NULL. */
