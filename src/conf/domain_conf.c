@@ -10345,7 +10345,8 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     def->src->path = g_steal_pointer(&source);
     def->dst = g_steal_pointer(&target);
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
+                                    flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT) < 0)
         goto error;
 
     return def;
@@ -24896,7 +24897,7 @@ virDomainFSDefFormat(virBufferPtr buf,
     if (def->readonly)
         virBufferAddLit(buf, "<readonly/>\n");
 
-    virDomainDeviceInfoFormat(buf, &def->info, flags);
+    virDomainDeviceInfoFormat(buf, &def->info, flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT);
 
     if (def->space_hard_limit)
         virBufferAsprintf(buf, "<space_hard_limit unit='bytes'>"
