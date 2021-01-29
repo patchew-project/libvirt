@@ -108,16 +108,15 @@ static int envsort(const void *a, const void *b)
 
 static int printEnvironment(FILE *log)
 {
-    char **newenv;
+    g_autofree char **newenv = NULL;
     size_t length;
     size_t i;
-    int ret = -1;
 
     for (length = 0; environ[length]; length++) {
     }
 
     if (!(newenv = malloc(sizeof(*newenv) * length)))
-        goto cleanup;
+        return -1;
 
     for (i = 0; i < length; i++) {
         newenv[i] = environ[i];
@@ -132,12 +131,7 @@ static int printEnvironment(FILE *log)
             fprintf(log, "ENV:%s\n", newenv[i]);
     }
 
-    ret = 0;
-
- cleanup:
-    if (newenv)
-        free(newenv);
-    return ret;
+    return 0;
 }
 
 static int printFds(FILE *log)
