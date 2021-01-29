@@ -35,24 +35,32 @@ extern char **environ;
 
 # define VIR_FROM_THIS VIR_FROM_NONE
 
-struct Arguments {
+typedef struct Arguments {
     int *readfds;
     int numreadfds;
     bool daemonize_check;
     bool close_stdin;
-};
+} Arguments;
+
+static void cleanupArguments(struct Arguments* args) {
+    if (args)
+        free(args->readfds);
+
+    free(args);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(Arguments, cleanupArguments);
 
 static struct Arguments *parseArguments(int argc, char** argv)
 {
-    struct Arguments* args = NULL;
-    int ret = -1;
+    g_autoptr(Arguments) args = NULL;
     size_t i;
 
     if (!(args = calloc(1, sizeof(*args))))
-        goto cleanup;
+        return NULL;
 
     if (!(args->readfds = calloc(1, sizeof(*args->readfds))))
-        goto cleanup;
+        return NULL;
 
     args->numreadfds = 1;
     args->readfds[0] = STDIN_FILENO;
@@ -65,12 +73,12 @@ static struct Arguments *parseArguments(int argc, char** argv)
                                     (args->numreadfds + 1) *
                                     sizeof(*args->readfds));
             if (!args->readfds)
-                goto cleanup;
+                return NULL;
 
             if (1 != sscanf(argv[i], "%u%c",
                             &args->readfds[args->numreadfds++], &c)) {
                 printf("Could not parse fd %s\n", argv[i]);
-                goto cleanup;
+                return NULL;
             }
         } else if (STREQ(argv[i], "--check-daemonize")) {
             args->daemonize_check = true;
@@ -79,19 +87,7 @@ static struct Arguments *parseArguments(int argc, char** argv)
         }
     }
 
-    ret = 0;
-
- cleanup:
-    if (ret == 0)
-        return args;
-
-    if (args) {
-        if (args->readfds)
-            free(args->readfds);
-        free(args);
-    }
-
-    return NULL;
+    return g_steal_pointer(&args);
 }
 
 static void printArguments(FILE *log, int argc, char** argv)
