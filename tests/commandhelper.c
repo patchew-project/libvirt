@@ -80,6 +80,15 @@ static struct Arguments *parseArguments(int argc, char** argv)
     return NULL;
 }
 
+static void printArguments(FILE *log, int argc, char** argv)
+{
+    size_t i;
+
+    for (i = 1; i < argc; i++) {
+        fprintf(log, "ARG:%s\n", argv[i]);
+    }
+}
+
 static int envsort(const void *a, const void *b)
 {
     const char *const*astrptr = a;
@@ -105,9 +114,7 @@ int main(int argc, char **argv) {
     if (!log || !args)
         goto cleanup;
 
-    for (i = 1; i < argc; i++) {
-        fprintf(log, "ARG:%s\n", argv[i]);
-    }
+    printArguments(log, argc, argv);
 
     for (n = 0; environ[n]; n++) {
     }
