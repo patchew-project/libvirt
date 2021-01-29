@@ -39,22 +39,7 @@ static int envsort(const void *a, const void *b)
 {
     const char *const*astrptr = a;
     const char *const*bstrptr = b;
-    const char *astr = *astrptr;
-    const char *bstr = *bstrptr;
-    char *aeq = strchr(astr, '=');
-    char *beq = strchr(bstr, '=');
-    char *akey;
-    char *bkey;
-    int ret;
-
-    if (!(akey = strndup(astr, aeq - astr)))
-        abort();
-    if (!(bkey = strndup(bstr, beq - bstr)))
-        abort();
-    ret = strcmp(akey, bkey);
-    free(akey);
-    free(bkey);
-    return ret;
+    return strcmp(*astrptr, *bstrptr);
 }
 
 int main(int argc, char **argv) {
