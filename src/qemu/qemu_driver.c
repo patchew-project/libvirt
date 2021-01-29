@@ -16674,6 +16674,36 @@ qemuDomainGetMetadata(virDomainPtr dom,
     return ret;
 }
 
+static int
+virSchedstatGetDelay(virDomainObjPtr dom, unsigned long long *delay)
+{
+    char *proc = NULL;
+    FILE* schedstat;
+    unsigned long long curr_delay, oncpu = 0;
+    pid_t pid = dom->pid;
+    for (size_t i = 0; i < virDomainDefGetVcpusMax(dom->def); i++) {
+        pid_t vcpupid = qemuDomainGetVcpuPid(dom, i);
+        if (vcpupid) {
+            if (asprintf(&proc, "/proc/%d/task/%d/schedstat",
+                                    pid, vcpupid) < 0)
+                return -1;
+        } else {
+            if (asprintf(&proc, "/proc/%d/schedstat", pid) < 0)
+                return -1;
+        }
+        schedstat = fopen(proc, "r");
+        VIR_FREE(proc);
+        if (!schedstat ||
+            fscanf(schedstat, "%llu %llu",
+                &oncpu, &curr_delay) < 2) {
+                return -1;
+        }
+
+        *delay += curr_delay;
+    }
+    return 0;
+}
+
 
 static int
 qemuDomainGetCPUStats(virDomainPtr domain,
@@ -16687,6 +16717,7 @@ qemuDomainGetCPUStats(virDomainPtr domain,
     int ret = -1;
     qemuDomainObjPrivatePtr priv;
     virBitmapPtr guestvcpus = NULL;
+    unsigned long long delay = 0;
 
     virCheckFlags(VIR_TYPED_PARAM_STRING_OKAY, -1);
 
@@ -16712,8 +16743,19 @@ qemuDomainGetCPUStats(virDomainPtr domain,
         goto cleanup;
 
     if (start_cpu == -1)
+    {
         ret = virCgroupGetDomainTotalCpuStats(priv->cgroup,
                                               params, nparams);
+        if (nparams > 3) {
+            if (virSchedstatGetDelay(vm,&delay) < 0)
+                return -1;
+            if (virTypedParameterAssign(&params[3],
+                            VIR_DOMAIN_CPU_STATS_DELAYTIME,
+                            VIR_TYPED_PARAM_ULLONG, delay) < 0)
+		return -1;
+        }
+        ret++;
+    }
     else
         ret = virCgroupGetPercpuStats(priv->cgroup, params, nparams,
                                       start_cpu, ncpus, guestvcpus);
@@ -17845,6 +17887,17 @@ qemuDomainGetStatsMemoryBandwidth(virQEMUDriverPtr driver,
     return ret;
 }
 
+static int
+qemuDomainGetStatsCpuDelay(virDomainObjPtr dom,
+                           virTypedParamListPtr params)
+{
+    unsigned long long delay_time = 0;
+    int err = 0;
+    err = virSchedstatGetDelay(dom, &delay_time);
+    if (!err && virTypedParamListAddULLong(params, delay_time, "cpu.delay") < 0)
+        return -1;
+    return 0;
+}
 
 static int
 qemuDomainGetStatsCpuCache(virQEMUDriverPtr driver,
@@ -17948,6 +18001,9 @@ qemuDomainGetStatsCpu(virQEMUDriverPtr driver,
         return -1;
 
     if (qemuDomainGetStatsCpuCache(driver, dom, params) < 0)
+        return -1;
+
+    if (qemuDomainGetStatsCpuDelay(dom, params) < 0)
         return -1;
 
     return 0;

@@ -8085,7 +8085,8 @@ vshCPUStatsPrintField(vshControl *ctl,
     if ((STREQ(param->field, VIR_DOMAIN_CPU_STATS_CPUTIME) ||
          STREQ(param->field, VIR_DOMAIN_CPU_STATS_VCPUTIME) ||
          STREQ(param->field, VIR_DOMAIN_CPU_STATS_USERTIME) ||
-         STREQ(param->field, VIR_DOMAIN_CPU_STATS_SYSTEMTIME)) &&
+         STREQ(param->field, VIR_DOMAIN_CPU_STATS_SYSTEMTIME) ||
+         STREQ(param->field, VIR_DOMAIN_CPU_STATS_DELAYTIME)) &&
         param->type == VIR_TYPED_PARAM_ULLONG) {
         vshPrint(ctl, "%9lld.%09lld seconds\n",
                  param->value.ul / 1000000000,

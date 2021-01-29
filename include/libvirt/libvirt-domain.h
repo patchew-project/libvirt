@@ -1351,6 +1351,12 @@ int                     virDomainGetState       (virDomainPtr domain,
 # define VIR_DOMAIN_CPU_STATS_SYSTEMTIME "system_time"
 
 /**
+ * VIR_DOMAIN_CPU_STATS_DELAYTIME:
+ * cpu time waiting on runqueue in nanoseconds, as a ullong
+ */
+# define VIR_DOMAIN_CPU_STATS_DELAYTIME "delay_time"
+
+/**
  * VIR_DOMAIN_CPU_STATS_VCPUTIME:
  * vcpu usage in nanoseconds (cpu_time excluding hypervisor time),
  * as a ullong
