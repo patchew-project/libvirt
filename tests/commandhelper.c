@@ -172,7 +172,7 @@ static void printDaemonization(FILE *log, struct Arguments *args)
 
 static int printCwd(FILE *log)
 {
-    char *cwd = NULL;
+    g_autofree char *cwd = NULL;
     char *display;
 
     if (!(cwd = getcwd(NULL, 0)))
@@ -191,7 +191,6 @@ static int printCwd(FILE *log)
 # endif
 
     fprintf(log, "CWD:%s\n", display);
-    free(cwd);
     return 0;
 }
 
