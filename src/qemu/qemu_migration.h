@@ -258,3 +258,8 @@ qemuMigrationSrcFetchMirrorStats(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
                                  qemuDomainAsyncJob asyncJob,
                                  qemuDomainJobInfoPtr jobInfo);
+
+int
+qemuDomainCalculateDirtyRate(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm,
+                             int sec);

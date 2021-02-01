@@ -5891,3 +5891,28 @@ qemuMigrationSrcFetchMirrorStats(virQEMUDriverPtr driver,
     virHashFree(blockinfo);
     return 0;
 }
+
+
+int
+qemuDomainCalculateDirtyRate(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm,
+                             int sec)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret;
+
+    VIR_DEBUG("Calculate dirty rate during %d seconds", sec);
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is not running"));
+        return -1;
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    ret = qemuMonitorCalculateDirtyRate(priv->mon, sec);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    return ret;
+}
