@@ -1504,6 +1504,7 @@ virDomainDriverGenerateMachineName;
 virDomainDriverGenerateRootHash;
 virDomainDriverMergeBlkioDevice;
 virDomainDriverNodeDeviceGetPCIInfo;
+virDomainDriverNodeDeviceReAttach;
 virDomainDriverNodeDeviceReset;
 virDomainDriverParseBlkioDeviceStr;
 virDomainDriverSetupPersistentDefBlkioParams;
