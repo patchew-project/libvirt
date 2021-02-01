@@ -263,3 +263,8 @@ int
 qemuDomainCalculateDirtyRate(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
                              int sec);
+
+int
+qemuDomainQueryDirtyRate(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         virDomainDirtyRateInfoPtr info);

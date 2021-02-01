@@ -1520,3 +1520,7 @@ qemuMonitorTransactionBackup(virJSONValuePtr actions,
 int
 qemuMonitorCalculateDirtyRate(qemuMonitorPtr mon,
                               int sec);
+
+int
+qemuMonitorQueryDirtyRate(qemuMonitorPtr mon,
+                          virDomainDirtyRateInfoPtr info);
