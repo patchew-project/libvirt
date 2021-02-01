@@ -949,8 +949,8 @@ virDomainPCIAddressSetExtensionFree(virDomainPCIAddressSetPtr addrs)
     if (!addrs || !addrs->zpciIds)
         return;
 
-    g_clear_pointer(&addrs->zpciIds->uids, g_hash_table_unref);
-    g_clear_pointer(&addrs->zpciIds->fids, g_hash_table_unref);
+    virHashFree(addrs->zpciIds->uids);
+    virHashFree(addrs->zpciIds->fids);
 
     VIR_FREE(addrs->zpciIds);
 }
