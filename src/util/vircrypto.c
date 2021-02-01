@@ -206,7 +206,8 @@ virCryptoEncryptDataAESgnutls(gnutls_cipher_algorithm_t gnutls_enc_alg,
     return 0;
 
  error:
-    VIR_DISPOSE_N(ciphertext, ciphertextlen);
+    memset(ciphertext, 0, ciphertextlen);
+    g_free(ciphertext);
     memset(&enc_key, 0, sizeof(gnutls_datum_t));
     memset(&iv_buf, 0, sizeof(gnutls_datum_t));
     return -1;
