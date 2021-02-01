@@ -302,7 +302,7 @@ cmdSecretGetValue(vshControl *ctl, const vshCmd *cmd)
 {
     g_autoptr(virshSecret) secret = NULL;
     VIR_AUTODISPOSE_STR base64 = NULL;
-    unsigned char *value;
+    g_autofree unsigned char *value = NULL;
     size_t value_size;
     bool plain = vshCommandOptBool(cmd, "plain");
 
@@ -314,7 +314,7 @@ cmdSecretGetValue(vshControl *ctl, const vshCmd *cmd)
 
     if (plain) {
         if (fwrite(value, 1, value_size, stdout) != value_size) {
-            VIR_DISPOSE_N(value, value_size);
+            memset(value, 0, value_size);
             vshError(ctl, "failed to write secret");
             return false;
         }
@@ -324,7 +324,7 @@ cmdSecretGetValue(vshControl *ctl, const vshCmd *cmd)
         vshPrint(ctl, "%s", base64);
     }
 
-    VIR_DISPOSE_N(value, value_size);
+    memset(value, 0, value_size);
     return true;
 }
 
