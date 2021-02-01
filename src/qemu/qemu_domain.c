@@ -443,7 +443,10 @@ qemuDomainMasterKeyFree(qemuDomainObjPrivatePtr priv)
     if (!priv->masterKey)
         return;
 
-    VIR_DISPOSE_N(priv->masterKey, priv->masterKeyLen);
+    if (priv->masterKey) {
+        memset(priv->masterKey, 0, priv->masterKeyLen);
+        g_clear_pointer(&priv->masterKey, g_free);
+    }
 }
 
 /* qemuDomainMasterKeyReadFile:
@@ -584,7 +587,10 @@ static void
 qemuDomainSecretPlainClear(qemuDomainSecretPlainPtr secret)
 {
     VIR_FREE(secret->username);
-    VIR_DISPOSE_N(secret->secret, secret->secretlen);
+    if (secret->secret) {
+        memset(secret->secret, 0, secret->secretlen);
+        g_clear_pointer(&secret->secret, g_free);
+    }
 }
 
 
@@ -1143,7 +1149,8 @@ qemuDomainSecretAESSetupFromSecret(qemuDomainObjPrivatePtr priv,
 
     secinfo = qemuDomainSecretAESSetup(priv, alias, username, secret, secretlen);
 
-    VIR_DISPOSE_N(secret, secretlen);
+    memset(secret, 0, secretlen);
+    g_free(secret);
 
     return secinfo;
 }
