@@ -5119,4 +5119,63 @@ int virDomainAuthorizedSSHKeysSet(virDomainPtr domain,
                                   unsigned int nkeys,
                                   unsigned int flags);
 
+/**
+ * virDomainDirtyRateStatus:
+ *
+ * Details on the cause of a dirty rate calculation status.
+ */
+typedef enum {
+    VIR_DOMAIN_DIRTYRATE_UNSTARTED = 0, /* the dirtyrate calculation has
+                                           not been started */
+    VIR_DOMAIN_DIRTYRATE_MEASURING = 1, /* the dirtyrate calculation is
+                                           measuring */
+    VIR_DOMAIN_DIRTYRATE_MEASURED  = 2, /* the dirtyrate calculation is
+                                           completed */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_DIRTYRATE_LAST
+# endif
+} virDomainDirtyRateStatus;
+
+/**
+ * virDomainDirtyRateInfo:
+ *
+ * a virDomainDirtyRateInfo is a structure filled by virDomainGetDirtyRate()
+ * and extracting dirty rate infomation for a given active Domain.
+ */
+
+typedef struct _virDomainDirtyRateInfo virDomainDirtyRateInfo;
+struct _virDomainDirtyRateInfo {
+    int status;             /* the status of dirtyrate calculation, one of
+                               virDomainDirtyRateStatus */
+    long long dirtyRate;    /* the dirtyrate in MB/s */
+    long long startTime;    /* the start time of dirtyrate calculation */
+    int calcTime;           /* the period of dirtyrate calculation */
+};
+
+/**
+ * virDomainDirtyRateInfoPtr:
+ *
+ * a virDomainDirtyRateInfoPtr is a pointer to a virDomainDirtyRateInfo structure.
+ */
+
+typedef virDomainDirtyRateInfo *virDomainDirtyRateInfoPtr;
+
+/**
+ * virDomainDirtyRateFlags:
+ *
+ * Details on the flags used by getdirtyrate api.
+ */
+typedef enum {
+    VIR_DOMAIN_DIRTYRATE_DEFAULT = 0,      /* default domdirtyrate behavior:
+                                              calculate and query */
+    VIR_DOMAIN_DIRTYRATE_CALC    = 1 << 0, /* calculate domain's dirtyrate */
+    VIR_DOMAIN_DIRTYRATE_QUERY   = 1 << 1, /* query domain's dirtyrate */
+} virDomainDirtyRateFlags;
+
+int virDomainGetDirtyRateInfo(virDomainPtr domain,
+                              virDomainDirtyRateInfoPtr info,
+                              int sec,
+                              unsigned int flags);
+
 #endif /* LIBVIRT_DOMAIN_H */

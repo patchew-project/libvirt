@@ -3799,6 +3799,19 @@ struct remote_domain_authorized_ssh_keys_set_args {
     unsigned int flags;
 };
 
+struct remote_domain_get_dirty_rate_info_args {
+    remote_nonnull_domain dom;
+    int sec;
+    unsigned int flags;
+};
+
+struct remote_domain_get_dirty_rate_info_ret { /* insert@1 */
+    int status;
+    hyper dirtyRate;
+    hyper startTime;
+    int calcTime;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6714,5 +6727,11 @@ enum remote_procedure {
      * @generate: none
      * @acl: domain:write
      */
-    REMOTE_PROC_DOMAIN_AUTHORIZED_SSH_KEYS_SET = 425
+    REMOTE_PROC_DOMAIN_AUTHORIZED_SSH_KEYS_SET = 425,
+
+    /**
+     * @generate: both
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_GET_DIRTY_RATE_INFO = 426
 };

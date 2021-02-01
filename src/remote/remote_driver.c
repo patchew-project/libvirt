@@ -8531,6 +8531,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainBackupGetXMLDesc = remoteDomainBackupGetXMLDesc, /* 6.0.0 */
     .domainAuthorizedSSHKeysGet = remoteDomainAuthorizedSSHKeysGet, /* 6.10.0 */
     .domainAuthorizedSSHKeysSet = remoteDomainAuthorizedSSHKeysSet, /* 6.10.0 */
+    .domainGetDirtyRateInfo = remoteDomainGetDirtyRateInfo, /* 7.1.0 */
 };
 
 static virNetworkDriver network_driver = {

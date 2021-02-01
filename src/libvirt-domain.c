@@ -13102,3 +13102,59 @@ virDomainAuthorizedSSHKeysSet(virDomainPtr domain,
     virDispatchError(conn);
     return -1;
 }
+
+
+/**
+ * virDomainGetDirtyRateInfo:
+ * @domain: a domain object
+ * @info: pointer to current domain's memory dirty rate info
+ * @sec: show dirty rate within specified seconds
+ * @flags: extra flags; binary-OR of virDomainGetDirtyRateInfoFlags
+ *
+ * Get the current domain's memory dirty rate info.
+ *
+ * If the VIR_DOMAIN_DIRTYRATE_CALC flag is set, this will calculate
+ * domain's memory dirty rate within specific time (sec).
+ *
+ * If the VIR_DOMAIN_DIRTYRATE_QUERY flag is set, this will query the
+ * dirty rate info calculated last time and stored in 'info'.
+ *
+ * The VIR_DOMAIN_DIRTYRATE_DEFAULT flag is equal to both
+ * VIR_DOMAIN_DIRTYRATE_CALC and VIR_DOMAIN_DIRTYRATE_QUERY.
+ *
+ * Returns 0 in case of success, -1 otherwise.
+ */
+int
+virDomainGetDirtyRateInfo(virDomainPtr domain,
+                          virDomainDirtyRateInfoPtr info,
+                          int sec,
+                          unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "info=%p, sec=%d, flags=0x%x",
+                     info, sec, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(info, error);
+    memset(info, 0, sizeof(*info));
+
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainGetDirtyRateInfo) {
+        int ret;
+        ret = conn->driver->domainGetDirtyRateInfo(domain, info, sec, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
