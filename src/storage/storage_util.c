@@ -1314,7 +1314,10 @@ storageBackendCreateQemuImgSecretPath(virStoragePoolObjPtr pool,
 
  cleanup:
     virObjectUnref(conn);
-    VIR_DISPOSE_N(secret, secretlen);
+    if (secret) {
+        memset(secret, 0, secretlen);
+        g_free(secret);
+    }
 
     return secretPath;
 
