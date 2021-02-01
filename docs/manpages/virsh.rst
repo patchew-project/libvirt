@@ -1704,6 +1704,23 @@ states other than "ok" or "error" the command also prints number of
 seconds elapsed since the control interface entered its current state.
 
 
+domdirtyrate
+------------
+
+**Syntax:**
+
+::
+
+   domdirtyrate <domain> [--calculate] [--query] [--seconds <sec>]
+
+Calculate and/or query an active domain's memory dirty rate which may be
+expected by user in order to decide whether it's proper to be migrated out
+or not. Either or both *--calculate* and *--query* flags are expected, and
+it would be default to both if no flags is specified. And the ``seconds``
+parameter can be used to calculate dirty rate in a specific time which allows
+60s at most now and would be default to 1s if missing.
+
+
 domdisplay
 ----------
 

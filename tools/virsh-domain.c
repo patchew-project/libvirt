@@ -14416,6 +14416,127 @@ cmdSetUserSSHKeys(vshControl *ctl, const vshCmd *cmd)
 }
 
 
+/*
+ * "domdirtyrate" command
+ */
+static const vshCmdInfo info_domdirtyrate[] = {
+    {.name = "help",
+     .data = N_("Get a vm's memory dirty rate")
+    },
+    {.name = "desc",
+     .data = N_("Get memory dirty rate of a domain in order to decide"
+                " whether it's proper to be migrated out or not.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_domdirtyrate[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "seconds",
+     .type = VSH_OT_INT,
+     .help = N_("calculate memory dirty rate within specified seconds,"
+                " the supported value range is [1, 60], default to 1s.")
+    },
+    {.name = "calculate",
+     .type = VSH_OT_BOOL,
+     .help = N_("calculate dirty rate only, can be used together with --query,"
+                " either or both is expected, otherwise would default to both.")
+    },
+    {.name = "query",
+     .type = VSH_OT_BOOL,
+     .help = N_("query dirty rate only, can be used together with --calculate,"
+                " either or both is expected, otherwise would default to both.")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdDomDirtyRateInfo(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    virDomainDirtyRateInfo info;
+    const char *status = NULL;
+    unsigned int flags = VIR_DOMAIN_DIRTYRATE_DEFAULT;
+    int sec;
+    int rc;
+    vshTablePtr table = NULL;
+    g_autofree char *startTimeStr = NULL;
+    g_autofree char *calcTimeStr = NULL;
+    g_autofree char *dirtyRateStr = NULL;
+    bool ret = false;
+    bool calc = vshCommandOptBool(cmd, "calculate");
+    bool query = vshCommandOptBool(cmd, "query");
+
+    if (calc)
+        flags |= VIR_DOMAIN_DIRTYRATE_CALC;
+
+    if (query)
+        flags |= VIR_DOMAIN_DIRTYRATE_QUERY;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    rc = vshCommandOptInt(ctl, cmd, "seconds", &sec);
+    if (rc < 0)
+        goto cleanup;
+
+    /* if no inputted seconds, default to 1s */
+    if (!rc)
+        sec = 1;
+
+    if (virDomainGetDirtyRateInfo(dom, &info, sec, flags) < 0)
+        goto cleanup;
+
+    if (flags == VIR_DOMAIN_DIRTYRATE_DEFAULT ||
+        flags & VIR_DOMAIN_DIRTYRATE_QUERY) {
+        table = vshTableNew(_("Item"), _("Value"), NULL);
+        if (!table)
+            goto cleanup;
+
+        switch (info.status) {
+        case VIR_DOMAIN_DIRTYRATE_UNSTARTED:
+            status = _("unstarted");
+            break;
+        case VIR_DOMAIN_DIRTYRATE_MEASURING:
+            status = _("measuring");
+            break;
+        case VIR_DOMAIN_DIRTYRATE_MEASURED:
+            status = _("measured");
+            dirtyRateStr = g_strdup_printf("%lld MB/s", info.dirtyRate);
+            break;
+        default:
+            status = _("unknown");
+        }
+
+        if (vshTableRowAppend(table, _("Status:"), status, NULL) < 0)
+            goto cleanup;
+
+        startTimeStr = g_strdup_printf("%lld", info.startTime);
+        if (vshTableRowAppend(table, _("Start time:"), startTimeStr, NULL) < 0)
+            goto cleanup;
+
+        calcTimeStr = g_strdup_printf("%d s", info.calcTime);
+        if (vshTableRowAppend(table, _("Calculate time:"), calcTimeStr, NULL) < 0)
+            goto cleanup;
+
+        if (info.status == VIR_DOMAIN_DIRTYRATE_MEASURED &&
+            vshTableRowAppend(table, _("Dirty rate:"), dirtyRateStr, NULL) < 0)
+            goto cleanup;
+
+        vshTablePrintToStdout(table, ctl);
+    } else {
+        vshPrint(ctl, _("Memory dirty rate is calculating, use --query option to display results.\n"));
+    }
+
+    ret = true;
+
+ cleanup:
+    vshTableFree(table);
+    virshDomainFree(dom);
+    return ret;
+}
+
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -15053,6 +15174,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdGuestInfo,
      .opts = opts_guestinfo,
      .info = info_guestinfo,
+     .flags = 0
+    },
+    {.name = "domdirtyrate",
+     .handler = cmdDomDirtyRateInfo,
+     .opts = opts_domdirtyrate,
+     .info = info_domdirtyrate,
      .flags = 0
     },
     {.name = NULL}
