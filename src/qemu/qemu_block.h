@@ -99,6 +99,11 @@ struct qemuBlockStorageSourceAttachData {
     char *driveAlias;
     bool driveAdded;
 
+    virDomainChrSourceDefPtr chardevDef;
+    char *chardevAlias;
+    char *chardevCmd;
+    bool chardevAdded;
+
     virJSONValuePtr authsecretProps;
     char *authsecretAlias;
 

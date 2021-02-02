@@ -714,7 +714,10 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
         goto cleanup;
 
-    if (blockdev) {
+    if (virStorageSourceGetActualType(disk->src) == VIR_STORAGE_TYPE_VHOST_USER) {
+        if (!(data = qemuBuildStorageSourceChainAttachPrepareChardev(disk)))
+            goto cleanup;
+    } else if (blockdev) {
         if (disk->copy_on_read == VIR_TRISTATE_SWITCH_ON) {
             if (!(corProps = qemuBlockStorageGetCopyOnReadProps(disk)))
                 goto cleanup;

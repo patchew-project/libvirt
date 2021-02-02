@@ -10581,6 +10581,11 @@ qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
             disk->src->format = VIR_STORAGE_FILE_RAW;
     }
 
+    /* Nothing else to prepare as it will use -chardev instead
+     * of -blockdev/-drive option. */
+    if (disk->src->type == VIR_STORAGE_TYPE_VHOST_USER)
+        return 0;
+
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV) &&
         !qemuDiskBusIsSD(disk->bus)) {
         if (qemuDomainPrepareDiskSourceBlockdev(disk, priv, cfg) < 0)

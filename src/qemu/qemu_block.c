@@ -1640,6 +1640,8 @@ qemuBlockStorageSourceAttachDataFree(qemuBlockStorageSourceAttachDataPtr data)
     VIR_FREE(data->httpcookiesecretAlias);
     VIR_FREE(data->driveCmd);
     VIR_FREE(data->driveAlias);
+    VIR_FREE(data->chardevAlias);
+    VIR_FREE(data->chardevCmd);
     VIR_FREE(data);
 }
 
@@ -1813,6 +1815,13 @@ qemuBlockStorageSourceAttachApply(qemuMonitorPtr mon,
         data->driveAdded = true;
     }
 
+    if (data->chardevDef) {
+        if (qemuMonitorAttachCharDev(mon, data->chardevAlias, data->chardevDef) < 0)
+            return -1;
+
+        data->chardevAdded = true;
+    }
+
     return 0;
 }
 
@@ -1834,6 +1843,13 @@ qemuBlockStorageSourceAttachRollback(qemuMonitorPtr mon,
     virErrorPtr orig_err;
 
     virErrorPreserveLast(&orig_err);
+
+    if (data->chardevAdded) {
+        if (qemuMonitorDetachCharDev(mon, data->chardevAlias) < 0) {
+            VIR_WARN("Unable to remove chardev %s after failed " "qemuMonitorAddDevice",
+                     data->chardevAlias);
+        }
+    }
 
     if (data->driveAdded) {
         if (qemuMonitorDriveDel(mon, data->driveAlias) < 0)
