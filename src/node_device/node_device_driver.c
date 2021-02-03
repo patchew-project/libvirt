@@ -1182,24 +1182,63 @@ struct _virMdevctlForEachData {
 };
 
 
+/* This function keeps the list of persistent mediated devices consistent
+ * between the nodedev driver and mdevctl.
+ * @obj is a device that is currently known by the nodedev driver, and @opaque
+ * contains the most recent list of devices defined by mdevctl. If @obj is no
+ * longer defined in mdevctl, remove it from the driver as well. */
+static void
+removeMissingPersistentMdevs(virNodeDeviceObjPtr obj,
+                             const void *opaque)
+{
+    const virMdevctlForEachData *data = opaque;
+    size_t i;
+    virNodeDeviceDefPtr def = virNodeDeviceObjGetDef(obj);
+    virObjectEventPtr event;
+
+    /* transient mdevs are populated via udev, so don't remove them from the
+     * nodedev driver just because they are not reported by by mdevctl */
+    if (!virNodeDeviceObjIsPersistent(obj))
+        return;
+
+    for (i = 0; i < data->ndefs; i++) {
+        /* OK, this mdev is still defined by mdevctl */
+        if (STREQ(data->defs[i]->name, def->name))
+            return;
+    }
+
+    event = virNodeDeviceEventLifecycleNew(def->name,
+                                           VIR_NODE_DEVICE_EVENT_UNDEFINED,
+                                           0);
+
+    /* The device is active, but no longer defined by mdevctl. Keep the device
+     * in the list, but mark it as non-persistent */
+    if (virNodeDeviceObjIsActive(obj))
+        virNodeDeviceObjSetPersistent(obj, false);
+    else
+        virNodeDeviceObjListRemoveLocked(driver->devs, obj);
+
+    virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+}
+
+
 int
 nodeDeviceUpdateMediatedDevices(void)
 {
-    g_autofree virNodeDeviceDefPtr *defs = NULL;
-    int ndefs;
+    virMdevctlForEachData data = { 0, };
     GList * tofree = NULL;
     size_t i;
 
-    if ((ndefs = virMdevctlListDefined(&defs)) < 0) {
+    if ((data.ndefs = virMdevctlListDefined(&data.defs)) < 0) {
         virReportSystemError(errno, "%s",
                              _("failed to query mdevs from mdevctl"));
         return -1;
     }
 
-    for (i = 0; i < ndefs; i++) {
+    for (i = 0; i < data.ndefs; i++) {
         virNodeDeviceObjPtr obj;
         virObjectEventPtr event;
-        virNodeDeviceDefPtr def = defs[i];
+        virNodeDeviceDefPtr def = data.defs[i];
         bool was_defined = false;
 
         def->driver = g_strdup("vfio_mdev");
@@ -1245,8 +1284,14 @@ nodeDeviceUpdateMediatedDevices(void)
         virObjectEventStateQueue(driver->nodeDeviceEventState, event);
     }
 
+    /* Any mdevs that were previously defined but were not returned the latest
+     * mdevctl query should be removed from the device list */
+    virNodeDeviceObjListForEachSafe(driver->devs, removeMissingPersistentMdevs,
+                                    &data);
+
  cleanup:
     g_list_free_full(tofree, (GDestroyNotify)virNodeDeviceDefFree);
+    g_free(data.defs);
 
     return 0;
 }
