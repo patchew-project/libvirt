@@ -102,6 +102,11 @@ nodeDeviceCreateXML(virConnectPtr conn,
 int
 nodeDeviceDestroy(virNodeDevicePtr dev);
 
+virNodeDevicePtr
+nodeDeviceDefineXML(virConnectPtr conn,
+                    const char *xmlDesc,
+                    unsigned int flags);
+
 int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
                                       virNodeDevicePtr dev,
