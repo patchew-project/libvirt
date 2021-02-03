@@ -5779,15 +5779,8 @@ libxlNodeDeviceDetachFlags(virNodeDevicePtr dev,
                            const char *driverName,
                            unsigned int flags)
 {
-    virPCIDevicePtr pci = NULL;
-    virPCIDeviceAddress devAddr;
-    int ret = -1;
-    virNodeDeviceDefPtr def = NULL;
-    char *xml = NULL;
     libxlDriverPrivatePtr driver = dev->conn->privateData;
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
-    virConnectPtr nodeconn = NULL;
-    virNodeDevicePtr nodedev = NULL;
 
     virCheckFlags(0, -1);
 
@@ -5797,50 +5790,9 @@ libxlNodeDeviceDetachFlags(virNodeDevicePtr dev,
         return -1;
     }
 
-    if (!(nodeconn = virGetConnectNodeDev()))
-        goto cleanup;
-
-    /* 'dev' is associated with the QEMU virConnectPtr,
-     * so for split daemons, we need to get a copy that
-     * is associated with the virnodedevd daemon.
-     */
-    if (!(nodedev = virNodeDeviceLookupByName(nodeconn,
-                                              virNodeDeviceGetName(dev))))
-        goto cleanup;
-
-    xml = virNodeDeviceGetXMLDesc(nodedev, 0);
-    if (!xml)
-        goto cleanup;
-
-    def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL);
-    if (!def)
-        goto cleanup;
-
-    /* ACL check must happen against original 'dev',
-     * not the new 'nodedev' we acquired */
-    if (virNodeDeviceDetachFlagsEnsureACL(dev->conn, def) < 0)
-        goto cleanup;
-
-    if (virDomainDriverNodeDeviceGetPCIInfo(def, &devAddr) < 0)
-        goto cleanup;
-
-    pci = virPCIDeviceNew(&devAddr);
-    if (!pci)
-        goto cleanup;
-
-    virPCIDeviceSetStubDriver(pci, VIR_PCI_STUB_DRIVER_XEN);
-
-    if (virHostdevPCINodeDeviceDetach(hostdev_mgr, pci) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    virPCIDeviceFree(pci);
-    virNodeDeviceDefFree(def);
-    virObjectUnref(nodedev);
-    virObjectUnref(nodeconn);
-    VIR_FREE(xml);
-    return ret;
+    /* virNodeDeviceDetachFlagsEnsureACL() is being called by
+     * virDomainDriverNodeDeviceDetachFlags() */
+    return virDomainDriverNodeDeviceDetachFlags(dev, hostdev_mgr, driverName);
 }
 
 static int
