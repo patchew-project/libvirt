@@ -1156,3 +1156,167 @@ nodeDeviceGenerateName(virNodeDeviceDefPtr def,
             *(def->name + i) = '_';
     }
 }
+
+
+static int
+virMdevctlListDefined(virNodeDeviceDefPtr **devs)
+{
+    int status;
+    g_autofree char *output = NULL;
+    g_autoptr(virCommand) cmd = nodeDeviceGetMdevctlListCommand(true, &output);
+
+    if (virCommandRun(cmd, &status) < 0)
+        return -1;
+
+    if (!output)
+        return -1;
+
+    return nodeDeviceParseMdevctlJSON(output, devs);
+}
+
+
+typedef struct _virMdevctlForEachData virMdevctlForEachData;
+struct _virMdevctlForEachData {
+    int ndefs;
+    virNodeDeviceDefPtr *defs;
+};
+
+
+int
+nodeDeviceUpdateMediatedDevices(void)
+{
+    g_autofree virNodeDeviceDefPtr *defs = NULL;
+    int ndefs;
+    GList * tofree = NULL;
+    size_t i;
+
+    if ((ndefs = virMdevctlListDefined(&defs)) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to query mdevs from mdevctl"));
+        return -1;
+    }
+
+    for (i = 0; i < ndefs; i++) {
+        virNodeDeviceObjPtr obj;
+        virObjectEventPtr event;
+        virNodeDeviceDefPtr def = defs[i];
+        bool was_defined = false;
+
+        def->driver = g_strdup("vfio_mdev");
+
+        if ((obj = virNodeDeviceObjListFindByName(driver->devs, def->name))) {
+            bool changed;
+            virNodeDeviceDefPtr olddef = virNodeDeviceObjGetDef(obj);
+
+            was_defined = virNodeDeviceObjIsPersistent(obj);
+            /* Active devices contain some additional information (e.g. sysfs
+             * path) that is not provided by mdevctl, so re-use the existing
+             * definition and copy over new mdev data */
+            changed = nodeDeviceDefCopyFromMdevctl(olddef, def);
+
+            /* Re-use the existing definition (after merging new data from
+             * mdevctl), so def needs to be freed at the end of the function */
+            tofree = g_list_prepend(tofree, def);
+
+            if (was_defined && !changed) {
+                /* if this device was already defined and the definition
+                 * hasn't changed, there's nothing to do for this device */
+                virNodeDeviceObjEndAPI(&obj);
+                continue;
+            }
+        } else {
+            if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, def))) {
+                virNodeDeviceDefFree(def);
+                goto cleanup;
+            }
+        }
+
+        /* all devices returned by virMdevctlListDefined() are persistent */
+        virNodeDeviceObjSetPersistent(obj, true);
+
+        if (!was_defined)
+            event = virNodeDeviceEventLifecycleNew(def->name,
+                                                   VIR_NODE_DEVICE_EVENT_DEFINED,
+                                                   0);
+        else
+            event = virNodeDeviceEventUpdateNew(def->name);
+
+        virNodeDeviceObjEndAPI(&obj);
+        virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+    }
+
+ cleanup:
+    g_list_free_full(tofree, (GDestroyNotify)virNodeDeviceDefFree);
+
+    return 0;
+}
+
+
+/* returns true if any attributes were copied, else returns false */
+static bool
+virMediatedDeviceAttrsCopy(virNodeDevCapMdevPtr dst,
+                           virNodeDevCapMdevPtr src)
+{
+    bool ret = false;
+    size_t i;
+
+    if (src->nattributes != dst->nattributes) {
+        ret = true;
+        for (i = 0; i < dst->nattributes; i++)
+            virMediatedDeviceAttrFree(dst->attributes[i]);
+        g_free(dst->attributes);
+
+        dst->nattributes = src->nattributes;
+        dst->attributes = g_new0(virMediatedDeviceAttrPtr,
+                                 src->nattributes);
+        for (i = 0; i < dst->nattributes; i++)
+            dst->attributes[i] = virMediatedDeviceAttrNew();
+    }
+
+    for (i = 0; i < src->nattributes; i++) {
+        if (STRNEQ_NULLABLE(src->attributes[i]->name,
+                            dst->attributes[i]->name)) {
+            ret = true;
+            dst->attributes[i]->name =
+                g_strdup(src->attributes[i]->name);
+        }
+        if (STRNEQ_NULLABLE(src->attributes[i]->value,
+                            dst->attributes[i]->value)) {
+            ret = true;
+            dst->attributes[i]->value =
+                g_strdup(src->attributes[i]->value);
+        }
+    }
+
+    return ret;
+}
+
+
+/* A mediated device definitions from mdevctl contains additional info that is
+ * not available from udev. Transfer this data to the new definition.
+ * Returns true if anything was copied, else returns false */
+bool
+nodeDeviceDefCopyFromMdevctl(virNodeDeviceDefPtr dst,
+                             virNodeDeviceDefPtr src)
+{
+    bool ret = false;
+    virNodeDevCapMdevPtr srcmdev = &src->caps->data.mdev;
+    virNodeDevCapMdevPtr dstmdev = &dst->caps->data.mdev;
+
+    if (STRNEQ_NULLABLE(dstmdev->type, srcmdev->type)) {
+        ret = true;
+        g_free(dstmdev->type);
+        dstmdev->type = g_strdup(srcmdev->type);
+    }
+
+    if (STRNEQ_NULLABLE(dstmdev->uuid, srcmdev->uuid)) {
+        ret = true;
+        g_free(dstmdev->uuid);
+        dstmdev->uuid = g_strdup(srcmdev->uuid);
+    }
+
+    if (virMediatedDeviceAttrsCopy(dstmdev, srcmdev))
+        ret = true;
+
+    return ret;
+}
