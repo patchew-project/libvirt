@@ -80,6 +80,10 @@ void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
                            virNodeDeviceObjPtr dev);
 
+void
+virNodeDeviceObjListRemoveLocked(virNodeDeviceObjListPtr devs,
+                                 virNodeDeviceObjPtr dev);
+
 int
 virNodeDeviceObjListGetParentHost(virNodeDeviceObjListPtr devs,
                                   virNodeDeviceDefPtr def);
@@ -134,3 +138,11 @@ virNodeDeviceObjIsPersistent(virNodeDeviceObjPtr obj);
 void
 virNodeDeviceObjSetPersistent(virNodeDeviceObjPtr obj,
                               bool persistent);
+
+typedef void
+(*virNodeDeviceObjListIterator)(virNodeDeviceObjPtr obj,
+                                const void *opaque);
+
+void virNodeDeviceObjListForEachSafe(virNodeDeviceObjListPtr devs,
+                                     virNodeDeviceObjListIterator iter,
+                                     const void *opaque);

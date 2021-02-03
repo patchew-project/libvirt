@@ -507,20 +507,26 @@ void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
                            virNodeDeviceObjPtr obj)
 {
-    virNodeDeviceDefPtr def;
-
     if (!obj)
         return;
-    def = obj->def;
 
     virObjectRef(obj);
     virObjectUnlock(obj);
     virObjectRWLockWrite(devs);
     virObjectLock(obj);
-    virHashRemoveEntry(devs->objs, def->name);
+    virNodeDeviceObjListRemoveLocked(devs, obj);
     virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(devs);
+}
+
+
+/* The caller must hold lock on 'devs' */
+void
+virNodeDeviceObjListRemoveLocked(virNodeDeviceObjListPtr devs,
+                                 virNodeDeviceObjPtr dev)
+{
+    virHashRemoveEntry(devs->objs, dev->def->name);
 }
 
 
@@ -1013,4 +1019,55 @@ virNodeDeviceObjSetPersistent(virNodeDeviceObjPtr obj,
                               bool persistent)
 {
     obj->persistent = persistent;
+}
+
+
+struct _virNodeDeviceObjListForEachData {
+    virNodeDeviceObjListIterator iter;
+    const void *opaque;
+};
+
+
+static int
+virNodeDeviceObjListForEachCb(void *payload,
+                              const char *name G_GNUC_UNUSED,
+                              void *opaque)
+{
+    virNodeDeviceObjPtr obj = payload;
+    struct _virNodeDeviceObjListForEachData *data = opaque;
+
+    /* Grab a reference so that we don't rely only on references grabbed by
+     * hash table earlier. Remember, an iterator can remove object from the
+     * hash table. */
+    virObjectRef(obj);
+    virObjectLock(obj);
+    data->iter(obj, data->opaque);
+    virNodeDeviceObjEndAPI(&obj);
+
+    return 0;
+}
+
+
+/**
+ * virNodeDeviceObjListForEach
+ * @devs: Pointer to object list
+ * @iter: Callback iteration helper
+ * @opaque: Opaque data to use as argument to helper
+ *
+ * For each object in @devs, call the @iter helper using @opaque as
+ * an argument.
+ */
+void
+virNodeDeviceObjListForEachSafe(virNodeDeviceObjListPtr devs,
+                                virNodeDeviceObjListIterator iter,
+                                const void *opaque)
+{
+    struct _virNodeDeviceObjListForEachData data = {
+        .iter = iter,
+        .opaque = opaque
+    };
+
+    virObjectRWLockWrite(devs);
+    virHashForEachSafe(devs->objs, virNodeDeviceObjListForEachCb, &data);
+    virObjectRWUnlock(devs);
 }
