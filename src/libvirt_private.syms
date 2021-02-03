@@ -1262,6 +1262,7 @@ virNetworkPortDefSaveStatus;
 virNodeDeviceObjEndAPI;
 virNodeDeviceObjGetDef;
 virNodeDeviceObjIsActive;
+virNodeDeviceObjIsPersistent;
 virNodeDeviceObjListAssignDef;
 virNodeDeviceObjListExport;
 virNodeDeviceObjListFindByName;
@@ -1275,6 +1276,7 @@ virNodeDeviceObjListNew;
 virNodeDeviceObjListNumOfDevices;
 virNodeDeviceObjListRemove;
 virNodeDeviceObjSetActive;
+virNodeDeviceObjSetPersistent;
 
 
 # conf/virnwfilterbindingdef.h
