@@ -1119,6 +1119,57 @@ cmdNodeDeviceDefine(vshControl *ctl, const vshCmd *cmd G_GNUC_UNUSED)
 }
 
 
+/*
+ * "nodedev-start" command
+ */
+static const vshCmdInfo info_node_device_start[] = {
+    {.name = "help",
+     .data = N_("Start an inactive node device")
+    },
+    {.name = "desc",
+     .data = N_("Starts an inactive node device that was previously defined")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_node_device_start[] = {
+    {.name = "device",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("device name"),
+     .completer = virshNodeDeviceNameCompleter,
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdNodeDeviceStart(vshControl *ctl, const vshCmd *cmd)
+{
+    const char *name = NULL;
+    virNodeDevicePtr device;
+    bool ret = true;
+    virshControlPtr priv = ctl->privData;
+
+    if (vshCommandOptStringReq(ctl, cmd, "device", &name) < 0)
+        return false;
+
+    if (!(device = virNodeDeviceLookupByName(priv->conn, name))) {
+        vshError(ctl, _("Could not find matching device '%s'"), name);
+        return false;
+    }
+
+    if (virNodeDeviceCreate(device) == 0) {
+        vshPrintExtra(ctl, _("Device %s started\n"), name);
+    } else {
+        vshError(ctl, _("Failed to start device %s"), name);
+        ret = false;
+    }
+
+    virNodeDeviceFree(device);
+    return ret;
+}
+
+
 const vshCmdDef nodedevCmds[] = {
     {.name = "nodedev-create",
      .handler = cmdNodeDeviceCreate,
@@ -1182,6 +1233,12 @@ const vshCmdDef nodedevCmds[] = {
      .handler = cmdNodeDeviceUndefine,
      .opts = opts_node_device_undefine,
      .info = info_node_device_undefine,
+     .flags = 0
+    },
+    {.name = "nodedev-start",
+     .handler = cmdNodeDeviceStart,
+     .opts = opts_node_device_start,
+     .info = info_node_device_start,
      .flags = 0
     },
     {.name = NULL}
