@@ -8661,6 +8661,7 @@ static virNodeDeviceDriver node_device_driver = {
     .nodeDeviceNumOfCaps = remoteNodeDeviceNumOfCaps, /* 0.5.0 */
     .nodeDeviceListCaps = remoteNodeDeviceListCaps, /* 0.5.0 */
     .nodeDeviceCreateXML = remoteNodeDeviceCreateXML, /* 0.6.3 */
+    .nodeDeviceCreate = remoteNodeDeviceCreate, /* 7.1.0 */
     .nodeDeviceDefineXML = remoteNodeDeviceDefineXML, /* 7.1.0 */
     .nodeDeviceUndefine = remoteNodeDeviceUndefine, /* 7.1.0 */
     .nodeDeviceDestroy = remoteNodeDeviceDestroy /* 0.6.3 */

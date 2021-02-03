@@ -138,6 +138,8 @@ virNodeDevicePtr virNodeDeviceDefineXML(virConnectPtr conn,
 
 int virNodeDeviceUndefine(virNodeDevicePtr dev);
 
+int virNodeDeviceCreate(virNodeDevicePtr dev);
+
 /**
  * VIR_NODE_DEVICE_EVENT_CALLBACK:
  *
