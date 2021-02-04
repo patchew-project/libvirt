@@ -1647,11 +1647,14 @@ bhyveConnectGetDomainCapabilities(virConnectPtr conn,
 
     if (emulatorbin == NULL) {
         emulatorbin = "/usr/sbin/bhyve";
-    } else if (STRNEQ(emulatorbin, "/usr/sbin/bhyve")) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("unknown emulator binary: %s"),
-                       emulatorbin);
-        goto cleanup;
+    } else {
+        g_autofree char *emulatorbasename = g_path_get_basename(emulatorbin);
+        if (STRNEQ(emulatorbasename, "bhyve")) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("unknown emulator binary: %s"),
+                           emulatorbin);
+            goto cleanup;
+        }
     }
 
     if (!(caps = virBhyveDomainCapsBuild(conn->privateData, emulatorbin,
