@@ -35,6 +35,10 @@ storage_backend_iscsi_direct_sources = [
   'storage_backend_iscsi_direct.c',
 ]
 
+storage_backend_linstor_sources = [
+  'storage_backend_linstor.c',
+]
+
 storage_lvm_backend_sources = [
   'storage_backend_logical.c',
 ]
@@ -188,6 +192,27 @@ if conf.has('WITH_STORAGE_ISCSI_DIRECT')
     ],
     'deps': [
       libiscsi_dep
+    ],
+    'install_dir': storage_backend_install_dir,
+  }
+endif
+
+if conf.has('WITH_STORAGE_LINSTOR')
+  storage_backend_linstor_priv_lib = static_library(
+    'virt_storage_backend_linstor_priv',
+    storage_backend_linstor_sources,
+    dependencies: [
+      src_dep,
+    ],
+    include_directories: [
+      conf_inc_dir,
+    ],
+  )
+
+  virt_modules += {
+    'name': 'virt_storage_backend_linstor',
+    'link_whole': [
+      storage_backend_linstor_priv_lib,
     ],
     'install_dir': storage_backend_install_dir,
   }

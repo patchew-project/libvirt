@@ -217,6 +217,7 @@
 @SRCDIR@src/storage/storage_backend_gluster.c
 @SRCDIR@src/storage/storage_backend_iscsi.c
 @SRCDIR@src/storage/storage_backend_iscsi_direct.c
+@SRCDIR@src/storage/storage_backend_linstor.c
 @SRCDIR@src/storage/storage_backend_logical.c
 @SRCDIR@src/storage/storage_backend_mpath.c
 @SRCDIR@src/storage/storage_backend_rbd.c
