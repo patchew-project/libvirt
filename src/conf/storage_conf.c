@@ -60,7 +60,7 @@ VIR_ENUM_IMPL(virStoragePool,
               "logical", "disk", "iscsi",
               "iscsi-direct", "scsi", "mpath",
               "rbd", "sheepdog", "gluster",
-              "zfs", "vstorage",
+              "zfs", "vstorage", "linstor"
 );
 
 VIR_ENUM_IMPL(virStoragePoolFormatFileSystem,
@@ -303,6 +303,17 @@ static virStoragePoolTypeInfo poolTypeInfo[] = {
         .formatFromString = virStorageVolumeFormatFromString,
         .formatToString = virStorageFileFormatTypeToString,
      },
+    },
+    {.poolType = VIR_STORAGE_POOL_LINSTOR,
+     .poolOptions = {
+         .flags = (VIR_STORAGE_POOL_SOURCE_NETWORK |
+                   VIR_STORAGE_POOL_SOURCE_NAME),
+     },
+     .volOptions = {
+         .defaultFormat = VIR_STORAGE_FILE_RAW,
+         .formatFromString = virStorageVolumeFormatFromString,
+         .formatToString = virStorageFileFormatTypeToString,
+     }
     },
 };
 
