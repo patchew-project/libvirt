@@ -1332,6 +1332,28 @@ static char *qemuConnectGetCapabilities(virConnectPtr conn) {
     return virCapabilitiesFormatXML(caps);
 }
 
+static int
+qemuGetSchedstatDelay(unsigned long long *cpudelay,
+                 pid_t pid, pid_t tid)
+{
+    g_autofree char *proc = NULL;
+    unsigned long long oncpu = 0;
+    g_autofree FILE *schedstat = NULL;
+
+    if (tid)
+        proc = g_strdup_printf("/proc/%d/task/%d/schedstat", (int)pid, (int)tid);
+    else
+        proc = g_strdup_printf("/proc/%d/schedstat", (int)pid);
+    if (!proc)
+        return -1;
+
+    schedstat = fopen(proc, "r");
+    if (!schedstat || fscanf(schedstat, "%llu %llu", &oncpu, cpudelay) < 2) {
+            return -1;
+    }
+
+    return 0;
+}
 
 static int
 qemuGetSchedInfo(unsigned long long *cpuWait,
@@ -1470,6 +1492,7 @@ static int
 qemuDomainHelperGetVcpus(virDomainObjPtr vm,
                          virVcpuInfoPtr info,
                          unsigned long long *cpuwait,
+                         unsigned long long *cpudelay,
                          int maxinfo,
                          unsigned char *cpumaps,
                          int maplen)
@@ -1526,6 +1549,11 @@ qemuDomainHelperGetVcpus(virDomainObjPtr vm,
 
         if (cpuwait) {
             if (qemuGetSchedInfo(&(cpuwait[ncpuinfo]), vm->pid, vcpupid) < 0)
+                return -1;
+        }
+
+        if (cpudelay) {
+            if (qemuGetSchedstatDelay(&(cpudelay[ncpuinfo]), vm->pid, vcpupid) < 0)
                 return -1;
         }
 
@@ -4873,7 +4901,7 @@ qemuDomainGetVcpus(virDomainPtr dom,
         goto cleanup;
     }
 
-    ret = qemuDomainHelperGetVcpus(vm, info, NULL, maxinfo, cpumaps, maplen);
+    ret = qemuDomainHelperGetVcpus(vm, info, NULL, NULL, maxinfo, cpumaps, maplen);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -17868,7 +17896,6 @@ qemuDomainGetStatsMemoryBandwidth(virQEMUDriverPtr driver,
     return ret;
 }
 
-
 static int
 qemuDomainGetStatsCpuCache(virQEMUDriverPtr driver,
                            virDomainObjPtr dom,
@@ -18058,6 +18085,7 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
     int ret = -1;
     virVcpuInfoPtr cpuinfo = NULL;
     g_autofree unsigned long long *cpuwait = NULL;
+    g_autofree unsigned long long *cpudelay = NULL;
 
     if (virTypedParamListAddUInt(params, virDomainDefGetVcpus(dom->def),
                                  "vcpu.current") < 0)
@@ -18069,6 +18097,7 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
 
     cpuinfo = g_new0(virVcpuInfo, virDomainDefGetVcpus(dom->def));
     cpuwait = g_new0(unsigned long long, virDomainDefGetVcpus(dom->def));
+    cpudelay = g_new0(unsigned long long, virDomainDefGetVcpus(dom->def));
 
     if (HAVE_JOB(privflags) && virDomainObjIsActive(dom) &&
         qemuDomainRefreshVcpuHalted(driver, dom, QEMU_ASYNC_JOB_NONE) < 0) {
@@ -18077,7 +18106,7 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
             virResetLastError();
     }
 
-    if (qemuDomainHelperGetVcpus(dom, cpuinfo, cpuwait,
+    if (qemuDomainHelperGetVcpus(dom, cpuinfo, cpuwait, cpudelay,
                                  virDomainDefGetVcpus(dom->def),
                                  NULL, 0) < 0) {
         virResetLastError();
@@ -18100,6 +18129,10 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
 
         if (virTypedParamListAddULLong(params, cpuwait[i],
                                        "vcpu.%u.wait", cpuinfo[i].number) < 0)
+            goto cleanup;
+
+        if (virTypedParamListAddULLong(params, cpudelay[i],
+                                        "vcpu.%u.delay", cpuinfo[i].number) < 0)
             goto cleanup;
 
         /* state below is extracted from the individual vcpu structs */
