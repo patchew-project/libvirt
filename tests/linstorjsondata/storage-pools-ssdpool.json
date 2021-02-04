@@ -1,0 +1,72 @@
+[
+  [
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "kitfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2520332505,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "kitfox:ssdpool",
+      "uuid": "0ec1c14b-684f-432d-83c4-06c093fd5008",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "redfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2263879729,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "redfox:ssdpool",
+      "uuid": "ce5cadae-0138-4ce7-8294-9c2dd648ff2c",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "silverfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2541678516,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "silverfox:ssdpool",
+      "uuid": "1042ae20-ec3d-494a-8188-0032df0775a2",
+      "supports_snapshots": true
+    },
+    {
+      "storage_pool_name": "ssdpool",
+      "node_name": "swiftfox",
+      "provider_kind": "LVM_THIN",
+      "props": {
+        "StorDriver/StorPoolName": "ssdpool/ssdthin"
+      },
+      "static_traits": {
+        "Provisioning": "Thin",
+        "SupportsSnapshots": "true"
+      },
+      "free_capacity": 2682983094,
+      "total_capacity": 3006480384,
+      "free_space_mgr_name": "swiftfox:ssdpool",
+      "uuid": "38c8220f-b0c1-4977-8b3f-0376bc5f9ee2",
+      "supports_snapshots": true
+    }
+  ]
+]

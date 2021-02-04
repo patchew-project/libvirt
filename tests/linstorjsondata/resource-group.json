@@ -1,0 +1,1 @@
+[[{"name":"DfltRscGrp","select_filter":{"place_count":2},"uuid":"a52e934a-9fd9-44cb-9db1-716dcd13aae3"},{"name":"libvirtgrp","select_filter":{"place_count":2,"storage_pool":"thinpool","storage_pool_list":["thinpool"]},"uuid":"7ec0bdee-9176-470e-8f7d-532032434160"}]]
