@@ -1291,6 +1291,7 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
     char *str, uuid[VIR_UUID_STRING_BUFLEN];
     int has_managed_save = 0;
     virshControlPtr priv = ctl->privData;
+    char **messages = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
@@ -1391,6 +1392,18 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
             VIR_FREE(seclabel);
         }
     }
+
+    if (virDomainGetMessages(dom, &messages, 0) > 0) {
+        size_t i;
+        for (i = 0; messages[i] != NULL; i++) {
+            if (i == 0) {
+                vshPrint(ctl, "%-15s %s\n", _("Messages:"), messages[i]);
+            } else {
+                vshPrint(ctl, "%-15s %s\n", "", messages[i]);
+            }
+        }
+    }
+
     virshDomainFree(dom);
     return ret;
 }
