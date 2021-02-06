@@ -169,15 +169,15 @@ qemuMigrationSrcRestoreDomainState(virQEMUDriverPtr driver, virDomainObjPtr vm)
 
 
 static int
-qemuMigrationDstPrecreateDisk(virConnectPtr *conn,
-                              virDomainDiskDefPtr disk,
+qemuMigrationDstPrecreateDisk(virDomainDiskDefPtr disk,
                               unsigned long long capacity)
 {
-    int ret = -1;
-    virStoragePoolPtr pool = NULL;
-    virStorageVolPtr vol = NULL;
-    char *volName = NULL, *basePath = NULL;
-    char *volStr = NULL;
+    g_autoptr(virConnect) conn = NULL;
+    g_autoptr(virStoragePool) pool = NULL;
+    g_autoptr(virStorageVol) vol = NULL;
+    char *volName = NULL;
+    g_autofree char *basePath = NULL;
+    g_autofree char *volStr = NULL;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     const char *format = NULL;
     unsigned int flags = 0;
@@ -198,32 +198,28 @@ qemuMigrationDstPrecreateDisk(virConnectPtr *conn,
             virReportError(VIR_ERR_INVALID_ARG,
                            _("malformed disk path: %s"),
                            disk->src->path);
-            goto cleanup;
+            return -1;
         }
 
         *volName = '\0';
         volName++;
 
-        if (!*conn) {
-            if (!(*conn = virGetConnectStorage()))
-                goto cleanup;
-        }
+        if (!(conn = virGetConnectStorage()))
+            return -1;
 
-        if (!(pool = virStoragePoolLookupByTargetPath(*conn, basePath)))
-            goto cleanup;
+        if (!(pool = virStoragePoolLookupByTargetPath(conn, basePath)))
+            return -1;
         format = virStorageFileFormatTypeToString(disk->src->format);
         if (disk->src->format == VIR_STORAGE_FILE_QCOW2)
             flags |= VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA;
         break;
 
     case VIR_STORAGE_TYPE_VOLUME:
-        if (!*conn) {
-            if (!(*conn = virGetConnectStorage()))
-                goto cleanup;
-        }
+        if (!(conn = virGetConnectStorage()))
+            return -1;
 
-        if (!(pool = virStoragePoolLookupByName(*conn, disk->src->srcpool->pool)))
-            goto cleanup;
+        if (!(pool = virStoragePoolLookupByName(conn, disk->src->srcpool->pool)))
+            return -1;
         format = virStorageFileFormatTypeToString(disk->src->format);
         volName = disk->src->srcpool->volume;
         if (disk->src->format == VIR_STORAGE_FILE_QCOW2)
@@ -245,13 +241,13 @@ qemuMigrationDstPrecreateDisk(virConnectPtr *conn,
                        _("cannot precreate storage for disk type '%s'"),
                        virStorageTypeToString(disk->src->type));
         goto cleanup;
+        return -1;
     }
 
     if ((vol = virStorageVolLookupByName(pool, volName))) {
         VIR_DEBUG("Skipping creation of already existing volume of name '%s'",
                   volName);
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     virBufferAddLit(&buf, "<volume>\n");
@@ -269,19 +265,13 @@ qemuMigrationDstPrecreateDisk(virConnectPtr *conn,
     if (!(volStr = virBufferContentAndReset(&buf))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("unable to create volume XML"));
-        goto cleanup;
+        return -1;
     }
 
     if (!(vol = virStorageVolCreateXML(pool, volStr, flags)))
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    VIR_FREE(basePath);
-    VIR_FREE(volStr);
-    virObjectUnref(vol);
-    virObjectUnref(pool);
-    return ret;
+    return 0;
 }
 
 static bool
@@ -313,9 +303,7 @@ qemuMigrationDstPrecreateStorage(virDomainObjPtr vm,
                                  const char **migrate_disks,
                                  bool incremental)
 {
-    int ret = -1;
     size_t i = 0;
-    virConnectPtr conn = NULL;
 
     if (!nbd || !nbd->ndisks)
         return 0;
@@ -332,7 +320,7 @@ qemuMigrationDstPrecreateStorage(virDomainObjPtr vm,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unable to find disk by target: %s"),
                            nbd->disks[i].target);
-            goto cleanup;
+            return -1;
         }
 
         if (disk->src->type == VIR_STORAGE_TYPE_NVME) {
@@ -352,20 +340,16 @@ qemuMigrationDstPrecreateStorage(virDomainObjPtr vm,
             virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                            _("pre-creation of storage targets for incremental "
                              "storage migration is not supported"));
-            goto cleanup;
+            return -1;
         }
 
         VIR_DEBUG("Proceeding with disk source %s", NULLSTR(diskSrcPath));
 
-        if (qemuMigrationDstPrecreateDisk(&conn,
-                                          disk, nbd->disks[i].capacity) < 0)
-            goto cleanup;
+        if (qemuMigrationDstPrecreateDisk(disk, nbd->disks[i].capacity) < 0)
+            return -1;
     }
 
-    ret = 0;
- cleanup:
-    virObjectUnref(conn);
-    return ret;
+    return 0;
 }
 
 
