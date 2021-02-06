@@ -477,7 +477,7 @@ struct _qemuMonitorJSONObjectProperty {
         unsigned int ui;
         unsigned long long ul;
         double d;
-        char *str;
+        const char *str;
     } val;
 };
 
