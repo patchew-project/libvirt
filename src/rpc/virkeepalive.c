@@ -119,12 +119,25 @@ virKeepAliveTimerInternal(virKeepAlivePtr ka,
     if (ka->interval <= 0 || ka->intervalStart == 0)
         return false;
 
+    if (now < ka->intervalStart) {
+        VIR_WARN("system time jump back detected. now=%ld,"
+                 " intervalStart=%ld",
+                 now, ka->intervalStart);
+        ka->intervalStart = now;
+    }
+
     if (now - ka->intervalStart < ka->interval) {
         timeval = ka->interval - (now - ka->intervalStart);
         virEventUpdateTimeout(ka->timer, timeval * 1000);
         return false;
     }
 
+    if (now < ka->lastPacketReceived) {
+        VIR_WARN("system time jump back detected. now=%ld,"
+                 " lastPacketReceived=%ld",
+                 now, ka->lastPacketReceived);
+        ka->lastPacketReceived = now;
+    }
     timeval = now - ka->lastPacketReceived;
     PROBE(RPC_KEEPALIVE_TIMEOUT,
           "ka=%p client=%p countToDeath=%d idle=%d",
@@ -271,6 +284,13 @@ virKeepAliveStart(virKeepAlivePtr ka,
           ka, ka->client, interval, count);
 
     now = time(NULL);
+    if (now < ka->lastPacketReceived) {
+        VIR_WARN("system time jump back detected. now=%ld,"
+                 " lastPacketReceived=%ld",
+                 now, ka->lastPacketReceived);
+        ka->lastPacketReceived = now;
+    }
+
     delay = now - ka->lastPacketReceived;
     if (delay > ka->interval)
         timeout = 0;
