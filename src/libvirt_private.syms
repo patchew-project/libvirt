@@ -628,6 +628,8 @@ virDomainStateTypeToString;
 virDomainStorageNetworkParseHost;
 virDomainStorageSourceParse;
 virDomainStorageSourceParseBase;
+virDomainTaintMessageTypeFromString;
+virDomainTaintMessageTypeToString;
 virDomainTaintTypeFromString;
 virDomainTaintTypeToString;
 virDomainTimerModeTypeFromString;
