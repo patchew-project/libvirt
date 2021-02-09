@@ -32,6 +32,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_RPC
 #define MICROSEC_PER_SEC        (1000 * 1000)
+#define MILLISECONDS_PER_SECOND (1000)
 VIR_LOG_INIT("rpc.keepalive");
 
 struct _virKeepAlive {
@@ -121,7 +122,7 @@ virKeepAliveTimerInternal(virKeepAlivePtr ka,
 
     if (now - ka->intervalStart < ka->interval) {
         timeval = ka->interval - (now - ka->intervalStart);
-        virEventUpdateTimeout(ka->timer, timeval * 1000);
+        virEventUpdateTimeout(ka->timer, timeval * MILLISECONDS_PER_SECOND);
         return false;
     }
 
@@ -141,7 +142,7 @@ virKeepAliveTimerInternal(virKeepAlivePtr ka,
         ka->countToDeath--;
         ka->intervalStart = now;
         *msg = virKeepAliveMessage(ka, KEEPALIVE_PROC_PING);
-        virEventUpdateTimeout(ka->timer, ka->interval * 1000);
+        virEventUpdateTimeout(ka->timer, ka->interval * MILLISECONDS_PER_SECOND);
         return false;
     }
 }
@@ -250,7 +251,7 @@ virKeepAliveStart(virKeepAlivePtr ka,
             goto cleanup;
         }
         /* Guard against overflow */
-        if (interval > INT_MAX / 1000) {
+        if (interval > INT_MAX / MILLISECONDS_PER_SECOND) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("keepalive interval %d too large"), interval);
             goto cleanup;
@@ -277,7 +278,8 @@ virKeepAliveStart(virKeepAlivePtr ka,
     else
         timeout = ka->interval - delay;
     ka->intervalStart = now - (ka->interval - timeout);
-    ka->timer = virEventAddTimeout(timeout * 1000, virKeepAliveTimer,
+    ka->timer = virEventAddTimeout(timeout * MILLISECONDS_PER_SECOND,
+                                   virKeepAliveTimer,
                                    ka, virObjectFreeCallback);
     if (ka->timer < 0)
         goto cleanup;
@@ -327,8 +329,8 @@ virKeepAliveTimeout(virKeepAlivePtr ka)
         if (timeout < 0)
             timeout = 0;
         /* Guard against overflow */
-        if (timeout > INT_MAX / 1000)
-            timeout = INT_MAX / 1000;
+        if (timeout > INT_MAX / MILLISECONDS_PER_SECOND)
+            timeout = INT_MAX / MILLISECONDS_PER_SECOND;
     }
 
     virObjectUnlock(ka);
@@ -336,7 +338,7 @@ virKeepAliveTimeout(virKeepAlivePtr ka)
     if (timeout < 0)
         return -1;
     else
-        return timeout * 1000;
+        return timeout * MILLISECONDS_PER_SECOND;
 }
 
 
@@ -403,7 +405,7 @@ virKeepAliveCheckMessage(virKeepAlivePtr ka,
     }
 
     if (ka->timer >= 0)
-        virEventUpdateTimeout(ka->timer, ka->interval * 1000);
+        virEventUpdateTimeout(ka->timer, ka->interval * MILLISECONDS_PER_SECOND);
 
     virObjectUnlock(ka);
 
