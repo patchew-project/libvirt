@@ -225,7 +225,7 @@ ci-list-images:
 	@sh list-images.sh "$(CI_IMAGE_PREFIX)" | grep cross
 	@echo
 
-ci-help:
+help:
 	@echo "Build libvirt inside containers used for CI"
 	@echo
 	@echo "Available targets:"
@@ -234,7 +234,7 @@ ci-help:
 	@echo "    ci-check@\$$IMAGE - run a 'ninja test'"
 	@echo "    ci-shell@\$$IMAGE - run an interactive shell"
 	@echo "    ci-list-images  - list available images"
-	@echo "    ci-help         - show this help message"
+	@echo "    help            - show this help message"
 	@echo
 	@echo "Available make variables:"
 	@echo
