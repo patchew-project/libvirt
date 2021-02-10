@@ -216,13 +216,7 @@ ci-test@%:
 
 ci-list-images:
 	@echo
-	@echo "Available x86 container images:"
-	@echo
-	@sh list-images.sh "$(CI_IMAGE_PREFIX)" | grep -v cross
-	@echo
-	@echo "Available cross-compiler container images:"
-	@echo
-	@sh list-images.sh "$(CI_IMAGE_PREFIX)" | grep cross
+	@python3 list-images.py
 	@echo
 
 help:
