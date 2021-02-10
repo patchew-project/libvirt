@@ -47,13 +47,13 @@ CI_REUSE = 0
 
 # We need the container process to run with current host IDs
 # so that it can access the passed in build directory
-CI_UID = $(shell id -u)
-CI_GID = $(shell id -g)
+CI_UID = $(shell id -u $(CI_USER_LOGIN))
+CI_GID = $(shell id -g $(CI_USER_LOGIN))
 
 # We also need the user's login and home directory to prepare the
 # environment the way some programs expect it
-CI_USER_LOGIN = $(shell echo "$$USER")
-CI_USER_HOME = $(shell echo "$$HOME")
+CI_USER_LOGIN = $(shell whoami)
+CI_USER_HOME = $(shell eval echo "~$(CI_USER_LOGIN)")
 
 CI_ENGINE = auto
 # Container engine we are going to use, can be overridden per make
@@ -132,6 +132,13 @@ ifeq ($(CI_ENGINE),podman)
 		--gidmap $(CI_GID):0:1 \
 		--gidmap $(CI_GID_OTHER):$(CI_GID_OTHER):$(CI_GID_OTHER_RANGE) \
 		$(NULL)
+
+	# In case we want to debug in the container, having root is actually
+	# preferable, so reset the CI_PODMAN_ARGS and don't actually perform
+	# any uid/gid mapping
+	ifeq ($(CI_UID), 0)
+		CI_PODMAN_ARGS=
+	endif
 endif
 
 # Args to use when cloning a git repo.
@@ -238,6 +245,7 @@ ci-help:
 	@echo
 	@echo "    CI_CLEAN=0          - do not delete '$(CI_SCRATCHDIR)' after completion"
 	@echo "    CI_REUSE=1          - re-use existing '$(CI_SCRATCHDIR)' content"
+	@echo "    CI_USER_LOGIN=      - which user should run in the container (default is $$USER)"
 	@echo "    CI_ENGINE=auto      - container engine to use (podman, docker)"
 	@echo "    CI_MESON_ARGS=      - extra arguments passed to meson"
 	@echo "    CI_NINJA_ARGS=      - extra arguments passed to ninja"
