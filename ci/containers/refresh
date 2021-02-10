@@ -40,3 +40,8 @@ do
 
     $LCITOOL dockerfile $host libvirt > ci-$host.Dockerfile
 done
+
+# Check whether there are some old images in the container registry that could
+# be purged - mainly because the list-images script would list them as
+# available
+/usr/bin/env python3 check-registry.py --lcitool_path "$LCITOOL" 192693
