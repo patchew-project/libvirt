@@ -616,6 +616,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "vhost-user-blk",
               "cpu-max",
               "memory-backend-file.x-use-canonical-path-for-ramblock-id",
+              "migration-param.block-bitmap-mapping",
     );
 
 
@@ -1549,6 +1550,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "migrate-set-parameters/arg-type/xbzrle-cache-size", QEMU_CAPS_MIGRATION_PARAM_XBZRLE_CACHE_SIZE },
     { "set-numa-node/arg-type/+hmat-lb", QEMU_CAPS_NUMA_HMAT },
     { "netdev_add/arg-type/+vhost-vdpa", QEMU_CAPS_NETDEV_VHOST_VDPA },
+    { "migrate-set-parameters/arg-type/block-bitmap-mapping/transform", QEMU_CAPS_MIGRATION_PARAM_BLOCK_BITMAP_MAPPING },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
