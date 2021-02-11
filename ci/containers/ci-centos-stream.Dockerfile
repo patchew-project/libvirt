@@ -2,7 +2,7 @@
 #
 #  $ lcitool dockerfile centos-stream libvirt
 #
-# https://gitlab.com/libvirt/libvirt-ci/-/commit/740f5254f607de914a92d664196d045149edb45a
+# https://gitlab.com/libvirt/libvirt-ci/-/commit/824b894aa3ca40e9d2807b693765e213cb8aa832
 FROM docker.io/library/centos:8
 
 RUN dnf install -y centos-release-stream && \
@@ -39,6 +39,7 @@ RUN dnf install -y centos-release-stream && \
         gnutls-devel \
         iproute \
         iproute-tc \
+        iptables \
         iscsi-initiator-utils \
         kmod \
         libacl-devel \

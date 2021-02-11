@@ -2,7 +2,7 @@
 #
 #  $ lcitool dockerfile --cross mips64el debian-10 libvirt
 #
-# https://gitlab.com/libvirt/libvirt-ci/-/commit/740f5254f607de914a92d664196d045149edb45a
+# https://gitlab.com/libvirt/libvirt-ci/-/commit/824b894aa3ca40e9d2807b693765e213cb8aa832
 FROM docker.io/library/debian:10-slim
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -25,6 +25,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             gettext \
             git \
             iproute2 \
+            iptables \
             kmod \
             libc-dev-bin \
             libxml2-utils \

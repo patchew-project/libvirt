@@ -2,7 +2,7 @@
 #
 #  $ lcitool dockerfile --cross mingw64 fedora-rawhide libvirt
 #
-# https://gitlab.com/libvirt/libvirt-ci/-/commit/740f5254f607de914a92d664196d045149edb45a
+# https://gitlab.com/libvirt/libvirt-ci/-/commit/824b894aa3ca40e9d2807b693765e213cb8aa832
 FROM registry.fedoraproject.org/fedora:rawhide
 
 RUN dnf install -y nosync && \
@@ -32,6 +32,7 @@ exec "$@"' > /usr/bin/nosync && \
         glibc-langpack-en \
         iproute \
         iproute-tc \
+        iptables \
         iscsi-initiator-utils \
         kmod \
         libwsman-devel \
