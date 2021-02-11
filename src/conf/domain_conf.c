@@ -15015,6 +15015,9 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
+    if (virDomainNetTeamingInfoParseXML(ctxt, &def->teaming) < 0)
+        goto error;
+
     return def;
 
  error:
@@ -27427,6 +27430,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
             return -1;
         break;
     }
+
+    virDomainNetTeamingInfoFormat(def->teaming, buf);
 
     if (def->readonly)
         virBufferAddLit(buf, "<readonly/>\n");
