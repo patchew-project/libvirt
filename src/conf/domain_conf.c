@@ -2960,13 +2960,13 @@ virDomainVideoDefClear(virDomainVideoDefPtr def)
     virDomainDeviceInfoClear(&def->info);
 
     if (def->accel)
-        VIR_FREE(def->accel->rendernode);
-    VIR_FREE(def->accel);
-    VIR_FREE(def->res);
-    VIR_FREE(def->virtio);
+        g_free(def->accel->rendernode);
+    g_free(def->accel);
+    g_free(def->res);
+    g_free(def->virtio);
     if (def->driver)
-        VIR_FREE(def->driver->vhost_user_binary);
-    VIR_FREE(def->driver);
+        g_free(def->driver->vhost_user_binary);
+    g_free(def->driver);
     virObjectUnref(def->privateData);
 
     memset(def, 0, sizeof(*def));
