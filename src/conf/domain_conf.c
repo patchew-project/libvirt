@@ -2997,13 +2997,13 @@ virDomainHostdevDefNew(void)
 
 
 static void
-virDomainHostdevSubsysSCSIClear(virDomainHostdevSubsysSCSIPtr scsisrc)
+virDomainHostdevSubsysSCSIFreeContents(virDomainHostdevSubsysSCSIPtr scsisrc)
 {
     if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
         virObjectUnref(scsisrc->u.iscsi.src);
         scsisrc->u.iscsi.src = NULL;
     } else {
-        VIR_FREE(scsisrc->u.host.adapter);
+        g_free(scsisrc->u.host.adapter);
         virObjectUnref(scsisrc->u.host.src);
         scsisrc->u.host.src = NULL;
     }
@@ -3048,7 +3048,7 @@ virDomainHostdevDefFreeContents(virDomainHostdevDefPtr def)
     case VIR_DOMAIN_HOSTDEV_MODE_SUBSYS:
         switch ((virDomainHostdevSubsysType) def->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
-            virDomainHostdevSubsysSCSIClear(&def->source.subsys.u.scsi);
+            virDomainHostdevSubsysSCSIFreeContents(&def->source.subsys.u.scsi);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
             g_free(def->source.subsys.u.scsi_host.wwpn);
