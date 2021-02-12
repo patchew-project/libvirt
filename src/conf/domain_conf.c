@@ -6533,8 +6533,6 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt,
     g_autofree char *rombar = NULL;
     g_autofree char *aliasStr = NULL;
 
-    virDomainDeviceInfoClear(info);
-
     cur = node->children;
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
@@ -6611,8 +6609,6 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt,
 
     ret = 0;
  cleanup:
-    if (ret < 0)
-        virDomainDeviceInfoClear(info);
     return ret;
 }
 
