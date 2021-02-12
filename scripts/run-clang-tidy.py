@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import os
 import queue
+import random
 import re
 import shlex
 import subprocess
@@ -61,6 +62,11 @@ def parse_args():
         dest="allow_timeout",
         action="store_true",
         help="Do not treat timeout as failure if set")
+    parser.add_argument(
+        "--shuffle-input",
+        dest="shuffle_input",
+        action="store_true",
+        help="Randomize order of files to check")
 
     return parser.parse_args()
 
@@ -188,6 +194,8 @@ for _ in range(args.thread_num):
 
 with open(os.path.join(args.build_dir, "compile_commands.json")) as f:
     compile_commands = json.load(f)
+    if args.shuffle_input:
+        random.shuffle(compile_commands)
     for compile_command in compile_commands:
         items.put(compile_command)
 
