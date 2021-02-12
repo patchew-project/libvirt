@@ -525,10 +525,9 @@ qemuMonitorJSONTransactionAdd(virJSONValuePtr actions,
                                  "A:data", &data, NULL) < 0)
         goto cleanup;
 
-    if (virJSONValueArrayAppend(actions, entry) < 0)
+    if (virJSONValueArrayAppend(actions, &entry) < 0)
         goto cleanup;
 
-    entry = NULL;
     ret = 0;
 
  cleanup:
@@ -4976,11 +4975,8 @@ int qemuMonitorJSONSendKey(qemuMonitorPtr mon,
         if (virJSONValueObjectAppendNumberInt(key, "data", keycodes[i]) < 0)
             goto cleanup;
 
-        if (virJSONValueArrayAppend(keys, key) < 0)
+        if (virJSONValueArrayAppend(keys, &key) < 0)
             goto cleanup;
-
-        key = NULL;
-
     }
 
     cmd = qemuMonitorJSONMakeCommand("send-key",
@@ -9289,10 +9285,9 @@ qemuMonitorJSONTransactionBitmapMergeSourceAddBitmap(virJSONValuePtr sources,
                                  NULL) < 0)
         return -1;
 
-    if (virJSONValueArrayAppend(sources, sourceobj) < 0)
+    if (virJSONValueArrayAppend(sources, &sourceobj) < 0)
         return -1;
 
-    sourceobj = NULL;
     return 0;
 }
 

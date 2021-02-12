@@ -770,10 +770,8 @@ qemuMigrationCapsToJSON(virBitmapPtr caps,
                                      NULL) < 0)
             return NULL;
 
-        if (virJSONValueArrayAppend(json, cap) < 0)
+        if (virJSONValueArrayAppend(json, &cap) < 0)
             return NULL;
-
-        cap = NULL;
     }
 
     return g_steal_pointer(&json);
