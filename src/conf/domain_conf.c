@@ -1339,6 +1339,7 @@ static virClassPtr virDomainXMLOptionClass;
 static void virDomainObjDispose(void *obj);
 static void virDomainXMLOptionDispose(void *obj);
 
+static void virDomainHostdevDefFreeContents(virDomainHostdevDefPtr def);
 
 static void
 virDomainChrSourceDefFormat(virBufferPtr buf,
@@ -2430,7 +2431,7 @@ virDomainActualNetDefFree(virDomainActualNetDefPtr def)
         g_free(def->data.direct.linkdev);
         break;
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
-        virDomainHostdevDefClear(&def->data.hostdev.def);
+        virDomainHostdevDefFree(&def->data.hostdev.def);
         break;
     default:
         break;
@@ -2531,7 +2532,7 @@ virDomainNetDefFree(virDomainNetDefPtr def)
         break;
 
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
-        virDomainHostdevDefClear(&def->data.hostdev.def);
+        virDomainHostdevDefFree(&def->data.hostdev.def);
         break;
 
     case VIR_DOMAIN_NET_TYPE_ETHERNET:
@@ -3009,7 +3010,8 @@ virDomainHostdevSubsysSCSIClear(virDomainHostdevSubsysSCSIPtr scsisrc)
 }
 
 
-void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
+static void
+virDomainHostdevDefFreeContents(virDomainHostdevDefPtr def)
 {
     if (!def)
         return;
@@ -3030,13 +3032,13 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
     case VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES:
         switch ((virDomainHostdevCapsType) def->source.caps.type) {
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_STORAGE:
-            VIR_FREE(def->source.caps.u.storage.block);
+            g_free(def->source.caps.u.storage.block);
             break;
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_MISC:
-            VIR_FREE(def->source.caps.u.misc.chardev);
+            g_free(def->source.caps.u.misc.chardev);
             break;
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_NET:
-            VIR_FREE(def->source.caps.u.net.ifname);
+            g_free(def->source.caps.u.net.ifname);
             virNetDevIPInfoClear(&def->source.caps.u.net.ip);
             break;
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_LAST:
@@ -3049,7 +3051,7 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
             virDomainHostdevSubsysSCSIClear(&def->source.subsys.u.scsi);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
-            VIR_FREE(def->source.subsys.u.scsi_host.wwpn);
+            g_free(def->source.subsys.u.scsi_host.wwpn);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
@@ -3060,6 +3062,7 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
         break;
     }
 }
+
 
 void virDomainTPMDefFree(virDomainTPMDefPtr def)
 {
@@ -3089,7 +3092,7 @@ void virDomainHostdevDefFree(virDomainHostdevDefPtr def)
         return;
 
     /* free all subordinate objects */
-    virDomainHostdevDefClear(def);
+    virDomainHostdevDefFreeContents(def);
 
     /* If there is a parentnet device object, it will handle freeing
      * the memory.

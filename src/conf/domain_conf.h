@@ -3126,7 +3126,6 @@ void virDomainVideoDefFree(virDomainVideoDefPtr def);
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(virDomainVideoDef, virDomainVideoDefFree);
 void virDomainVideoDefClear(virDomainVideoDefPtr def);
 virDomainHostdevDefPtr virDomainHostdevDefNew(void);
-void virDomainHostdevDefClear(virDomainHostdevDefPtr def);
 void virDomainHostdevDefFree(virDomainHostdevDefPtr def);
 void virDomainHubDefFree(virDomainHubDefPtr def);
 void virDomainRedirdevDefFree(virDomainRedirdevDefPtr def);
