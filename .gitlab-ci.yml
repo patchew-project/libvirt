@@ -617,3 +617,91 @@ coverity:
     - curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME --form token=$COVERITY_SCAN_TOKEN --form email=$GITLAB_USER_EMAIL --form file=@cov-int.tar.gz --form version="$(git describe --tags)" --form description="$(git describe --tags) / $CI_COMMIT_TITLE / $CI_COMMIT_REF_NAME:$CI_PIPELINE_ID"
   rules:
     - if: "$CI_PIPELINE_SOURCE == 'schedule' && $COVERITY_SCAN_PROJECT_NAME && $COVERITY_SCAN_TOKEN"
+
+clang-tidy:
+  image: $CI_REGISTRY_IMAGE/ci-fedora-32:latest
+  needs:
+    - x64-fedora-32-container
+  stage: builds
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    when: always
+    paths:
+      - clang-tidy-cache
+  script:
+    - meson build
+    - ninja -C build src/access/viraccessapicheck.c
+    - ninja -C build src/access/viraccessapicheck.h
+    - ninja -C build src/access/viraccessapichecklxc.c
+    - ninja -C build src/access/viraccessapichecklxc.h
+    - ninja -C build src/access/viraccessapicheckqemu.c
+    - ninja -C build src/access/viraccessapicheckqemu.h
+    - ninja -C build src/admin/admin_client.h
+    - ninja -C build src/admin/admin_protocol.c
+    - ninja -C build src/admin/admin_protocol.h
+    - ninja -C build src/admin/admin_server_dispatch_stubs.h
+    - ninja -C build src/esx/esx_vi.generated.c
+    - ninja -C build src/esx/esx_vi.generated.h
+    - ninja -C build src/esx/esx_vi_methods.generated.c
+    - ninja -C build src/esx/esx_vi_methods.generated.h
+    - ninja -C build src/esx/esx_vi_methods.generated.macro
+    - ninja -C build src/esx/esx_vi_types.generated.c
+    - ninja -C build src/esx/esx_vi_types.generated.h
+    - ninja -C build src/esx/esx_vi_types.generated.typedef
+    - ninja -C build src/esx/esx_vi_types.generated.typeenum
+    - ninja -C build src/esx/esx_vi_types.generated.typefromstring
+    - ninja -C build src/esx/esx_vi_types.generated.typetostring
+    - ninja -C build src/hyperv/hyperv_wmi_classes.generated.c
+    - ninja -C build src/hyperv/hyperv_wmi_classes.generated.h
+    - ninja -C build src/hyperv/hyperv_wmi_classes.generated.typedef
+    - ninja -C build src/libvirt_functions.stp
+    - ninja -C build src/libvirt_probes.h
+    - ninja -C build src/libvirt_probes.stp
+    - ninja -C build src/locking/lock_daemon_dispatch_stubs.h
+    - ninja -C build src/locking/lock_protocol.c
+    - ninja -C build src/locking/lock_protocol.h
+    - ninja -C build src/logging/log_daemon_dispatch_stubs.h
+    - ninja -C build src/logging/log_protocol.c
+    - ninja -C build src/logging/log_protocol.h
+    - ninja -C build src/lxc/lxc_controller_dispatch.h
+    - ninja -C build src/lxc/lxc_monitor_dispatch.h
+    - ninja -C build src/lxc/lxc_monitor_protocol.c
+    - ninja -C build src/lxc/lxc_monitor_protocol.h
+    - ninja -C build src/qemu/libvirt_qemu_probes.h
+    - ninja -C build src/qemu/libvirt_qemu_probes.stp
+    - ninja -C build src/remote/lxc_client_bodies.h
+    - ninja -C build src/remote/lxc_daemon_dispatch_stubs.h
+    - ninja -C build src/remote/lxc_protocol.c
+    - ninja -C build src/remote/lxc_protocol.h
+    - ninja -C build src/remote/qemu_client_bodies.h
+    - ninja -C build src/remote/qemu_daemon_dispatch_stubs.h
+    - ninja -C build src/remote/qemu_protocol.c
+    - ninja -C build src/remote/qemu_protocol.h
+    - ninja -C build src/remote/remote_client_bodies.h
+    - ninja -C build src/remote/remote_daemon_dispatch_stubs.h
+    - ninja -C build src/remote/remote_protocol.c
+    - ninja -C build src/remote/remote_protocol.h
+    - ninja -C build src/rpc/virkeepaliveprotocol.c
+    - ninja -C build src/rpc/virkeepaliveprotocol.h
+    - ninja -C build src/rpc/virnetprotocol.c
+    - ninja -C build src/rpc/virnetprotocol.h
+    - ninja -C build src/util/virkeycodetable_atset1.h
+    - ninja -C build src/util/virkeycodetable_atset2.h
+    - ninja -C build src/util/virkeycodetable_atset3.h
+    - ninja -C build src/util/virkeycodetable_linux.h
+    - ninja -C build src/util/virkeycodetable_osx.h
+    - ninja -C build src/util/virkeycodetable_qnum.h
+    - ninja -C build src/util/virkeycodetable_usb.h
+    - ninja -C build src/util/virkeycodetable_win32.h
+    - ninja -C build src/util/virkeycodetable_xtkbd.h
+    - ninja -C build src/util/virkeynametable_linux.h
+    - ninja -C build src/util/virkeynametable_osx.h
+    - ninja -C build src/util/virkeynametable_win32.h
+    - ninja -C build tools/wireshark/src/libvirt/keepalive.h
+    - ninja -C build tools/wireshark/src/libvirt/lxc.h
+    - ninja -C build tools/wireshark/src/libvirt/protocol.h
+    - ninja -C build tools/wireshark/src/libvirt/qemu.h
+    - ninja -C build tools/wireshark/src/libvirt/remote.h
+    - scripts/run-clang-tidy.py -p build --cache clang-tidy-cache --timeout 30 --allow-timeout --shuffle-input
+  variables:
+    CC: clang
