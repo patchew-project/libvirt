@@ -4554,9 +4554,8 @@ qemuMonitorJSONAddDeviceArgs(qemuMonitorPtr mon,
     if (!(cmd = qemuMonitorJSONMakeCommand("device_add", NULL)))
         goto cleanup;
 
-    if (virJSONValueObjectAppend(cmd, "arguments", args) < 0)
+    if (virJSONValueObjectAppend(cmd, "arguments", &args) < 0)
         goto cleanup;
-    args = NULL; /* obj owns reference to args now */
 
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
         goto cleanup;
@@ -5572,9 +5571,8 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                               NULL) < 0)
         goto cleanup;
 
-    if (virJSONValueObjectAppend(cmd, "arguments", args) < 0)
+    if (virJSONValueObjectAppend(cmd, "arguments", &args) < 0)
         goto cleanup;
-    args = NULL; /* obj owns reference to args now */
 
     if (qemuMonitorJSONCommand(mon, cmd, &result) < 0)
         goto cleanup;
@@ -5989,7 +5987,7 @@ qemuMonitorJSONMakeCPUModel(virCPUDefPtr cpu,
             goto error;
         }
 
-        if (virJSONValueObjectAppend(model, "props", props) < 0)
+        if (virJSONValueObjectAppend(model, "props", &props) < 0)
             goto error;
     }
 
@@ -7470,9 +7468,8 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
         addr = qemuMonitorJSONBuildInetSocketAddress(chr->data.tcp.host,
                                                      chr->data.tcp.service);
         if (!addr ||
-            virJSONValueObjectAppend(data, "addr", addr) < 0)
+            virJSONValueObjectAppend(data, "addr", &addr) < 0)
             goto cleanup;
-        addr = NULL;
 
         telnet = chr->data.tcp.protocol == VIR_DOMAIN_CHR_TCP_PROTOCOL_TELNET;
 
@@ -7503,7 +7500,7 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
         addr = qemuMonitorJSONBuildInetSocketAddress(host,
                                                      chr->data.udp.connectService);
         if (!addr ||
-            virJSONValueObjectAppend(data, "remote", addr) < 0)
+            virJSONValueObjectAppend(data, "remote", &addr) < 0)
             goto cleanup;
 
         host = chr->data.udp.bindHost;
@@ -7515,10 +7512,9 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
                 port = "";
             addr = qemuMonitorJSONBuildInetSocketAddress(host, port);
             if (!addr ||
-                virJSONValueObjectAppend(data, "local", addr) < 0)
+                virJSONValueObjectAppend(data, "local", &addr) < 0)
                 goto cleanup;
         }
-        addr = NULL;
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
@@ -7526,9 +7522,8 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
         addr = qemuMonitorJSONBuildUnixSocketAddress(chr->data.nix.path);
 
         if (!addr ||
-            virJSONValueObjectAppend(data, "addr", addr) < 0)
+            virJSONValueObjectAppend(data, "addr", &addr) < 0)
             goto cleanup;
-        addr = NULL;
 
         if (chr->data.nix.listen &&
             virJSONValueObjectAppendBoolean(data, "wait", false) < 0)
@@ -7574,9 +7569,8 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
         goto cleanup;
 
     if (virJSONValueObjectAppendString(backend, "type", backend_type) < 0 ||
-        virJSONValueObjectAppend(backend, "data", data) < 0)
+        virJSONValueObjectAppend(backend, "data", &data) < 0)
         goto cleanup;
-    data = NULL;
 
     if (!(ret = qemuMonitorJSONMakeCommand("chardev-add",
                                            "s:id", chrID,
