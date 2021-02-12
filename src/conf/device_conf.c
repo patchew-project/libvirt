@@ -83,22 +83,19 @@ virZPCIDeviceAddressParseXML(xmlNodePtr node,
 }
 
 void
-virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
+virDomainDeviceInfoFreeContents(virDomainDeviceInfoPtr info)
 {
-    VIR_FREE(info->alias);
-    memset(&info->addr, 0, sizeof(info->addr));
-    info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE;
-    VIR_FREE(info->romfile);
-    VIR_FREE(info->loadparm);
-    info->isolationGroup = 0;
-    info->isolationGroupLocked = false;
+    g_free(info->alias);
+    g_free(info->romfile);
+    g_free(info->loadparm);
 }
+
 
 void
 virDomainDeviceInfoFree(virDomainDeviceInfoPtr info)
 {
     if (info) {
-        virDomainDeviceInfoClear(info);
+        virDomainDeviceInfoFreeContents(info);
         g_free(info);
     }
 }

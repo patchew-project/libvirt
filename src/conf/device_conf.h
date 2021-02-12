@@ -181,7 +181,7 @@ struct _virDomainDeviceInfo {
     bool isolationGroupLocked;
 };
 
-void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);
+void virDomainDeviceInfoFreeContents(virDomainDeviceInfoPtr info);
 void virDomainDeviceInfoFree(virDomainDeviceInfoPtr info);
 
 bool virDomainDeviceInfoAddressIsEqual(const virDomainDeviceInfo *a,
