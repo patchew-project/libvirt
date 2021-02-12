@@ -51,6 +51,11 @@ def parse_args():
         "--cache",
         dest="cache",
         help="Path to cache directory")
+    parser.add_argument(
+        "--timeout",
+        dest="timeout",
+        type=int,
+        help="Timeout in minutes")
 
     return parser.parse_args()
 
@@ -132,6 +137,11 @@ def cache_write(filename, result):
 def worker():
     while True:
         item = items.get()
+        if args.timeout and args.timeout < time.time():
+            findings.append("%s (timeout)" % item["file"])
+            items.task_done()
+            continue
+
         os.chdir(item["directory"])
 
         cache = cache_name(item)
@@ -163,6 +173,9 @@ findings = list()
 if args.cache:
     args.cache = os.path.abspath(args.cache)
     os.makedirs(args.cache, exist_ok=True)
+
+if args.timeout:
+    args.timeout = time.time() + args.timeout * 60
 
 for _ in range(args.thread_num):
     threading.Thread(target=worker, daemon=True).start()
