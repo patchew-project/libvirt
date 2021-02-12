@@ -56,6 +56,11 @@ def parse_args():
         dest="timeout",
         type=int,
         help="Timeout in minutes")
+    parser.add_argument(
+        "--allow-timeout",
+        dest="allow_timeout",
+        action="store_true",
+        help="Do not treat timeout as failure if set")
 
     return parser.parse_args()
 
@@ -138,7 +143,8 @@ def worker():
     while True:
         item = items.get()
         if args.timeout and args.timeout < time.time():
-            findings.append("%s (timeout)" % item["file"])
+            if not args.allow_timeout:
+                findings.append("%s (timeout)" % item["file"])
             items.task_done()
             continue
 
