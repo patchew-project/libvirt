@@ -2,9 +2,12 @@
 
 import argparse
 import json
+import multiprocessing
 import os
+import queue
 import subprocess
 import sys
+import threading
 
 
 def parse_args():
@@ -14,6 +17,12 @@ def parse_args():
         dest="build_dir",
         default=".",
         help="Path to build directory")
+    parser.add_argument(
+        "-j",
+        dest="thread_num",
+        default=multiprocessing.cpu_count(),
+        type=int,
+        help="Number of threads to run")
 
     return parser.parse_args()
 
@@ -38,28 +47,39 @@ def run_clang_tidy(item):
 
 
 def worker():
-    for item in items:
+    while True:
+        item = items.get()
         os.chdir(item["directory"])
 
         print(item["file"])
 
         result = run_clang_tidy(item)
 
-        if result["returncode"] != 0:
-            findings.append(item["file"])
-        if result["stdout"]:
-            print(result["stdout"])
-        if result["stderr"]:
-            print(result["stderr"])
+        with lock:
+            if result["returncode"] != 0:
+                findings.append(item["file"])
+            if result["stdout"]:
+                print(result["stdout"])
+            if result["stderr"]:
+                print(result["stderr"])
+
+        items.task_done()
 
 
 args = parse_args()
+items = queue.Queue()
+lock = threading.Lock()
 findings = list()
 
-with open(os.path.join(args.build_dir, "compile_commands.json")) as f:
-    items = json.load(f)
+for _ in range(args.thread_num):
+    threading.Thread(target=worker, daemon=True).start()
 
-worker()
+with open(os.path.join(args.build_dir, "compile_commands.json")) as f:
+    compile_commands = json.load(f)
+    for compile_command in compile_commands:
+        items.put(compile_command)
+
+items.join()
 
 if findings:
     print("Findings in %s file(s):" % len(findings))
