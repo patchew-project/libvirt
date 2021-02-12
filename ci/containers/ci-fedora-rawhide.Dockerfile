@@ -5,7 +5,8 @@
 # https://gitlab.com/libvirt/libvirt-ci/-/commit/891c7d56be1d0eb5adaf78fced7d1d882d6f0b6a
 FROM registry.fedoraproject.org/fedora:rawhide
 
-RUN dnf update -y --nogpgcheck fedora-gpg-keys && \
+RUN sed -Ei 's|^gpgkey=.*$|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-34-x86_64|g' /etc/yum.repos.d/*.repo && \
+    dnf update -y --nogpgcheck fedora-gpg-keys && \
     dnf install -y nosync && \
     echo -e '#!/bin/sh\n\
 if test -d /usr/lib64\n\
