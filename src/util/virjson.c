@@ -1550,10 +1550,10 @@ virJSONValueCopy(const virJSONValue *in)
 #if WITH_YAJL
 static int
 virJSONParserInsertValue(virJSONParserPtr parser,
-                         virJSONValuePtr value)
+                         virJSONValuePtr *value)
 {
     if (!parser->head) {
-        parser->head = value;
+        parser->head = g_steal_pointer(value);
     } else {
         virJSONParserStatePtr state;
         if (!parser->nstate) {
@@ -1572,7 +1572,7 @@ virJSONParserInsertValue(virJSONParserPtr parser,
 
             if (virJSONValueObjectAppend(state->value,
                                          state->key,
-                                         &value) < 0)
+                                         value) < 0)
                 return -1;
 
             VIR_FREE(state->key);
@@ -1585,7 +1585,7 @@ virJSONParserInsertValue(virJSONParserPtr parser,
             }
 
             if (virJSONValueArrayAppend(state->value,
-                                        &value) < 0)
+                                        value) < 0)
                 return -1;
         }   break;
 
@@ -1607,9 +1607,8 @@ virJSONParserHandleNull(void *ctx)
 
     VIR_DEBUG("parser=%p", parser);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     return 1;
 }
@@ -1624,9 +1623,8 @@ virJSONParserHandleBoolean(void *ctx,
 
     VIR_DEBUG("parser=%p boolean=%d", parser, boolean_);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     return 1;
 }
@@ -1642,9 +1640,8 @@ virJSONParserHandleNumber(void *ctx,
 
     VIR_DEBUG("parser=%p str=%s", parser, value->data.number);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     return 1;
 }
@@ -1661,9 +1658,8 @@ virJSONParserHandleString(void *ctx,
 
     VIR_DEBUG("parser=%p str=%p", parser, (const char *)stringVal);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     return 1;
 }
@@ -1699,9 +1695,8 @@ virJSONParserHandleStartMap(void *ctx)
 
     VIR_DEBUG("parser=%p", parser);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     if (VIR_REALLOC_N(parser->state,
                       parser->nstate + 1) < 0) {
@@ -1748,9 +1743,8 @@ virJSONParserHandleStartArray(void *ctx)
 
     VIR_DEBUG("parser=%p", parser);
 
-    if (virJSONParserInsertValue(parser, value) < 0)
+    if (virJSONParserInsertValue(parser, &value) < 0)
         return 0;
-    value = NULL;
 
     if (VIR_REALLOC_N(parser->state,
                       parser->nstate + 1) < 0)
