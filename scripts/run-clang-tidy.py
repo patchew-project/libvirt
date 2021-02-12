@@ -75,6 +75,7 @@ def run_clang_tidy(item):
     cmd = (
         "clang-tidy",
         "--warnings-as-errors=*",
+        "--checks=-*,%s" % ",".join(checks),
         "-p",
         item["directory"],
         item["file"])
@@ -90,7 +91,7 @@ def run_clang_tidy(item):
     }
 
 
-def cache_name(item):
+def cache_name(item, checks):
     if not args.cache:
         return None
 
@@ -117,6 +118,7 @@ def cache_name(item):
 
     hashsum = hashlib.sha256()
     hashsum.update(item["command"].encode())
+    hashsum.update("\n".join(checks).encode())
     hashsum.update(result.stdout.encode())
 
     basename = "".join([c if c.isalnum() else "_" for c in item["output"]])
@@ -145,7 +147,7 @@ def cache_write(filename, result):
         json.dump(result, f)
 
 
-def worker():
+def worker(checks):
     while True:
         item = items.get()
         if args.timeout and args.timeout < time.time():
@@ -156,7 +158,7 @@ def worker():
 
         os.chdir(item["directory"])
 
-        cache = cache_name(item)
+        cache = cache_name(item, checks)
         result = cache_read(cache)
         with lock:
             print(item["file"], "" if result is None else "(from cache)")
@@ -177,9 +179,19 @@ def worker():
         items.task_done()
 
 
+def list_checks():
+    output = subprocess.check_output(
+        ["clang-tidy", "-checks=*", "-list-checks"],
+        universal_newlines=True).split("\n")[1:]
+
+    output = [line.strip() for line in output]
+    return output
+
+
 args = parse_args()
 items = queue.Queue()
 lock = threading.Lock()
+checks = list_checks()
 findings = list()
 
 if args.cache:
@@ -189,8 +201,12 @@ if args.cache:
 if args.timeout:
     args.timeout = time.time() + args.timeout * 60
 
+print("Enabled checks:")
+for check in checks:
+    print("    %s" % check)
+
 for _ in range(args.thread_num):
-    threading.Thread(target=worker, daemon=True).start()
+    threading.Thread(target=worker, daemon=True, args=[checks]).start()
 
 with open(os.path.join(args.build_dir, "compile_commands.json")) as f:
     compile_commands = json.load(f)
