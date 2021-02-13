@@ -125,7 +125,7 @@ of the server and clients.  There are two distinct checks involved:
 server.  Checking done by client by matching the certificate that
 the server sends to the server's hostname.  May be disabled by adding
 <code>?no_verify=1</code> to the
-<a href="#Remote_URI_parameters">remote URI</a>.
+<a href="uri.html#Remote_URI_parameters">remote URI</a>.
 </li>
       <li> The server should know that only permitted clients are
 connecting.  This can be done based on client's IP address, or on
