@@ -18977,14 +18977,14 @@ virDomainFSInfoFormat(qemuAgentFSInfoPtr *agentinfo,
     ret = nagentinfo;
 
  cleanup:
-    for (i = 0; i < nagentinfo; i++) {
-        qemuAgentFSInfoFree(agentinfo[i]);
-        /* if there was an error, free any memory we've allocated for the
-         * return value */
-        if (info_ret)
+    if (info_ret) {
+        for (i = 0; i < nagentinfo; i++) {
+            /* if there was an error, free any memory we've allocated for the
+             * return value */
             virDomainFSInfoFree(info_ret[i]);
+        }
+        g_free(info_ret);
     }
-    g_free(info_ret);
     return ret;
 }
 
@@ -18997,7 +18997,7 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     virDomainObjPtr vm;
     qemuAgentFSInfoPtr *agentinfo = NULL;
     int ret = -1;
-    int nfs;
+    int nfs = 0;
 
     virCheckFlags(0, ret);
 
@@ -19022,7 +19022,12 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    g_free(agentinfo);
+    if (agentinfo) {
+        size_t i;
+        for (i = 0; i < nfs; i++)
+            qemuAgentFSInfoFree(agentinfo[i]);
+        g_free(agentinfo);
+    }
     virDomainObjEndAPI(&vm);
     return ret;
 }
