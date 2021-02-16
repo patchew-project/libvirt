@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2021 Red Hat, Inc.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+
+def lcitool_run(lcitool_path, lcitool_args):
+    if not lcitool_path:
+        lcitool_path = "lcitool"
+        if not shutil.which(lcitool_path):
+            sys.exit("error: 'lcitool' not installed")
+
+    lcitool_out = subprocess.check_output([lcitool_path] + lcitool_args)
+    return lcitool_out.decode("utf-8")
+
+def lcitool_get_hosts(context):
+    lcitool_path = context["lcitool"]
+
+    lcitool_out = lcitool_run(lcitool_path, ["hosts"])
+    return lcitool_out.splitlines()
+
+def generate_dockerfile(context, host, cross=None):
+    basedir = context["basedir"]
+    lcitool_path = context["lcitool"]
+
+    lcitool_args = ["dockerfile", host, "libvirt"]
+    outfile = f"{basedir}/containers/ci-{host}.Dockerfile"
+
+    if cross:
+        lcitool_args.extend(["--cross", cross])
+        outfile = f"{basedir}/containers/ci-{host}-cross-{cross}.Dockerfile"
+
+    lcitool_out = lcitool_run(lcitool_path, lcitool_args)
+    with open(outfile, "w") as f:
+        f.write(lcitool_out)
+
+def generate_vars(context, host):
+    basedir = context["basedir"]
+    lcitool_path = context["lcitool"]
+
+    lcitool_out = lcitool_run(lcitool_path, ["variables", host, "libvirt"])
+    with open(f"{basedir}/cirrus/{host}.vars", "w") as f:
+        f.write(lcitool_out)
+
+def refresh_containers(context):
+    for host in lcitool_get_hosts(context):
+        if "freebsd" in host or "macos" in host:
+            continue
+
+        if host == "fedora-rawhide":
+            for cross in ["mingw32", "mingw64"]:
+                print(f"containers/{host} ({cross})")
+                generate_dockerfile(context, host, cross)
+
+        if "debian-" in host:
+            for cross in ["aarch64", "armv6l", "armv7l", "i686", "mips", "mips64el", "mipsel", "ppc64le", "s390x"]:
+                if host == "debian-sid" and cross == "mips":
+                    continue
+                print(f"containers/{host} ({cross})")
+                generate_dockerfile(context, host, cross)
+
+        print(f"containers/{host}")
+        generate_dockerfile(context, host)
+
+def refresh_cirrus(context):
+    for host in lcitool_get_hosts(context):
+        if "freebsd" not in host and "macos" not in host:
+            continue
+
+        print(f"cirrus/{host}")
+        generate_vars(context, host)
+
+def refresh(context):
+    refresh_containers(context)
+    refresh_cirrus(context)
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="action", metavar="ACTION")
+    subparsers.required = True
+    refreshparser = subparsers.add_parser(
+        "refresh",
+        help="refresh data in containers/ and cirrus/ directories",
+    )
+    refreshparser.add_argument(
+        "--lcitool",
+        metavar="PATH",
+        help="path to lcitool",
+    )
+    args = parser.parse_args()
+
+    if args.action == "refresh":
+        context = {
+            "lcitool": args.lcitool,
+            "basedir": os.path.dirname(os.path.realpath(__file__)),
+        }
+        refresh(context)
+
+if __name__ == "__main__":
+    main()
