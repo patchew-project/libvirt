@@ -3939,7 +3939,22 @@ qemuValidateDomainDeviceDefSPICEGraphics(const virDomainGraphicsDef *graphics,
     return 0;
 }
 
+static int
+qemuValidateDomainDeviceDefVNCGraphics(const virDomainGraphicsDef *graphics,
+                                       virQEMUDriverPtr driver,
+                                       virQEMUCapsPtr qemuCaps)
+{
+    g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
 
+    if (graphics->data.vnc.powerControl != VIR_TRISTATE_BOOL_ABSENT &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VNC_POWER_CONTROL)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("VNC power control is not available"));
+        return -1;
+    }
+
+    return 0;
+}
 static int
 qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
                                     const virDomainDef *def,
@@ -4023,6 +4038,12 @@ qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
+        if (qemuValidateDomainDeviceDefVNCGraphics(graphics, driver,
+                                                   qemuCaps) < 0)
+            return -1;
+
+        break;
+
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
