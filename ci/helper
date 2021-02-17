@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2021 Red Hat, Inc.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+import argparse
+import os
+import pty
+import shutil
+import subprocess
+import sys
+
+
+class Parser:
+    def __init__(self):
+        self.parser = argparse.ArgumentParser()
+        subparsers = self.parser.add_subparsers(
+            dest="action",
+            metavar="ACTION",
+        )
+        subparsers.required = True
+
+        buildparser = subparsers.add_parser(
+            "build",
+            help="run a build in a container",
+        )
+        self.add_target_arg(buildparser)
+        self.add_engine_arg(buildparser)
+        self.add_login_arg(buildparser)
+
+        shellparser = subparsers.add_parser(
+            "shell",
+            help="start a shell in a container",
+        )
+        self.add_target_arg(shellparser)
+        self.add_engine_arg(shellparser)
+        self.add_login_arg(shellparser)
+
+        refreshparser = subparsers.add_parser(
+            "refresh",
+            help="refresh data generated with lcitool",
+        )
+        self.add_lcitool_arg(refreshparser)
+
+    def add_target_arg(self, parser):
+        parser.add_argument(
+            "target",
+            help="build on target OS",
+        )
+
+    def add_engine_arg(self, parser):
+        parser.add_argument(
+            "--engine",
+            choices=["auto", "podman", "docker"],
+            default="auto",
+            help="container engine to use",
+        )
+
+    def add_login_arg(self, parser):
+        parser.add_argument(
+            "--login",
+            default=os.getlogin(),
+            help="login to use inside the container",
+        )
+
+    def add_lcitool_arg(self, parser):
+        parser.add_argument(
+            "--lcitool",
+            metavar="PATH",
+            default="lcitool",
+            help="path to lcitool binary",
+        )
+
+    def parse(self):
+        return self.parser.parse_args()
+
+
+class Application:
+    def __init__(self):
+        self.basedir = os.path.dirname(os.path.realpath(__file__))
+
+        args = Parser().parse()
+        self.action = args.action
+
+        if args.action == "refresh":
+            self.lcitool = args.lcitool
+            if not shutil.which(self.lcitool):
+                sys.exit("error: 'lcitool' not installed")
+
+        elif args.action in ["build", "shell"]:
+            self.target = args.target
+            self.engine = args.engine
+            self.login = args.login
+
+    def make_run(self, target):
+        args = [
+            "-C", self.basedir, target,
+            f"CI_ENGINE={self.engine}",
+            f"CI_USER_LOGIN={self.login}",
+        ]
+
+        if pty.spawn(["make"] + args) != 0:
+            raise Exception("make failed")
+
+    def lcitool_run(self, args):
+        output = subprocess.check_output([self.lcitool] + args)
+        return output.decode("utf-8")
+
+    def lcitool_get_hosts(self):
+        output = self.lcitool_run(["hosts"])
+        return output.splitlines()
+
+    def generate_dockerfile(self, host, cross=None):
+        args = ["dockerfile", host, "libvirt"]
+        outfile = f"{self.basedir}/containers/ci-{host}.Dockerfile"
+
+        if cross:
+            args.extend(["--cross", cross])
+            outfile = f"{self.basedir}/containers/ci-{host}-cross-{cross}.Dockerfile"
+
+        output = self.lcitool_run(args)
+        with open(outfile, "w") as f:
+            f.write(output)
+
+    def generate_vars(self, host):
+        output = self.lcitool_run(["variables", host, "libvirt"])
+        with open(f"{self.basedir}/cirrus/{host}.vars", "w") as f:
+            f.write(output)
+
+    def refresh_containers(self):
+        for host in self.lcitool_get_hosts():
+            if "freebsd" in host or "macos" in host:
+                continue
+
+            if host == "fedora-rawhide":
+                for cross in ["mingw32", "mingw64"]:
+                    print(f"containers/{host} ({cross})")
+                    self.generate_dockerfile(host, cross)
+
+            if "debian-" in host:
+                for cross in ["aarch64", "armv6l", "armv7l", "i686", "mips", "mips64el", "mipsel", "ppc64le", "s390x"]:
+                    if host == "debian-sid" and cross == "mips":
+                        continue
+                    print(f"containers/{host} ({cross})")
+                    self.generate_dockerfile(host, cross)
+
+            print(f"containers/{host}")
+            self.generate_dockerfile(host)
+
+    def refresh_cirrus(self):
+        for host in self.lcitool_get_hosts():
+            if "freebsd" not in host and "macos" not in host:
+                continue
+
+            print(f"cirrus/{host}")
+            self.generate_vars(host)
+
+    def action_refresh(self):
+        self.refresh_containers()
+        self.refresh_cirrus()
+
+    def action_build(self):
+        self.make_run(f"ci-build@{self.target}")
+
+    def action_shell(self):
+        self.make_run(f"ci-shell@{self.target}")
+
+    def run(self):
+        method = "action_{}".format(self.action.replace("-", "_"))
+        getattr(self, method).__call__()
+
+
+if __name__ == "__main__":
+    Application().run()
