@@ -3869,6 +3869,7 @@ qemuProcessDomainMemoryDefNeedHugepagesPath(const virDomainMemoryDef *mem,
 {
     switch (mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+    case VIR_DOMAIN_MEMORY_MODEL_VIRTIO_MEM:
         return mem->pagesize &&
             mem->pagesize != system_pagesize;
 
@@ -3933,6 +3934,7 @@ qemuProcessNeedMemoryBackingPath(virDomainDefPtr def,
     if (mem) {
         switch (mem->model) {
         case VIR_DOMAIN_MEMORY_MODEL_DIMM:
+        case VIR_DOMAIN_MEMORY_MODEL_VIRTIO_MEM:
             if (mem->access != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT) {
                 /* No need to check for access mode on the target node,
                  * it was checked for in the previous loop. */
