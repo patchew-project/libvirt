@@ -47,6 +47,13 @@ v7.1.0 (unreleased)
     to set the hostdev device's MAC address (which is a necessary
     part of the alternate <interface type='hostdev'>).
 
+  * Introduce virtio-mem ``<memory/>`` model
+
+    New virtio-mem model is introduced for ``<memory/>`` device which is a
+    paravirtualized mechanism of adding/removing memory to/from a VM. Use
+    ``virDomainUpdateDeviceFlags()`` API to adjust amount of memory or ``virsh
+    update-memory-device`` for convenience.
+
 * **Improvements**
 
 * **Bug fixes**
