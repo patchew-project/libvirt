@@ -853,10 +853,11 @@ qemuMonitorRegister(qemuMonitorPtr mon)
 void
 qemuMonitorUnregister(qemuMonitorPtr mon)
 {
-    if (mon->watch) {
-        g_source_destroy(mon->watch);
-        g_source_unref(mon->watch);
-        mon->watch = NULL;
+    GSource *watch = mon->watch;
+
+    if (watch && g_atomic_pointer_compare_and_exchange(&mon->watch, watch, NULL)) {
+        g_source_destroy(watch);
+        g_source_unref(watch);
     }
 }
 
