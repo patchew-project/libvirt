@@ -2374,6 +2374,7 @@ virHostMemGetFreePages;
 virHostMemGetInfo;
 virHostMemGetParameters;
 virHostMemGetStats;
+virHostMemGetTHPSize;
 virHostMemSetParameters;
 
 
