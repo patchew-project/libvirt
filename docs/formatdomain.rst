@@ -7396,6 +7396,7 @@ Example: usage of the memory devices
          <node>0</node>
          <block unit='KiB'>2048</block>
          <requested unit='KiB'>1048576</requested>
+         <actual unit='KiB'>524288</requested>
        </target>
      </memory>
    </devices>
@@ -7511,6 +7512,12 @@ Example: usage of the memory devices
      For ``virtio-mem`` only.
      The total size exposed to the guest. Must respect ``block`` granularity
      and be smaller or equal to ``size``.
+
+   ``actual``
+     Active XML for ``virtio-mem`` model may contain ``actual`` element that
+     reflects the actual size of the corresponding virtio memory device. The
+     element is formatted into live XML and never parsed, i.e. it is
+     output-only element.
 
 :anchor:`<a id="elementsIommu"/>`
 
