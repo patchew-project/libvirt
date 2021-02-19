@@ -51,6 +51,10 @@ int qemuExtDevicesStart(virQEMUDriverPtr driver,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
     G_GNUC_WARN_UNUSED_RESULT;
 
+void qemuExtDevicesStopEarly(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 void qemuExtDevicesStop(virQEMUDriverPtr driver,
                         virDomainObjPtr vm)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);

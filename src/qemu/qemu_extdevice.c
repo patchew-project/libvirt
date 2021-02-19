@@ -205,7 +205,27 @@ qemuExtDevicesStart(virQEMUDriverPtr driver,
     return 0;
 }
 
+/* qemuExtDevicesStopEarly stops devices that may be stopped
+ * before QEMU terminates
+ */
+void
+qemuExtDevicesStopEarly(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm)
+{
+    virDomainDefPtr def = vm->def;
+    size_t i;
 
+    for (i = 0; i < def->nfss; i++) {
+        virDomainFSDefPtr fs = def->fss[i];
+
+        if (fs->fsdriver == VIR_DOMAIN_FS_DRIVER_TYPE_VIRTIOFS)
+            qemuVirtioFSStop(driver, vm, fs);
+    }
+}
+
+/* qemuExtDevicesStop stops devices that may only be stopped
+ * after QEMU terminated
+ */
 void
 qemuExtDevicesStop(virQEMUDriverPtr driver,
                    virDomainObjPtr vm)
@@ -235,13 +255,6 @@ qemuExtDevicesStop(virQEMUDriverPtr driver,
             qemuSlirpStop(slirp, vm, driver, net);
         if (actualType == VIR_DOMAIN_NET_TYPE_ETHERNET && net->downscript)
             virNetDevRunEthernetScript(net->ifname, net->downscript);
-    }
-
-    for (i = 0; i < def->nfss; i++) {
-        virDomainFSDefPtr fs = def->fss[i];
-
-        if (fs->fsdriver == VIR_DOMAIN_FS_DRIVER_TYPE_VIRTIOFS)
-            qemuVirtioFSStop(driver, vm, fs);
     }
 }
 
