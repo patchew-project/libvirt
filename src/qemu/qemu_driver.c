@@ -10207,7 +10207,8 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
     virDomainDefPtr persistentDef;
     int ret = -1;
     virDomainNetDefPtr net = NULL, persistentNet = NULL;
-    virNetDevBandwidthPtr bandwidth = NULL, newBandwidth = NULL;
+    g_autoptr(virNetDevBandwidth) bandwidth = NULL;
+    g_autoptr(virNetDevBandwidth) newBandwidth = NULL;
     g_autoptr(virQEMUDriverConfig) cfg = NULL;
     bool inboundSpecified = false, outboundSpecified = false;
     int actualType;
@@ -10375,8 +10376,7 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
 
         virNetDevBandwidthFree(net->bandwidth);
         if (newBandwidth->in || newBandwidth->out) {
-            net->bandwidth = newBandwidth;
-            newBandwidth = NULL;
+            net->bandwidth = g_steal_pointer(&newBandwidth);
         } else {
             net->bandwidth = NULL;
         }
@@ -10394,8 +10394,7 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
 
     if (persistentNet) {
         if (!persistentNet->bandwidth) {
-            persistentNet->bandwidth = bandwidth;
-            bandwidth = NULL;
+            persistentNet->bandwidth = g_steal_pointer(&bandwidth);
         } else {
             if (bandwidth->in) {
                 VIR_FREE(persistentNet->bandwidth->in);
@@ -10423,8 +10422,6 @@ qemuDomainSetInterfaceParameters(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    virNetDevBandwidthFree(bandwidth);
-    virNetDevBandwidthFree(newBandwidth);
     virDomainObjEndAPI(&vm);
     return ret;
 }
