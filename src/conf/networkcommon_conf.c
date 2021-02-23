@@ -228,9 +228,10 @@ virNetDevIPRouteParseXML(const char *errorDetail,
 
     virNetDevIPRoutePtr def = NULL;
     VIR_XPATH_NODE_AUTORESTORE(ctxt)
-    char *family = NULL;
-    char *address = NULL, *netmask = NULL;
-    char *gateway = NULL;
+    g_autofree char *family = NULL;
+    g_autofree char *address = NULL;
+    g_autofree char *netmask = NULL;
+    g_autofree char *gateway = NULL;
     unsigned long prefix = 0, metric = 0;
     int prefixRc, metricRc;
     bool hasPrefix = false;
@@ -276,10 +277,6 @@ virNetDevIPRouteParseXML(const char *errorDetail,
                                  hasMetric);
 
  cleanup:
-    VIR_FREE(family);
-    VIR_FREE(address);
-    VIR_FREE(netmask);
-    VIR_FREE(gateway);
     return def;
 }
 
@@ -287,7 +284,7 @@ int
 virNetDevIPRouteFormat(virBufferPtr buf,
                        const virNetDevIPRoute *def)
 {
-    char *addr = NULL;
+    g_autofree char *addr = NULL;
 
     virBufferAddLit(buf, "<route");
 
@@ -311,7 +308,6 @@ virNetDevIPRouteFormat(virBufferPtr buf,
     if (!(addr = virSocketAddrFormat(&def->gateway)))
         return -1;
     virBufferAsprintf(buf, " gateway='%s'", addr);
-    VIR_FREE(addr);
 
     if (def->has_metric && def->metric > 0)
         virBufferAsprintf(buf, " metric='%u'", def->metric);
