@@ -529,8 +529,8 @@ testCompareXMLToArgvValidateSchema(virQEMUDriverPtr drv,
     bool netdevQAPIfied = false;
     bool objectQAPIfied = false;
 
-    /* comment out with line comment to enable schema checking for non _CAPS tests
-    if (!info->schemafile)
+//    /* comment out with line comment to enable schema checking for non _CAPS tests
+//    if (!info->schemafile)
         info->schemafile =  testQemuGetLatestCapsForArch(virArchToString(info->arch), "replies");
     // */
 
