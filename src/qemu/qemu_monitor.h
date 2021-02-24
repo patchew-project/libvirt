@@ -427,6 +427,7 @@ bool qemuMonitorWasDisposed(void);
 
 void qemuMonitorRegister(qemuMonitorPtr mon)
     ATTRIBUTE_NONNULL(1);
+/* Must be called with monitor locked. */
 void qemuMonitorUnregister(qemuMonitorPtr mon)
     ATTRIBUTE_NONNULL(1);
 void qemuMonitorClose(qemuMonitorPtr mon);
