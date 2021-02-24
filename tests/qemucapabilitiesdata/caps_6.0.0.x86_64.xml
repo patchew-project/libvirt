@@ -257,10 +257,11 @@
   <flag name='memory-backend-file.x-use-canonical-path-for-ramblock-id'/>
   <flag name='vnc-opts'/>
   <flag name='migration-param.block-bitmap-mapping'/>
+  <flag name='object.qapified'/>
   <version>5002050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100242</microcodeVersion>
-  <package>v5.2.0-2208-gc79f01c945</package>
+  <package>v5.2.0-2362-g25fa357a8e</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base' migratability='yes'>
     <property name='vmx-entry-load-rtit-ctl' type='boolean' value='false'/>
@@ -471,6 +472,7 @@
     <property name='amd-ssbd' type='boolean' value='true' migratable='yes'/>
     <property name='xop' type='boolean' value='false'/>
     <property name='ibpb' type='boolean' value='true' migratable='yes'/>
+    <property name='ibrs' type='boolean' value='false'/>
     <property name='avx' type='boolean' value='true' migratable='yes'/>
     <property name='core-capability' type='boolean' value='false'/>
     <property name='vmx-invept-single-context' type='boolean' value='false'/>
@@ -1196,6 +1198,24 @@
   <cpu type='kvm' name='EPYC-v1' typename='EPYC-v1-x86_64-cpu' usable='yes'/>
   <cpu type='kvm' name='EPYC-Rome-v1' typename='EPYC-Rome-v1-x86_64-cpu' usable='yes'/>
   <cpu type='kvm' name='EPYC-Rome' typename='EPYC-Rome-x86_64-cpu' usable='yes'/>
+  <cpu type='kvm' name='EPYC-Milan-v1' typename='EPYC-Milan-v1-x86_64-cpu' usable='no'>
+    <blocker name='pcid'/>
+    <blocker name='erms'/>
+    <blocker name='invpcid'/>
+    <blocker name='pku'/>
+    <blocker name='fsrm'/>
+    <blocker name='ibrs'/>
+    <blocker name='pku'/>
+  </cpu>
+  <cpu type='kvm' name='EPYC-Milan' typename='EPYC-Milan-x86_64-cpu' usable='no'>
+    <blocker name='pcid'/>
+    <blocker name='erms'/>
+    <blocker name='invpcid'/>
+    <blocker name='pku'/>
+    <blocker name='fsrm'/>
+    <blocker name='ibrs'/>
+    <blocker name='pku'/>
+  </cpu>
   <cpu type='kvm' name='EPYC-IBPB' typename='EPYC-IBPB-x86_64-cpu' usable='yes'/>
   <cpu type='kvm' name='EPYC' typename='EPYC-x86_64-cpu' usable='yes'/>
   <cpu type='kvm' name='Dhyana-v1' typename='Dhyana-v1-x86_64-cpu' usable='yes'/>
@@ -1687,6 +1707,7 @@
     <property name='amd-ssbd' type='boolean' value='false'/>
     <property name='xop' type='boolean' value='false'/>
     <property name='ibpb' type='boolean' value='false'/>
+    <property name='ibrs' type='boolean' value='false'/>
     <property name='avx' type='boolean' value='false'/>
     <property name='core-capability' type='boolean' value='false'/>
     <property name='vmx-invept-single-context' type='boolean' value='false'/>
@@ -2746,6 +2767,66 @@
     <blocker name='ibpb'/>
     <blocker name='amd-stibp'/>
     <blocker name='nrip-save'/>
+    <blocker name='xsavec'/>
+    <blocker name='xsaves'/>
+  </cpu>
+  <cpu type='tcg' name='EPYC-Milan-v1' typename='EPYC-Milan-v1-x86_64-cpu' usable='no'>
+    <blocker name='fma'/>
+    <blocker name='pcid'/>
+    <blocker name='avx'/>
+    <blocker name='f16c'/>
+    <blocker name='avx2'/>
+    <blocker name='invpcid'/>
+    <blocker name='rdseed'/>
+    <blocker name='sha-ni'/>
+    <blocker name='umip'/>
+    <blocker name='rdpid'/>
+    <blocker name='fsrm'/>
+    <blocker name='fxsr-opt'/>
+    <blocker name='misalignsse'/>
+    <blocker name='3dnowprefetch'/>
+    <blocker name='osvw'/>
+    <blocker name='topoext'/>
+    <blocker name='perfctr-core'/>
+    <blocker name='clzero'/>
+    <blocker name='xsaveerptr'/>
+    <blocker name='wbnoinvd'/>
+    <blocker name='ibpb'/>
+    <blocker name='ibrs'/>
+    <blocker name='amd-stibp'/>
+    <blocker name='amd-ssbd'/>
+    <blocker name='nrip-save'/>
+    <blocker name='svme-addr-chk'/>
+    <blocker name='xsavec'/>
+    <blocker name='xsaves'/>
+  </cpu>
+  <cpu type='tcg' name='EPYC-Milan' typename='EPYC-Milan-x86_64-cpu' usable='no'>
+    <blocker name='fma'/>
+    <blocker name='pcid'/>
+    <blocker name='avx'/>
+    <blocker name='f16c'/>
+    <blocker name='avx2'/>
+    <blocker name='invpcid'/>
+    <blocker name='rdseed'/>
+    <blocker name='sha-ni'/>
+    <blocker name='umip'/>
+    <blocker name='rdpid'/>
+    <blocker name='fsrm'/>
+    <blocker name='fxsr-opt'/>
+    <blocker name='misalignsse'/>
+    <blocker name='3dnowprefetch'/>
+    <blocker name='osvw'/>
+    <blocker name='topoext'/>
+    <blocker name='perfctr-core'/>
+    <blocker name='clzero'/>
+    <blocker name='xsaveerptr'/>
+    <blocker name='wbnoinvd'/>
+    <blocker name='ibpb'/>
+    <blocker name='ibrs'/>
+    <blocker name='amd-stibp'/>
+    <blocker name='amd-ssbd'/>
+    <blocker name='nrip-save'/>
+    <blocker name='svme-addr-chk'/>
     <blocker name='xsavec'/>
     <blocker name='xsaves'/>
   </cpu>
