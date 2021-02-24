@@ -190,7 +190,8 @@ VIR_ENUM_IMPL(qemuNumaPolicy,
  */
 static int
 qemuBuildMasterKeyCommandLine(virCommandPtr cmd,
-                              qemuDomainObjPrivatePtr priv)
+                              qemuDomainObjPrivatePtr priv,
+                              unsigned int flags)
 {
     g_autofree char *alias = NULL;
     g_autofree char *path = NULL;
@@ -223,7 +224,8 @@ qemuBuildMasterKeyCommandLine(virCommandPtr cmd,
                                      NULL) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -699,6 +701,7 @@ qemuBuildSecretInfoProps(qemuDomainSecretInfoPtr secinfo,
  * qemuBuildObjectSecretCommandLine:
  * @cmd: the command to modify
  * @secinfo: pointer to the secret info object
+ * @flags: commandline builder flags
  *
  * If the secinfo is available and associated with an AES secret,
  * then format the command line for the secret object. This object
@@ -709,7 +712,8 @@ qemuBuildSecretInfoProps(qemuDomainSecretInfoPtr secinfo,
  */
 static int
 qemuBuildObjectSecretCommandLine(virCommandPtr cmd,
-                                 qemuDomainSecretInfoPtr secinfo)
+                                 qemuDomainSecretInfoPtr secinfo,
+                                 unsigned int flags)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     g_autoptr(virJSONValue) props = NULL;
@@ -717,7 +721,8 @@ qemuBuildObjectSecretCommandLine(virCommandPtr cmd,
     if (qemuBuildSecretInfoProps(secinfo, &props) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -865,6 +870,7 @@ qemuBuildTLSx509BackendProps(const char *tlspath,
  *                      (optional)
  * @alias: TLS object alias
  * @qemuCaps: capabilities
+ * @flags: commandline builder flags
  *
  * Create the command line for a TLS object
  *
@@ -877,7 +883,8 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
                             bool verifypeer,
                             const char *certEncSecretAlias,
                             const char *alias,
-                            virQEMUCapsPtr qemuCaps)
+                            virQEMUCapsPtr qemuCaps,
+                            unsigned int flags)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     g_autoptr(virJSONValue) props = NULL;
@@ -886,7 +893,8 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
                                      certEncSecretAlias, qemuCaps, &props) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -1976,14 +1984,16 @@ qemuBuildFloppyCommandLineControllerOptions(virCommandPtr cmd,
 
 static int
 qemuBuildObjectCommandline(virCommandPtr cmd,
-                           virJSONValuePtr objProps)
+                           virJSONValuePtr objProps,
+                           unsigned int flags)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
 
     if (!objProps)
         return 0;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, objProps) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, objProps,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -1995,16 +2005,17 @@ qemuBuildObjectCommandline(virCommandPtr cmd,
 
 static int
 qemuBuildBlockStorageSourceAttachDataCommandline(virCommandPtr cmd,
-                                                 qemuBlockStorageSourceAttachDataPtr data)
+                                                 qemuBlockStorageSourceAttachDataPtr data,
+                                                 unsigned int flags)
 {
     char *tmp;
 
-    if (qemuBuildObjectCommandline(cmd, data->prmgrProps) < 0 ||
-        qemuBuildObjectCommandline(cmd, data->authsecretProps) < 0 ||
-        qemuBuildObjectCommandline(cmd, data->encryptsecretProps) < 0 ||
-        qemuBuildObjectCommandline(cmd, data->httpcookiesecretProps) < 0 ||
-        qemuBuildObjectCommandline(cmd, data->tlsKeySecretProps) < 0 ||
-        qemuBuildObjectCommandline(cmd, data->tlsProps) < 0)
+    if (qemuBuildObjectCommandline(cmd, data->prmgrProps, flags) < 0 ||
+        qemuBuildObjectCommandline(cmd, data->authsecretProps, flags) < 0 ||
+        qemuBuildObjectCommandline(cmd, data->encryptsecretProps, flags) < 0 ||
+        qemuBuildObjectCommandline(cmd, data->httpcookiesecretProps, flags) < 0 ||
+        qemuBuildObjectCommandline(cmd, data->tlsKeySecretProps, flags) < 0 ||
+        qemuBuildObjectCommandline(cmd, data->tlsProps, flags) < 0)
         return -1;
 
     if (data->driveCmd)
@@ -2044,7 +2055,8 @@ qemuBuildBlockStorageSourceAttachDataCommandline(virCommandPtr cmd,
 static int
 qemuBuildDiskSourceCommandLine(virCommandPtr cmd,
                                virDomainDiskDefPtr disk,
-                               virQEMUCapsPtr qemuCaps)
+                               virQEMUCapsPtr qemuCaps,
+                               unsigned int flags)
 {
     g_autoptr(qemuBlockStorageSourceChainData) data = NULL;
     g_autoptr(virJSONValue) copyOnReadProps = NULL;
@@ -2073,7 +2085,8 @@ qemuBuildDiskSourceCommandLine(virCommandPtr cmd,
 
     for (i = data->nsrcdata; i > 0; i--) {
         if (qemuBuildBlockStorageSourceAttachDataCommandline(cmd,
-                                                             data->srcdata[i - 1]) < 0)
+                                                             data->srcdata[i - 1],
+                                                             flags) < 0)
             return -1;
     }
 
@@ -2093,11 +2106,12 @@ qemuBuildDiskCommandLine(virCommandPtr cmd,
                          const virDomainDef *def,
                          virDomainDiskDefPtr disk,
                          virQEMUCapsPtr qemuCaps,
-                         unsigned int bootindex)
+                         unsigned int bootindex,
+                         unsigned int flags)
 {
     g_autofree char *optstr = NULL;
 
-    if (qemuBuildDiskSourceCommandLine(cmd, disk, qemuCaps) < 0)
+    if (qemuBuildDiskSourceCommandLine(cmd, disk, qemuCaps, flags) < 0)
         return -1;
 
     /* SD cards are currently instantiated via -drive if=sd, so the -device
@@ -2128,7 +2142,8 @@ qemuBuildDiskCommandLine(virCommandPtr cmd,
 static int
 qemuBuildDisksCommandLine(virCommandPtr cmd,
                           const virDomainDef *def,
-                          virQEMUCapsPtr qemuCaps)
+                          virQEMUCapsPtr qemuCaps,
+                          unsigned int flags)
 {
     size_t i;
     unsigned int bootCD = 0;
@@ -2181,7 +2196,7 @@ qemuBuildDisksCommandLine(virCommandPtr cmd,
         if (disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY)
             bootindex = 0;
 
-        if (qemuBuildDiskCommandLine(cmd, def, disk, qemuCaps, bootindex) < 0)
+        if (qemuBuildDiskCommandLine(cmd, def, disk, qemuCaps, bootindex, flags) < 0)
             return -1;
     }
 
@@ -3282,7 +3297,8 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
                               virQEMUDriverConfigPtr cfg,
                               size_t cell,
                               qemuDomainObjPrivatePtr priv,
-                              virBufferPtr buf)
+                              virBufferPtr buf,
+                              unsigned int flags)
 {
     g_autoptr(virJSONValue) props = NULL;
     g_autofree char *alias = NULL;
@@ -3301,7 +3317,8 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
                                           priv, def, &mem, false, false)) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     return rc;
@@ -3313,7 +3330,8 @@ qemuBuildMemoryDimmBackendStr(virBufferPtr buf,
                               virDomainMemoryDefPtr mem,
                               virDomainDefPtr def,
                               virQEMUDriverConfigPtr cfg,
-                              qemuDomainObjPrivatePtr priv)
+                              qemuDomainObjPrivatePtr priv,
+                              unsigned int flags)
 {
     g_autoptr(virJSONValue) props = NULL;
     g_autofree char *alias = NULL;
@@ -3330,7 +3348,8 @@ qemuBuildMemoryDimmBackendStr(virBufferPtr buf,
                                     priv, def, mem, true, false) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     return 0;
@@ -4829,7 +4848,8 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                        const virDomainChrSourceDef *dev,
                        const char *alias,
                        virQEMUCapsPtr qemuCaps,
-                       unsigned int cdevflags)
+                       unsigned int cdevflags,
+                       unsigned int flags)
 {
     qemuDomainChrSourcePrivatePtr chrSourcePriv = QEMU_DOMAIN_CHR_SOURCE_PRIVATE(dev);
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
@@ -4927,7 +4947,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
              * functions can just check the config fields */
             if (chrSourcePriv && chrSourcePriv->secinfo) {
                 if (qemuBuildObjectSecretCommandLine(cmd,
-                                                     chrSourcePriv->secinfo) < 0)
+                                                     chrSourcePriv->secinfo, flags) < 0)
                     return NULL;
 
                 tlsCertEncSecAlias = chrSourcePriv->secinfo->s.aes.alias;
@@ -4940,7 +4960,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                                             dev->data.tcp.listen,
                                             cfg->chardevTLSx509verify,
                                             tlsCertEncSecAlias,
-                                            objalias, qemuCaps) < 0) {
+                                            objalias, qemuCaps, flags) < 0) {
                 return NULL;
             }
 
@@ -5156,7 +5176,8 @@ static int
 qemuBuildHostdevSCSICommandLine(virCommandPtr cmd,
                                 const virDomainDef *def,
                                 virDomainHostdevDefPtr hostdev,
-                                virQEMUCapsPtr qemuCaps)
+                                virQEMUCapsPtr qemuCaps,
+                                unsigned int flags)
 {
     g_autoptr(qemuBlockStorageSourceAttachData) data = NULL;
     g_autofree char *devstr = NULL;
@@ -5165,7 +5186,7 @@ qemuBuildHostdevSCSICommandLine(virCommandPtr cmd,
     if (!(data = qemuBuildHostdevSCSIAttachPrepare(hostdev, &backendAlias, qemuCaps)))
         return -1;
 
-    if (qemuBuildBlockStorageSourceAttachDataCommandline(cmd, data) < 0)
+    if (qemuBuildBlockStorageSourceAttachDataCommandline(cmd, data, flags) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-device");
@@ -5181,7 +5202,8 @@ static int
 qemuBuildHostdevCommandLine(virCommandPtr cmd,
                             const virDomainDef *def,
                             virQEMUCapsPtr qemuCaps,
-                            unsigned int *bootHostdevNet)
+                            unsigned int *bootHostdevNet,
+                            unsigned int flags)
 {
     size_t i;
 
@@ -5235,7 +5257,7 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
 
         /* SCSI */
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
-            if (qemuBuildHostdevSCSICommandLine(cmd, def, hostdev, qemuCaps) < 0)
+            if (qemuBuildHostdevSCSICommandLine(cmd, def, hostdev, qemuCaps, flags) < 0)
                 return -1;
             break;
 
@@ -5301,7 +5323,8 @@ qemuBuildMonitorCommandLine(virLogManagerPtr logManager,
                             virCommandPtr cmd,
                             virQEMUDriverConfigPtr cfg,
                             virDomainDefPtr def,
-                            qemuDomainObjPrivatePtr priv)
+                            qemuDomainObjPrivatePtr priv,
+                            unsigned int flags)
 {
     g_autofree char *chrdev = NULL;
     unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
@@ -5315,7 +5338,7 @@ qemuBuildMonitorCommandLine(virLogManagerPtr logManager,
     if (!(chrdev = qemuBuildChrChardevStr(logManager, secManager,
                                           cmd, cfg, def,
                                           priv->monConfig, "monitor",
-                                          priv->qemuCaps, cdevflags)))
+                                          priv->qemuCaps, cdevflags, flags)))
         return -1;
     virCommandAddArg(cmd, "-chardev");
     virCommandAddArg(cmd, chrdev);
@@ -5423,7 +5446,8 @@ qemuBuildRNGBackendChrdevStr(virLogManagerPtr logManager,
                              virDomainRNGDefPtr rng,
                              virQEMUCapsPtr qemuCaps,
                              char **chr,
-                             bool chardevStdioLogd)
+                             bool chardevStdioLogd,
+                             unsigned int flags)
 {
     unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
         QEMU_BUILD_CHARDEV_UNIX_FD_PASS;
@@ -5445,7 +5469,7 @@ qemuBuildRNGBackendChrdevStr(virLogManagerPtr logManager,
                                             cmd, cfg, def,
                                             rng->source.chardev,
                                             rng->info.alias, qemuCaps,
-                                            cdevflags)))
+                                            cdevflags, flags)))
             return -1;
         break;
     }
@@ -5541,7 +5565,8 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
                         virQEMUDriverConfigPtr cfg,
                         const virDomainDef *def,
                         virQEMUCapsPtr qemuCaps,
-                        bool chardevStdioLogd)
+                        bool chardevStdioLogd,
+                        unsigned int flags)
 {
     size_t i;
 
@@ -5562,7 +5587,7 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
         /* possibly add character device for backend */
         if (qemuBuildRNGBackendChrdevStr(logManager, secManager, cmd, cfg, def,
                                          rng, qemuCaps, &chardev,
-                                         chardevStdioLogd) < 0)
+                                         chardevStdioLogd, flags) < 0)
             return -1;
 
         if (chardev)
@@ -5571,7 +5596,8 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
         if (qemuBuildRNGBackendProps(rng, &props) < 0)
             return -1;
 
-        rc = virQEMUBuildObjectCommandlineFromJSON(&buf, props);
+        rc = virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                                   (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON));
 
         if (rc < 0)
             return -1;
@@ -7133,7 +7159,8 @@ static int
 qemuBuildMemCommandLineMemoryDefaultBackend(virCommandPtr cmd,
                                             const virDomainDef *def,
                                             qemuDomainObjPrivatePtr priv,
-                                            const char *defaultRAMid)
+                                            const char *defaultRAMid,
+                                            unsigned int flags)
 {
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(priv->driver);
     g_autoptr(virJSONValue) props = NULL;
@@ -7148,7 +7175,8 @@ qemuBuildMemCommandLineMemoryDefaultBackend(virCommandPtr cmd,
                                     priv, def, &mem, false, true) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -7161,7 +7189,8 @@ static int
 qemuBuildMemCommandLine(virCommandPtr cmd,
                         const virDomainDef *def,
                         virQEMUCapsPtr qemuCaps,
-                        qemuDomainObjPrivatePtr priv)
+                        qemuDomainObjPrivatePtr priv,
+                        unsigned int flags)
 {
     const char *defaultRAMid = NULL;
 
@@ -7190,7 +7219,7 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
          * However, if domain has one or more NUMA nodes then there is no
          * default RAM and we mustn't generate the memory object. */
         if (!virDomainNumaGetNodeCount(def->numa))
-            qemuBuildMemCommandLineMemoryDefaultBackend(cmd, def, priv, defaultRAMid);
+            qemuBuildMemCommandLineMemoryDefaultBackend(cmd, def, priv, defaultRAMid, flags);
     } else {
         if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE) {
             virCommandAddArgList(cmd, "-mem-prealloc", NULL);
@@ -7221,7 +7250,8 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
 
 static int
 qemuBuildIOThreadCommandLine(virCommandPtr cmd,
-                             const virDomainDef *def)
+                             const virDomainDef *def,
+                             unsigned int flags)
 {
     size_t i;
 
@@ -7236,7 +7266,8 @@ qemuBuildIOThreadCommandLine(virCommandPtr cmd,
         if (qemuMonitorCreateObjectProps(&props, "iothread", alias, NULL) < 0)
             return -1;
 
-        if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+        if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                                  (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
             return -1;
 
         virCommandAddArg(cmd, "-object");
@@ -7379,7 +7410,8 @@ static int
 qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
                          virDomainDefPtr def,
                          virCommandPtr cmd,
-                         qemuDomainObjPrivatePtr priv)
+                         qemuDomainObjPrivatePtr priv,
+                         unsigned int flags)
 {
     size_t i, j;
     virQEMUCapsPtr qemuCaps = priv->qemuCaps;
@@ -7416,7 +7448,7 @@ qemuBuildNumaCommandLine(virQEMUDriverConfigPtr cfg,
 
         for (i = 0; i < ncells; i++) {
             if ((rc = qemuBuildMemoryCellBackendStr(def, cfg, i, priv,
-                                                    &nodeBackends[i])) < 0)
+                                                    &nodeBackends[i], flags)) < 0)
                 goto cleanup;
 
             if (rc == 0)
@@ -7530,7 +7562,8 @@ static int
 qemuBuildMemoryDeviceCommandLine(virCommandPtr cmd,
                                  virQEMUDriverConfigPtr cfg,
                                  virDomainDefPtr def,
-                                 qemuDomainObjPrivatePtr priv)
+                                 qemuDomainObjPrivatePtr priv,
+                                 unsigned int flags)
 {
     size_t i;
 
@@ -7540,7 +7573,7 @@ qemuBuildMemoryDeviceCommandLine(virCommandPtr cmd,
         g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
         char *dimmStr;
 
-        if (qemuBuildMemoryDimmBackendStr(&buf, def->mems[i], def, cfg, priv) < 0)
+        if (qemuBuildMemoryDimmBackendStr(&buf, def->mems[i], def, cfg, priv, flags) < 0)
             return -1;
 
         virCommandAddArg(cmd, "-object");
@@ -7597,7 +7630,8 @@ static int
 qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
                                 virCommandPtr cmd,
                                 virQEMUCapsPtr qemuCaps,
-                                virDomainGraphicsDefPtr graphics)
+                                virDomainGraphicsDefPtr graphics,
+                                unsigned int flags)
 {
     g_auto(virBuffer) opt = VIR_BUFFER_INITIALIZER;
     virDomainGraphicsListenDefPtr glisten = NULL;
@@ -7670,7 +7704,7 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
 
             if (gfxPriv->secinfo) {
                 if (qemuBuildObjectSecretCommandLine(cmd,
-                                                     gfxPriv->secinfo) < 0)
+                                                     gfxPriv->secinfo, flags) < 0)
                     return -1;
                 secretAlias = gfxPriv->secinfo->s.aes.alias;
             }
@@ -7681,7 +7715,8 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
                                             cfg->vncTLSx509verify,
                                             secretAlias,
                                             gfxPriv->tlsAlias,
-                                            qemuCaps) < 0)
+                                            qemuCaps,
+                                            flags) < 0)
                 return -1;
 
             virBufferAsprintf(&opt, ",tls-creds=%s", gfxPriv->tlsAlias);
@@ -7965,7 +8000,8 @@ static int
 qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
                              virCommandPtr cmd,
                              virDomainDefPtr def,
-                             virQEMUCapsPtr qemuCaps)
+                             virQEMUCapsPtr qemuCaps,
+                             unsigned int flags)
 {
     size_t i;
 
@@ -7981,7 +8017,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
             break;
         case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
             if (qemuBuildGraphicsVNCCommandLine(cfg, cmd,
-                                                qemuCaps, graphics) < 0)
+                                                qemuCaps, graphics, flags) < 0)
                 return -1;
 
             break;
@@ -8018,7 +8054,8 @@ qemuInterfaceVhostuserConnect(virQEMUDriverPtr driver,
                               virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               virQEMUCapsPtr qemuCaps,
-                              char **chardev)
+                              char **chardev,
+                              unsigned int flags)
 {
     g_autoptr(virQEMUDriverConfig) cfg = virQEMUDriverGetConfig(driver);
 
@@ -8027,7 +8064,7 @@ qemuInterfaceVhostuserConnect(virQEMUDriverPtr driver,
         if (!(*chardev = qemuBuildChrChardevStr(logManager, secManager,
                                                 cmd, cfg, def,
                                                 net->data.vhostuser,
-                                                net->info.alias, qemuCaps, 0)))
+                                                net->info.alias, qemuCaps, 0, flags)))
             return -1;
         break;
 
@@ -8155,7 +8192,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         requireNicdev = true;
 
         if (qemuInterfaceVhostuserConnect(driver, logManager, secManager,
-                                          cmd, def, net, qemuCaps, &chardev) < 0)
+                                          cmd, def, net, qemuCaps, &chardev, flags) < 0)
             goto cleanup;
 
         if (virNetDevOpenvswitchGetVhostuserIfname(net->data.vhostuser->data.nix.path,
@@ -8484,7 +8521,8 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
                               virQEMUDriverConfigPtr cfg,
                               const virDomainDef *def,
                               virQEMUCapsPtr qemuCaps,
-                              bool chardevStdioLogd)
+                              bool chardevStdioLogd,
+                              unsigned int flags)
 {
     size_t i;
     virDomainSmartcardDefPtr smartcard;
@@ -8539,7 +8577,7 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
                                               cmd, cfg, def,
                                               smartcard->data.passthru,
                                               smartcard->info.alias,
-                                              qemuCaps, cdevflags))) {
+                                              qemuCaps, cdevflags, flags))) {
             return -1;
         }
         virCommandAddArg(cmd, "-chardev");
@@ -8674,7 +8712,8 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
                           virDomainDefPtr def,
                           virDomainShmemDefPtr shmem,
                           virQEMUCapsPtr qemuCaps,
-                          bool chardevStdioLogd)
+                          bool chardevStdioLogd,
+                          unsigned int flags)
 {
     g_autoptr(virJSONValue) memProps = NULL;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
@@ -8721,7 +8760,8 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
         if (!(memProps = qemuBuildShmemBackendMemProps(shmem)))
             return -1;
 
-        rc = virQEMUBuildObjectCommandlineFromJSON(&buf, memProps);
+        rc = virQEMUBuildObjectCommandlineFromJSON(&buf, memProps,
+                                                   (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON));
 
         if (rc < 0)
             return -1;
@@ -8751,7 +8791,7 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
                                         cmd, cfg, def,
                                         &shmem->server.chr,
                                         shmem->info.alias, qemuCaps,
-                                        cdevflags);
+                                        cdevflags, flags);
         if (!chardev)
             return -1;
 
@@ -8851,7 +8891,8 @@ qemuBuildSerialCommandLine(virLogManagerPtr logManager,
                            virQEMUDriverConfigPtr cfg,
                            const virDomainDef *def,
                            virQEMUCapsPtr qemuCaps,
-                           bool chardevStdioLogd)
+                           bool chardevStdioLogd,
+                           unsigned int flags)
 {
     size_t i;
     bool havespice = false;
@@ -8878,7 +8919,7 @@ qemuBuildSerialCommandLine(virLogManagerPtr logManager,
                                               cmd, cfg, def,
                                               serial->source,
                                               serial->info.alias,
-                                              qemuCaps, cdevflags)))
+                                              qemuCaps, cdevflags, flags)))
             return -1;
         virCommandAddArg(cmd, "-chardev");
         virCommandAddArg(cmd, devstr);
@@ -8915,7 +8956,8 @@ qemuBuildParallelsCommandLine(virLogManagerPtr logManager,
                               virQEMUDriverConfigPtr cfg,
                               const virDomainDef *def,
                               virQEMUCapsPtr qemuCaps,
-                              bool chardevStdioLogd)
+                              bool chardevStdioLogd,
+                              unsigned int flags)
 {
     size_t i;
     unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
@@ -8931,7 +8973,7 @@ qemuBuildParallelsCommandLine(virLogManagerPtr logManager,
                                               cmd, cfg, def,
                                               parallel->source,
                                               parallel->info.alias,
-                                              qemuCaps, cdevflags)))
+                                              qemuCaps, cdevflags, flags)))
             return -1;
         virCommandAddArg(cmd, "-chardev");
         virCommandAddArg(cmd, devstr);
@@ -8971,7 +9013,7 @@ qemuBuildChannelsCommandLine(virLogManagerPtr logManager,
                                                   cmd, cfg, def,
                                                   channel->source,
                                                   channel->info.alias,
-                                                  qemuCaps, cdevflags)))
+                                                  qemuCaps, cdevflags, flags)))
             return -1;
 
         virCommandAddArg(cmd, "-chardev");
@@ -9012,7 +9054,8 @@ qemuBuildConsoleCommandLine(virLogManagerPtr logManager,
                             virQEMUDriverConfigPtr cfg,
                             const virDomainDef *def,
                             virQEMUCapsPtr qemuCaps,
-                            bool chardevStdioLogd)
+                            bool chardevStdioLogd,
+                            unsigned int flags)
 {
     size_t i;
     unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
@@ -9031,7 +9074,7 @@ qemuBuildConsoleCommandLine(virLogManagerPtr logManager,
                                                   cmd, cfg, def,
                                                   console->source,
                                                   console->info.alias,
-                                                  qemuCaps, cdevflags)))
+                                                  qemuCaps, cdevflags, flags)))
                 return -1;
             virCommandAddArg(cmd, "-chardev");
             virCommandAddArg(cmd, devstr);
@@ -9046,7 +9089,7 @@ qemuBuildConsoleCommandLine(virLogManagerPtr logManager,
                                                   cmd, cfg, def,
                                                   console->source,
                                                   console->info.alias,
-                                                  qemuCaps, cdevflags)))
+                                                  qemuCaps, cdevflags, flags)))
                 return -1;
             virCommandAddArg(cmd, "-chardev");
             virCommandAddArg(cmd, devstr);
@@ -9061,7 +9104,7 @@ qemuBuildConsoleCommandLine(virLogManagerPtr logManager,
                                                   cmd, cfg, def,
                                                   console->source,
                                                   console->info.alias,
-                                                  qemuCaps, cdevflags)))
+                                                  qemuCaps, cdevflags, flags)))
                 return -1;
             virCommandAddArg(cmd, "-chardev");
             virCommandAddArg(cmd, devstr);
@@ -9143,7 +9186,8 @@ qemuBuildRedirdevCommandLine(virLogManagerPtr logManager,
                              virQEMUDriverConfigPtr cfg,
                              const virDomainDef *def,
                              virQEMUCapsPtr qemuCaps,
-                             bool chardevStdioLogd)
+                             bool chardevStdioLogd,
+                             unsigned int flags)
 {
     size_t i;
     unsigned int cdevflags = QEMU_BUILD_CHARDEV_TCP_NOWAIT |
@@ -9159,7 +9203,7 @@ qemuBuildRedirdevCommandLine(virLogManagerPtr logManager,
                                               cmd, cfg, def,
                                               redirdev->source,
                                               redirdev->info.alias,
-                                              qemuCaps, cdevflags))) {
+                                              qemuCaps, cdevflags, flags))) {
             return -1;
         }
 
@@ -9445,8 +9489,10 @@ qemuBuildTPMsCommandLine(virCommandPtr cmd,
 
 
 static int
-qemuBuildSEVCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
-                        virDomainSEVDefPtr sev)
+qemuBuildSEVCommandLine(virDomainObjPtr vm,
+                        virCommandPtr cmd,
+                        virDomainSEVDefPtr sev,
+                        unsigned int flags)
 {
     g_autoptr(virJSONValue) props = NULL;
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
@@ -9475,7 +9521,8 @@ qemuBuildSEVCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
                                      NULL) < 0)
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -9582,7 +9629,8 @@ qemuBuildPRManagerInfoProps(virStorageSourcePtr src)
 static int
 qemuBuildManagedPRCommandLine(virCommandPtr cmd,
                               const virDomainDef *def,
-                              qemuDomainObjPrivatePtr priv)
+                              qemuDomainObjPrivatePtr priv,
+                              unsigned int flags)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     g_autoptr(virJSONValue) props = NULL;
@@ -9593,7 +9641,8 @@ qemuBuildManagedPRCommandLine(virCommandPtr cmd,
     if (!(props = qemuBuildPRManagedManagerInfoProps(priv)))
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -9606,7 +9655,8 @@ qemuBuildManagedPRCommandLine(virCommandPtr cmd,
 static int
 qemuBuildPflashBlockdevOne(virCommandPtr cmd,
                            virStorageSourcePtr src,
-                           virQEMUCapsPtr qemuCaps)
+                           virQEMUCapsPtr qemuCaps,
+                           unsigned int flags)
 {
     g_autoptr(qemuBlockStorageSourceChainData) data = NULL;
     size_t i;
@@ -9617,7 +9667,8 @@ qemuBuildPflashBlockdevOne(virCommandPtr cmd,
 
     for (i = data->nsrcdata; i > 0; i--) {
         if (qemuBuildBlockStorageSourceAttachDataCommandline(cmd,
-                                                             data->srcdata[i - 1]) < 0)
+                                                             data->srcdata[i - 1],
+                                                             flags) < 0)
             return -1;
     }
 
@@ -9627,17 +9678,18 @@ qemuBuildPflashBlockdevOne(virCommandPtr cmd,
 
 static int
 qemuBuildPflashBlockdevCommandLine(virCommandPtr cmd,
-                                   qemuDomainObjPrivatePtr priv)
+                                   qemuDomainObjPrivatePtr priv,
+                                   unsigned int flags)
 {
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV))
         return 0;
 
     if (priv->pflash0 &&
-        qemuBuildPflashBlockdevOne(cmd, priv->pflash0, priv->qemuCaps) < 0)
+        qemuBuildPflashBlockdevOne(cmd, priv->pflash0, priv->qemuCaps, flags) < 0)
         return -1;
 
     if (priv->pflash1 &&
-        qemuBuildPflashBlockdevOne(cmd, priv->pflash1, priv->qemuCaps) < 0)
+        qemuBuildPflashBlockdevOne(cmd, priv->pflash1, priv->qemuCaps, flags) < 0)
         return -1;
 
     return 0;
@@ -9665,7 +9717,8 @@ qemuBuildDBusVMStateInfoProps(virQEMUDriverPtr driver,
 static int
 qemuBuildDBusVMStateCommandLine(virCommandPtr cmd,
                                 virQEMUDriverPtr driver,
-                                virDomainObjPtr vm)
+                                virDomainObjPtr vm,
+                                unsigned int flags)
 {
     g_auto(virBuffer) buf = VIR_BUFFER_INITIALIZER;
     g_autoptr(virJSONValue) props = NULL;
@@ -9682,7 +9735,8 @@ qemuBuildDBusVMStateCommandLine(virCommandPtr cmd,
     if (!(props = qemuBuildDBusVMStateInfoProps(driver, vm)))
         return -1;
 
-    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props) < 0)
+    if (virQEMUBuildObjectCommandlineFromJSON(&buf, props,
+                                              (flags & QEMU_BUILD_COMMANDLINE_VALIDATE_KEEP_JSON)) < 0)
         return -1;
 
     virCommandAddArg(cmd, "-object");
@@ -9926,16 +9980,16 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (!standalone)
         virCommandAddArg(cmd, "-S"); /* freeze CPU */
 
-    if (qemuBuildMasterKeyCommandLine(cmd, priv) < 0)
+    if (qemuBuildMasterKeyCommandLine(cmd, priv, flags) < 0)
         return NULL;
 
-    if (qemuBuildDBusVMStateCommandLine(cmd, driver, vm) < 0)
+    if (qemuBuildDBusVMStateCommandLine(cmd, driver, vm, flags) < 0)
         return NULL;
 
-    if (qemuBuildManagedPRCommandLine(cmd, def, priv) < 0)
+    if (qemuBuildManagedPRCommandLine(cmd, def, priv, flags) < 0)
         return NULL;
 
-    if (qemuBuildPflashBlockdevCommandLine(cmd, priv) < 0)
+    if (qemuBuildPflashBlockdevCommandLine(cmd, priv, flags) < 0)
         return NULL;
 
     if (enableFips)
@@ -9951,20 +10005,20 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
 
     qemuBuildDomainLoaderCommandLine(cmd, def, qemuCaps);
 
-    if (qemuBuildMemCommandLine(cmd, def, qemuCaps, priv) < 0)
+    if (qemuBuildMemCommandLine(cmd, def, qemuCaps, priv, flags) < 0)
         return NULL;
 
     if (qemuBuildSmpCommandLine(cmd, def, qemuCaps) < 0)
         return NULL;
 
-    if (qemuBuildIOThreadCommandLine(cmd, def) < 0)
+    if (qemuBuildIOThreadCommandLine(cmd, def, flags) < 0)
         return NULL;
 
     if (virDomainNumaGetNodeCount(def->numa) &&
-        qemuBuildNumaCommandLine(cfg, def, cmd, priv) < 0)
+        qemuBuildNumaCommandLine(cfg, def, cmd, priv, flags) < 0)
         return NULL;
 
-    if (qemuBuildMemoryDeviceCommandLine(cmd, cfg, def, priv) < 0)
+    if (qemuBuildMemoryDeviceCommandLine(cmd, cfg, def, priv, flags) < 0)
         return NULL;
 
     virUUIDFormat(def->uuid, uuid);
@@ -10003,7 +10057,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildSgaCommandLine(cmd, def) < 0)
         return NULL;
 
-    if (qemuBuildMonitorCommandLine(logManager, secManager, cmd, cfg, def, priv) < 0)
+    if (qemuBuildMonitorCommandLine(logManager, secManager, cmd, cfg, def, priv, flags) < 0)
         return NULL;
 
     if (qemuBuildClockCommandLine(cmd, def, qemuCaps) < 0)
@@ -10031,7 +10085,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                                               VIR_DOMAIN_CONTROLLER_TYPE_CCID) < 0)
         return NULL;
 
-    if (qemuBuildDisksCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildDisksCommandLine(cmd, def, qemuCaps, flags) < 0)
         return NULL;
 
     if (qemuBuildFilesystemCommandLine(cmd, def, qemuCaps, priv) < 0)
@@ -10043,15 +10097,15 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildSmartcardCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                      chardevStdioLogd) < 0)
+                                      chardevStdioLogd, flags) < 0)
         return NULL;
 
     if (qemuBuildSerialCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                   chardevStdioLogd) < 0)
+                                   chardevStdioLogd, flags) < 0)
         return NULL;
 
     if (qemuBuildParallelsCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                      chardevStdioLogd) < 0)
+                                      chardevStdioLogd, flags) < 0)
         return NULL;
 
     if (qemuBuildChannelsCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
@@ -10059,7 +10113,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildConsoleCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                    chardevStdioLogd) < 0)
+                                    chardevStdioLogd, flags) < 0)
         return NULL;
 
     if (qemuBuildTPMsCommandLine(cmd, def, qemuCaps) < 0)
@@ -10068,7 +10122,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildInputCommandLine(cmd, def, qemuCaps) < 0)
         return NULL;
 
-    if (qemuBuildGraphicsCommandLine(cfg, cmd, def, qemuCaps) < 0)
+    if (qemuBuildGraphicsCommandLine(cfg, cmd, def, qemuCaps, flags) < 0)
         return NULL;
 
     if (qemuBuildVideoCommandLine(cmd, def, qemuCaps) < 0)
@@ -10081,10 +10135,10 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildRedirdevCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                     chardevStdioLogd) < 0)
+                                     chardevStdioLogd, flags) < 0)
         return NULL;
 
-    if (qemuBuildHostdevCommandLine(cmd, def, qemuCaps, &bootHostdevNet) < 0)
+    if (qemuBuildHostdevCommandLine(cmd, def, qemuCaps, &bootHostdevNet, flags) < 0)
         return NULL;
 
     if (migrateURI)
@@ -10094,7 +10148,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         return NULL;
 
     if (qemuBuildRNGCommandLine(logManager, secManager, cmd, cfg, def, qemuCaps,
-                                chardevStdioLogd) < 0)
+                                chardevStdioLogd, flags) < 0)
         return NULL;
 
     if (qemuBuildNVRAMCommandLine(cmd, def) < 0)
@@ -10103,7 +10157,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildVMCoreInfoCommandLine(cmd, def) < 0)
         return NULL;
 
-    if (qemuBuildSEVCommandLine(vm, cmd, def->sev) < 0)
+    if (qemuBuildSEVCommandLine(vm, cmd, def->sev, flags) < 0)
         return NULL;
 
     if (snapshot)
@@ -10129,7 +10183,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     for (i = 0; i < def->nshmems; i++) {
         if (qemuBuildShmemCommandLine(logManager, secManager, cmd, cfg,
                                       def, def->shmems[i], qemuCaps,
-                                      chardevStdioLogd))
+                                      chardevStdioLogd, flags))
             return NULL;
     }
 

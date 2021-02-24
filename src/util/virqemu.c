@@ -329,13 +329,27 @@ virQEMUBuildObjectCommandlineFromJSONInternal(virBufferPtr buf,
 }
 
 
+/**
+ * virQEMUBuildObjectCommandlineFromJSON:
+ * @buf: buffer to format output to
+ * @objprops: JSON object describing a qemu 'object'
+ * @rawjson: don't transform to commandline args, just stringify json
+ *
+ * Converts @objprops into arguments for -object.
+ *
+ * @rawjson is meant for testing of the schema in the xml2argvtest
+ */
 int
 virQEMUBuildObjectCommandlineFromJSON(virBufferPtr buf,
-                                      virJSONValuePtr objprops)
+                                      virJSONValuePtr objprops,
+                                      bool rawjson)
 {
     const char *type = virJSONValueObjectGetString(objprops, "qom-type");
     const char *alias = virJSONValueObjectGetString(objprops, "id");
     virJSONValuePtr props = virJSONValueObjectGetObject(objprops, "props");
+
+    if (rawjson)
+        return virJSONValueToBuffer(objprops, buf, false);
 
     return virQEMUBuildObjectCommandlineFromJSONInternal(buf, type, alias, props);
 }

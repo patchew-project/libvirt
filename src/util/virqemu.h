@@ -49,7 +49,8 @@ virQEMUBuildNetdevCommandlineFromJSON(virJSONValuePtr props,
                                       bool rawjson);
 
 int virQEMUBuildObjectCommandlineFromJSON(virBufferPtr buf,
-                                          virJSONValuePtr objprops);
+                                          virJSONValuePtr objprops,
+                                          bool rawjson);
 
 char *virQEMUBuildDriveCommandlineFromJSON(virJSONValuePtr src);
 
