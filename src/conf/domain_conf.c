@@ -30460,7 +30460,8 @@ virDomainDefSetMetadata(virDomainDefPtr def,
                 def->metadata = virXMLNewNode(NULL, "metadata");
 
             if (!(new = xmlCopyNode(doc->children, 1))) {
-                virReportOOMError();
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Failed to copy XML node"));
                 return -1;
             }
         }
