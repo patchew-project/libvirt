@@ -527,6 +527,7 @@ testCompareXMLToArgvValidateSchema(virQEMUDriverPtr drv,
     g_autoptr(virCommand) cmd = NULL;
     unsigned int parseFlags = info->parseFlags;
     bool netdevQAPIfied = false;
+    bool objectQAPIfied = false;
 
     /* comment out with line comment to enable schema checking for non _CAPS tests
     if (!info->schemafile)
@@ -570,6 +571,7 @@ testCompareXMLToArgvValidateSchema(virQEMUDriverPtr drv,
         return -1;
 
     netdevQAPIfied = !virQEMUQAPISchemaPathExists("netdev_add/arg-type/type/!string", schema);
+    objectQAPIfied = virQEMUQAPISchemaPathExists("object-add/arg-type/qom-type/^secret", schema);
 
     for (i = 0; i < nargs; i++) {
         g_auto(virBuffer) debug = VIR_BUFFER_INITIALIZER;
@@ -599,6 +601,24 @@ testCompareXMLToArgvValidateSchema(virQEMUDriverPtr drv,
             if (testQEMUSchemaValidateCommand("netdev_add", jsonargs,
                                               schema, false, false, &debug) < 0) {
                 VIR_TEST_VERBOSE("failed to validate -netdev '%s' against QAPI schema: %s",
+                                 args[i + 1], virBufferCurrentContent(&debug));
+                return -1;
+            }
+
+            i++;
+        } else if (STREQ(args[i], "-object")) {
+
+            if (!objectQAPIfied) {
+                i++;
+                continue;
+            }
+
+            if (!(jsonargs = virJSONValueFromString(args[i + 1])))
+                return -1;
+
+            if (testQEMUSchemaValidateCommand("object-add", jsonargs,
+                                              schema, false, false, &debug) < 0) {
+                VIR_TEST_VERBOSE("failed to validate -object '%s' against QAPI schema: %s",
                                  args[i + 1], virBufferCurrentContent(&debug));
                 return -1;
             }
