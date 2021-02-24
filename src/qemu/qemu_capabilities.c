@@ -618,6 +618,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "memory-backend-file.x-use-canonical-path-for-ramblock-id",
               "vnc-opts",
               "migration-param.block-bitmap-mapping",
+
+              /* 395 */
+              "object.qapified",
     );
 
 
@@ -1553,6 +1556,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "netdev_add/arg-type/+vhost-vdpa", QEMU_CAPS_NETDEV_VHOST_VDPA },
     { "migrate-set-parameters/arg-type/block-bitmap-mapping/bitmaps/transform",
       QEMU_CAPS_MIGRATION_PARAM_BLOCK_BITMAP_MAPPING },
+    { "object-add/arg-type/qom-type/^secret", QEMU_CAPS_OBJECT_QAPIFIED },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
