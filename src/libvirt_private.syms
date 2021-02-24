@@ -3533,6 +3533,7 @@ virXMLBufferCreate;
 virXMLCheckIllegalChars;
 virXMLExtractNamespaceXML;
 virXMLFormatElement;
+virXMLNewNode;
 virXMLNodeContentString;
 virXMLNodeNameEqual;
 virXMLNodeSanitizeNamespaces;
