@@ -6149,6 +6149,33 @@ qemuProcessUpdateGuestCPU(virDomainDefPtr def,
     if (virCPUConvertLegacy(hostarch, def->cpu) < 0)
         return -1;
 
+    if (def->cpu->check != VIR_CPU_CHECK_NONE) {
+        virCPUDefPtr host;
+        size_t i;
+
+        host = virQEMUCapsGetHostModel(qemuCaps, def->virtType,
+                                       VIR_QEMU_CAPS_HOST_CPU_FULL);
+
+        for (i = 0; i < def->cpu->nfeatures; ++i) {
+            virCPUFeatureDefPtr feature;
+
+            if (def->cpu->features[i].policy != VIR_CPU_FEATURE_FORBID)
+                continue;
+
+            feature = virCPUDefFindFeature(host, def->cpu->features[i].name);
+            if (!feature)
+                continue;
+
+            if (feature->policy == VIR_CPU_FEATURE_DISABLE)
+                continue;
+
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE,
+                           _("Host CPU provides forbidden feature '%s'"),
+                           def->cpu->features[i].name);
+            return -1;
+        }
+    }
+
     /* nothing to update for host-passthrough / maximum */
     if (def->cpu->mode != VIR_CPU_MODE_HOST_PASSTHROUGH &&
         def->cpu->mode != VIR_CPU_MODE_MAXIMUM) {
