@@ -11883,6 +11883,19 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *                       bytes consumed by @vcpus that passing through all
  *                       memory controllers, either local or remote controller.
  *
+ * VIR_DOMAIN_STATS_DIRTYRATE:
+ *     Return memory dirty rate information. The typed parameter keys are in
+ *     this format:
+ *
+ *     "dirtyrate.calc_status" - the status of last memory dirty rate
+ *                               calculation
+ *     "dirtyrate.calc_start_time" - the start time of last memory dirty
+ *                                   rate calculation
+ *     "dirtyrate.calc_period" - the period of last memory dirty rate
+ *                               calculation
+ *     "dirtyrate.megabytes_per_second" - the calculated memory dirty
+ *                                        rate in MiB/s
+ *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not
  * applicable for the current state of the guest domain, or their retrieval

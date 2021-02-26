@@ -18533,6 +18533,61 @@ qemuDomainGetStatsPerf(virQEMUDriverPtr driver G_GNUC_UNUSED,
     return 0;
 }
 
+static int
+qemuDomainGetStatsDirtyRateMon(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               qemuMonitorDirtyRateInfoPtr info)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    ret = qemuMonitorQueryDirtyRate(priv->mon, info);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    return ret;
+}
+
+static int
+qemuDomainGetStatsDirtyRate(virQEMUDriverPtr driver,
+                           virDomainObjPtr dom,
+                           virTypedParamListPtr params,
+                           unsigned int privflags)
+{
+    qemuMonitorDirtyRateInfo info;
+    int ret = -1;
+
+    if (!HAVE_JOB(privflags) || !virDomainObjIsActive(dom))
+        return 0;
+
+    if (qemuDomainGetStatsDirtyRateMon(driver, dom, &info) < 0)
+        goto cleanup;
+
+    if (virTypedParamListAddString(params, info.status,
+                                   "dirtyrate.calc_status") < 0)
+        goto cleanup;
+
+    if (virTypedParamListAddLLong(params, info.startTime,
+                                  "dirtyrate.calc_start_time") < 0)
+        goto cleanup;
+
+    if (virTypedParamListAddInt(params, info.calcTime,
+                                "dirtyrate.calc_period") < 0)
+        goto cleanup;
+
+    if (STREQ(info.status, "measured") &&
+        virTypedParamListAddLLong(params, info.dirtyRate,
+                                  "dirtyrate.megabytes_per_second") < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(info.status);
+    return ret;
+}
+
 typedef int
 (*qemuDomainGetStatsFunc)(virQEMUDriverPtr driver,
                           virDomainObjPtr dom,
@@ -18555,6 +18610,7 @@ static struct qemuDomainGetStatsWorker qemuDomainGetStatsWorkers[] = {
     { qemuDomainGetStatsPerf, VIR_DOMAIN_STATS_PERF, false },
     { qemuDomainGetStatsIOThread, VIR_DOMAIN_STATS_IOTHREAD, true },
     { qemuDomainGetStatsMemory, VIR_DOMAIN_STATS_MEMORY, false },
+    { qemuDomainGetStatsDirtyRate, VIR_DOMAIN_STATS_DIRTYRATE, true },
     { NULL, 0, false }
 };
 
