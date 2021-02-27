@@ -240,6 +240,8 @@ virLXCDriverConfigNew(void)
     cfg->logDir = g_strdup(LXC_LOG_DIR);
     cfg->autostartDir = g_strdup(LXC_AUTOSTART_DIR);
 
+    cfg->saveImageFormat = NULL;
+
     return cfg;
 }
 
@@ -291,4 +293,5 @@ virLXCDriverConfigDispose(void *obj)
     g_free(cfg->stateDir);
     g_free(cfg->logDir);
     g_free(cfg->securityDriverName);
+    g_free(cfg->saveImageFormat);
 }

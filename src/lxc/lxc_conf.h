@@ -61,6 +61,8 @@ struct _virLXCDriverConfig {
     char *securityDriverName;
     bool securityDefaultConfined;
     bool securityRequireConfined;
+
+    char *saveImageFormat;
 };
 
 struct _virLXCDriver {

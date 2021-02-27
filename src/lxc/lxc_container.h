@@ -54,7 +54,8 @@ int lxcContainerStart(virDomainDefPtr def,
                       int handshakefd,
                       int *nsInheritFDs,
                       size_t nttyPaths,
-                      char **ttyPaths);
+                      char **ttyPaths,
+                      int restorefd);
 
 int lxcContainerSetupHostdevCapsMakePath(const char *dev);
 
