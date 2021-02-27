@@ -1639,6 +1639,15 @@ void main(void) {
   if cc.compiles(lxc_get_free_code)
     conf.set('WITH_DECL_LOOP_CTL_GET_FREE', 1)
   endif
+
+  if not get_option('criu').disabled()
+    criu_prog = find_program('criu')
+
+    if criu_prog.found()
+      conf.set('WITH_CRIU', 1)
+      conf.set_quoted('CRIU', criu_prog.path())
+    endif
+  endif
 elif get_option('driver_lxc').enabled()
   error('linux and remote_driver are required for LXC')
 endif
@@ -2411,6 +2420,7 @@ misc_summary = {
   'virt-login-shell': conf.has('WITH_LOGIN_SHELL'),
   'virt-host-validate': conf.has('WITH_HOST_VALIDATE'),
   'TLS priority': conf.get_unquoted('TLS_PRIORITY'),
+  'CRIU': conf.has('WITH_CRIU'),
 }
 summary(misc_summary, section: 'Miscellaneous', bool_yn: true, list_sep: ' ')
 
