@@ -9,6 +9,7 @@ lxc_driver_sources = [
   'lxc_monitor.c',
   'lxc_native.c',
   'lxc_process.c',
+  'lxc_criu.c',
 ]
 
 lxc_monitor_protocol = files('lxc_monitor_protocol.x')
@@ -61,6 +62,7 @@ lxc_controller_sources = files(
   'lxc_domain.c',
   'lxc_fuse.c',
   'lxc_controller.c',
+  'lxc_criu.c',
 )
 
 lxc_controller_generated = custom_target(
