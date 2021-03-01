@@ -3037,26 +3037,6 @@ int virFileChownFiles(const char *name,
 }
 #endif /* WIN32 */
 
-/**
- * Creates the given directory with mode 0777 if it's not already existing.
- *
- * Returns 0 on success, or -1 if an error occurred (in which case, errno
- * is set appropriately).
- */
-int
-virFileMakePath(const char *path)
-{
-    return g_mkdir_with_parents(path, 0777);
-}
-
-int
-virFileMakePathWithMode(const char *path,
-                        mode_t mode)
-{
-    return g_mkdir_with_parents(path, mode);
-}
-
-
 int
 virFileMakeParentPath(const char *path)
 {
