@@ -3698,7 +3698,7 @@ virFileSetupDev(const char *path,
     const unsigned long mount_flags = MS_NOSUID;
     const char *mount_fs = "tmpfs";
 
-    if (virFileMakePath(path) < 0) {
+    if (g_mkdir_with_parents(path, 0777) < 0) {
         virReportSystemError(errno,
                              _("Failed to make path %s"), path);
         return -1;
@@ -3723,7 +3723,7 @@ virFileBindMountDevice(const char *src,
 {
     if (!virFileExists(dst)) {
         if (virFileIsDir(src)) {
-            if (virFileMakePath(dst) < 0) {
+            if (g_mkdir_with_parents(dst, 0777) < 0) {
                 virReportSystemError(errno, _("Unable to make dir %s"), dst);
                 return -1;
             }
