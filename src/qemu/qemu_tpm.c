@@ -274,7 +274,6 @@ qemuTPMEmulatorGetPid(const char *swtpmStateDir,
  * qemuTPMEmulatorPrepareHost:
  *
  * @tpm: tpm definition
- * @logDir: directory where swtpm writes its logs into
  * @swtpm_user: uid to run the swtpm with
  * @swtpm_group: gid to run the swtpm with
  * @swtpmStateDir: directory for swtpm's persistent state
@@ -287,15 +286,18 @@ qemuTPMEmulatorGetPid(const char *swtpmStateDir,
  */
 static int
 qemuTPMEmulatorPrepareHost(virDomainTPMDefPtr tpm,
-                           const char *logDir,
                            uid_t swtpm_user,
                            gid_t swtpm_group,
                            const char *swtpmStateDir,
                            uid_t qemu_user,
                            const char *shortName)
 {
+    g_autofree char *logDir = NULL;
+
     if (virTPMEmulatorInit() < 0)
         return -1;
+
+    logDir = g_path_get_dirname(tpm->data.emulator.logfile);
 
     /* create log dir ... allow 'tss' user to cd into it */
     if (virFileMakePathWithMode(logDir, 0711) < 0)
@@ -732,7 +734,7 @@ qemuExtTPMPrepareHost(virQEMUDriverPtr driver,
         if (!shortName)
             return -1;
 
-        return qemuTPMEmulatorPrepareHost(def->tpms[i], cfg->swtpmLogDir,
+        return qemuTPMEmulatorPrepareHost(def->tpms[i],
                                           cfg->swtpm_user,
                                           cfg->swtpm_group,
                                           cfg->swtpmStateDir, cfg->user,
