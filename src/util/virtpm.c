@@ -323,16 +323,14 @@ virTPMEmulatorInit(void)
                                      _("Could not stat %s"), path);
                 goto cleanup;
             }
-            *prgs[i].path = path;
+            *prgs[i].path = g_steal_pointer(&path);
 
             if (prgs[i].caps) {
                 *prgs[i].caps = virTPMGetCaps(prgs[i].typeFromStringFn,
                                               path, prgs[i].parm);
-                path = NULL;
                 if (!*prgs[i].caps)
                     goto cleanup;
             }
-            path = NULL;
         }
     }
 
