@@ -3037,45 +3037,6 @@ int virFileChownFiles(const char *name,
 }
 #endif /* WIN32 */
 
-static int
-virFileMakePathHelper(char *path, mode_t mode)
-{
-    struct stat st;
-    char *p;
-
-    VIR_DEBUG("path=%s mode=0%o", path, mode);
-
-    if (stat(path, &st) >= 0) {
-        if (S_ISDIR(st.st_mode))
-            return 0;
-
-        errno = ENOTDIR;
-        return -1;
-    }
-
-    if (errno != ENOENT)
-        return -1;
-
-    if ((p = strrchr(path, '/')) == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (p != path) {
-        *p = '\0';
-
-        if (virFileMakePathHelper(path, mode) < 0)
-            return -1;
-
-        *p = '/';
-    }
-
-    if (g_mkdir(path, mode) < 0 && errno != EEXIST)
-        return -1;
-
-    return 0;
-}
-
 /**
  * Creates the given directory with mode 0777 if it's not already existing.
  *
@@ -3092,11 +3053,7 @@ int
 virFileMakePathWithMode(const char *path,
                         mode_t mode)
 {
-    g_autofree char *tmp = NULL;
-
-    tmp = g_strdup(path);
-
-    return virFileMakePathHelper(tmp, mode);
+    return g_mkdir_with_parents(path, mode);
 }
 
 
@@ -3116,7 +3073,7 @@ virFileMakeParentPath(const char *path)
     }
     *p = '\0';
 
-    return virFileMakePathHelper(tmp, 0777);
+    return g_mkdir_with_parents(tmp, 0777);
 }
 
 
