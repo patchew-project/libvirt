@@ -1215,16 +1215,71 @@ nodeDeviceDestroy(virNodeDevicePtr device)
     return ret;
 }
 
+
+/* takes ownership of @def and potentially frees it. @def should not be used
+ * after returning from this function */
+static int
+nodeDeviceUpdateMediatedDevice(virNodeDeviceDefPtr def)
+{
+    virNodeDeviceObjPtr obj;
+    virObjectEventPtr event;
+    bool defined = false;
+    g_autoptr(virNodeDeviceDef) owned = def;
+    g_autofree char *name = g_strdup(owned->name);
+
+    owned->driver = g_strdup("vfio_mdev");
+
+    if (!(obj = virNodeDeviceObjListFindByName(driver->devs, owned->name))) {
+        virNodeDeviceDefPtr d = g_steal_pointer(&owned);
+        if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, d))) {
+            virNodeDeviceDefFree(d);
+            return -1;
+        }
+    } else {
+        bool changed;
+        virNodeDeviceDefPtr olddef = virNodeDeviceObjGetDef(obj);
+
+        defined = virNodeDeviceObjIsPersistent(obj);
+        /* Active devices contain some additional information (e.g. sysfs
+         * path) that is not provided by mdevctl, so re-use the existing
+         * definition and copy over new mdev data */
+        changed = nodeDeviceDefCopyFromMdevctl(olddef, owned);
+
+        if (defined && !changed) {
+            /* if this device was already defined and the definition
+             * hasn't changed, there's nothing to do for this device */
+            virNodeDeviceObjEndAPI(&obj);
+            return 0;
+        }
+    }
+
+    /* all devices returned by virMdevctlListDefined() are persistent */
+    virNodeDeviceObjSetPersistent(obj, true);
+
+    if (!defined)
+        event = virNodeDeviceEventLifecycleNew(name,
+                                               VIR_NODE_DEVICE_EVENT_DEFINED,
+                                               0);
+    else
+        event = virNodeDeviceEventUpdateNew(name);
+
+    virNodeDeviceObjEndAPI(&obj);
+    virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+
+    return 0;
+}
+
+
 virNodeDevicePtr
 nodeDeviceDefineXML(virConnectPtr conn,
                     const char *xmlDesc,
                     unsigned int flags)
 {
     g_autoptr(virNodeDeviceDef) def = NULL;
-    virNodeDevicePtr device = NULL;
     const char *virt_type = NULL;
     g_autofree char *uuid = NULL;
     g_autofree char *errmsg = NULL;
+    g_autofree char *name = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -1264,9 +1319,19 @@ nodeDeviceDefineXML(virConnectPtr conn,
     }
 
     mdevGenerateDeviceName(def);
-    device = nodeDeviceFindNewMediatedDevice(conn, def->caps->data.mdev.uuid);
+    name = g_strdup(def->name);
 
-    return device;
+    /* Normally we would call nodeDeviceFindNewMediatedDevice() here to wait
+     * for the new device to appear. But mdevctl can take a while to query
+     * devices, and if nodeDeviceFindNewMediatedDevice() doesn't find the new
+     * device immediately it will wait at 5s before checking again. Since we
+     * have already received the uuid from virMdevctlDefine(), we can simply
+     * add the provisional device to the list and return it immediately and
+     * avoid this long delay. */
+    if (nodeDeviceUpdateMediatedDevice(g_steal_pointer(&def)) < 0)
+        return NULL;
+
+    return virGetNodeDevice(conn, name);
 }
 
 
@@ -1502,60 +1567,6 @@ removeMissingPersistentMdevs(virNodeDeviceObjPtr obj,
     virObjectEventStateQueue(driver->nodeDeviceEventState, event);
 
     return remove;
-}
-
-
-/* takes ownership of @def and potentially frees it. @def should not be used
- * after returning from this function */
-static int
-nodeDeviceUpdateMediatedDevice(virNodeDeviceDefPtr def)
-{
-    virNodeDeviceObjPtr obj;
-    virObjectEventPtr event;
-    bool defined = false;
-    g_autoptr(virNodeDeviceDef) owned = def;
-    g_autofree char *name = g_strdup(owned->name);
-
-    owned->driver = g_strdup("vfio_mdev");
-
-    if (!(obj = virNodeDeviceObjListFindByName(driver->devs, owned->name))) {
-        virNodeDeviceDefPtr d = g_steal_pointer(&owned);
-        if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, d))) {
-            virNodeDeviceDefFree(d);
-            return -1;
-        }
-    } else {
-        bool changed;
-        virNodeDeviceDefPtr olddef = virNodeDeviceObjGetDef(obj);
-
-        defined = virNodeDeviceObjIsPersistent(obj);
-        /* Active devices contain some additional information (e.g. sysfs
-         * path) that is not provided by mdevctl, so re-use the existing
-         * definition and copy over new mdev data */
-        changed = nodeDeviceDefCopyFromMdevctl(olddef, owned);
-
-        if (defined && !changed) {
-            /* if this device was already defined and the definition
-             * hasn't changed, there's nothing to do for this device */
-            virNodeDeviceObjEndAPI(&obj);
-            return 0;
-        }
-    }
-
-    /* all devices returned by virMdevctlListDefined() are persistent */
-    virNodeDeviceObjSetPersistent(obj, true);
-
-    if (!defined)
-        event = virNodeDeviceEventLifecycleNew(name,
-                                               VIR_NODE_DEVICE_EVENT_DEFINED,
-                                               0);
-    else
-        event = virNodeDeviceEventUpdateNew(name);
-
-    virNodeDeviceObjEndAPI(&obj);
-    virObjectEventStateQueue(driver->nodeDeviceEventState, event);
-
-    return 0;
 }
 
 
