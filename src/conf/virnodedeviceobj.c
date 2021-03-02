@@ -507,20 +507,26 @@ void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
                            virNodeDeviceObjPtr obj)
 {
-    virNodeDeviceDefPtr def;
-
     if (!obj)
         return;
-    def = obj->def;
 
     virObjectRef(obj);
     virObjectUnlock(obj);
     virObjectRWLockWrite(devs);
     virObjectLock(obj);
-    virHashRemoveEntry(devs->objs, def->name);
+    virNodeDeviceObjListRemoveLocked(devs, obj);
     virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(devs);
+}
+
+
+/* The caller must hold lock on 'devs' */
+void
+virNodeDeviceObjListRemoveLocked(virNodeDeviceObjListPtr devs,
+                                 virNodeDeviceObjPtr dev)
+{
+    virHashRemoveEntry(devs->objs, dev->def->name);
 }
 
 
@@ -1018,4 +1024,48 @@ virNodeDeviceObjSetPersistent(virNodeDeviceObjPtr obj,
                               bool persistent)
 {
     obj->persistent = persistent;
+}
+
+
+struct virNodeDeviceObjListRemoveData
+{
+    virNodeDeviceObjListRemoveIter iter;
+    void *opaque;
+};
+
+static int virNodeDeviceObjListRemoveCb(void *key G_GNUC_UNUSED,
+                                        void *value,
+                                        void *opaque)
+{
+    struct virNodeDeviceObjListRemoveData *data = opaque;
+
+    return data->iter(value, data->opaque);
+}
+
+
+/**
+ * virNodeDeviceObjListForEachRemove
+ * @devs: Pointer to object list
+ * @iter: function to call for each device object
+ * @opaque: Opaque data to use as argument to helper
+ *
+ * For each object in @devs, call the @iter helper using @opaque as
+ * an argument. If @iter returns true, that item will be removed from the
+ * object list.
+ */
+void
+virNodeDeviceObjListForEachRemove(virNodeDeviceObjListPtr devs,
+                                  virNodeDeviceObjListRemoveIter iter,
+                                  void *opaque)
+{
+    struct virNodeDeviceObjListRemoveData data = {
+        .iter = iter,
+        .opaque = opaque
+    };
+
+    virObjectRWLockWrite(devs);
+    g_hash_table_foreach_remove(devs->objs,
+                                virNodeDeviceObjListRemoveCb,
+                                &data);
+    virObjectRWUnlock(devs);
 }
