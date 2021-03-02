@@ -161,6 +161,27 @@ static void *dryRunOpaque;
 static int dryRunStatus;
 #endif /* !WIN32 */
 
+
+static bool
+virCommandHasError(virCommandPtr cmd)
+{
+    return !cmd || cmd->has_error != 0;
+}
+
+
+static int
+virCommandRaiseError(virCommandPtr cmd)
+{
+    if (!cmd || cmd->has_error != 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("invalid use of command API"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /*
  * virCommandFDIsSet:
  * @cmd: pointer to virCommand
@@ -982,7 +1003,7 @@ virCommandNewVAList(const char *binary, va_list list)
     virCommandPtr cmd = virCommandNew(binary);
     const char *arg;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return cmd;
 
     while ((arg = va_arg(list, const char *)) != NULL)
@@ -1076,7 +1097,7 @@ virCommandPassFDGetFDIndex(virCommandPtr cmd, int fd)
 {
     size_t i = 0;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return -1;
 
     while (i < cmd->npassfd) {
@@ -1100,7 +1121,7 @@ virCommandPassFDGetFDIndex(virCommandPtr cmd, int fd)
 void
 virCommandSetPidFile(virCommandPtr cmd, const char *pidfile)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     VIR_FREE(cmd->pidfile);
@@ -1125,7 +1146,7 @@ virCommandGetUID(virCommandPtr cmd)
 void
 virCommandSetGID(virCommandPtr cmd, gid_t gid)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->gid = gid;
@@ -1134,7 +1155,7 @@ virCommandSetGID(virCommandPtr cmd, gid_t gid)
 void
 virCommandSetUID(virCommandPtr cmd, uid_t uid)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->uid = uid;
@@ -1143,7 +1164,7 @@ virCommandSetUID(virCommandPtr cmd, uid_t uid)
 void
 virCommandSetMaxMemLock(virCommandPtr cmd, unsigned long long bytes)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->maxMemLock = bytes;
@@ -1152,7 +1173,7 @@ virCommandSetMaxMemLock(virCommandPtr cmd, unsigned long long bytes)
 void
 virCommandSetMaxProcesses(virCommandPtr cmd, unsigned int procs)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->maxProcesses = procs;
@@ -1161,7 +1182,7 @@ virCommandSetMaxProcesses(virCommandPtr cmd, unsigned int procs)
 void
 virCommandSetMaxFiles(virCommandPtr cmd, unsigned int files)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->maxFiles = files;
@@ -1169,7 +1190,7 @@ virCommandSetMaxFiles(virCommandPtr cmd, unsigned int files)
 
 void virCommandSetMaxCoreSize(virCommandPtr cmd, unsigned long long bytes)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->maxCore = bytes;
@@ -1178,7 +1199,7 @@ void virCommandSetMaxCoreSize(virCommandPtr cmd, unsigned long long bytes)
 
 void virCommandSetUmask(virCommandPtr cmd, int mask)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->mask = mask;
@@ -1193,7 +1214,7 @@ void virCommandSetUmask(virCommandPtr cmd, int mask)
 void
 virCommandClearCaps(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->flags |= VIR_EXEC_CLEAR_CAPS;
@@ -1210,7 +1231,7 @@ void
 virCommandAllowCap(virCommandPtr cmd,
                    int capability)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->capabilities |= (1ULL << capability);
@@ -1231,7 +1252,7 @@ void
 virCommandSetSELinuxLabel(virCommandPtr cmd,
                           const char *label G_GNUC_UNUSED)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
 #if defined(WITH_SECDRIVER_SELINUX)
@@ -1255,7 +1276,7 @@ void
 virCommandSetAppArmorProfile(virCommandPtr cmd,
                              const char *profile G_GNUC_UNUSED)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
 #if defined(WITH_SECDRIVER_APPARMOR)
@@ -1277,7 +1298,7 @@ virCommandSetAppArmorProfile(virCommandPtr cmd,
 void
 virCommandDaemonize(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->flags |= VIR_EXEC_DAEMON;
@@ -1293,7 +1314,7 @@ virCommandDaemonize(virCommandPtr cmd)
 void
 virCommandNonblockingFDs(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->flags |= VIR_EXEC_NONBLOCK;
@@ -1312,7 +1333,7 @@ virCommandNonblockingFDs(virCommandPtr cmd)
 void
 virCommandRawStatus(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->rawStatus = true;
@@ -1361,7 +1382,7 @@ virCommandAddEnvFormat(virCommandPtr cmd, const char *format, ...)
     char *env;
     va_list list;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     va_start(list, format);
@@ -1400,7 +1421,7 @@ virCommandAddEnvString(virCommandPtr cmd, const char *str)
 {
     char *env;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     env = g_strdup(str);
@@ -1421,7 +1442,7 @@ void
 virCommandAddEnvPass(virCommandPtr cmd, const char *name)
 {
     const char *value;
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     value = getenv(name);
@@ -1440,7 +1461,7 @@ virCommandAddEnvPass(virCommandPtr cmd, const char *name)
 void
 virCommandAddEnvPassCommon(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     ignore_value(VIR_RESIZE_N(cmd->env, cmd->maxenv, cmd->nenv, 9));
@@ -1460,7 +1481,7 @@ virCommandAddEnvPassCommon(virCommandPtr cmd)
 void
 virCommandAddEnvXDG(virCommandPtr cmd, const char *baseDir)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     ignore_value(VIR_RESIZE_N(cmd->env, cmd->maxenv, cmd->nenv, 3));
@@ -1484,7 +1505,7 @@ virCommandAddEnvXDG(virCommandPtr cmd, const char *baseDir)
 void
 virCommandAddArg(virCommandPtr cmd, const char *val)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (val == NULL) {
@@ -1512,7 +1533,7 @@ virCommandAddArgBuffer(virCommandPtr cmd, virBufferPtr buf)
 {
     g_autofree char *str = virBufferContentAndReset(buf);
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (!str)
@@ -1540,7 +1561,7 @@ virCommandAddArgFormat(virCommandPtr cmd, const char *format, ...)
     char *arg;
     va_list list;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     va_start(list, format);
@@ -1583,7 +1604,7 @@ virCommandAddArgSet(virCommandPtr cmd, const char *const*vals)
 {
     int narg = 0;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (vals[0] == NULL) {
@@ -1619,7 +1640,7 @@ virCommandAddArgList(virCommandPtr cmd, ...)
     va_list list;
     int narg = 0;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     va_start(list, cmd);
@@ -1653,7 +1674,7 @@ virCommandAddArgList(virCommandPtr cmd, ...)
 void
 virCommandSetWorkingDirectory(virCommandPtr cmd, const char *pwd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->pwd) {
@@ -1701,7 +1722,7 @@ virCommandSetSendBuffer(virCommandPtr cmd,
 {
     size_t i;
 
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return -1;
 
     if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
@@ -1795,7 +1816,7 @@ virCommandSendBuffersHandlePoll(virCommandPtr cmd,
 void
 virCommandSetInputBuffer(virCommandPtr cmd, const char *inbuf)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->infd != -1 || cmd->inbuf) {
@@ -1825,7 +1846,7 @@ void
 virCommandSetOutputBuffer(virCommandPtr cmd, char **outbuf)
 {
     *outbuf = NULL;
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->outfdptr) {
@@ -1859,7 +1880,7 @@ void
 virCommandSetErrorBuffer(virCommandPtr cmd, char **errbuf)
 {
     *errbuf = NULL;
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->errfdptr) {
@@ -1883,7 +1904,7 @@ virCommandSetErrorBuffer(virCommandPtr cmd, char **errbuf)
 void
 virCommandSetInputFD(virCommandPtr cmd, int infd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->infd != -1 || cmd->inbuf) {
@@ -1913,7 +1934,7 @@ virCommandSetInputFD(virCommandPtr cmd, int infd)
 void
 virCommandSetOutputFD(virCommandPtr cmd, int *outfd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->outfdptr) {
@@ -1939,7 +1960,7 @@ virCommandSetOutputFD(virCommandPtr cmd, int *outfd)
 void
 virCommandSetErrorFD(virCommandPtr cmd, int *errfd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->errfdptr) {
@@ -1968,7 +1989,7 @@ virCommandSetErrorFD(virCommandPtr cmd, int *errfd)
 void
 virCommandSetPreExecHook(virCommandPtr cmd, virExecHook hook, void *opaque)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->hook) {
@@ -1999,7 +2020,7 @@ virCommandWriteArgLog(virCommandPtr cmd, int logfd)
 
     /* Any errors will be reported later by virCommandRun, which means
      * no command will be run, so there is nothing to log. */
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     for (i = 0; i < cmd->nenv; i++) {
@@ -2043,11 +2064,8 @@ virCommandToString(virCommandPtr cmd, bool linebreaks)
 
     /* Cannot assume virCommandRun will be called; so report the error
      * now.  If virCommandRun is called, it will report the same error. */
-    if (!cmd || cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return NULL;
-    }
 
     for (i = 0; i < cmd->nenv; i++) {
         /* In shell, a='b c' has a different meaning than 'a=b c', so
@@ -2092,11 +2110,8 @@ virCommandGetArgList(virCommandPtr cmd,
 {
     size_t i;
 
-    if (cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return -1;
-    }
 
     *args = g_new0(char *, cmd->nargs);
     *nargs = cmd->nargs - 1;
@@ -2279,11 +2294,8 @@ virCommandProcessIO(virCommandPtr cmd)
  */
 int virCommandExec(virCommandPtr cmd, gid_t *groups, int ngroups)
 {
-    if (!cmd || cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return -1;
-    }
 
     if (virExecCommon(cmd, groups, ngroups) < 0)
         return -1;
@@ -2324,11 +2336,8 @@ virCommandRun(virCommandPtr cmd, int *exitstatus)
     char *str;
     int tmpfd;
 
-    if (!cmd || cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return -1;
-    }
 
     /* Avoid deadlock, by requiring that any open fd not under our
      * control must be visiting a regular file, or that we are
@@ -2471,11 +2480,8 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
     bool synchronous = false;
     int infd[2] = {-1, -1};
 
-    if (!cmd || cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return -1;
-    }
 
     synchronous = cmd->flags & VIR_EXEC_RUN_SYNC;
     cmd->flags &= ~VIR_EXEC_RUN_SYNC;
@@ -2620,11 +2626,8 @@ virCommandWait(virCommandPtr cmd, int *exitstatus)
     int ret;
     int status = 0;
 
-    if (!cmd || cmd->has_error) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("invalid use of command API"));
+    if (virCommandRaiseError(cmd) < 0)
         return -1;
-    }
 
     if (dryRunBuffer || dryRunCallback) {
         VIR_DEBUG("Dry run requested, returning status %d",
@@ -2717,7 +2720,7 @@ virCommandAbort(virCommandPtr cmd)
  */
 void virCommandRequireHandshake(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     if (cmd->handshake) {
@@ -2760,7 +2763,10 @@ int virCommandHandshakeWait(virCommandPtr cmd)
     char c;
     int rv;
 
-    if (!cmd || cmd->has_error || !cmd->handshake) {
+    if (virCommandRaiseError(cmd) < 0)
+        return -1;
+
+    if (!cmd->handshake) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("invalid use of command API"));
         return -1;
@@ -2818,7 +2824,10 @@ int virCommandHandshakeNotify(virCommandPtr cmd)
 {
     char c = '1';
 
-    if (!cmd || cmd->has_error || !cmd->handshake) {
+    if (virCommandRaiseError(cmd) < 0)
+        return -1;
+
+    if (!cmd->handshake) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("invalid use of command API"));
         return -1;
@@ -2846,7 +2855,7 @@ virCommandSetSendBuffer(virCommandPtr cmd,
                         unsigned char *buffer G_GNUC_UNUSED,
                         size_t buflen G_GNUC_UNUSED)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return -1;
 
     cmd->has_error = ENOTSUP;
@@ -2903,7 +2912,7 @@ virCommandAbort(virCommandPtr cmd G_GNUC_UNUSED)
 
 void virCommandRequireHandshake(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->has_error = ENOSYS;
@@ -3030,7 +3039,7 @@ virCommandFree(virCommandPtr cmd)
 void
 virCommandDoAsyncIO(virCommandPtr cmd)
 {
-    if (!cmd || cmd->has_error)
+    if (virCommandHasError(cmd))
         return;
 
     cmd->flags |= VIR_EXEC_ASYNC_IO | VIR_EXEC_NONBLOCK;
