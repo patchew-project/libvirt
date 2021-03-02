@@ -5355,6 +5355,11 @@
         <ref name="usbId"/>
       </attribute>
     </element>
+    <optional>
+      <element name="serial">
+        <ref name="usbSerial"/>
+      </element>
+    </optional>
   </define>
   <define name="usbaddress">
     <element name="address">
@@ -7051,6 +7056,11 @@
   <define name="usbId">
     <data type="string">
       <param name="pattern">(0x)?[0-9a-fA-F]{1,4}</param>
+    </data>
+  </define>
+  <define name="usbSerial">
+    <data type="string">
+      <param name="pattern">[A-Za-z0-9_\.\+\- ]+</param>
     </data>
   </define>
   <define name="usbVersion">

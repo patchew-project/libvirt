@@ -3864,6 +3864,7 @@ for PCI (KVM only) and 1.0.6 for SCSI (KVM only)` :
        <source startupPolicy='optional'>
          <vendor id='0x1234'/>
          <product id='0xbeef'/>
+         <serial>TANT14-B4732</serial>
        </source>
        <boot order='2'/>
      </hostdev>
@@ -4040,6 +4041,11 @@ or:
       requisite fail if missing on boot up, drop if missing on migrate/restore/revert
       optional  drop if missing at any start attempt
       ========= =====================================================================
+
+      :since:`Since 7.1.0`, the ``source`` element of USB devices may contain
+      the ``serial`` element which can be used in addition to ``vendor`` and
+      ``product`` to select a specific USB device if multiple devices with the
+      same vendor and product id are present.
 
    ``pci``
       PCI devices can only be described by their ``address``.

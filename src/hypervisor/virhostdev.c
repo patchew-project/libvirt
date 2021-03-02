@@ -1378,6 +1378,7 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
     virDomainHostdevSubsysUSBPtr usbsrc = &hostdev->source.subsys.u.usb;
     unsigned vendor = usbsrc->vendor;
     unsigned product = usbsrc->product;
+    const char *serial = usbsrc->serial;
     unsigned bus = usbsrc->bus;
     unsigned device = usbsrc->device;
     bool autoAddress = usbsrc->autoAddress;
@@ -1386,7 +1387,7 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
     *usb = NULL;
 
     if (vendor && bus) {
-        rc = virUSBDeviceFind(vendor, product, bus, device,
+        rc = virUSBDeviceFind(vendor, product, serial, bus, device,
                               NULL,
                               autoAddress ? false : mandatory,
                               usb);
@@ -1408,7 +1409,8 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
     if (vendor) {
         g_autoptr(virUSBDeviceList) devs = NULL;
 
-        rc = virUSBDeviceFindByVendor(vendor, product, NULL, mandatory, &devs);
+        rc = virUSBDeviceFindByVendor(vendor, product, serial, NULL, mandatory,
+                                      &devs);
         if (rc < 0) {
             return -1;
         } else if (rc == 0) {
@@ -1416,9 +1418,11 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
         } else if (rc > 1) {
             if (autoAddress) {
                 virReportError(VIR_ERR_OPERATION_FAILED,
-                               _("Multiple USB devices for %x:%x were found,"
-                                 " but none of them is at bus:%u device:%u"),
-                               vendor, product, bus, device);
+                               _("Multiple USB devices for %x:%x (serial: %s)"
+                                 " were found, but none of them is at bus:%u"
+                                 " device:%u"),
+                               vendor, product, serial ? serial : "<none>", bus,
+                               device);
             } else {
                 virReportError(VIR_ERR_OPERATION_FAILED,
                                _("Multiple USB devices for %x:%x, "

@@ -45,12 +45,14 @@ int virUSBDeviceFindByBus(unsigned int bus,
 
 int virUSBDeviceFindByVendor(unsigned int vendor,
                              unsigned int product,
+                             const char* serial,
                              const char *vroot,
                              bool mandatory,
                              virUSBDeviceListPtr *devices);
 
 int virUSBDeviceFind(unsigned int vendor,
                      unsigned int product,
+                     const char* serial,
                      unsigned int bus,
                      unsigned int devno,
                      const char *vroot,

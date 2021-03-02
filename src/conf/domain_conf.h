@@ -227,12 +227,13 @@ VIR_ENUM_DECL(virDomainHostdevSubsysSCSIProtocol);
 
 struct _virDomainHostdevSubsysUSB {
     bool autoAddress; /* bus/device were filled automatically based
-                         on vendor/product */
+                         on vendor/product (optionally serial) */
     unsigned bus;
     unsigned device;
 
     unsigned vendor;
     unsigned product;
+    char *serial;
 };
 
 struct _virDomainHostdevSubsysPCI {

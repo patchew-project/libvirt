@@ -3078,6 +3078,8 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
             VIR_FREE(def->source.subsys.u.scsi_host.wwpn);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
+            VIR_FREE(def->source.subsys.u.usb.serial);
+            break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
@@ -6703,6 +6705,16 @@ virDomainHostdevSubsysUSBDefParseXML(xmlNodePtr node,
                                    "%s", _("usb product needs id"));
                     return -1;
                 }
+            } else if (!usbsrc->serial &&
+                    virXMLNodeNameEqual(cur, "serial")) {
+                g_autofree char *serial = virXMLNodeContentString(cur);
+                if (!serial) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   "%s", _("usb serial needs content"));
+                    return -1;
+                }
+
+                usbsrc->serial = g_steal_pointer(&serial);
             } else if (virXMLNodeNameEqual(cur, "address")) {
                 g_autofree char *bus = NULL;
                 g_autofree char *device = NULL;
@@ -25088,6 +25100,9 @@ virDomainHostdevDefFormatSubsysUSB(virBufferPtr buf,
     if (usbsrc->vendor) {
         virBufferAsprintf(&sourceChildBuf, "<vendor id='0x%.4x'/>\n", usbsrc->vendor);
         virBufferAsprintf(&sourceChildBuf, "<product id='0x%.4x'/>\n", usbsrc->product);
+        if (usbsrc->serial) {
+            virBufferEscapeString(&sourceChildBuf, "<serial>%s</serial>\n", usbsrc->serial);
+        }
     }
 
     if (usbsrc->bus || usbsrc->device)
