@@ -117,6 +117,12 @@ virCommandPtr
 nodeDeviceGetMdevctlStartCommand(virNodeDeviceDefPtr def,
                                  char **uuid_out,
                                  char **errmsg);
+
+virCommandPtr
+nodeDeviceGetMdevctlDefineCommand(virNodeDeviceDefPtr def,
+                                  char **uuid_out,
+                                  char **errmsg);
+
 virCommandPtr
 nodeDeviceGetMdevctlStopCommand(const char *uuid,
                                 char **errmsg);
