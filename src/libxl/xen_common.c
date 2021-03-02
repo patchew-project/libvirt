@@ -1141,104 +1141,61 @@ xenParseVif(char *entry, const char *vif_typename)
 {
     virDomainNetDefPtr net = NULL;
     virDomainNetDefPtr ret = NULL;
-    char *script = NULL;
-    char model[10];
-    char type[10];
-    char ip[128];
-    char mac[18];
-    char bridge[50];
-    char vifname[50];
-    char rate[50];
-    char *key;
+    g_auto(GStrv) keyvals = NULL;
+    GStrv keyval;
+    g_autofree char *script = NULL;
+    g_autofree char *model = NULL;
+    g_autofree char *type = NULL;
+    g_autofree char *ip = NULL;
+    g_autofree char *mac = NULL;
+    g_autofree char *bridge = NULL;
+    g_autofree char *vifname = NULL;
+    g_autofree char *rate = NULL;
 
-    bridge[0] = '\0';
-    mac[0] = '\0';
-    ip[0] = '\0';
-    model[0] = '\0';
-    type[0] = '\0';
-    vifname[0] = '\0';
-    rate[0] = '\0';
+    keyvals = g_strsplit(entry, ",", 0);
 
-    key = entry;
-    while (key) {
-        char *data;
-        char *nextkey = strchr(key, ',');
+    for (keyval = keyvals; keyval && *keyval; keyval++) {
+        const char *key = *keyval;
+        char *val = strchr(key, '=');
 
-        if (!(data = strchr(key, '=')))
+        virSkipSpaces(&key);
+
+        if (!val)
             return NULL;
-        data++;
+
+        val++;
 
         if (STRPREFIX(key, "mac=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(mac, data, len, sizeof(mac)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("MAC address %s too big for destination"),
-                               data);
-                return NULL;
-            }
+            g_clear_pointer(&mac, g_free);
+            mac = g_strdup(val);
         } else if (STRPREFIX(key, "bridge=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(bridge, data, len, sizeof(bridge)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Bridge %s too big for destination"),
-                               data);
-                return NULL;
-            }
+            g_clear_pointer(&bridge, g_free);
+            bridge = g_strdup(val);
         } else if (STRPREFIX(key, "script=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            VIR_FREE(script);
-            script = g_strndup(data, len);
+            g_clear_pointer(&script, g_free);
+            script = g_strdup(val);
         } else if (STRPREFIX(key, "model=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(model, data, len, sizeof(model)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Model %s too big for destination"),
-                               data);
-                return NULL;
-            }
+            g_clear_pointer(&model, g_free);
+            model = g_strdup(val);
         } else if (STRPREFIX(key, "type=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(type, data, len, sizeof(type)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Type %s too big for destination"),
-                               data);
-                return NULL;
-            }
+            g_clear_pointer(&type, g_free);
+            type = g_strdup(val);
         } else if (STRPREFIX(key, "vifname=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(vifname, data, len, sizeof(vifname)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Vifname %s too big for destination"),
-                               data);
-                return NULL;
-            }
+            g_clear_pointer(&vifname, g_free);
+            vifname = g_strdup(val);
         } else if (STRPREFIX(key, "ip=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(ip, data, len, sizeof(ip)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("IP %s too big for destination"), data);
-                return NULL;
-            }
+            g_clear_pointer(&ip, g_free);
+            ip = g_strdup(val);
         } else if (STRPREFIX(key, "rate=")) {
-            int len = nextkey ? (nextkey - data) : strlen(data);
-            if (virStrncpy(rate, data, len, sizeof(rate)) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("rate %s too big for destination"), data);
-                return NULL;
-            }
+            g_clear_pointer(&rate, g_free);
+            rate = g_strdup(val);
         }
-
-        while (nextkey && (nextkey[0] == ',' ||
-                           nextkey[0] == ' ' ||
-                           nextkey[0] == '\t'))
-            nextkey++;
-        key = nextkey;
     }
 
     if (!(net = virDomainNetDefNew(NULL)))
         goto cleanup;
 
-    if (mac[0]) {
+    if (mac) {
         if (virMacAddrParse(mac, &net->mac) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("malformed mac address '%s'"), mac);
@@ -1246,18 +1203,18 @@ xenParseVif(char *entry, const char *vif_typename)
         }
     }
 
-    if (bridge[0] || STREQ_NULLABLE(script, "vif-bridge") ||
+    if (bridge || STREQ_NULLABLE(script, "vif-bridge") ||
         STREQ_NULLABLE(script, "vif-vnic")) {
         net->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
     } else {
         net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;
     }
 
-    if (net->type == VIR_DOMAIN_NET_TYPE_BRIDGE && bridge[0]) {
+    if (net->type == VIR_DOMAIN_NET_TYPE_BRIDGE && bridge) {
         if (xenParseVifBridge(net, bridge) < 0)
             goto cleanup;
     }
-    if (ip[0]) {
+    if (ip) {
         char **ip_list = g_strsplit(ip, " ", 0);
         size_t i;
 
@@ -1276,18 +1233,18 @@ xenParseVif(char *entry, const char *vif_typename)
     if (script && script[0])
         net->script = g_strdup(script);
 
-    if (model[0]) {
+    if (model) {
         if (virDomainNetSetModelString(net, model) < 0)
             goto cleanup;
     } else {
-        if (type[0] && STREQ(type, vif_typename))
+        if (type && STREQ(type, vif_typename))
             net->model = VIR_DOMAIN_NET_MODEL_NETFRONT;
     }
 
-    if (vifname[0])
+    if (vifname && vifname[0])
         net->ifname = g_strdup(vifname);
 
-    if (rate[0]) {
+    if (rate) {
         virNetDevBandwidthPtr bandwidth;
         unsigned long long kbytes_per_sec;
 
@@ -1304,7 +1261,6 @@ xenParseVif(char *entry, const char *vif_typename)
 
  cleanup:
     virDomainNetDefFree(net);
-    VIR_FREE(script);
     return ret;
 }
 
