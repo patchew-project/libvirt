@@ -121,6 +121,10 @@ virCommandPtr
 nodeDeviceGetMdevctlStopCommand(const char *uuid,
                                 char **errmsg);
 
+int
+nodeDeviceParseMdevctlJSON(const char *jsonstring,
+                           virNodeDeviceDefPtr **devs);
+
 void
 nodeDeviceGenerateName(virNodeDeviceDefPtr def,
                        const char *subsystem,
