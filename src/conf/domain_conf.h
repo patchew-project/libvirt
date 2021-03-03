@@ -1469,6 +1469,31 @@ typedef enum {
     VIR_DOMAIN_AUDIO_SDL_DRIVER_LAST
 } virDomainAudioSDLDriver;
 
+typedef enum {
+    VIR_DOMAIN_AUDIO_FORMAT_DEFAULT,
+    VIR_DOMAIN_AUDIO_FORMAT_U8,
+    VIR_DOMAIN_AUDIO_FORMAT_S8,
+    VIR_DOMAIN_AUDIO_FORMAT_U16,
+    VIR_DOMAIN_AUDIO_FORMAT_S16,
+    VIR_DOMAIN_AUDIO_FORMAT_U32,
+    VIR_DOMAIN_AUDIO_FORMAT_S32,
+    VIR_DOMAIN_AUDIO_FORMAT_F32,
+
+    VIR_DOMAIN_AUDIO_FORMAT_LAST
+} virDomainAudioFormat;
+
+typedef struct _virDomainAudioIOCommon virDomainAudioIOCommon;
+struct _virDomainAudioIOCommon {
+    virTristateBool mixingEngine;
+    virTristateBool fixedSettings;
+    unsigned int frequency;
+    unsigned int channels;
+    unsigned int voices;
+    int format; /* virDomainAudioFormat */
+    unsigned int bufferLength; /* milliseconds */
+};
+
+
 typedef struct _virDomainAudioIOOSS virDomainAudioIOOSS;
 struct _virDomainAudioIOOSS {
     char *dev;
@@ -1479,6 +1504,8 @@ struct _virDomainAudioDef {
 
     unsigned int id;
 
+    virDomainAudioIOCommon input;
+    virDomainAudioIOCommon output;
     union {
         struct {
             virDomainAudioIOOSS input;
@@ -3715,6 +3742,7 @@ VIR_ENUM_DECL(virDomainChrTcpProtocol);
 VIR_ENUM_DECL(virDomainChrSpicevmc);
 VIR_ENUM_DECL(virDomainSoundCodec);
 VIR_ENUM_DECL(virDomainSoundModel);
+VIR_ENUM_DECL(virDomainAudioFormat);
 VIR_ENUM_DECL(virDomainAudioType);
 VIR_ENUM_DECL(virDomainAudioSDLDriver);
 VIR_ENUM_DECL(virDomainKeyWrapCipherName);
@@ -3815,6 +3843,8 @@ virDomainDefFindAudioByID(const virDomainDef *def,
                           int id);
 bool
 virDomainSoundModelSupportsCodecs(virDomainSoundDefPtr def);
+bool
+virDomainAudioIOCommonIsSet(virDomainAudioIOCommon *common);
 
 const char *virDomainChrSourceDefGetPath(virDomainChrSourceDefPtr chr);
 
