@@ -1738,6 +1738,7 @@ struct _virDomainGraphicsDef {
             char *keymap;
             virDomainGraphicsAuthDef auth;
             int sharePolicy;
+            unsigned int audioId;
         } vnc;
         struct {
             char *display;

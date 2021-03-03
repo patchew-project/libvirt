@@ -13203,6 +13203,8 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     g_autofree char *websocketGenerated = virXMLPropString(node, "websocketGenerated");
     g_autofree char *sharePolicy = virXMLPropString(node, "sharePolicy");
     g_autofree char *autoport = virXMLPropString(node, "autoport");
+    xmlNodePtr audioNode;
+    VIR_XPATH_NODE_AUTORESTORE(ctxt)
 
     if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
         return -1;
@@ -13260,6 +13262,24 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     }
 
     def->data.vnc.keymap = virXMLPropString(node, "keymap");
+
+    ctxt->node = node;
+    audioNode = virXPathNode("./audio", ctxt);
+    if (audioNode) {
+        g_autofree char *tmp = NULL;
+        tmp = virXMLPropString(audioNode, "id");
+        if (!tmp) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("missing audio 'id' attribute"));
+            return -1;
+        }
+        if (virStrToLong_ui(tmp, NULL, 10, &def->data.vnc.audioId) < 0 ||
+            def->data.vnc.audioId == 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Invalid audio 'id' value '%s'"), tmp);
+            return -1;
+        }
+    }
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.vnc.auth,
                                          def->type) < 0)
@@ -27526,6 +27546,18 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
                               virTristateBoolTypeToString(def->data.spice.filetransfer));
 
         virDomainSpiceGLDefFormat(buf, def);
+    }
+
+    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC) {
+        if (!children) {
+            virBufferAddLit(buf, ">\n");
+            virBufferAdjustIndent(buf, 2);
+            children = true;
+        }
+
+        if (def->data.vnc.audioId > 0)
+            virBufferAsprintf(buf, "<audio id='%d'/>\n",
+                              def->data.vnc.audioId);
     }
 
     if (children) {
