@@ -3785,6 +3785,8 @@ int virDomainDefFindDevice(virDomainDefPtr def,
 virDomainAudioDefPtr
 virDomainDefFindAudioForSound(virDomainDefPtr def,
                               virDomainSoundDefPtr sound);
+bool
+virDomainSoundModelSupportsCodecs(virDomainSoundDefPtr def);
 
 const char *virDomainChrSourceDefGetPath(virDomainChrSourceDefPtr chr);
 
