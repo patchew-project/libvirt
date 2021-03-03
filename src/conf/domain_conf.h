@@ -1451,6 +1451,11 @@ typedef enum {
     VIR_DOMAIN_AUDIO_TYPE_LAST
 } virDomainAudioType;
 
+typedef struct _virDomainAudioIOOSS virDomainAudioIOOSS;
+struct _virDomainAudioIOOSS {
+    char *dev;
+};
+
 struct _virDomainAudioDef {
     int type;
 
@@ -1458,8 +1463,8 @@ struct _virDomainAudioDef {
 
     union {
         struct {
-            char *inputDev;
-            char *outputDev;
+            virDomainAudioIOOSS input;
+            virDomainAudioIOOSS output;
         } oss;
     } backend;
 };
