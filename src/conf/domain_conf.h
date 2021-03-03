@@ -1493,10 +1493,41 @@ struct _virDomainAudioIOCommon {
     unsigned int bufferLength; /* milliseconds */
 };
 
+typedef struct _virDomainAudioIOALSA virDomainAudioIOALSA;
+struct _virDomainAudioIOALSA {
+    char *dev;
+};
+
+typedef struct _virDomainAudioIOCoreAudio virDomainAudioIOCoreAudio;
+struct _virDomainAudioIOCoreAudio {
+    unsigned int bufferCount;
+};
+
+typedef struct _virDomainAudioIOJack virDomainAudioIOJack;
+struct _virDomainAudioIOJack {
+    char *serverName;
+    char *clientName;
+    char *connectPorts;
+    virTristateBool exactName;
+};
 
 typedef struct _virDomainAudioIOOSS virDomainAudioIOOSS;
 struct _virDomainAudioIOOSS {
     char *dev;
+    unsigned int bufferCount;
+    virTristateBool tryPoll;
+};
+
+typedef struct _virDomainAudioIOPulseAudio virDomainAudioIOPulseAudio;
+struct _virDomainAudioIOPulseAudio {
+    char *name;
+    char *streamName;
+    unsigned int latency;
+};
+
+typedef struct _virDomainAudioIOSDL virDomainAudioIOSDL;
+struct _virDomainAudioIOSDL {
+    unsigned int bufferCount;
 };
 
 struct _virDomainAudioDef {
@@ -1508,12 +1539,38 @@ struct _virDomainAudioDef {
     virDomainAudioIOCommon output;
     union {
         struct {
+            virDomainAudioIOALSA input;
+            virDomainAudioIOALSA output;
+        } alsa;
+        struct {
+            virDomainAudioIOCoreAudio input;
+            virDomainAudioIOCoreAudio output;
+        } coreaudio;
+        struct {
+            virDomainAudioIOJack input;
+            virDomainAudioIOJack output;
+        } jack;
+        struct {
             virDomainAudioIOOSS input;
             virDomainAudioIOOSS output;
+            virTristateBool tryMMap;
+            virTristateBool exclusive;
+            bool dspPolicySet;
+            int dspPolicy;
         } oss;
         struct {
+            virDomainAudioIOPulseAudio input;
+            virDomainAudioIOPulseAudio output;
+            char *serverName;
+        } pulseaudio;
+        struct {
+            virDomainAudioIOSDL input;
+            virDomainAudioIOSDL output;
             int driver; /* virDomainAudioSDLDriver */
         } sdl;
+        struct {
+            char *path;
+        } file;
     } backend;
 };
 
