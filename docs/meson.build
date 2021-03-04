@@ -38,7 +38,6 @@ docs_html_in_files = [
   'apps',
   'architecture',
   'auditlog',
-  'auth',
   'bindings',
   'bugs',
   'cgroups',
@@ -107,6 +106,7 @@ docs_html_in_files = [
 
 docs_rst_files = [
   'advanced-tests',
+  'auth',
   'best-practices',
   'ci',
   'coding-style',
