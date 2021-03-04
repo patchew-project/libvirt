@@ -123,7 +123,7 @@ virEventThreadWorker(void *opaque)
 
     g_main_loop_run(data->loop);
 
-    g_source_unref(running);
+    g_vir_source_unref_safe(running);
     virEventThreadDataFree(data);
 
     return NULL;
