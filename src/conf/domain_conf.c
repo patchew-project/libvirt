@@ -7515,11 +7515,11 @@ virDomainNetIPInfoParseXML(const char *source,
 }
 
 
-static virNetDevCoalescePtr
+static int
 virDomainNetDefCoalesceParseXML(xmlNodePtr node,
-                                xmlXPathContextPtr ctxt)
+                                xmlXPathContextPtr ctxt,
+                                virNetDevCoalescePtr *coalesce)
 {
-    virNetDevCoalescePtr ret = NULL;
     VIR_XPATH_NODE_AUTORESTORE(ctxt)
     unsigned long long tmp = 0;
     g_autofree char *str = NULL;
@@ -7528,15 +7528,13 @@ virDomainNetDefCoalesceParseXML(xmlNodePtr node,
 
     str = virXPathString("string(./rx/frames/@max)", ctxt);
     if (!str)
-        return NULL;
-
-    ret = g_new0(virNetDevCoalesce, 1);
+        return 0;
 
     if (virStrToLong_ullp(str, NULL, 10, &tmp) < 0) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("cannot parse value '%s' for coalesce parameter"),
                        str);
-        goto error;
+        return -1;
     }
 
     if (tmp > UINT32_MAX) {
@@ -7544,15 +7542,13 @@ virDomainNetDefCoalesceParseXML(xmlNodePtr node,
                        _("value '%llu' is too big for coalesce "
                          "parameter, maximum is '%lu'"),
                        tmp, (unsigned long) UINT32_MAX);
-        goto error;
+        return -1;
     }
-    ret->rx_max_coalesced_frames = tmp;
 
-    return ret;
+    *coalesce = g_new0(virNetDevCoalesce, 1);
+    (*coalesce)->rx_max_coalesced_frames = tmp;
 
- error:
-    VIR_FREE(ret);
-    return NULL;
+    return 0;
 }
 
 static void
@@ -11516,8 +11512,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     node = virXPathNode("./coalesce", ctxt);
     if (node) {
-        def->coalesce = virDomainNetDefCoalesceParseXML(node, ctxt);
-        if (!def->coalesce)
+        if (virDomainNetDefCoalesceParseXML(node, ctxt, &def->coalesce) < 0)
             goto error;
     }
 
