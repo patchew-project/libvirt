@@ -13,6 +13,16 @@ v7.2.0 (unreleased)
 
 * **New features**
 
+  * qemu: Allow process limits to be managed by an external process
+
+    Whereas in traditional virtualization scenarios libvirt takes full
+    reponsibility of setting up the environment for a QEMU process, when it's
+    used as part of things like KubeVirt some of these tasks are delegated to
+    external, more privileged processes.
+
+    The ``external_limit_manager`` feature can now be enabled in ``qemu.conf``
+    to tell libvirt that it shouldn't attempt to set process limits itself.
+
 * **Improvements**
 
 * **Bug fixes**
