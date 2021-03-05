@@ -176,6 +176,7 @@ struct _virQEMUDriverConfig {
     bool nogfxAllowHostAudio;
     bool setProcessName;
 
+    bool externalLimitManager;
     unsigned int maxProcesses;
     unsigned int maxFiles;
     unsigned int maxThreadsPerProc;

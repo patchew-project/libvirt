@@ -104,6 +104,7 @@ module Libvirtd_qemu =
                  | str_entry "slirp_helper"
                  | str_entry "dbus_daemon"
                  | bool_entry "set_process_name"
+                 | bool_entry "external_limit_manager"
                  | int_entry "max_processes"
                  | int_entry "max_files"
                  | limits_entry "max_core"

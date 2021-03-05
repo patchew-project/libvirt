@@ -673,6 +673,10 @@ virQEMUDriverConfigLoadProcessEntry(virQEMUDriverConfigPtr cfg,
 
     if (virConfGetValueBool(conf, "set_process_name", &cfg->setProcessName) < 0)
         return -1;
+
+    if (virConfGetValueBool(conf, "external_limit_manager", &cfg->externalLimitManager) < 0)
+        return -1;
+
     if (virConfGetValueUInt(conf, "max_processes", &cfg->maxProcesses) < 0)
         return -1;
     if (virConfGetValueUInt(conf, "max_files", &cfg->maxFiles) < 0)
