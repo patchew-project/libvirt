@@ -22,6 +22,13 @@
 #include "virprocess.h"
 
 int
+virProcessGetMaxMemLock(pid_t pid G_GNUC_UNUSED, unsigned long long *bytes G_GNUC_UNUSED)
+{
+    *bytes = 0;
+    return 0;
+}
+
+int
 virProcessSetMaxMemLock(pid_t pid G_GNUC_UNUSED, unsigned long long bytes G_GNUC_UNUSED)
 {
     return 0;
