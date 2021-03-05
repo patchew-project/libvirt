@@ -7012,25 +7012,31 @@ qemuProcessLaunch(virConnectPtr conn,
     virCommandSetPreExecHook(cmd, qemuProcessHook, &hookData);
     virCommandSetUmask(cmd, 0x002);
 
-    VIR_DEBUG("Setting up process limits");
+    if (cfg->externalLimitManager) {
+        VIR_DEBUG("Not setting up process limits (handled externally)");
 
-    /* In some situations, eg. VFIO passthrough, QEMU might need to lock a
-     * significant amount of memory, so we need to set the limit accordingly */
-    maxMemLock = qemuDomainGetMemLockLimitBytes(vm->def, false);
+        vm->externalLimitManager = true;
+    } else {
+        VIR_DEBUG("Setting up process limits");
 
-    /* For all these settings, zero indicates that the limit should
-     * not be set explicitly and the default/inherited limit should
-     * be applied instead */
-    if (maxMemLock > 0)
-        virCommandSetMaxMemLock(cmd, maxMemLock);
-    if (cfg->maxProcesses > 0)
-        virCommandSetMaxProcesses(cmd, cfg->maxProcesses);
-    if (cfg->maxFiles > 0)
-        virCommandSetMaxFiles(cmd, cfg->maxFiles);
+        /* In some situations, eg. VFIO passthrough, QEMU might need to lock a
+         * significant amount of memory, so we need to set the limit accordingly */
+        maxMemLock = qemuDomainGetMemLockLimitBytes(vm->def, false);
 
-    /* In this case, however, zero means that core dumps should be
-     * disabled, and so we always need to set the limit explicitly */
-    virCommandSetMaxCoreSize(cmd, cfg->maxCore);
+        /* For all these settings, zero indicates that the limit should
+         * not be set explicitly and the default/inherited limit should
+         * be applied instead */
+        if (maxMemLock > 0)
+            virCommandSetMaxMemLock(cmd, maxMemLock);
+        if (cfg->maxProcesses > 0)
+            virCommandSetMaxProcesses(cmd, cfg->maxProcesses);
+        if (cfg->maxFiles > 0)
+            virCommandSetMaxFiles(cmd, cfg->maxFiles);
+
+        /* In this case, however, zero means that core dumps should be
+         * disabled, and so we always need to set the limit explicitly */
+        virCommandSetMaxCoreSize(cmd, cfg->maxCore);
+    }
 
     VIR_DEBUG("Setting up security labelling");
     if (qemuSecuritySetChildProcessLabel(driver->securityManager,

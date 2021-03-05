@@ -9246,23 +9246,32 @@ qemuDomainAdjustMaxMemLock(virDomainObjPtr vm,
     if (virProcessGetMaxMemLock(vm->pid, &currentMemLock) < 0)
         return -1;
 
-    if (desiredMemLock > 0) {
-        /* If this is the first time adjusting the limit, save the current
-         * value so that we can restore it once memory locking is no longer
-         * required */
-        if (vm->originalMemlock == 0) {
-            vm->originalMemlock = currentMemLock;
+    if (!vm->externalLimitManager) {
+        if (desiredMemLock > 0) {
+            /* If this is the first time adjusting the limit, save the current
+             * value so that we can restore it once memory locking is no longer
+             * required */
+            if (vm->originalMemlock == 0) {
+                vm->originalMemlock = currentMemLock;
+            }
+        } else {
+            /* Once memory locking is no longer required, we can restore the
+             * original, usually very low, limit */
+            desiredMemLock = vm->originalMemlock;
+            vm->originalMemlock = 0;
+        }
+
+        if (desiredMemLock > 0 &&
+            virProcessSetMaxMemLock(vm->pid, desiredMemLock) < 0) {
+            return -1;
         }
     } else {
-        /* Once memory locking is no longer required, we can restore the
-         * original, usually very low, limit */
-        desiredMemLock = vm->originalMemlock;
-        vm->originalMemlock = 0;
-    }
-
-    if (desiredMemLock > 0 &&
-        virProcessSetMaxMemLock(vm->pid, desiredMemLock) < 0) {
-        return -1;
+        if (currentMemLock < desiredMemLock) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("insufficient memlock limit (%llu < %llu)"),
+                           currentMemLock, desiredMemLock);
+            return -1;
+        }
     }
 
     return 0;

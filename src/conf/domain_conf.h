@@ -2807,6 +2807,7 @@ struct _virDomainObj {
     size_t ndeprecations;
     char **deprecations;
 
+    bool externalLimitManager; /* Whether process limits are handled outside of libvirt */
     unsigned long long originalMemlock; /* Original RLIMIT_MEMLOCK, zero if no
                                          * restore will be required later */
 };
