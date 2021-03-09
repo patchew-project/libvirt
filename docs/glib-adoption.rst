@@ -52,3 +52,20 @@ Objects
    https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html
 
    Prefer ``GObject`` instead.
+
+
+Forbidden functions
+===================
+
+There are some functions where Libvirt offers superior quality to GLib. In
+those cases, GLib functions must NOT be used and Libvirt functions should be
+used instead.
+
+``g_file_get_contents``
+    Use ``virFileReadAll`` instead. The GLib function reads the entire file
+    into the memory without possibility to provide any limit on the buffer
+    size.
+
+``g_get_host_name``
+    Prefer ``virGetHostname``. The GLib function caches the hostname and thus
+    does not reflect (possible) hostname changes.
