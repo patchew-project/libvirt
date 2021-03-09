@@ -31,6 +31,10 @@
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
+/* Below, several files are read into buffers. This defines the
+ * maximum possible size for such buffer. 10MiB should be enough. */
+#define MAX_FILE_SIZE (10 * 1024 * 1024)
+
 static GMutex eventLock;
 static bool eventPreventQuitFlag;
 static bool eventQuitFlag;
@@ -264,7 +268,7 @@ int main(int argc, char **argv)
             g_autofree char *sxml = NULL;
             g_autofree char *value = NULL;
             virSecretPtr sec;
-            size_t nvalue;
+            int nvalue;
 
             if (!bits || bits[0] == NULL || bits[1] == NULL) {
                 g_printerr("%s: expected a pair of filenames for --secret argument\n",
@@ -276,15 +280,15 @@ int main(int argc, char **argv)
                 g_printerr("%s: %lld: loading secret %s and %s\n",
                            argv[0], deltams(), bits[0], bits[1]);
 
-            if (!g_file_get_contents(bits[0], &sxml, NULL, &error)) {
+            if (virFileReadAll(bits[0], MAX_FILE_SIZE, &sxml) < 0) {
                 g_printerr("%s: cannot read secret XML %s: %s\n",
-                           argv[0], bits[0], error->message);
+                           argv[0], bits[0], virGetLastErrorMessage());
                 goto cleanup;
             }
 
-            if (!g_file_get_contents(bits[1], &value, &nvalue, &error)) {
+            if ((nvalue = virFileReadAll(bits[1], MAX_FILE_SIZE, &value)) < 0) {
                 g_printerr("%s: cannot read secret value %s: %s\n",
-                           argv[0], bits[1], error->message);
+                           argv[0], bits[1], virGetLastErrorMessage());
                 goto cleanup;
             }
 
@@ -332,9 +336,9 @@ int main(int argc, char **argv)
         g_printerr("%s: %lld: fetching guest config %s\n",
                    argv[0], deltams(), argv[1]);
 
-    if (!g_file_get_contents(argv[1], &xml, NULL, &error)) {
+    if (virFileReadAll(argv[1], MAX_FILE_SIZE, &xml) < 0) {
         g_printerr("%s: cannot read %s: %s\n",
-                   argv[0], argv[1], error->message);
+                   argv[0], argv[1], virGetLastErrorMessage());
         goto cleanup;
     }
 
