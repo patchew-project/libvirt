@@ -1505,26 +1505,19 @@ virConfLoadConfigPath(const char *name)
 int
 virConfLoadConfig(virConfPtr *conf, const char *name)
 {
-    char *path = NULL;
-    int ret = -1;
+    g_autofree char *path = NULL;
 
     *conf = NULL;
 
     if (!(path = virConfLoadConfigPath(name)))
-        goto cleanup;
+        return -1;
 
-    if (!virFileExists(path)) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return 0;
 
     VIR_DEBUG("Loading config file '%s'", path);
     if (!(*conf = virConfReadFile(path, 0)))
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(path);
-    return ret;
+    return 0;
 }
