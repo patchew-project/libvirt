@@ -6674,6 +6674,12 @@ qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
         goto endjob;
     }
 
+    if (vm->removing) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is already removing"));
+        goto endjob;
+    }
+
     if (qemuDomainObjStart(dom->conn, driver, vm, flags,
                            QEMU_ASYNC_JOB_START) < 0)
         goto endjob;
